@@ -42,7 +42,9 @@ run_simulation = None
 
 try:
     import redis as _redis_module
-    from tasks import celery_app as _celery_app, run_simulation as _rs, REDIS_URL as _REDIS_URL
+    from worker.celery_app import celery_app as _celery_app
+    from worker.tasks import run_simulation as _rs
+    from worker.celery_app import REDIS_URL as _REDIS_URL
     _client = _redis_module.Redis.from_url(_REDIS_URL, decode_responses=False)
     _client.ping()
     REDIS_CLIENT = _client
@@ -489,7 +491,7 @@ def nfw_parameters(m200_msun, concentration):
 
 
 # ============================================================
-# KERNELS NUMBA — FISICA DA MATERIA ESCURA
+# KERNELS NUMBA
 # ============================================================
 @njit(cache=True)
 def _halo_shape_numba(x, use_sidm, core_x, feedback_strength, feedback_scale_x):
@@ -611,7 +613,6 @@ def _profile_density_numba(x_query, x_norm, use_sidm, core_x, feedback_strength,
 @njit(cache=True, fastmath=False)
 def _leapfrog_batch(pos, vel, acc, mass_x, mass_fraction,
                      g_dimless, softening, dt, n_inner):
-    """Roda n_inner passos de leapfrog dentro do worker (compilado)."""
     eps2 = softening * softening
     n = pos.shape[0]
     for _ in range(n_inner):
@@ -843,10 +844,9 @@ def load_observational_csv(uploaded_file):
 
 
 # ============================================================
-# RESUMO ESTATISTICO + CHUNK ADAPTATIVO + SPATIAL INDEX
+# RESUMO ESTATISTICO + CHUNK ADAPTATIVO
 # ============================================================
 def summarize_particle_state(positions, velocities, n_bins=50, r_extent=None):
-    """Resumo compacto por snapshot (~1 KB) em vez de array completo (~8 MB)."""
     r = np.linalg.norm(positions, axis=1)
     speed_sq = np.sum(velocities ** 2, axis=1)
     if r_extent is None:
@@ -868,7 +868,6 @@ def summarize_particle_state(positions, velocities, n_bins=50, r_extent=None):
 
 
 def compute_adaptive_chunk(n_particles, target_ops=50_000):
-    """Bloco adaptativo: escala com 1/N para manter a UI responsiva."""
     try:
         n = max(int(n_particles), 1)
     except (TypeError, ValueError):
@@ -885,8 +884,6 @@ except ImportError:
 
 
 class SpatialIndex:
-    """KDTree com reconstrucao adaptativa (so quando os pontos se movem)."""
-
     def __init__(self, tolerance=0.01):
         self.tree = None
         self.ref_positions = None
@@ -914,18 +911,9 @@ class SpatialIndex:
 
 
 # ============================================================
-# SIMULACAO LOCAL (executa em thread ou Celery worker)
+# SIMULACAO LOCAL (fallback)
 # ============================================================
-def _build_mass_lookup_sim(concentration, model, core_x, fb, fb_scale_x, grid_size=3000):
-    return build_profile_lookup(
-        concentration=concentration, model=model,
-        core_x=core_x, feedback_strength=fb,
-        feedback_scale_x=fb_scale_x, grid_size=grid_size,
-    )
-
-
 def _run_simulation_local(params, seed):
-    """Executa a simulacao completa. Usada como fallback (thread local)."""
     rng = np.random.default_rng(seed)
     n = int(params["n_particles"])
     n_steps = int(params["n_steps"])
@@ -933,12 +921,12 @@ def _run_simulation_local(params, seed):
     g = float(params["g_dimless"])
     eps = float(params["softening"])
 
-    mass_x, mass_frac, pot_x = _build_mass_lookup_sim(
+    mass_x, mass_frac, pot_x = build_profile_lookup(
         concentration=float(params["concentration"]),
         model=params["halo_model"],
         core_x=float(params["core_radius_over_rs"]),
-        fb=float(params["feedback_strength"]),
-        fb_scale_x=float(params["feedback_scale_over_rs"]),
+        feedback_strength=float(params["feedback_strength"]),
+        feedback_scale_x=float(params["feedback_scale_over_rs"]),
     )
 
     radius = np.clip(rng.lognormal(np.log(2.0), 0.38, size=n),
@@ -1480,15 +1468,15 @@ with tab_model:
 
     b1, b2, b3 = st.columns(3)
     with b1:
-        if st.button("↺ Restaurar típicos: Via Láctea", use_container_width=True, key="reset_vl"):
+        if st.button("↺ Restaurar típicos: Via Láctea", width='stretch', key="reset_vl"):
             restore_typical(TYPICAL_VIA_LACTEA, "Via Láctea")
             st.rerun()
     with b2:
-        if st.button("↺ Restaurar típicos: Anã", use_container_width=True, key="reset_dw"):
+        if st.button("↺ Restaurar típicos: Anã", width='stretch', key="reset_dw"):
             restore_typical(TYPICAL_DWARF, "Galáxia anã")
             st.rerun()
     with b3:
-        if st.button("↺ Restaurar típicos: Aglomerado", use_container_width=True, key="reset_cl"):
+        if st.button("↺ Restaurar típicos: Aglomerado", width='stretch', key="reset_cl"):
             restore_typical(TYPICAL_CLUSTER, "Aglomerado")
             st.rerun()
 
@@ -1582,7 +1570,7 @@ with tab_sim:
         softening = free_number("Suavização ε", "softening")
     with s3:
         sim_seed = free_int("Semente aleatória da simulação", "sim_seed")
-        auto_record = st.checkbox("Registrar automaticamente (~200 snapshots)", value=True, key="auto_record")
+        auto_record = st.checkbox("Registrar automaticamente (~200 snapshots)", key="auto_record")
         if auto_record:
             record_every = max(1, int(n_steps) // 200)
             st.metric("Registrar a cada", f"{record_every} passos")
@@ -1694,7 +1682,7 @@ with tab_dm:
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
         legend=dict(orientation="h", y=1.13),
     )
-    st.plotly_chart(fig_dm, use_container_width=True)
+    st.plotly_chart(fig_dm, width='stretch')
 
     r_frac = np.linspace(max(0.5, rmax_now / 100.0), rmax_now, 200)
     _, _, frac_dm_curve = dark_matter_fraction_at_radius(
@@ -1717,7 +1705,7 @@ with tab_dm:
         yaxis_range=[0, 100],
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
     )
-    st.plotly_chart(fig_frac, use_container_width=True)
+    st.plotly_chart(fig_frac, width='stretch')
 
     st.markdown("### Tabela de diagnóstico")
     _cols = {
@@ -1743,7 +1731,7 @@ with tab_dm:
             "M_bárion (<r) [M☉]": _cols["M_bárion (<r) [M☉]"][:n_rows],
             "Fração de ME": [f"{x*100:.1f}%" for x in _cols["Fração de ME"][:n_rows]],
         })
-        st.dataframe(diag_df, use_container_width=True, hide_index=True)
+        st.dataframe(diag_df, width='stretch', hide_index=True)
 
     st.divider()
     st.markdown("### Prévia da Síntese Científica (seção 9 do PDF)")
@@ -1817,7 +1805,7 @@ with tab_model:
         xaxis_type="log", yaxis_type="log",
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
     )
-    st.plotly_chart(fig_density_compare, use_container_width=True)
+    st.plotly_chart(fig_density_compare, width='stretch')
 
     st.markdown("#### Distribuição de velocidades")
     rng_velocity = np.random.default_rng(int(seed_velocity))
@@ -1836,7 +1824,7 @@ with tab_model:
         xaxis_title="Velocidade (km/s)", yaxis_title="Densidade de probabilidade",
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
     )
-    st.plotly_chart(fig_velocity, use_container_width=True)
+    st.plotly_chart(fig_velocity, width='stretch')
     v1, v2, v3 = st.columns(3)
     v1.metric("Velocidade média", f"{np.mean(speeds):.1f} km/s")
     v2.metric("Velocidade RMS", f"{np.sqrt(np.mean(speeds**2)):.1f} km/s")
@@ -1911,7 +1899,7 @@ with tab_rotation:
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
         legend=dict(orientation="h", y=1.13),
     )
-    st.plotly_chart(fig_rot, use_container_width=True)
+    st.plotly_chart(fig_rot, width='stretch')
 
     with st.expander("🧪 Fração de ME por raio", expanded=True):
         _, _, dm_frac_curve = dark_matter_fraction_at_radius(
@@ -1933,7 +1921,7 @@ with tab_rotation:
             yaxis_range=[0, 100],
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
         )
-        st.plotly_chart(fig_frac, use_container_width=True)
+        st.plotly_chart(fig_frac, width='stretch')
 
     if selected_curve == "NFW + barions":
         v_selected = v_nfw_total
@@ -1982,7 +1970,7 @@ with tab_feedback:
         xaxis_type="log", yaxis_type="log",
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
     )
-    st.plotly_chart(fb_fig, use_container_width=True)
+    st.plotly_chart(fb_fig, width='stretch')
 
     st.markdown("#### Mapa espacial 2D")
     extent = min(max(3.0 * rs, 5.0), r_plot_max)
@@ -2005,7 +1993,7 @@ with tab_feedback:
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
     )
     fig_map.update_yaxes(scaleanchor="x", scaleratio=1)
-    st.plotly_chart(fig_map, use_container_width=True)
+    st.plotly_chart(fig_map, width='stretch')
 
 # ============================================================
 # CONTEUDO DA ABA ④ - PAINEL ASSINCRONO + PDF
@@ -2027,9 +2015,9 @@ with tab_sim:
     ctrl1, ctrl2, ctrl3 = st.columns(3)
     with ctrl1:
         start_clicked = st.button("▶ Iniciar (worker assíncrono)", type="primary",
-                                   use_container_width=True, key="async_start")
+                                   width='stretch', key="async_start")
     with ctrl2:
-        stop_clicked = st.button("⏹ Cancelar / limpar", use_container_width=True, key="async_stop")
+        stop_clicked = st.button("⏹ Cancelar / limpar", width='stretch', key="async_stop")
     with ctrl3:
         st.metric("Modo", "Celery+Redis" if ASYNC_MODE else "ThreadPool")
 
@@ -2072,7 +2060,6 @@ with tab_sim:
         progress = float(state.get("progress", 0.0))
         st.progress(min(1.0, progress / 100.0), text=f"{status} — {progress:.1f}%")
 
-        # Concluida: armazena o historico completo
         if status == "Concluida":
             history = state.get("history", [])
             st.session_state["async_history"] = history
@@ -2108,7 +2095,7 @@ with tab_sim:
                     xaxis_title="Tempo adimensional", yaxis_title="Energia específica",
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
                 )
-                st.plotly_chart(fig_e, use_container_width=True)
+                st.plotly_chart(fig_e, width='stretch')
             with c2:
                 fig_r = go.Figure()
                 fig_r.add_trace(go.Scatter(x=df["time"], y=df["r_rms"],
@@ -2122,10 +2109,10 @@ with tab_sim:
                     xaxis_title="Tempo adimensional", yaxis_title="Raio (unid. de rs)",
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
                 )
-                st.plotly_chart(fig_r, use_container_width=True)
+                st.plotly_chart(fig_r, width='stretch')
 
             st.markdown("### Histórico compacto (métricas resumidas)")
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(df, width='stretch', hide_index=True)
             st.download_button(
                 "⬇️ Exportar histórico assíncrono (CSV)",
                 data=df.to_csv(index=False).encode("utf-8"),
@@ -2200,7 +2187,7 @@ with tab_sim:
     ]
 
     if st.button("📄 Gerar relatório PDF completo", type="primary",
-                 use_container_width=True, key="generate_dark_matter_pdf"):
+                 width='stretch', key="generate_dark_matter_pdf"):
         report_figures = {
             "Perfis de densidade: NFW vs SIDM": fig_density_compare,
             "Distribuicao de velocidades": fig_velocity,
@@ -2282,7 +2269,7 @@ with tab_sim:
             "⬇️ Baixar relatório PDF",
             data=st.session_state["dark_matter_pdf_bytes"],
             file_name="relatorio_dark_matter_lab.pdf", mime="application/pdf",
-            use_container_width=True, key="download_dark_matter_pdf",
+            width='stretch', key="download_dark_matter_pdf",
         )
         if st.session_state.get("dark_matter_pdf_chart_warning"):
             warnings = st.session_state["dark_matter_pdf_chart_warning"]
@@ -2323,9 +2310,9 @@ with tab_assistant:
     a1, a2 = st.columns([2, 1])
     with a1:
         apply_nl = st.button("🎯 Aplicar (linguagem natural)", type="primary",
-                             use_container_width=True, key="nl_apply_button")
+                             width='stretch', key="nl_apply_button")
     with a2:
-        if st.button("🧹 Limpar", use_container_width=True, key="nl_clear_button"):
+        if st.button("🧹 Limpar", width='stretch', key="nl_clear_button"):
             st.session_state["nl_assistant_input"] = ""
             st.rerun()
 
@@ -2355,16 +2342,16 @@ with tab_assistant:
     r1, r2, r3 = st.columns([2, 1, 1])
     with r1:
         apply_research = st.button("🔬 Importar e aplicar", type="primary",
-                                   use_container_width=True, key="apply_research_button")
+                                   width='stretch', key="apply_research_button")
     with r2:
-        if st.button("📥 Exemplo JSON", use_container_width=True, key="example_json_button"):
+        if st.button("📥 Exemplo JSON", width='stretch', key="example_json_button"):
             st.session_state["research_input"] = json.dumps({
                 "log_m200": 12.5, "concentration": 8.4, "log_mbaryon": 11.0,
                 "sigma_over_m": 0.5, "sigma_v": 180, "feedback_strength": 0.3,
             }, indent=2)
             st.rerun()
     with r3:
-        if st.button("🧹 Limpar JSON", use_container_width=True, key="clear_research_button"):
+        if st.button("🧹 Limpar JSON", width='stretch', key="clear_research_button"):
             st.session_state["research_input"] = ""
             st.rerun()
 
@@ -2384,15 +2371,15 @@ with tab_assistant:
     st.markdown("### Presets rápidos (calibrados por observações)")
     p1, p2, p3 = st.columns(3)
     with p1:
-        if st.button("🌌 Via Láctea (M200=1e12, c=9.4)", use_container_width=True, key="preset_vl"):
+        if st.button("🌌 Via Láctea (M200=1e12, c=9.4)", width='stretch', key="preset_vl"):
             restore_typical(TYPICAL_VIA_LACTEA, "Via Láctea")
             st.rerun()
     with p2:
-        if st.button("🔵 Anã (M200=1e9.5, c=15)", use_container_width=True, key="preset_dw"):
+        if st.button("🔵 Anã (M200=1e9.5, c=15)", width='stretch', key="preset_dw"):
             restore_typical(TYPICAL_DWARF, "Galáxia anã")
             st.rerun()
     with p3:
-        if st.button("🟠 Aglomerado (M200=1e14, c=4)", use_container_width=True, key="preset_cl"):
+        if st.button("🟠 Aglomerado (M200=1e14, c=4)", width='stretch', key="preset_cl"):
             restore_typical(TYPICAL_CLUSTER, "Aglomerado")
             st.rerun()
 
@@ -2435,7 +2422,7 @@ with tab_assistant:
             if isinstance(value, float):
                 value = f"{value:.6g}"
             state_rows.append({"chave": key, "valor": str(value)})
-        st.dataframe(pd.DataFrame(state_rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(state_rows), width='stretch', hide_index=True)
 
 # ------------------------- RODAPE ---------------------------
 st.divider()
@@ -2452,5 +2439,5 @@ st.markdown(
     "- **Spatial index**: KDTree com reconstrução adaptativa (drift > 1% do raio típico).  \n"
     "- **Arquitetura assíncrona**: Celery + Redis quando disponível; fallback automático para `ThreadPoolExecutor` local.  \n"
     "- Sem Numba, o app funciona com numpy puro (fallback automático). Sem Celery/Redis, roda em thread local.  \n"
-    "- Para ativar modo distribuído: `docker-compose up -d redis worker` (ver `tasks.py` e `docker-compose.yml`)."
+    "- Para ativar modo distribuído: `docker-compose up -d redis worker` (ver `worker/` e `docker-compose.yml`)."
 )
