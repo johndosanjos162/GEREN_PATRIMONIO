@@ -15,7 +15,25 @@ import streamlit as st
 from fpdf import FPDF
 
 # ============================================================
-# DARK MATTER LAB — EDICAO LIVRE + IA PROPAGADORA
+# NUMBA — compilacao JIT para aceleracao numerica
+# Fallback seguro se numba nao estiver instalado.
+# ============================================================
+try:
+    from numba import njit
+    NUMBA_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    NUMBA_AVAILABLE = False
+
+    def njit(func=None, **kwargs):
+        """Fallback no-op: aceita @njit e @njit(cache=True) sem alterar comportamento."""
+        if func is None:
+            def wrapper(f):
+                return f
+            return wrapper
+        return func
+
+# ============================================================
+# DARK MATTER LAB — EDICAO LIVRE + IA PROPAGADORA + NUMBA
 # ============================================================
 
 st.set_page_config(
@@ -40,6 +58,7 @@ st.markdown(
       .insight-box { background:rgba(88,196,221,.10); border-left:3px solid #58c4dd; padding:10px 14px; border-radius:6px; color:#c9d6f0; font-size:.9rem; margin:6px 0; }
       .sync-banner { background:linear-gradient(90deg,rgba(139,124,255,.18),rgba(88,196,221,.12)); border:1px solid rgba(139,124,255,.35); border-radius:8px; padding:8px 14px; color:#d0daf2; font-size:.86rem; margin-bottom:6px; }
       .free-input-note { background:rgba(255,189,105,.10); border-left:3px solid #ffbd69; padding:8px 12px; border-radius:6px; color:#f0d9b0; font-size:.84rem; }
+      .numba-badge { background:linear-gradient(90deg,rgba(88,196,221,.20),rgba(139,124,255,.15)); border:1px solid rgba(88,196,221,.35); border-radius:6px; padding:4px 10px; color:#a9e5f0; font-size:.8rem; display:inline-block; margin-left:8px; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -173,7 +192,6 @@ SIM_HALO_MODEL_OPTIONS = ["NFW", "SIDM"]
 # HELPERS DE CAMPO LIVRE
 # ============================================================
 def free_number(label, key, help_text="", fmt="%.6g", step=None):
-    """number_input com faixa ampla; retorna o valor digitado."""
     lo, hi, default_step = FREE_RANGES[key]
     return st.number_input(
         label,
@@ -187,7 +205,6 @@ def free_number(label, key, help_text="", fmt="%.6g", step=None):
 
 
 def free_int(label, key, help_text=""):
-    """number_input inteiro com faixa ampla; retorna o valor digitado."""
     lo, hi, default_step = FREE_INT_RANGES[key]
     return st.number_input(
         label,
@@ -639,7 +656,7 @@ def load_observational_csv(uploaded_file):
 
 
 # ============================================================
-# SIMULACAO DE TRACADORES
+# SIMULACAO DE TRACADORES — KERNELS NUMBA
 # ============================================================
 def create_initial_tracers(n, seed, concentration, mass_x, mass_fraction, g_dimless):
     rng = np.random.default_rng(seed)
@@ -655,22 +672,61 @@ def create_initial_tracers(n, seed, concentration, mass_x, mass_fraction, g_diml
     return positions, np.column_stack((vx, vy))
 
 
+# NB: a assinatura e a matematica sao identicas a versao vetorizada
+# original. Apenas o laco interno foi explicitado para permitir
+# compilacao via @njit. O @njit(cache=True) salva o binario em disco
+# apos a primeira chamada, acelerando execucoes subsequentes.
+@njit(cache=True)
 def tracer_acceleration(positions, g_dimless, mass_x, mass_fraction, softening):
-    r = np.linalg.norm(positions, axis=1)
-    r_safe = np.maximum(r, 1e-10)
-    enclosed = np.interp(r_safe, mass_x, mass_fraction, left=0.0, right=1.0)
-    denom = (r_safe**2 + softening**2) ** 1.5
-    return -g_dimless * enclosed[:, None] * positions / denom[:, None]
+    """Aceleracao gravitacional de cada tracador (compilada via Numba).
+
+    Equivalente vetorizado:
+        r = ||pos||
+        enclosed = interp(r, mass_x, mass_fraction)
+        a = -g * enclosed * pos / (r^2 + eps^2)^1.5
+    """
+    n = positions.shape[0]
+    out = np.empty((n, 2), dtype=np.float64)
+    eps2 = softening * softening
+    for i in range(n):
+        x = positions[i, 0]
+        y = positions[i, 1]
+        r = np.sqrt(x * x + y * y)
+        r_safe = r if r > 1e-10 else 1e-10
+        enclosed = np.interp(r_safe, mass_x, mass_fraction)
+        denom = (r_safe * r_safe + eps2) ** 1.5
+        factor = -g_dimless * enclosed / denom
+        out[i, 0] = factor * x
+        out[i, 1] = factor * y
+    return out
 
 
+@njit(cache=True)
 def tracer_energy_proxy(positions, velocities, g_dimless, mass_x, potential_x):
-    r = np.maximum(np.linalg.norm(positions, axis=1), 1e-8)
-    kinetic = 0.5 * np.sum(velocities**2, axis=1)
-    phi = np.interp(r, mass_x, potential_x, left=potential_x[0], right=np.nan)
-    outside = r > mass_x[-1]
-    if np.any(outside):
-        phi[outside] = -1.0 / r[outside]
-    return float(np.mean(kinetic + g_dimless * phi))
+    """Energia especifica media proxy dos tracadores (compilada via Numba).
+
+    Equivalente vetorizado:
+        E_i = 0.5 * |v_i|^2 + g * phi(r_i)
+        phi(r) = interp(r, mass_x, potential_x) para r <= mass_x[-1]
+                 -1/r caso contrario
+    """
+    n = positions.shape[0]
+    r_max = mass_x[-1]
+    total = 0.0
+    for i in range(n):
+        x = positions[i, 0]
+        y = positions[i, 1]
+        r = np.sqrt(x * x + y * y)
+        r_safe = r if r > 1e-8 else 1e-8
+        vx = velocities[i, 0]
+        vy = velocities[i, 1]
+        kinetic = 0.5 * (vx * vx + vy * vy)
+        if r_safe > r_max:
+            phi = -1.0 / r_safe
+        else:
+            phi = np.interp(r_safe, mass_x, potential_x)
+        total += kinetic + g_dimless * phi
+    return total / n
 
 
 def explain_simulation_physics(step, time_value, params, energy, energy_drift, velocity_rms,
@@ -1200,6 +1256,7 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
         "Assistente IA escreve em st.session_state; fisica inalterada.",
         "Fracao de ME = M_DM(<r) / [M_DM(<r) + M_baryon(<r)].",
         "Campos numericos liberados; faixas amplas podem produzir configuracoes fora do regime validado.",
+        "Aceleracao e energia proxy compiladas via Numba @njit(cache=True); a matematica e identica a versao vetorizada.",
     ]
     for note in notes:
         pdf.multi_cell(0, 5.5, _pdf_ascii("- " + note), new_x="LMARGIN", new_y="NEXT")
@@ -1224,7 +1281,10 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
 st.title("🌌 Dark Matter Lab")
 st.markdown(
     '<p class="lab-subtitle">Laboratorio interativo: halos NFW, SIDM, dinamica estelar, feedback '
-    'barionico, simulacoes numericas, assistente IA e campos livres.</p>',
+    'barionico, simulacoes numericas, assistente IA e campos livres.'
+    + ('<span class="numba-badge">⚡ Numba JIT ativo</span>' if NUMBA_AVAILABLE
+       else '<span class="numba-badge">⚠️ Numba ausente — fallback numpy</span>')
+    + '</p>',
     unsafe_allow_html=True,
 )
 st.markdown(
@@ -1245,7 +1305,7 @@ tab_dm, tab_model, tab_rotation, tab_feedback, tab_sim, tab_assistant = st.tabs(
 ])
 
 # ============================================================
-# ABA ① - MODELOS TEORICOS (definida PRIMEIRO para popular variaveis)
+# ABA ① - MODELOS TEORICOS
 # ============================================================
 with tab_model:
     st.subheader("Modelos teoricos: NFW e materia escura autointeragente")
@@ -1343,6 +1403,7 @@ with tab_sim:
     st.subheader("Calculadora e execucao da simulacao")
     st.markdown(
         '<div class="free-input-note">🔓 Número de partículas, passos, dt, g, seed — tudo livre. '
+        'Aceleração e energia proxy compiladas via Numba @njit. '
         'Números grandes podem tornar a simulação lenta.</div>',
         unsafe_allow_html=True,
     )
@@ -1362,7 +1423,7 @@ with tab_sim:
         st.metric("Tempo final nominal", f"{n_steps * dt:.4g}")
 
 # ============================================================
-# COMPUTA VALORES COMUNS (agora as variaveis estao definidas)
+# VALORES COMUNS
 # ============================================================
 m200 = 10.0 ** log_m200
 m_baryon = 10.0 ** log_mbaryon
@@ -1537,9 +1598,8 @@ with tab_dm:
         st.warning(f"Prévia indisponível: {_exc}")
 
 # ============================================================
-# COMPLETA O CONTEUDO DAS ABAS 1, 2, 3, 4 (ja criadas acima)
+# CONTEUDO DAS ABAS 1, 2, 3, 4
 # ============================================================
-# --- Aba 1: metricas e graficos (usa log_m200, m200, etc.) ---
 with tab_model:
     r200_m, rs_m, _ = nfw_parameters(m200, concentration)
     fb_now_m = float(st.session_state.get("feedback_strength", 0.25))
@@ -1612,7 +1672,6 @@ with tab_model:
     v2.metric("Velocidade RMS", f"{np.sqrt(np.mean(speeds**2)):.1f} km/s")
     v3.metric("Média teórica Maxwell", f"{2*np.sqrt(2/np.pi)*sigma_v:.1f} km/s")
 
-# --- Aba 2: gráficos e análise ---
 with tab_rotation:
     fb_now = float(st.session_state.get("feedback_strength", 0.25))
     fbs_now = float(st.session_state.get("feedback_scale_kpc", 3.0))
@@ -1736,7 +1795,6 @@ with tab_rotation:
         "separator": separator_used,
     }
 
-# --- Aba 3: perfil com feedback e mapa ---
 with tab_feedback:
     rr_feedback = np.geomspace(max(0.001, r_plot_max / 10000.0), max(r_plot_max, 0.01), 320)
     rho_base = profile_density(rr_feedback, m200, concentration, core_radius_kpc,
@@ -1779,7 +1837,6 @@ with tab_feedback:
     fig_map.update_yaxes(scaleanchor="x", scaleratio=1)
     st.plotly_chart(fig_map, use_container_width=True)
 
-# --- Aba 4: execucao, metricas e PDF ---
 with tab_sim:
     _, rs_sim, _ = nfw_parameters(m200, concentration)
     current_params = {
@@ -2000,6 +2057,7 @@ with tab_sim:
         ("dt", f"{dt:.5g}"), ("seed", str(sim_seed)),
         ("Perfil potencial", sim_halo_model),
         ("Feedback", f"{feedback_strength:.3g}"),
+        ("Kernel de aceleracao", "Numba njit" if NUMBA_AVAILABLE else "numpy fallback"),
     ]
 
     if st.button("📄 Gerar relatorio PDF completo", type="primary",
@@ -2246,5 +2304,8 @@ st.markdown(
     "- Perfil SIDM com núcleo e feedback são parametrizações fenomenológicas.  \n"
     "- Campos numéricos liberados para qualquer valor; faixas amplas podem produzir configurações fora do regime fisicamente validado.  \n"
     "- O assistente IA escreve apenas em `st.session_state`; a física e a numérica permanecem inalteradas.  \n"
-    "- Presets calibrados por: Cautun et al. (2020) para Via Láctea; Antlia B para anãs; Umetsu et al. (2020) para aglomerados; Bullet Cluster para σ/m."
+    "- Presets calibrados por: Cautun et al. (2020) para Via Láctea; Antlia B para anãs; Umetsu et al. (2020) para aglomerados; Bullet Cluster para σ/m.  \n"
+    "- **Numba JIT**: `tracer_acceleration` e `tracer_energy_proxy` são compiladas via `@njit(cache=True)`. "
+    "A matemática é idêntica à versão vetorizada; a diferença é apenas de desempenho. "
+    "Se o numba não estiver instalado, o app funciona com numpy puro (fallback)."
 )
