@@ -1,0 +1,42 @@
+name: Numba Cache
+
+# Compila kernels Numba e armazena em cache entre execuções.
+# Isso acelera simulações de ~2 s (compilação) para ~0 s.
+
+on:
+  push:
+    paths:
+      - "app/kernels.py"
+      - "worker/tasks.py"
+
+jobs:
+  warmup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Warm up Numba kernels
+        env:
+          NUMBA_CACHE_DIR: ${{ github.workspace }}/__numba_cache__
+        run: |
+          python -c "
+          import numpy as np
+          from app.kernels import _halo_shape_numba, _integrate_profile_core
+          x = np.linspace(1e-3, 10, 100)
+          _halo_shape_numba(x, True, 0.1, 0.2, 0.15)
+          print('Kernels compilados')
+          "
+
+      - name: Upload cache
+        uses: actions/cache/save@v4
+        with:
+          path: __numba_cache__
+          key: numba-${{ hashFiles('app/kernels.py', 'worker/tasks.py') }}
