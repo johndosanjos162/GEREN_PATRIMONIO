@@ -16,8 +16,9 @@ from fpdf import FPDF
 
 # ============================================================
 # DARK MATTER LAB
-# Modelos NFW/SIDM, velocidades, curvas de rotacao, feedback e
-# integracao numerica de tracadores com relatorio PDF.
+# Modelos NFW/SIDM, velocidades, curvas de rotacao, feedback,
+# integracao numerica de tracadores, historico, PDF e
+# assistente de configuracao por linguagem natural.
 # ============================================================
 
 st.set_page_config(
@@ -27,7 +28,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --------------------------- ESTILO -------------------------
 st.markdown(
     """
     <style>
@@ -37,56 +37,470 @@ st.markdown(
       .lab-subtitle { color:#aabbd7; font-size:1.02rem; }
       .lab-card { background:rgba(35,49,75,.48); border:1px solid rgba(125,160,220,.23); border-radius:14px; padding:16px 18px; }
       .muted { color:#aabbd7; font-size:.86rem; }
+      .nl-hint { background:rgba(35,49,75,.40); border-left:3px solid #58c4dd; padding:10px 14px; border-radius:6px; color:#c9d6f0; font-size:.9rem; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 # ---------------- CONSTANTES / UNIDADES --------------------
-G_ASTRO = 4.30091e-6  # kpc (km/s)^2 / massa solar
+G_ASTRO = 4.30091e-6
 H0_KMS_MPC = 70.0
 H0_KMS_KPC = H0_KMS_MPC / 1000.0
-RHO_CRIT = 3 * H0_KMS_KPC**2 / (8 * np.pi * G_ASTRO)  # Msun/kpc^3
+RHO_CRIT = 3 * H0_KMS_KPC**2 / (8 * np.pi * G_ASTRO)
 
 def trapezoid_compat(y, x):
-    """Integra por trapezios em NumPy antigo ou recente."""
     integrator = getattr(np, "trapezoid", None)
     if integrator is None:
         integrator = np.trapz
     return integrator(y, x)
 
-
 MSUN_G = 1.98847e33
 KPC_CM = 3.085677581e21
 
-# Estado dos controles que ficam na aba 3. Inicializar antes das abas
-# permite que a aba 2 use os valores mais recentes do feedback.
-for _key, _value in {
+# --------------- DEFAULTS DOS WIDGETS (FONTE UNICA) ---------
+# Toda chave com widget explicito tem um default aqui. O assistente
+# de linguagem natural escreve diretamente nessas chaves, e os
+# sliders/selectboxes leem via key= na proxima renderizacao.
+DEFAULT_WIDGET_STATE = {
+    "candidate": "Materia escura autointeragente (SIDM)",
+    "halo_model": "NFW",
+    "log_m200": 12.0,
+    "concentration": 10.0,
+    "log_mbaryon": 10.5,
+    "a_baryon": 3.0,
+    "core_radius_kpc": 3.0,
+    "r_plot_max": 40.0,
+    "sigma_over_m": 1.0,
+    "sigma_v": 120.0,
+    "n_velocity_samples": 5000,
+    "seed_velocity": 42,
     "feedback_strength": 0.25,
     "feedback_scale_kpc": 3.0,
+    "density_model": "NFW",
+    "n_particles": 1000,
+    "n_steps": 10000,
+    "sim_halo_model": "NFW",
+    "g_dimless": 0.05,
+    "dt": 0.01,
+    "softening": 0.02,
+    "sim_seed": 42,
+    "record_every": 100,
+    # Estado nao-widget
     "sim_status": "Nao iniciada",
     "sim_step": 0,
-    # Historico da sessao e cumulativo entre reinicializacoes da simulacao.
     "simulation_history": [],
     "simulation_run_counter": 0,
     "dark_matter_pdf_bytes": None,
     "dark_matter_pdf_chart_warning": None,
-}.items():
+    "nl_last_input": "",
+    "nl_last_matches": [],
+    "nl_last_applied": [],
+    "nl_last_skipped": [],
+    "nl_last_timestamp": "",
+}
+
+for _key, _value in DEFAULT_WIDGET_STATE.items():
     if _key not in st.session_state:
         st.session_state[_key] = _value
 
 MAX_SIMULATION_HISTORY = 5000
 
+# --------------- CANDIDATOS E PERFIS VALIDOS ----------------
+CANDIDATE_OPTIONS = [
+    "WIMPs",
+    "Axions",
+    "Neutrinos estereis",
+    "Materia escura autointeragente (SIDM)",
+    "Materia escura generica",
+]
+HALO_MODEL_OPTIONS = ["NFW", "SIDM (nucleo fenomenologico)"]
+DENSITY_MODEL_OPTIONS = ["NFW", "SIDM"]
+SIM_HALO_MODEL_OPTIONS = ["NFW", "SIDM"]
+
+
+# ============================================================
+# ASSISTENTE DE LINGUAGEM NATURAL
+# ============================================================
+def _normalize_text(value: str) -> str:
+    """Minusculas sem acentos, com espacos normalizados."""
+    text = unicodedata.normalize("NFKD", str(value).lower())
+    text = text.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _to_float(token: str) -> float | None:
+    if token is None:
+        return None
+    try:
+        return float(str(token).replace(",", "."))
+    except (TypeError, ValueError):
+        return None
+
+
+def _find_m200_log(text: str) -> float | None:
+    """Detecta log10(M200) de M200 de 10^12 / 1e12 / log M200 12."""
+    # "m200 de 10^12" / "m200 10 12"
+    m = re.search(
+        r"m[_\s]?200\s*(?:de|=|:|com)?\s*10\s*\^?\s*(-?\d+(?:[.,]\d+)?)",
+        text,
+    )
+    if m:
+        return _to_float(m.group(1))
+    # "m200 1e12" / "m200 1.2e12"
+    m = re.search(
+        r"m[_\s]?200\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)\s*[eE]\s*(-?\d+)",
+        text,
+    )
+    if m:
+        base = _to_float(m.group(1))
+        exp = _to_float(m.group(2))
+        if base is not None and exp is not None and base > 0:
+            return float(np.log10(base)) + exp
+    # "log m200 12" / "log10 da massa 12"
+    m = re.search(
+        r"log\s*(?:10\s*)?(?:de\s*|da\s*)?(?:massa\s*|m[_\s]?200\s*)?(?:m[_\s]?200\s*)?(?:=|:)?\s*(-?\d+(?:[.,]\d+)?)",
+        text,
+    )
+    if m:
+        return _to_float(m.group(1))
+    return None
+
+
+def _find_mbaryon_log(text: str) -> float | None:
+    m = re.search(
+        r"bari[o]?nic[ao]\s*(?:de|=|:|com)?\s*10\s*\^?\s*(-?\d+(?:[.,]\d+)?)",
+        text,
+    )
+    if m:
+        return _to_float(m.group(1))
+    m = re.search(
+        r"bari[o]?nic[ao]\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)\s*[eE]\s*(-?\d+)",
+        text,
+    )
+    if m:
+        base = _to_float(m.group(1))
+        exp = _to_float(m.group(2))
+        if base is not None and exp is not None and base > 0:
+            return float(np.log10(base)) + exp
+    m = re.search(
+        r"log\s*(?:10\s*)?(?:da\s*)?(?:massa\s*)?bari[o]?nic[ao]\s*(?:=|:)?\s*(-?\d+(?:[.,]\d+)?)",
+        text,
+    )
+    if m:
+        return _to_float(m.group(1))
+    return None
+
+
+def parse_natural_language_config(text: str) -> tuple[dict, list[str]]:
+    """Interpreta uma instrucao em PT/EN e retorna (changes, matches).
+
+    Presets reconhecidos (Via Lactea, galaxia ana, aglomerado) fornecem
+    um ponto de partida; parametros explicitos no texto sobrescrevem os
+    valores do preset.
+    """
+    if not text or not text.strip():
+        return {}, []
+
+    t = _normalize_text(text)
+    changes: dict = {}
+    matches: list[str] = []
+
+    # -------- presets ---------
+    if re.search(r"\b(via lactea|milky way|tipo via lactea|similar a via lactea|galaxia espiral)\b", t):
+        changes.update({
+            "log_m200": 12.0, "concentration": 10.0,
+            "log_mbaryon": 10.7, "a_baryon": 3.0,
+            "core_radius_kpc": 3.0, "sigma_v": 120.0,
+            "sigma_over_m": 1.0,
+        })
+        matches.append("preset: Via Lactea")
+    elif re.search(r"\b(galaxia an[a]?|dwarf galaxy|anao|ana|enana)\b", t):
+        changes.update({
+            "log_m200": 9.5, "concentration": 15.0,
+            "log_mbaryon": 8.5, "a_baryon": 1.0,
+            "core_radius_kpc": 0.5, "sigma_v": 40.0,
+            "sigma_over_m": 3.0,
+        })
+        matches.append("preset: Galaxia ana")
+    elif re.search(r"\b(aglomerado|cluster|agrupamento)\b", t):
+        changes.update({
+            "log_m200": 14.0, "concentration": 5.0,
+            "log_mbaryon": 13.0, "a_baryon": 30.0,
+            "core_radius_kpc": 20.0, "sigma_v": 800.0,
+        })
+        matches.append("preset: Aglomerado")
+
+    # -------- candidato ---------
+    cand_map = [
+        ("WIMPs", r"\bwimp"),
+        ("Axions", r"\baxi[o]?n"),
+        ("Neutrinos estereis", r"neutrino.{0,20}(esteril|estereis|sterile)"),
+        ("Materia escura autointeragente (SIDM)", r"\bsidm\b|autointeragente|self[\s-]?interact"),
+        ("Materia escura generica", r"materia escura generica|generic dark matter"),
+    ]
+    for label, pattern in cand_map:
+        if re.search(pattern, t):
+            changes["candidate"] = label
+            matches.append(f"candidato -> {label}")
+            break
+
+    # -------- perfil / modelo ---------
+    if re.search(r"\bsidm\b|nucleo fenomenologico|perfil sidm|core\s*sidm", t):
+        changes["halo_model"] = "SIDM (nucleo fenomenologico)"
+        changes["sim_halo_model"] = "SIDM"
+        changes["density_model"] = "SIDM"
+        matches.append("perfil -> SIDM")
+    elif re.search(r"\bnfw\b|perfil nfw", t):
+        changes["halo_model"] = "NFW"
+        changes["sim_halo_model"] = "NFW"
+        changes["density_model"] = "NFW"
+        matches.append("perfil -> NFW")
+
+    # -------- massa M200 ---------
+    log_m200 = _find_m200_log(t)
+    if log_m200 is not None:
+        changes["log_m200"] = log_m200
+        matches.append(f"log_m200 -> {log_m200:.3f}")
+
+    # -------- massa barionica ---------
+    log_mb = _find_mbaryon_log(t)
+    if log_mb is not None:
+        changes["log_mbaryon"] = log_mb
+        matches.append(f"log_mbaryon -> {log_mb:.3f}")
+
+    # -------- concentracao ---------
+    m = re.search(
+        r"concentra[c]?[a]?[o]?\s*(?:do\s*halo\s*)?(?:de|=|:|com)?\s*(?:c\s*)?(?:=|:)?\s*(\d+(?:[.,]\d+)?)",
+        t,
+    ) or re.search(r"\bc\s*(?:do\s*halo)?\s*(?:=|:)\s*(\d+(?:[.,]\d+)?)", t)
+    if m:
+        val = _to_float(m.group(1))
+        if val is not None:
+            changes["concentration"] = val
+            matches.append(f"concentration -> {val}")
+
+    # -------- escala barionica ---------
+    m = re.search(
+        r"(?:escala|raio)\s*bari[o]?nic[ao]\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)",
+        t,
+    ) or re.search(r"\ba[_\s]?baryon\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
+    if m:
+        val = _to_float(m.group(1))
+        if val is not None:
+            changes["a_baryon"] = val
+            matches.append(f"a_baryon -> {val}")
+
+    # -------- raio do nucleo ---------
+    m = re.search(
+        r"(?:raio\s*(?:do\s*)?)?nucleo\s*(?:sidm\s*)?(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)",
+        t,
+    ) or re.search(r"\bcore\s*(?:radius)?\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
+    if m:
+        val = _to_float(m.group(1))
+        if val is not None:
+            changes["core_radius_kpc"] = val
+            matches.append(f"core_radius_kpc -> {val}")
+
+    # -------- r_plot_max ---------
+    m = re.search(
+        r"(?:raio\s*maximo|r[_\s]?plot[_\s]?max|max\s*radius)\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)",
+        t,
+    )
+    if m:
+        val = _to_float(m.group(1))
+        if val is not None:
+            changes["r_plot_max"] = val
+            matches.append(f"r_plot_max -> {val}")
+
+    # -------- sigma/m ---------
+    m = (
+        re.search(r"sigma\s*/\s*m\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
+        or re.search(r"sigma\s*por\s*massa\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
+        or re.search(r"se[c]?[a]?[o]?\s*de\s*choque\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
+        or re.search(r"cross\s*section\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
+    )
+    if m:
+        val = _to_float(m.group(1))
+        if val is not None:
+            changes["sigma_over_m"] = val
+            matches.append(f"sigma_over_m -> {val}")
+
+    # -------- sigma_v ---------
+    m = re.search(
+        r"(?:sigma[_\s]*v|dispers[a]?[o]?\s*(?:de\s*)?velocidade)\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)",
+        t,
+    )
+    if m:
+        val = _to_float(m.group(1))
+        if val is not None:
+            changes["sigma_v"] = val
+            matches.append(f"sigma_v -> {val}")
+
+    # -------- feedback: intensidade ---------
+    m = re.search(
+        r"(?:intensidade\s*(?:do\s*)?)?feedback\s*(?:strength)?\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)",
+        t,
+    )
+    if m:
+        val = _to_float(m.group(1))
+        if val is not None:
+            changes["feedback_strength"] = val
+            matches.append(f"feedback_strength -> {val}")
+
+    # -------- feedback: escala ---------
+    m = re.search(
+        r"(?:escala\s*(?:radial\s*)?(?:do\s*)?feedback|feedback\s*scale)\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)",
+        t,
+    )
+    if m:
+        val = _to_float(m.group(1))
+        if val is not None:
+            changes["feedback_scale_kpc"] = val
+            matches.append(f"feedback_scale_kpc -> {val}")
+
+    # -------- simulacao ---------
+    m = re.search(r"(\d+)\s*(?:particulas?|tracadores?|particles?|tracers?)", t)
+    if m:
+        changes["n_particles"] = int(m.group(1))
+        matches.append(f"n_particles -> {changes['n_particles']}")
+
+    m = re.search(r"(\d+)\s*(?:passos?|steps?)", t)
+    if m:
+        changes["n_steps"] = int(m.group(1))
+        matches.append(f"n_steps -> {changes['n_steps']}")
+
+    m = re.search(r"(?:passo\s*temporal|delta\s*t|\bdt\b)\s*(?:=|:|com)?\s*([\d.,]+)", t)
+    if m:
+        val = _to_float(m.group(1))
+        if val is not None:
+            changes["dt"] = val
+            matches.append(f"dt -> {val}")
+
+    m = re.search(r"\bg\s*(?:adimensional|dimensionless)?\s*(?:=|:|com)?\s*([\d.,]+)", t)
+    if m:
+        val = _to_float(m.group(1))
+        if val is not None:
+            changes["g_dimless"] = val
+            matches.append(f"g_dimless -> {val}")
+
+    m = re.search(r"(?:semente|seed)\s*(?:=|:|com)?\s*(\d+)", t)
+    if m:
+        changes["sim_seed"] = int(m.group(1))
+        matches.append(f"sim_seed -> {changes['sim_seed']}")
+
+    m = re.search(r"(?:suaviza[c]?[a]?[o]?|softening|epsilon)\s*(?:=|:|com)?\s*([\d.,]+)", t)
+    if m:
+        val = _to_float(m.group(1))
+        if val is not None:
+            changes["softening"] = val
+            matches.append(f"softening -> {val}")
+
+    m = re.search(r"registrar\s*(?:a\s*cada)?\s*(\d+)", t)
+    if m:
+        changes["record_every"] = int(m.group(1))
+        matches.append(f"record_every -> {changes['record_every']}")
+
+    # -------- filtro: descarta mudancas identicas ao estado atual ---------
+    filtered: dict = {}
+    for key, value in changes.items():
+        current = st.session_state.get(key)
+        if isinstance(value, float) and isinstance(current, (int, float)):
+            if abs(float(value) - float(current)) > 1e-12:
+                filtered[key] = value
+        elif value != current:
+            filtered[key] = value
+    return filtered, matches
+
+
+# Regras de clamp/snap por chave de widget
+_NL_NUM_RULES = {
+    "log_m200": (8.0, 14.0, 0.1, False),
+    "concentration": (2.0, 25.0, 0.5, False),
+    "log_mbaryon": (6.0, 12.0, 0.1, False),
+    "a_baryon": (0.2, 15.0, 0.1, False),
+    "core_radius_kpc": (0.1, 30.0, 0.1, False),
+    "r_plot_max": (5.0, 100.0, 1.0, False),
+    "sigma_over_m": (0.0, 100.0, 0.1, False),
+    "sigma_v": (20.0, 300.0, 5.0, False),
+    "n_velocity_samples": (500, 20000, 500, True),
+    "seed_velocity": (0, 2_147_483_647, None, True),
+    "feedback_strength": (0.0, 0.9, 0.05, False),
+    "feedback_scale_kpc": (0.2, 20.0, 0.2, False),
+    "n_particles": (100, 2000, 100, True),
+    "n_steps": (100, 10000, 100, True),
+    "g_dimless": (0.001, 2.0, 0.005, False),
+    "dt": (0.0001, 0.1, 0.001, False),
+    "softening": (0.001, 0.5, 0.005, False),
+    "sim_seed": (0, 2_147_483_647, None, True),
+    "record_every": (10, 500, 10, True),
+}
+_NL_STR_KEYS = {"candidate", "halo_model", "density_model", "sim_halo_model"}
+
+
+def apply_nl_changes(changes: dict) -> tuple[list[str], list[str]]:
+    """Aplica mudancas no st.session_state com clamp/snap nos ranges.
+
+    Deve ser chamado ANTES de qualquer widget com key= ser instanciado.
+    Retorna (aplicados, ignorados).
+    """
+    if not changes:
+        return [], []
+    applied: list[str] = []
+    skipped: list[str] = []
+    for key, value in changes.items():
+        if key in _NL_NUM_RULES:
+            lo, hi, step, is_int = _NL_NUM_RULES[key]
+            try:
+                num = float(value)
+            except (TypeError, ValueError):
+                skipped.append(f"{key}={value!r} (nao numerico)")
+                continue
+            num = max(lo, min(hi, num))
+            if is_int:
+                num = int(round(num))
+            elif step:
+                num = round(round(num / step) * step, 6)
+            st.session_state[key] = num
+            applied.append(f"{key} = {num}")
+        elif key in _NL_STR_KEYS:
+            text = str(value)
+            # Valida opcoes conhecidas para selectboxes
+            valid_options = {
+                "candidate": CANDIDATE_OPTIONS,
+                "halo_model": HALO_MODEL_OPTIONS,
+                "density_model": DENSITY_MODEL_OPTIONS,
+                "sim_halo_model": SIM_HALO_MODEL_OPTIONS,
+            }.get(key, [])
+            if valid_options and text not in valid_options:
+                skipped.append(f"{key}={text!r} (opcao invalida)")
+                continue
+            st.session_state[key] = text
+            applied.append(f"{key} = {text}")
+        else:
+            skipped.append(f"{key} (desconhecido)")
+    return applied, skipped
+
+
+# Aplicacao imediata de mudancas pendentes (drenado no topo do run,
+# antes de qualquer widget ser instanciado). Util para preservar a
+# instrucao entre reruns disparados pelo botao do assistente.
+_pending = st.session_state.pop("nl_pending_changes", None)
+if _pending:
+    _applied, _skipped = apply_nl_changes(_pending)
+    st.session_state["nl_last_applied"] = _applied
+    st.session_state["nl_last_skipped"] = _skipped
+    st.session_state["nl_last_timestamp"] = datetime.now().strftime("%H:%M:%S")
+    st.session_state["nl_apply_count"] = int(st.session_state.get("nl_apply_count", 0)) + 1
+
 
 # ----------------------- MODELOS FISICOS --------------------
 def nfw_f(x):
-    """f(x) = ln(1+x) - x/(1+x)."""
     x = np.maximum(np.asarray(x, dtype=float), 1e-12)
     return np.log1p(x) - x / (1.0 + x)
 
 
 def nfw_parameters(m200_msun, concentration):
-    """Deriva R200, raio de escala rs e densidade caracteristica rho_s."""
     r200 = (3.0 * m200_msun / (4.0 * np.pi * 200.0 * RHO_CRIT)) ** (1.0 / 3.0)
     rs = r200 / concentration
     rho_s = m200_msun / (4.0 * np.pi * rs**3 * nfw_f(concentration))
@@ -94,7 +508,6 @@ def nfw_parameters(m200_msun, concentration):
 
 
 def halo_shape(x, model="NFW", core_x=0.15, feedback_strength=0.0, feedback_scale_x=0.15):
-    """Forma adimensional da densidade. SIDM e feedback sao modelos fenomenologicos."""
     x = np.asarray(x, dtype=float)
     x_safe = np.maximum(x, 1e-10)
     if model.upper().startswith("SIDM"):
@@ -108,11 +521,6 @@ def halo_shape(x, model="NFW", core_x=0.15, feedback_strength=0.0, feedback_scal
 
 def profile_density(radius_kpc, m200_msun, concentration, core_radius_kpc=3.0,
                     model="NFW", feedback_strength=0.0, feedback_scale_kpc=3.0):
-    """Densidade de halo normalizada para conter M200 dentro de R200.
-
-    O perfil SIDM com nucleo e a modificacao de feedback sao parametrizacoes
-    didaticas; nao substituem uma solucao hidrodinamica ou de transporte SIDM.
-    """
     r200, rs, _ = nfw_parameters(m200_msun, concentration)
     x_core = max(core_radius_kpc / rs, 1e-5)
     x_fb = max(feedback_scale_kpc / rs, 1e-5)
@@ -127,11 +535,6 @@ def profile_density(radius_kpc, m200_msun, concentration, core_radius_kpc=3.0,
 
 def build_profile_lookup(concentration, model="NFW", core_x=0.15,
                           feedback_strength=0.0, feedback_scale_x=0.15, grid_size=3500):
-    """Cria lookup de massa encerrada e potencial em unidades do halo.
-
-    A grade logaritmica resolve o centro; o raio zero e incluido para permitir
-    interpolacao segura. A massa total dentro de x=c e normalizada para 1.
-    """
     c = float(concentration)
     x_grid = np.unique(np.concatenate(([0.0], np.geomspace(1e-6, c, grid_size))))
     shape = halo_shape(x_grid, model, core_x, feedback_strength, feedback_scale_x)
@@ -141,8 +544,6 @@ def build_profile_lookup(concentration, model="NFW", core_x=0.15,
     cumulative = np.concatenate(([0.0], np.cumsum(increments)))
     norm = max(float(cumulative[-1]), 1e-30)
     mass_fraction = np.clip(cumulative / norm, 0.0, 1.0)
-
-    # Phi/G para esfera truncada: -[M(<r)/r + integral_r^c dM(s)/s].
     dmdx = integrand / norm
     kernel = np.zeros_like(x_grid)
     np.divide(dmdx, x_grid, out=kernel, where=x_grid > 0)
@@ -175,7 +576,6 @@ def _mass_fraction(radius_over_rs, concentration, model, core_radius_kpc,
 def rotation_components(radius_kpc, m200_msun, concentration, m_baryon_msun,
                         a_baryon_kpc, model="NFW", core_radius_kpc=3.0,
                         feedback_strength=0.0, feedback_scale_kpc=3.0):
-    """Curva de rotacao de halo + componente bariônica de Hernquist."""
     r200, rs, _ = nfw_parameters(m200_msun, concentration)
     r = np.maximum(np.asarray(radius_kpc, dtype=float), 1e-8)
     fraction = _mass_fraction(
@@ -192,7 +592,6 @@ def rotation_components(radius_kpc, m200_msun, concentration, m_baryon_msun,
 
 
 def maxwell_speed_pdf(speed, sigma):
-    """PDF de Maxwell para o modulo da velocidade; sigma e por componente."""
     v = np.maximum(np.asarray(speed, dtype=float), 0.0)
     sigma_safe = max(float(sigma), 1e-8)
     return np.sqrt(2.0 / np.pi) * v**2 / sigma_safe**3 * np.exp(-(v**2) / (2.0 * sigma_safe**2))
@@ -233,14 +632,7 @@ HEADER_ALIASES = {
 
 
 def load_observational_csv(uploaded_file):
-    """Le CSV de curva de rotacao com separador e aliases detectados.
-
-    O esquema interno e sempre radius_kpc, v_obs_kms e, opcionalmente,
-    v_err_kms. Tambem identifica historicos de simulacao enviados por engano.
-    """
     raw = uploaded_file.getvalue()
-    # Tentar separadores explicitos primeiro evita que o autodetector do pandas
-    # interprete incorretamente arquivos com poucas linhas ou colunas.
     attempts = [(",", "virgula"), (";", "ponto e virgula"), ("\t", "tab"), (None, "auto")]
     token_to_standard = {}
     for standard, aliases in HEADER_ALIASES.items():
@@ -256,11 +648,7 @@ def load_observational_csv(uploaded_file):
 
     for separator, separator_name in attempts:
         try:
-            kwargs = {
-                "sep": separator,
-                "engine": "python",
-                "encoding": "utf-8-sig",
-            }
+            kwargs = {"sep": separator, "engine": "python", "encoding": "utf-8-sig"}
             if separator == ";":
                 kwargs["decimal"] = ","
             frame = pd.read_csv(io.BytesIO(raw), **kwargs)
@@ -272,7 +660,6 @@ def load_observational_csv(uploaded_file):
                 best_columns = original_columns
                 best_frame = frame.copy()
                 best_separator = separator_name
-
             rename_map = {}
             for col in frame.columns:
                 standard = token_to_standard.get(_header_token(col))
@@ -280,7 +667,6 @@ def load_observational_csv(uploaded_file):
                     rename_map[col] = standard
             normalized = frame.rename(columns=rename_map)
             normalized = normalized.loc[:, ~normalized.columns.duplicated()].copy()
-
             if {"radius_kpc", "v_obs_kms"}.issubset(normalized.columns):
                 normalized["radius_kpc"] = pd.to_numeric(normalized["radius_kpc"], errors="coerce")
                 normalized["v_obs_kms"] = pd.to_numeric(normalized["v_obs_kms"], errors="coerce")
@@ -311,7 +697,6 @@ def load_observational_csv(uploaded_file):
             "radius_kpc e v_obs_kms; v_err_kms e opcional. Voce pode baixar um CSV-modelo "
             "na propria aba Curvas de rotacao."
         )
-
     if {"radius_kpc", "v_obs_kms"}.issubset(
         {token_to_standard.get(_header_token(c)) for c in best_columns}
     ):
@@ -320,10 +705,7 @@ def load_observational_csv(uploaded_file):
         reason = "Nao encontrei as colunas obrigatorias de raio e velocidade observada."
     raise ValueError(
         f"{reason} Cabecalhos detectados: {header_text}. "
-        "Colunas obrigatorias: radius_kpc e v_obs_kms; a coluna v_err_kms e opcional. "
-        "Aliases aceitos incluem radius, R_kpc, raio_kpc, v_obs, velocity_kms, "
-        "velocity_km_s, velocidade_km_s e velocidade_km_s. Separadores aceitos: virgula, "
-        "ponto e virgula ou tabulacao."
+        "Colunas obrigatorias: radius_kpc e v_obs_kms; a coluna v_err_kms e opcional."
     )
 
 
@@ -362,7 +744,6 @@ def tracer_energy_proxy(positions, velocities, g_dimless, mass_x, potential_x):
 
 def explain_simulation_physics(step, time_value, params, energy, energy_drift, velocity_rms,
                                radius_rms, mean_radius, event_type, status):
-    """Texto automatico e interpretativo associado a cada instantaneo."""
     n_steps = max(int(params.get("n_steps", 1)), 1)
     progress = 100.0 * min(max(int(step), 0), n_steps) / n_steps
     drift_abs = abs(float(energy_drift)) if np.isfinite(energy_drift) else float("nan")
@@ -398,7 +779,6 @@ def explain_simulation_physics(step, time_value, params, energy, energy_drift, v
 
 def record_simulation_history(event_type="snapshot", positions=None, velocities=None, energy=None,
                               params=None, status=None, step=None):
-    """Armazena um instantaneo compacto: parametros, diagnostico e explicacao fisica."""
     if positions is None:
         positions = st.session_state.get("sim_positions")
     if velocities is None:
@@ -437,9 +817,8 @@ def record_simulation_history(event_type="snapshot", positions=None, velocities=
     radius_rms = float(np.sqrt(np.mean(radii ** 2)))
     mean_radius = float(np.mean(radii))
     status_value = str(status if status is not None else st.session_state.get("sim_status", "Desconhecido"))
-    drift_for_log = energy_drift
     physics_log = explain_simulation_physics(
-        step, time_value, params, energy, drift_for_log, velocity_rms,
+        step, time_value, params, energy, energy_drift, velocity_rms,
         radius_rms, mean_radius, event_type, status_value,
     )
 
@@ -469,7 +848,6 @@ def record_simulation_history(event_type="snapshot", positions=None, velocities=
 
 
 def record_current_simulation_event(event_type, status=None):
-    """Registra evento de controle usando o estado atual da simulacao."""
     if not all(key in st.session_state for key in ("sim_positions", "sim_velocities", "sim_params")):
         return
     params = st.session_state.sim_params
@@ -484,7 +862,6 @@ def record_current_simulation_event(event_type, status=None):
 
 
 def history_dataframe(history):
-    """Converte o historico para uma tabela exportavel sem perder os parametros."""
     columns = [
         "recorded_at", "run_id", "event_type", "step", "n_steps", "time_adimensional", "status",
         "energy_specific_mean_proxy", "energy_initial_proxy", "energy_delta_proxy", "energy_drift_percent",
@@ -492,14 +869,13 @@ def history_dataframe(history):
     ]
     rows = []
     for item in history:
-        row = {key: item.get(key) for key in columns if key not in {"parameters_json"}}
+        row = {key: item.get(key) for key in columns if key != "parameters_json"}
         row["parameters_json"] = json.dumps(item.get("parameters", {}), ensure_ascii=False, sort_keys=True)
         rows.append(row)
     return pd.DataFrame(rows, columns=columns)
 
 
 def cached_history_dataframe(history):
-    """Evita reconstruir a tabela completa em cada atualizacao visual do fragmento."""
     version = int(st.session_state.get("simulation_history_version", 0))
     if st.session_state.get("simulation_history_dataframe_cache_version") != version:
         st.session_state["simulation_history_dataframe_cache"] = history_dataframe(history)
@@ -591,8 +967,7 @@ def integrate_chunk(params, max_chunk=200):
 
 # -------------------------- RELATORIO PDF -------------------
 def _pdf_ascii(value):
-    """Converte texto para ASCII, compativel com fontes PDF basicas."""
-    text = str(value)
+    text = str(value).replace("\ufeff", "")
     text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
     return text.replace("\u2022", "-").replace("\u2013", "-").replace("\u2014", "-")
 
@@ -614,15 +989,6 @@ class DarkMatterPDF(FPDF):
 
 
 def generate_pdf_report(report_data, figures=None, rotation_figure=None):
-    """Compila parametros, diagnosticos, logs e graficos Plotly num PDF.
-
-    Cada grafico e exportado pelo Kaleido para PNG de 1400 x 800 pixels,
-    gravado temporariamente e inserido no documento FPDF sem redimensionamento
-    nao proporcional. Os avisos de renderizacao sao retornados sem impedir que
-    o restante do relatorio seja criado.
-
-    Retorna (bytes_pdf, lista_de_avisos_ou_None).
-    """
     pdf = DarkMatterPDF(format="A4")
     pdf.set_auto_page_break(auto=True, margin=16)
     pdf.add_page()
@@ -683,23 +1049,13 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
             try:
                 static_figure = go.Figure(figure)
                 static_figure.update_layout(
-                    width=1400,
-                    height=800,
-                    autosize=False,
-                    template="plotly_white",
-                    paper_bgcolor="#ffffff",
-                    plot_bgcolor="#ffffff",
+                    width=1400, height=800, autosize=False,
+                    template="plotly_white", paper_bgcolor="#ffffff", plot_bgcolor="#ffffff",
                     font=dict(family="Arial, sans-serif", size=15, color="#182235"),
                     title=dict(font=dict(size=23, color="#182235")),
                     margin=dict(l=105, r=55, t=110, b=105),
-                    legend=dict(
-                        bgcolor="rgba(255,255,255,0.88)",
-                        bordercolor="#d4dae5",
-                        borderwidth=1,
-                    ),
+                    legend=dict(bgcolor="rgba(255,255,255,0.88)", bordercolor="#d4dae5", borderwidth=1),
                 )
-                # Mantem uma tela fixa e exportacao proporcional; eixos/titulos
-                # sao desenhados pelo Plotly dentro da imagem, nao recriados no PDF.
                 image_bytes = static_figure.to_image(
                     format="png", width=1400, height=800, scale=1, engine="kaleido"
                 )
@@ -708,12 +1064,9 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
                 ) as temp_img:
                     temp_img.write(image_bytes)
                     temp_path = temp_img.name
-
                 image_width_mm = 180.0
                 image_height_mm = image_width_mm * 800.0 / 1400.0
-                heading_height = 9.0
-                caption_height = 8.0
-                if pdf.get_y() + heading_height + caption_height + image_height_mm + 5 > pdf.h - pdf.b_margin:
+                if pdf.get_y() + 9.0 + 8.0 + image_height_mm + 5 > pdf.h - pdf.b_margin:
                     pdf.add_page()
                 pdf.set_text_color(28, 49, 87)
                 pdf.set_font("Helvetica", "B", 11)
@@ -776,6 +1129,7 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
         "A integracao acompanha tracadores em potencial fixo. As particulas-tracadoras nao interagem umas com as outras, e a suavizacao e a interpolacao podem introduzir desvios no diagnostico energetico.",
         "A secao de choque por massa e reportada em cm^2/g. O comprimento livre medio calculado na escala rs e apenas uma estimativa local com a densidade do perfil adotado.",
         "A energia registrada e uma proxy de energia especifica media do modelo numerico, nao uma medicao experimental nem a energia total de um sistema autogravitante completo.",
+        "O assistente de linguagem natural apenas escreve nas chaves do st.session_state; toda a fisica e a numerica permanecem as mesmas do modelo.",
     ]
     for note in notes:
         pdf.multi_cell(0, 5.5, _pdf_ascii("- " + note), new_x="LMARGIN", new_y="NEXT")
@@ -789,20 +1143,23 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
 st.title("🌌 Dark Matter Lab")
 st.markdown(
     '<p class="lab-subtitle">Laboratorio interativo para halos NFW, materia escura autointeragente, '
-    'dinamica estelar, feedback barionico e simulacoes numericas.</p>',
+    'dinamica estelar, feedback barionico, simulacoes numericas e assistente de configuracao por IA.</p>',
     unsafe_allow_html=True,
 )
-st.caption("Modelagem astrofisica + graficos Plotly + integracao numerica + exportacao de relatorio PDF")
+st.caption("Modelagem astrofisica + graficos Plotly + integracao numerica + historico + PDF + linguagem natural")
 
 # -------------------------- ABAS ----------------------------
-tab_model, tab_rotation, tab_feedback, tab_sim = st.tabs([
+tab_model, tab_rotation, tab_feedback, tab_sim, tab_assistant = st.tabs([
     "① Modelos teoricos e particulas",
     "② Curvas de rotacao",
     "③ Feedback barionico e densidade",
     "④ Simulacao, calculadora e relatorio",
+    "⑤ Assistente IA (linguagem natural)",
 ])
 
-# Valores definidos na aba 1 e reutilizados nas demais.
+# ============================================================
+# ABA 1 - MODELOS TEORICOS
+# ============================================================
 with tab_model:
     st.subheader("Modelos teoricos: NFW e materia escura autointeragente")
     st.write(
@@ -814,30 +1171,31 @@ with tab_model:
     with col_a:
         candidate = st.selectbox(
             "Candidato / cenario microscopico",
-            ["WIMPs", "Axions", "Neutrinos estereis", "Materia escura autointeragente (SIDM)", "Materia escura generica"],
-            index=3,
+            CANDIDATE_OPTIONS,
+            key="candidate",
         )
         halo_model = st.selectbox(
             "Perfil de halo para analises complementares",
-            ["NFW", "SIDM (nucleo fenomenologico)"],
-            index=0,
+            HALO_MODEL_OPTIONS,
+            key="halo_model",
         )
-        log_m200 = st.slider("Log10 da massa M200 (massas solares)", 8.0, 14.0, 12.0, 0.1)
-        concentration = st.slider("Concentracao do halo c", 2.0, 25.0, 10.0, 0.5)
+        log_m200 = st.slider("Log10 da massa M200 (massas solares)", 8.0, 14.0, step=0.1, key="log_m200")
+        concentration = st.slider("Concentracao do halo c", 2.0, 25.0, step=0.5, key="concentration")
     with col_b:
-        log_mbaryon = st.slider("Log10 da massa barionica (massas solares)", 6.0, 12.0, 10.5, 0.1)
-        a_baryon = st.slider("Escala barionica a (kpc)", 0.2, 15.0, 3.0, 0.1)
-        core_radius_kpc = st.slider("Raio do nucleo SIDM (kpc)", 0.1, 30.0, 3.0, 0.1)
-        r_plot_max = st.slider("Raio maximo dos graficos (kpc)", 5.0, 100.0, 40.0, 1.0)
+        log_mbaryon = st.slider("Log10 da massa barionica (massas solares)", 6.0, 12.0, step=0.1, key="log_mbaryon")
+        a_baryon = st.slider("Escala barionica a (kpc)", 0.2, 15.0, step=0.1, key="a_baryon")
+        core_radius_kpc = st.slider("Raio do nucleo SIDM (kpc)", 0.1, 30.0, step=0.1, key="core_radius_kpc")
+        r_plot_max = st.slider("Raio maximo dos graficos (kpc)", 5.0, 100.0, step=1.0, key="r_plot_max")
     with col_c:
         sigma_over_m = st.number_input(
             "Secao de choque por massa sigma/m (cm^2/g)",
-            min_value=0.0, max_value=100.0, value=1.0, step=0.1,
+            min_value=0.0, max_value=100.0, step=0.1,
+            key="sigma_over_m",
             help="Parametro descritivo de autointeracao; nao e usado para inferir automaticamente o raio do nucleo.",
         )
-        sigma_v = st.slider("Dispersao de velocidade por componente (km/s)", 20.0, 300.0, 120.0, 5.0)
-        n_velocity_samples = st.slider("Amostras para a distribuicao de velocidades", 500, 20000, 5000, 500)
-        seed_velocity = st.number_input("Semente das velocidades", 0, 2_147_483_647, 42, 1)
+        sigma_v = st.slider("Dispersao de velocidade por componente (km/s)", 20.0, 300.0, step=5.0, key="sigma_v")
+        n_velocity_samples = st.slider("Amostras para a distribuicao de velocidades", 500, 20000, step=500, key="n_velocity_samples")
+        seed_velocity = st.number_input("Semente das velocidades", 0, 2_147_483_647, step=1, key="seed_velocity")
 
     m200 = 10.0**log_m200
     m_baryon = 10.0**log_mbaryon
@@ -901,7 +1259,9 @@ with tab_model:
         "sigma/m nao determina sozinho o nucleo sem hipoteses adicionais sobre idade, densidade e historico do halo."
     )
 
-# ---------------- ABA 2: CURVAS DE ROTACAO ------------------
+# ============================================================
+# ABA 2 - CURVAS DE ROTACAO
+# ============================================================
 with tab_rotation:
     st.subheader("Curvas de rotacao: previsoes teoricas versus dados")
     st.write(
@@ -1059,7 +1419,9 @@ with tab_rotation:
             file_name="comparacao_curva_rotacao.csv", mime="text/csv",
         )
 
-# ----------- ABA 3: FEEDBACK BARIONICO E DENSIDADE ----------
+# ============================================================
+# ABA 3 - FEEDBACK BARIONICO E DENSIDADE
+# ============================================================
 with tab_feedback:
     st.subheader("Feedback barionico e estrutura espacial")
     st.write(
@@ -1069,19 +1431,19 @@ with tab_feedback:
     fb1, fb2, fb3 = st.columns(3)
     with fb1:
         feedback_strength = st.slider(
-            "Intensidade do feedback (0 = desligado)", 0.0, 0.9, 0.25, 0.05,
+            "Intensidade do feedback (0 = desligado)", 0.0, 0.9, step=0.05,
             key="feedback_strength",
             help="Controla a reducao relativa central antes da renormalizacao da massa do halo.",
         )
     with fb2:
         feedback_scale = st.slider(
-            "Escala radial do feedback (kpc)", 0.2, 20.0, 3.0, 0.2,
+            "Escala radial do feedback (kpc)", 0.2, 20.0, step=0.2,
             key="feedback_scale_kpc",
         )
     with fb3:
         density_model = st.selectbox(
-            "Perfil usado no mapa de densidade", ["NFW", "SIDM"],
-            index=0 if halo_model == "NFW" else 1,
+            "Perfil usado no mapa de densidade", DENSITY_MODEL_OPTIONS,
+            key="density_model",
         )
 
     rr_feedback = np.geomspace(0.03, max(r_plot_max, 0.1), 320)
@@ -1137,7 +1499,9 @@ with tab_feedback:
         "Nao inclui resfriamento, formacao estelar, supernovas, AGN ou resolucao hidrodinamica."
     )
 
-# -------- ABA 4: SIMULACAO, CALCULADORA E RELATORIO PDF -----
+# ============================================================
+# ABA 4 - SIMULACAO
+# ============================================================
 with tab_sim:
     st.subheader("Calculadora e execucao da simulacao")
     st.write(
@@ -1147,16 +1511,16 @@ with tab_sim:
 
     s1, s2, s3 = st.columns(3)
     with s1:
-        n_particles = st.slider("Numero de particulas-tracadoras", 100, 2000, 1000, 100)
-        n_steps = st.slider("Passos de integracao", 100, 10000, 10000, 100)
-        sim_halo_model = st.selectbox("Perfil do potencial da simulacao", ["NFW", "SIDM"] , index=0 if halo_model == "NFW" else 1)
+        n_particles = st.slider("Numero de particulas-tracadoras", 100, 2000, step=100, key="n_particles")
+        n_steps = st.slider("Passos de integracao", 100, 10000, step=100, key="n_steps")
+        sim_halo_model = st.selectbox("Perfil do potencial da simulacao", SIM_HALO_MODEL_OPTIONS, key="sim_halo_model")
     with s2:
-        g_dimless = st.number_input("Intensidade gravitacional adimensional", 0.001, 2.0, 0.05, 0.005, format="%.3f")
-        dt = st.number_input("Passo temporal adimensional delta t", 0.0001, 0.1, 0.01, 0.001, format="%.4f")
-        softening = st.number_input("Suavizacao numerica epsilon", 0.001, 0.5, 0.02, 0.005, format="%.3f")
+        g_dimless = st.number_input("Intensidade gravitacional adimensional", 0.001, 2.0, step=0.005, format="%.3f", key="g_dimless")
+        dt = st.number_input("Passo temporal adimensional delta t", 0.0001, 0.1, step=0.001, format="%.4f", key="dt")
+        softening = st.number_input("Suavizacao numerica epsilon", 0.001, 0.5, step=0.005, format="%.3f", key="softening")
     with s3:
-        sim_seed = st.number_input("Semente aleatoria da simulacao", 0, 2_147_483_647, 42, 1, key="simulation_seed")
-        record_every = st.slider("Registrar a cada N passos", 10, 500, 100, 10)
+        sim_seed = st.number_input("Semente aleatoria da simulacao", 0, 2_147_483_647, step=1, key="sim_seed")
+        record_every = st.slider("Registrar a cada N passos", 10, 500, step=10, key="record_every")
         st.metric("Tempo final nominal", f"{n_steps * dt:.2f}")
 
     _, rs_sim, _ = nfw_parameters(m200, concentration)
@@ -1486,6 +1850,140 @@ with tab_sim:
         "historico de instantaneos, parametros e log automatico da interpretacao fisica."
     )
 
+# ============================================================
+# ABA 5 - ASSISTENTE DE CONFIGURACAO POR LINGUAGEM NATURAL
+# ============================================================
+with tab_assistant:
+    st.subheader("🤖 Assistente de configuracao por linguagem natural")
+    st.markdown(
+        '<div class="nl-hint">Descreva livremente um cenario fisico ou cole uma instrucao de outra IA. '
+        'O parser reconhece PT/EN, normaliza acentos e mapeia os termos diretamente para as chaves do '
+        '<code>st.session_state</code> que alimentam todos os sliders, selectboxes e numeros do app. '
+        'Apos aplicar, todas as abas (graficos, simulacao, historico, PDF) sao recalculadas automaticamente.'
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("##### Exemplos de instrucoes que o parser entende")
+    st.markdown(
+        "- *\"Configure uma galaxia parecida com a Via Lactea, com secao de choque SIDM de 1.5 e concentracao 12\"*\n"
+        "- *\"Galaxia ana com M200 de 10^9.5, nucleo SIDM de 0.8 kpc e sigma/m 2.0\"*\n"
+        "- *\"Aglomerado de galaxias com massa M200 de 1e15, concentracao 4, feedback 0.4\"*\n"
+        "- *\"Use NFW, M200 10^12.5, bariônica 10^11, escala barionica 4 kpc, sigma_v 150, dispersao 150 km/s\"*\n"
+        "- *\"Simulacao com 2000 particulas, 5000 passos, dt 0.005, g 0.08, seed 123, registrar a cada 50 passos\"*"
+    )
+
+    nl_text = st.text_area(
+        "Instrucao (PT/EN):",
+        value=st.session_state.get("nl_last_input", ""),
+        height=120,
+        key="nl_assistant_input",
+        placeholder="Ex.: Galaxia tipo Via Lactea com SIDM sigma/m 1.5, concentracao 12, feedback 0.3 e 2000 particulas.",
+    )
+
+    col_apply, col_reset, col_clear = st.columns([1.2, 1, 1])
+    with col_apply:
+        apply_clicked = st.button("🎯 Aplicar configuracao", type="primary", use_container_width=True, key="nl_apply_button")
+    with col_reset:
+        reset_clicked = st.button("🔄 Restaurar padroes", use_container_width=True, key="nl_reset_button")
+    with col_clear:
+        clear_clicked = st.button("🧹 Limpar campo", use_container_width=True, key="nl_clear_button")
+
+    if clear_clicked:
+        st.session_state["nl_assistant_input"] = ""
+        st.rerun()
+
+    if reset_clicked:
+        for key, value in DEFAULT_WIDGET_STATE.items():
+            # Preserva historico de simulacao e estado de UI
+            if key in {"simulation_history", "simulation_run_counter", "sim_status", "sim_step"}:
+                continue
+            st.session_state[key] = value
+        st.session_state["nl_last_matches"] = ["reset: valores padrao restaurados"]
+        st.session_state["nl_last_applied"] = []
+        st.session_state["nl_last_skipped"] = []
+        st.session_state["nl_last_timestamp"] = datetime.now().strftime("%H:%M:%S")
+        st.rerun()
+
+    if apply_clicked:
+        # Etapa 1: parseia e faz stage das mudancas; o drenado ocorre no
+        # topo do proximo run, ANTES de qualquer widget ser instanciado.
+        # Isso evita StreamlitAPIException por escrever em chave ja registrada.
+        changes, matches = parse_natural_language_config(nl_text or "")
+        st.session_state["nl_last_input"] = nl_text or ""
+        st.session_state["nl_last_matches"] = matches
+        if changes:
+            st.session_state["nl_pending_changes"] = changes
+        else:
+            st.session_state["nl_last_applied"] = []
+            st.session_state["nl_last_skipped"] = []
+            st.session_state["nl_last_timestamp"] = datetime.now().strftime("%H:%M:%S")
+        st.rerun()
+
+    # -------- Relatorio da ultima aplicacao ---------
+    last_ts = st.session_state.get("nl_last_timestamp", "")
+    applied = st.session_state.get("nl_last_applied", [])
+    skipped = st.session_state.get("nl_last_skipped", [])
+    matches = st.session_state.get("nl_last_matches", [])
+    if last_ts:
+        st.markdown(f"##### Ultima aplicacao as {last_ts}")
+        if applied:
+            st.success(f"{len(applied)} parametro(s) atualizados no `st.session_state`.")
+            st.markdown("**Alteracoes efetivas (apos clamp/snap):**")
+            for item in applied:
+                st.markdown(f"- `{item}`")
+        else:
+            st.info("Nenhum parametro numerico ou textual foi alterado.")
+        if matches:
+            with st.expander("Termos reconhecidos no texto", expanded=False):
+                for item in matches:
+                    st.markdown(f"- {item}")
+        if skipped:
+            with st.expander("Termos ignorados (fora de range ou nao reconhecidos)", expanded=False):
+                for item in skipped:
+                    st.markdown(f"- `{item}`")
+        st.caption(
+            "O gatilho de atualizacao foi acionado via `st.rerun()`. Todos os graficos, a simulacao "
+            "(quando em execucao), o historico e o proximo PDF ja refletem a nova configuracao."
+        )
+
+    # -------- Visualizacao do estado atual ---------
+    with st.expander("🔎 Inspecionar estado atual dos parametros (session_state)", expanded=False):
+        state_rows = []
+        for key in DEFAULT_WIDGET_STATE.keys():
+            if key in {"simulation_history", "dark_matter_pdf_bytes", "dark_matter_pdf_chart_warning",
+                       "nl_last_input", "nl_last_matches", "nl_last_applied", "nl_last_skipped",
+                       "nl_last_timestamp"}:
+                continue
+            value = st.session_state.get(key)
+            if isinstance(value, float):
+                value = f"{value:.6g}"
+            state_rows.append({"chave": key, "valor": str(value)})
+        st.dataframe(pd.DataFrame(state_rows), use_container_width=True, hide_index=True)
+
+        st.download_button(
+            "⬇️ Baixar estado atual (JSON)",
+            data=json.dumps(
+                {k: (v if not isinstance(v, (np.generic,)) else float(v))
+                 for k, v in st.session_state.items()
+                 if k in DEFAULT_WIDGET_STATE and k not in {"simulation_history", "dark_matter_pdf_bytes"}},
+                indent=2, ensure_ascii=False, default=str,
+            ).encode("utf-8"),
+            file_name="estado_dark_matter_lab.json",
+            mime="application/json",
+            key="download_state_json",
+        )
+
+    st.markdown("##### Como o parser decide")
+    st.markdown(
+        "1. **Presets** (*Via Lactea*, *galaxia ana*, *aglomerado*) definem um ponto de partida.\n"
+        "2. **Parametros explicitos** no texto sobrescrevem o preset (ex.: `sigma/m 1.5` apos mencionar Via Lactea).\n"
+        "3. **Clamp/snap**: cada chave tem range e passo (ex.: `sigma_v` multiplo de 5, `concentration` multiplo de 0.5).\n"
+        "4. **Selectboxes** aceitam apenas opcoes validas — termos invalidos vao para *ignorados* sem quebrar o app.\n"
+        "5. **Staging + rerun**: o botao grava as mudancas em `nl_pending_changes` e chama `st.rerun()`; "
+        "o topo do script drena esse buffer **antes** de qualquer widget, evitando o erro de chave ja registrada."
+    )
+
 # ------------------------- RODAPE ---------------------------
 st.divider()
 st.markdown(
@@ -1494,5 +1992,6 @@ st.markdown(
     "- O perfil SIDM com nucleo e o feedback barionico sao modelos fenomenologicos ajustaveis, nao simulacoes completas de materia escura autointeragente ou hidrodinamica.  \n"
     "- Curvas observacionais so sao reais quando fornecidas por um conjunto externo validado via CSV; os dados sinteticos sao apenas demonstrativos.  \n"
     "- O mapa espacial mostra um corte da densidade e nao calcula lentes gravitacionais.  \n"
-    "- A integracao acompanha tracadores em potencial fixo; tracadores nao interagem entre si. O diagnostico energetico e uma aproximacao numerica."
+    "- A integracao acompanha tracadores em potencial fixo; tracadores nao interagem entre si. O diagnostico energetico e uma aproximacao numerica.  \n"
+    "- O assistente de linguagem natural apenas escreve nas chaves do `st.session_state`; toda a fisica e a numerica permanecem identicas as do modelo manual."
 )
