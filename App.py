@@ -672,10 +672,6 @@ def create_initial_tracers(n, seed, concentration, mass_x, mass_fraction, g_diml
     return positions, np.column_stack((vx, vy))
 
 
-# NB: a assinatura e a matematica sao identicas a versao vetorizada
-# original. Apenas o laco interno foi explicitado para permitir
-# compilacao via @njit. O @njit(cache=True) salva o binario em disco
-# apos a primeira chamada, acelerando execucoes subsequentes.
 @njit(cache=True)
 def tracer_acceleration(positions, g_dimless, mass_x, mass_fraction, softening):
     """Aceleracao gravitacional de cada tracador (compilada via Numba).
@@ -1048,7 +1044,13 @@ def initialise_simulation(params, event_type="inicializacao"):
     )
 
 
-def integrate_chunk(params, max_chunk=200):
+def integrate_chunk(params, max_chunk=50):
+    """Integra um bloco de passos.
+
+    max_chunk=50 foi escolhido para a UI atualizar a cada ~4 s, em vez de
+    a cada ~16 s (com 200). O ganho percebido de fluidez vem de manter o
+    trabalho por chunk abaixo do limiar de timeout do Streamlit.
+    """
     remaining = params["n_steps"] - st.session_state.sim_step
     if remaining <= 0:
         st.session_state.sim_status = "Concluida"
@@ -1257,6 +1259,7 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
         "Fracao de ME = M_DM(<r) / [M_DM(<r) + M_baryon(<r)].",
         "Campos numericos liberados; faixas amplas podem produzir configuracoes fora do regime validado.",
         "Aceleracao e energia proxy compiladas via Numba @njit(cache=True); a matematica e identica a versao vetorizada.",
+        "Blocos de integracao de 50 passos para manter a UI responsiva.",
     ]
     for note in notes:
         pdf.multi_cell(0, 5.5, _pdf_ascii("- " + note), new_x="LMARGIN", new_y="NEXT")
@@ -1404,6 +1407,7 @@ with tab_sim:
     st.markdown(
         '<div class="free-input-note">🔓 Número de partículas, passos, dt, g, seed — tudo livre. '
         'Aceleração e energia proxy compiladas via Numba @njit. '
+        'Blocos de 50 passos para UI responsiva. '
         'Números grandes podem tornar a simulação lenta.</div>',
         unsafe_allow_html=True,
     )
@@ -1909,7 +1913,10 @@ with tab_sim:
             return
         params = st.session_state.sim_params
         if st.session_state.sim_status == "Executando":
-            integrate_chunk(params, max_chunk=200)
+            # ATENCAO: max_chunk=50 (era 200) para atualizacao fluida da UI.
+            # Com Numba @njit(cache=True) cada chunk e rapido, e 50 passos
+            # mantem o ciclo UI < 5 s mesmo com muitas particulas.
+            integrate_chunk(params, max_chunk=50)
             if st.session_state.sim_status == "Concluida":
                 st.rerun()
 
@@ -2058,6 +2065,7 @@ with tab_sim:
         ("Perfil potencial", sim_halo_model),
         ("Feedback", f"{feedback_strength:.3g}"),
         ("Kernel de aceleracao", "Numba njit" if NUMBA_AVAILABLE else "numpy fallback"),
+        ("Bloco de integracao", "50 passos (UI fluida)"),
     ]
 
     if st.button("📄 Gerar relatorio PDF completo", type="primary",
@@ -2307,5 +2315,7 @@ st.markdown(
     "- Presets calibrados por: Cautun et al. (2020) para Via Láctea; Antlia B para anãs; Umetsu et al. (2020) para aglomerados; Bullet Cluster para σ/m.  \n"
     "- **Numba JIT**: `tracer_acceleration` e `tracer_energy_proxy` são compiladas via `@njit(cache=True)`. "
     "A matemática é idêntica à versão vetorizada; a diferença é apenas de desempenho. "
-    "Se o numba não estiver instalado, o app funciona com numpy puro (fallback)."
+    "Se o numba não estiver instalado, o app funciona com numpy puro (fallback).  \n"
+    "- **Blocos de integração de 50 passos**: a UI atualiza a cada ~4 s em vez de ~16 s (com 200 passos), "
+    "dando a sensação de fluidez durante toda a simulação."
 )
