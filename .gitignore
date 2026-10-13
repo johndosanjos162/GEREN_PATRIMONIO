@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Numba cache (regenerável)
+__numba_cache__/
+*.nbi
+*.nbc
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Ambiente
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Saídas geradas
+*.pdf
+*.png
+!docs/SCREENSHOTS/*.png
+
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
