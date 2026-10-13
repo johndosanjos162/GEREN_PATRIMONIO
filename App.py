@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import io
 import re
+import tempfile
 import unicodedata
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -223,42 +225,55 @@ HEADER_ALIASES = {
 
 
 def load_observational_csv(uploaded_file):
-    """Lê CSV com delimitador, BOM, espaços, caixa e aliases de cabeçalho variados.
+    """Le CSV de curva de rotacao com separador e aliases detectados.
 
-    Retorna (DataFrame, colunas_originais, separador_detectado). O esquema interno
-    sempre usa radius_kpc, v_obs_kms e opcionalmente v_err_kms.
+    O esquema interno e sempre radius_kpc, v_obs_kms e, opcionalmente,
+    v_err_kms. Tambem identifica historicos de simulacao enviados por engano.
     """
     raw = uploaded_file.getvalue()
-    attempts = [(None, "auto"), (",", "virgula"), (";", "ponto e virgula"), ("\t", "tab")]
-    last_columns = []
-    seen = set()
+    # Tentar separadores explicitos primeiro evita que o autodetector do pandas
+    # interprete incorretamente arquivos com poucas linhas ou colunas.
+    attempts = [(",", "virgula"), (";", "ponto e virgula"), ("\t", "tab"), (None, "auto")]
+    token_to_standard = {}
+    for standard, aliases in HEADER_ALIASES.items():
+        token_to_standard[_header_token(standard)] = standard
+        for alias in aliases:
+            token_to_standard[_header_token(alias)] = standard
+
+    best_columns = []
+    best_frame = None
+    best_separator = "desconhecido"
+    best_score = (-1, -1)
+    parse_errors = []
+
     for separator, separator_name in attempts:
-        if separator in seen:
-            continue
-        seen.add(separator)
         try:
-            kwargs = {"sep": separator, "engine": "python", "encoding": "utf-8-sig"}
+            kwargs = {
+                "sep": separator,
+                "engine": "python",
+                "encoding": "utf-8-sig",
+            }
             if separator == ";":
                 kwargs["decimal"] = ","
             frame = pd.read_csv(io.BytesIO(raw), **kwargs)
             original_columns = [str(c).replace("\ufeff", "").strip() for c in frame.columns]
-            last_columns = original_columns
+            recognized = [token_to_standard.get(_header_token(col)) for col in frame.columns]
+            score = (sum(value is not None for value in recognized), len(original_columns))
+            if score > best_score:
+                best_score = score
+                best_columns = original_columns
+                best_frame = frame.copy()
+                best_separator = separator_name
+
             rename_map = {}
-            token_to_standard = {}
-            for standard, aliases in HEADER_ALIASES.items():
-                for alias in aliases:
-                    token_to_standard[alias] = standard
-            # Os nomes canonicos tambem entram no mapa.
-            for standard in HEADER_ALIASES:
-                token_to_standard[_header_token(standard)] = standard
             for col in frame.columns:
-                token = _header_token(col)
-                if token in token_to_standard:
-                    rename_map[col] = token_to_standard[token]
+                standard = token_to_standard.get(_header_token(col))
+                if standard:
+                    rename_map[col] = standard
             normalized = frame.rename(columns=rename_map)
+            normalized = normalized.loc[:, ~normalized.columns.duplicated()].copy()
+
             if {"radius_kpc", "v_obs_kms"}.issubset(normalized.columns):
-                # Em caso de colunas duplicadas apos normalizacao, preservar a primeira.
-                normalized = normalized.loc[:, ~normalized.columns.duplicated()].copy()
                 normalized["radius_kpc"] = pd.to_numeric(normalized["radius_kpc"], errors="coerce")
                 normalized["v_obs_kms"] = pd.to_numeric(normalized["v_obs_kms"], errors="coerce")
                 if "v_err_kms" in normalized.columns:
@@ -268,13 +283,39 @@ def load_observational_csv(uploaded_file):
                 normalized = normalized[(normalized["radius_kpc"] > 0) & (normalized["v_obs_kms"] >= 0)]
                 if not normalized.empty:
                     return normalized.reset_index(drop=True), original_columns, separator_name
-        except Exception:
+        except Exception as exc:
+            parse_errors.append(str(exc))
             continue
+
+    detected_tokens = {_header_token(col) for col in best_columns}
+    looks_like_simulation_history = (
+        any(token in detected_tokens for token in {"tempoadimensional", "time", "timeadimensional"})
+        and any(token in detected_tokens for token in {
+            "energiaespecificamediaproxy", "energy", "totalenergy", "energyproxy"
+        })
+    )
+    header_text = repr(best_columns or "nao foi possivel ler o cabecalho")
+    if looks_like_simulation_history:
+        raise ValueError(
+            "Este arquivo parece ser um historico da simulacao (tempo versus energia), "
+            "nao dados observacionais de curva de rotacao. Cabecalhos detectados: "
+            f"{header_text}. Para comparar a curva de rotacao, use as colunas obrigatorias "
+            "radius_kpc e v_obs_kms; v_err_kms e opcional. Voce pode baixar um CSV-modelo "
+            "na propria aba Curvas de rotacao."
+        )
+
+    if {"radius_kpc", "v_obs_kms"}.issubset(
+        {token_to_standard.get(_header_token(c)) for c in best_columns}
+    ):
+        reason = "As colunas foram reconhecidas, mas nao encontrei linhas numericas validas."
+    else:
+        reason = "Nao encontrei as colunas obrigatorias de raio e velocidade observada."
     raise ValueError(
-        "Nao encontrei linhas validas com as colunas obrigatorias radius_kpc e v_obs_kms. "
-        f"Cabecalhos detectados: {last_columns or 'nao foi possivel ler o cabecalho'}. "
-        "Aceito aliases como radius, R_kpc, raio_kpc, v_obs, velocity_kms e velocidade_km_s; "
-        "o CSV pode usar virgula, ponto e virgula ou tabulacao como separador."
+        f"{reason} Cabecalhos detectados: {header_text}. "
+        "Colunas obrigatorias: radius_kpc e v_obs_kms; a coluna v_err_kms e opcional. "
+        "Aliases aceitos incluem radius, R_kpc, raio_kpc, v_obs, velocity_kms, "
+        "velocity_km_s, velocidade_km_s e velocidade_km_s. Separadores aceitos: virgula, "
+        "ponto e virgula ou tabulacao."
     )
 
 
@@ -398,7 +439,15 @@ class DarkMatterPDF(FPDF):
         self.cell(0, 8, f"Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')} | Pagina {self.page_no()}", align="C")
 
 
-def generate_pdf_report(report_data):
+def generate_pdf_report(report_data, rotation_figure=None):
+    """Gera PDF e, quando Kaleido esta disponivel, incorpora uma curva Plotly como PNG.
+
+    A figura e renderizada com dimensoes fixas (1400 x 800 px) para manter a
+    composicao consistente, gravada temporariamente e inserida no FPDF. Eixos,
+    ticks, legenda e titulos fazem parte da imagem exportada.
+
+    Retorna (bytes_pdf, aviso_exportacao_figura_ou_None).
+    """
     pdf = DarkMatterPDF(format="A4")
     pdf.set_auto_page_break(auto=True, margin=16)
     pdf.add_page()
@@ -420,16 +469,90 @@ def generate_pdf_report(report_data):
     def table(rows):
         pdf.set_font("Helvetica", "", 9)
         for key, value in rows:
+            # Cada par de celulas tem altura alinhada mesmo quando os valores
+            # ocupam mais de uma linha.
+            key_text = _pdf_ascii(key)
+            value_text = _pdf_ascii(value)
+            key_width = 69
+            value_width = pdf.w - pdf.r_margin - pdf.l_margin - key_width
+            key_lines = max(1, len(pdf.multi_cell(key_width, 5.5, key_text, dry_run=True, output="LINES")))
+            value_lines = max(1, len(pdf.multi_cell(value_width, 5.5, value_text, dry_run=True, output="LINES")))
+            row_height = max(key_lines, value_lines) * 5.5 + 1
+            if pdf.get_y() + row_height > pdf.h - pdf.b_margin:
+                pdf.add_page()
+            x, y = pdf.get_x(), pdf.get_y()
             pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(69, 7, _pdf_ascii(key), border=1)
+            pdf.multi_cell(key_width, 5.5, key_text, border=1, new_x="RIGHT", new_y="TOP")
+            pdf.set_xy(x + key_width, y)
             pdf.set_font("Helvetica", "", 9)
-            pdf.multi_cell(0, 7, _pdf_ascii(value), border=1, new_x="LMARGIN", new_y="NEXT")
+            pdf.multi_cell(value_width, 5.5, value_text, border=1, new_x="LMARGIN", new_y="NEXT")
+            pdf.set_y(y + row_height)
 
     section("1. Modelos teoricos e parametros fisicos")
     table(report_data.get("physics_rows", []))
 
     section("2. Curvas de rotacao e dados")
     table(report_data.get("rotation_rows", []))
+
+    figure_warning = None
+    temporary_image_path = None
+    if rotation_figure is not None:
+        try:
+            # Copia a figura para manter intacto o grafico renderizado na UI.
+            static_figure = go.Figure(rotation_figure)
+            static_figure.update_layout(
+                width=1400,
+                height=800,
+                autosize=False,
+                template="plotly_white",
+                paper_bgcolor="#ffffff",
+                plot_bgcolor="#ffffff",
+                font=dict(family="Arial, sans-serif", size=15, color="#182235"),
+                title=dict(font=dict(size=23, color="#182235")),
+                margin=dict(l=105, r=45, t=105, b=100),
+                legend=dict(bgcolor="rgba(255,255,255,0.85)", bordercolor="#d4dae5", borderwidth=1),
+            )
+            # engine='kaleido' solicita explicitamente o renderizador estatico.
+            image_bytes = static_figure.to_image(
+                format="png", width=1400, height=800, scale=1, engine="kaleido"
+            )
+            with tempfile.NamedTemporaryFile(prefix="dark_matter_plot_", suffix=".png", delete=False) as temp_img:
+                temp_img.write(image_bytes)
+                temporary_image_path = temp_img.name
+
+            image_width_mm = 180
+            image_height_mm = image_width_mm * 800.0 / 1400.0
+            # Reserve espaco para titulo + legenda curta + figura, evitando que
+            # o cabecalho da figura fique isolado no fim da pagina anterior.
+            required_height = 8 + 10 + image_height_mm + 5
+            if pdf.get_y() + required_height > pdf.h - pdf.b_margin:
+                pdf.add_page()
+            section("Curva de rotacao - imagem estatica Plotly")
+            pdf.set_font("Helvetica", "", 8)
+            pdf.multi_cell(
+                0, 4.5,
+                "Figura exportada em dimensoes fixas de 1400 x 800 px via Kaleido. "
+                "Os titulos, eixos, graduacoes e legenda sao preservados na imagem.",
+                new_x="LMARGIN", new_y="NEXT",
+            )
+            pdf.ln(2)
+            pdf.image(temporary_image_path, x=15, w=image_width_mm)
+            pdf.ln(3)
+        except Exception as exc:
+            figure_warning = (
+                "Nao foi possivel incorporar a imagem Plotly. Instale as dependencias de requirements.txt "
+                "(incluindo Kaleido) e verifique se a versao do Plotly e compativel. Detalhe: "
+                + str(exc)[:350]
+            )
+            section("Grafico Plotly nao incorporado")
+            pdf.set_font("Helvetica", "", 9)
+            pdf.multi_cell(0, 5.5, _pdf_ascii(figure_warning), new_x="LMARGIN", new_y="NEXT")
+        finally:
+            if temporary_image_path:
+                try:
+                    Path(temporary_image_path).unlink(missing_ok=True)
+                except Exception:
+                    pass
 
     section("3. Configuracao e estado da simulacao")
     table(report_data.get("simulation_rows", []))
@@ -448,7 +571,8 @@ def generate_pdf_report(report_data):
         pdf.multi_cell(0, 5.5, _pdf_ascii("- " + note), new_x="LMARGIN", new_y="NEXT")
 
     output = pdf.output()
-    return output.encode("latin-1") if isinstance(output, str) else bytes(output)
+    pdf_bytes = output.encode("latin-1") if isinstance(output, str) else bytes(output)
+    return pdf_bytes, figure_warning
 
 
 # ---------------------- CABECALHO ---------------------------
@@ -582,6 +706,21 @@ with tab_rotation:
     st.caption(
         "Formato canonico: radius_kpc,v_obs_kms,v_err_kms. Tambem sao aceitos cabecalhos como R_kpc, raio_kpc, "
         "v_obs, velocity_kms ou velocidade_km_s, inclusive em arquivos com ponto e virgula."
+    )
+    sample_rotation_csv = (
+        "radius_kpc,v_obs_kms,v_err_kms\n"
+        "1.0,72.0,5.0\n"
+        "2.0,96.0,5.0\n"
+        "4.0,118.0,6.0\n"
+        "6.0,132.0,6.0\n"
+        "8.0,140.0,7.0\n"
+    )
+    st.download_button(
+        "Baixar CSV-modelo para curvas de rotacao",
+        data=sample_rotation_csv.encode("utf-8"),
+        file_name="modelo_curva_rotacao.csv",
+        mime="text/csv",
+        key="download_rotation_template",
     )
 
     feedback_strength_current = float(st.session_state.get("feedback_strength", 0.25))
@@ -1002,20 +1141,49 @@ with tab_sim:
         ("Raio RMS de velocidade atual", f"{simulation_metrics.get('velocity_rms', float('nan')):.5g}" if np.isfinite(simulation_metrics.get('velocity_rms', float('nan'))) else "N/D"),
         ("Variacao da energia proxy", f"{simulation_metrics.get('energy_drift_percent', float('nan')):.5g}%" if np.isfinite(simulation_metrics.get('energy_drift_percent', float('nan'))) else "N/D"),
     ]
-    pdf_bytes = generate_pdf_report({
-        "physics_rows": physics_rows,
-        "rotation_rows": rotation_rows,
-        "simulation_rows": sim_rows,
-    })
-    st.download_button(
+    if st.button(
         "📄 Gerar relatorio PDF",
-        data=pdf_bytes,
-        file_name="relatorio_dark_matter_lab.pdf",
-        mime="application/pdf",
+        type="primary",
         use_container_width=True,
-        help="Inclui parametros atuais, metricas da curva de rotacao, estado da simulacao e limitacoes do modelo.",
+        help="Gera um PDF com parametros, metricas e a curva de rotacao Plotly em imagem estatica.",
+        key="generate_dark_matter_pdf",
+    ):
+        with st.spinner("Gerando PDF e exportando a curva Plotly em PNG..."):
+            pdf_bytes, pdf_chart_warning = generate_pdf_report(
+                {
+                    "physics_rows": physics_rows,
+                    "rotation_rows": rotation_rows,
+                    "simulation_rows": sim_rows,
+                },
+                rotation_figure=fig_rot,
+            )
+            st.session_state["dark_matter_pdf_bytes"] = pdf_bytes
+            st.session_state["dark_matter_pdf_chart_warning"] = pdf_chart_warning
+            st.session_state["dark_matter_pdf_generated_at"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    if st.session_state.get("dark_matter_pdf_bytes"):
+        st.success(
+            "Relatorio gerado em "
+            + st.session_state.get("dark_matter_pdf_generated_at", "esta sessao")
+            + ". Baixe o arquivo abaixo."
+        )
+        st.download_button(
+            "⬇️ Baixar relatorio PDF",
+            data=st.session_state["dark_matter_pdf_bytes"],
+            file_name="relatorio_dark_matter_lab.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            key="download_dark_matter_pdf",
+        )
+        if st.session_state.get("dark_matter_pdf_chart_warning"):
+            st.warning(
+                "O PDF foi criado, mas o grafico nao foi incorporado: "
+                + st.session_state["dark_matter_pdf_chart_warning"]
+            )
+    st.caption(
+        "O relatorio inclui os parametros atuais, metricas de ajuste, limitacoes cientificas e, quando o Kaleido esta "
+        "instalado corretamente, a curva de rotacao Plotly exportada em PNG de 1400 x 800 px, com titulo, eixos e legenda."
     )
-    st.caption("O relatorio registra os parametros atuais e as metricas calculadas nesta sessao. Pode ser baixado antes ou depois de executar a simulacao.")
 
 # ------------------------- RODAPE ---------------------------
 st.divider()
