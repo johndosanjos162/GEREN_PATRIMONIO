@@ -16,8 +16,8 @@ kaleido==0.2.1
 fpdf2>=2.7,<3.0
 
 # JIT
-numba>=0.58,<0.62
-llvmlite>=0.41,<0.44
+numba>=0.65,<0.67
+llvmlite>=0.47,<0.504
 
 # Fila assíncrona
 celery>=5.3,<5.5
