@@ -1,7 +1,8 @@
-streamlit>=1.37
 numpy>=1.24
 pandas>=2.0
-plotly>=5.18,<6.0
-fpdf2>=2.7.8
+plotly>=5.18
+streamlit>=1.30
 kaleido==0.2.1
+fpdf2>=2.7
 numba>=0.58
+llvmlite>=0.41
