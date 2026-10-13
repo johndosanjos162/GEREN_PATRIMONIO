@@ -1,8 +1,24 @@
-numpy>=1.24
-pandas>=2.0
-plotly>=5.18
-streamlit>=1.30
+# Core numérico
+numpy>=1.24,<2.2
+scipy>=1.10
+
+# DataFrames
+pandas>=2.0,<2.3
+
+# Visualização
+plotly>=5.18,<6.0
+
+# Web
+streamlit>=1.30,<1.40
+
+# Exportação
 kaleido==0.2.1
-fpdf2>=2.7
-numba>=0.58
-llvmlite>=0.41
+fpdf2>=2.7,<3.0
+
+# JIT
+numba>=0.58,<0.62
+llvmlite>=0.41,<0.44
+
+# Fila assíncrona
+celery>=5.3,<5.5
+redis>=5.0,<6.0
