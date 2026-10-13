@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  worker:
+    build: .
+    command: celery -A worker.celery_app worker --loglevel=info --concurrency=4
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - NUMBA_CACHE_DIR=/app/__numba_cache__
+    volumes:
+      - numba_cache:/app/__numba_cache__
+
+  streamlit:
+    build: .
+    command: streamlit run App.py --server.port=8501 --server.address=0.0.0.0
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - NUMBA_CACHE_DIR=/app/__numba_cache__
+    ports:
+      - "8501:8501"
+    volumes:
+      - numba_cache:/app/__numba_cache__
+
+volumes:
+  redis_data:
+  numba_cache:
