@@ -38,6 +38,9 @@ st.markdown(
       .lab-card { background:rgba(35,49,75,.48); border:1px solid rgba(125,160,220,.23); border-radius:14px; padding:16px 18px; }
       .muted { color:#aabbd7; font-size:.86rem; }
       .nl-hint { background:rgba(35,49,75,.40); border-left:3px solid #58c4dd; padding:10px 14px; border-radius:6px; color:#c9d6f0; font-size:.9rem; }
+      .dm-callout { background:linear-gradient(135deg,rgba(139,124,255,.15),rgba(88,196,221,.10)); border:1px solid rgba(139,124,255,.35); border-radius:12px; padding:16px 20px; margin:10px 0; }
+      .dm-callout b { color:#c9b8ff; }
+      .dm-number { font-size:1.6rem; color:#58c4dd; font-weight:700; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -59,15 +62,16 @@ MSUN_G = 1.98847e33
 KPC_CM = 3.085677581e21
 
 # --------------- DEFAULTS DOS WIDGETS (FONTE UNICA) ---------
-# Toda chave com widget explicito tem um default aqui. O assistente
-# de linguagem natural escreve diretamente nessas chaves, e os
-# sliders/selectboxes leem via key= na proxima renderizacao.
+# Valores calibrados para o caso classico da Via Lactea: a curva de
+# rotacao so fica PLANA (v ~ 220 km/s ate ~30 kpc) porque existe
+# materia escura. Sem ME, a curva cairia como Kepler apos o raio
+# visivel. Estes defaults sao propositalmente pedagogicos.
 DEFAULT_WIDGET_STATE = {
     "candidate": "Materia escura autointeragente (SIDM)",
     "halo_model": "NFW",
-    "log_m200": 12.0,
+    "log_m200": 12.0,       # M200 = 1e12 Msun (Via Lactea)
     "concentration": 10.0,
-    "log_mbaryon": 10.5,
+    "log_mbaryon": 10.7,    # ~5e10 Msun (estrelas + gas da VL)
     "a_baryon": 3.0,
     "core_radius_kpc": 3.0,
     "r_plot_max": 40.0,
@@ -86,7 +90,6 @@ DEFAULT_WIDGET_STATE = {
     "softening": 0.02,
     "sim_seed": 42,
     "record_every": 100,
-    # Estado nao-widget
     "sim_status": "Nao iniciada",
     "sim_step": 0,
     "simulation_history": [],
@@ -106,7 +109,6 @@ for _key, _value in DEFAULT_WIDGET_STATE.items():
 
 MAX_SIMULATION_HISTORY = 5000
 
-# --------------- CANDIDATOS E PERFIS VALIDOS ----------------
 CANDIDATE_OPTIONS = [
     "WIMPs",
     "Axions",
@@ -123,7 +125,6 @@ SIM_HALO_MODEL_OPTIONS = ["NFW", "SIDM"]
 # ASSISTENTE DE LINGUAGEM NATURAL
 # ============================================================
 def _normalize_text(value: str) -> str:
-    """Minusculas sem acentos, com espacos normalizados."""
     text = unicodedata.normalize("NFKD", str(value).lower())
     text = text.encode("ascii", "ignore").decode("ascii")
     return re.sub(r"\s+", " ", text).strip()
@@ -139,99 +140,55 @@ def _to_float(token: str) -> float | None:
 
 
 def _find_m200_log(text: str) -> float | None:
-    """Detecta log10(M200) de M200 de 10^12 / 1e12 / log M200 12."""
-    # "m200 de 10^12" / "m200 10 12"
-    m = re.search(
-        r"m[_\s]?200\s*(?:de|=|:|com)?\s*10\s*\^?\s*(-?\d+(?:[.,]\d+)?)",
-        text,
-    )
+    m = re.search(r"m[_\s]?200\s*(?:de|=|:|com)?\s*10\s*\^?\s*(-?\d+(?:[.,]\d+)?)", text)
     if m:
         return _to_float(m.group(1))
-    # "m200 1e12" / "m200 1.2e12"
-    m = re.search(
-        r"m[_\s]?200\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)\s*[eE]\s*(-?\d+)",
-        text,
-    )
+    m = re.search(r"m[_\s]?200\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)\s*[eE]\s*(-?\d+)", text)
     if m:
-        base = _to_float(m.group(1))
-        exp = _to_float(m.group(2))
+        base = _to_float(m.group(1)); exp = _to_float(m.group(2))
         if base is not None and exp is not None and base > 0:
             return float(np.log10(base)) + exp
-    # "log m200 12" / "log10 da massa 12"
-    m = re.search(
-        r"log\s*(?:10\s*)?(?:de\s*|da\s*)?(?:massa\s*|m[_\s]?200\s*)?(?:m[_\s]?200\s*)?(?:=|:)?\s*(-?\d+(?:[.,]\d+)?)",
-        text,
-    )
+    m = re.search(r"log\s*(?:10\s*)?(?:de\s*|da\s*)?(?:massa\s*|m[_\s]?200\s*)?(?:m[_\s]?200\s*)?(?:=|:)?\s*(-?\d+(?:[.,]\d+)?)", text)
     if m:
         return _to_float(m.group(1))
     return None
 
 
 def _find_mbaryon_log(text: str) -> float | None:
-    m = re.search(
-        r"bari[o]?nic[ao]\s*(?:de|=|:|com)?\s*10\s*\^?\s*(-?\d+(?:[.,]\d+)?)",
-        text,
-    )
+    m = re.search(r"bari[o]?nic[ao]\s*(?:de|=|:|com)?\s*10\s*\^?\s*(-?\d+(?:[.,]\d+)?)", text)
     if m:
         return _to_float(m.group(1))
-    m = re.search(
-        r"bari[o]?nic[ao]\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)\s*[eE]\s*(-?\d+)",
-        text,
-    )
+    m = re.search(r"bari[o]?nic[ao]\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)\s*[eE]\s*(-?\d+)", text)
     if m:
-        base = _to_float(m.group(1))
-        exp = _to_float(m.group(2))
+        base = _to_float(m.group(1)); exp = _to_float(m.group(2))
         if base is not None and exp is not None and base > 0:
             return float(np.log10(base)) + exp
-    m = re.search(
-        r"log\s*(?:10\s*)?(?:da\s*)?(?:massa\s*)?bari[o]?nic[ao]\s*(?:=|:)?\s*(-?\d+(?:[.,]\d+)?)",
-        text,
-    )
+    m = re.search(r"log\s*(?:10\s*)?(?:da\s*)?(?:massa\s*)?bari[o]?nic[ao]\s*(?:=|:)?\s*(-?\d+(?:[.,]\d+)?)", text)
     if m:
         return _to_float(m.group(1))
     return None
 
 
 def parse_natural_language_config(text: str) -> tuple[dict, list[str]]:
-    """Interpreta uma instrucao em PT/EN e retorna (changes, matches).
-
-    Presets reconhecidos (Via Lactea, galaxia ana, aglomerado) fornecem
-    um ponto de partida; parametros explicitos no texto sobrescrevem os
-    valores do preset.
-    """
     if not text or not text.strip():
         return {}, []
-
     t = _normalize_text(text)
     changes: dict = {}
     matches: list[str] = []
 
-    # -------- presets ---------
     if re.search(r"\b(via lactea|milky way|tipo via lactea|similar a via lactea|galaxia espiral)\b", t):
-        changes.update({
-            "log_m200": 12.0, "concentration": 10.0,
-            "log_mbaryon": 10.7, "a_baryon": 3.0,
-            "core_radius_kpc": 3.0, "sigma_v": 120.0,
-            "sigma_over_m": 1.0,
-        })
+        changes.update({"log_m200": 12.0, "concentration": 10.0, "log_mbaryon": 10.7,
+                        "a_baryon": 3.0, "core_radius_kpc": 3.0, "sigma_v": 120.0, "sigma_over_m": 1.0})
         matches.append("preset: Via Lactea")
     elif re.search(r"\b(galaxia an[a]?|dwarf galaxy|anao|ana|enana)\b", t):
-        changes.update({
-            "log_m200": 9.5, "concentration": 15.0,
-            "log_mbaryon": 8.5, "a_baryon": 1.0,
-            "core_radius_kpc": 0.5, "sigma_v": 40.0,
-            "sigma_over_m": 3.0,
-        })
+        changes.update({"log_m200": 9.5, "concentration": 15.0, "log_mbaryon": 8.5,
+                        "a_baryon": 1.0, "core_radius_kpc": 0.5, "sigma_v": 40.0, "sigma_over_m": 3.0})
         matches.append("preset: Galaxia ana")
     elif re.search(r"\b(aglomerado|cluster|agrupamento)\b", t):
-        changes.update({
-            "log_m200": 14.0, "concentration": 5.0,
-            "log_mbaryon": 13.0, "a_baryon": 30.0,
-            "core_radius_kpc": 20.0, "sigma_v": 800.0,
-        })
+        changes.update({"log_m200": 14.0, "concentration": 5.0, "log_mbaryon": 13.0,
+                        "a_baryon": 30.0, "core_radius_kpc": 20.0, "sigma_v": 800.0})
         matches.append("preset: Aglomerado")
 
-    # -------- candidato ---------
     cand_map = [
         ("WIMPs", r"\bwimp"),
         ("Axions", r"\baxi[o]?n"),
@@ -245,7 +202,6 @@ def parse_natural_language_config(text: str) -> tuple[dict, list[str]]:
             matches.append(f"candidato -> {label}")
             break
 
-    # -------- perfil / modelo ---------
     if re.search(r"\bsidm\b|nucleo fenomenologico|perfil sidm|core\s*sidm", t):
         changes["halo_model"] = "SIDM (nucleo fenomenologico)"
         changes["sim_halo_model"] = "SIDM"
@@ -257,109 +213,78 @@ def parse_natural_language_config(text: str) -> tuple[dict, list[str]]:
         changes["density_model"] = "NFW"
         matches.append("perfil -> NFW")
 
-    # -------- massa M200 ---------
     log_m200 = _find_m200_log(t)
     if log_m200 is not None:
         changes["log_m200"] = log_m200
         matches.append(f"log_m200 -> {log_m200:.3f}")
 
-    # -------- massa barionica ---------
     log_mb = _find_mbaryon_log(t)
     if log_mb is not None:
         changes["log_mbaryon"] = log_mb
         matches.append(f"log_mbaryon -> {log_mb:.3f}")
 
-    # -------- concentracao ---------
-    m = re.search(
-        r"concentra[c]?[a]?[o]?\s*(?:do\s*halo\s*)?(?:de|=|:|com)?\s*(?:c\s*)?(?:=|:)?\s*(\d+(?:[.,]\d+)?)",
-        t,
-    ) or re.search(r"\bc\s*(?:do\s*halo)?\s*(?:=|:)\s*(\d+(?:[.,]\d+)?)", t)
+    m = re.search(r"concentra[c]?[a]?[o]?\s*(?:do\s*halo\s*)?(?:de|=|:|com)?\s*(?:c\s*)?(?:=|:)?\s*(\d+(?:[.,]\d+)?)", t) \
+        or re.search(r"\bc\s*(?:do\s*halo)?\s*(?:=|:)\s*(\d+(?:[.,]\d+)?)", t)
     if m:
         val = _to_float(m.group(1))
         if val is not None:
             changes["concentration"] = val
             matches.append(f"concentration -> {val}")
 
-    # -------- escala barionica ---------
-    m = re.search(
-        r"(?:escala|raio)\s*bari[o]?nic[ao]\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
-    ) or re.search(r"\ba[_\s]?baryon\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
+    m = re.search(r"(?:escala|raio)\s*bari[o]?nic[ao]\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)", t) \
+        or re.search(r"\ba[_\s]?baryon\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
     if m:
         val = _to_float(m.group(1))
         if val is not None:
             changes["a_baryon"] = val
             matches.append(f"a_baryon -> {val}")
 
-    # -------- raio do nucleo ---------
-    m = re.search(
-        r"(?:raio\s*(?:do\s*)?)?nucleo\s*(?:sidm\s*)?(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
-    ) or re.search(r"\bcore\s*(?:radius)?\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
+    m = re.search(r"(?:raio\s*(?:do\s*)?)?nucleo\s*(?:sidm\s*)?(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)", t) \
+        or re.search(r"\bcore\s*(?:radius)?\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
     if m:
         val = _to_float(m.group(1))
         if val is not None:
             changes["core_radius_kpc"] = val
             matches.append(f"core_radius_kpc -> {val}")
 
-    # -------- r_plot_max ---------
-    m = re.search(
-        r"(?:raio\s*maximo|r[_\s]?plot[_\s]?max|max\s*radius)\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
-    )
+    m = re.search(r"(?:raio\s*maximo|r[_\s]?plot[_\s]?max|max\s*radius)\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
     if m:
         val = _to_float(m.group(1))
         if val is not None:
             changes["r_plot_max"] = val
             matches.append(f"r_plot_max -> {val}")
 
-    # -------- sigma/m ---------
-    m = (
-        re.search(r"sigma\s*/\s*m\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
-        or re.search(r"sigma\s*por\s*massa\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
-        or re.search(r"se[c]?[a]?[o]?\s*de\s*choque\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
-        or re.search(r"cross\s*section\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
-    )
+    m = (re.search(r"sigma\s*/\s*m\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
+         or re.search(r"sigma\s*por\s*massa\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
+         or re.search(r"se[c]?[a]?[o]?\s*de\s*choque\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
+         or re.search(r"cross\s*section\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t))
     if m:
         val = _to_float(m.group(1))
         if val is not None:
             changes["sigma_over_m"] = val
             matches.append(f"sigma_over_m -> {val}")
 
-    # -------- sigma_v ---------
-    m = re.search(
-        r"(?:sigma[_\s]*v|dispers[a]?[o]?\s*(?:de\s*)?velocidade)\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
-    )
+    m = re.search(r"(?:sigma[_\s]*v|dispers[a]?[o]?\s*(?:de\s*)?velocidade)\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
     if m:
         val = _to_float(m.group(1))
         if val is not None:
             changes["sigma_v"] = val
             matches.append(f"sigma_v -> {val}")
 
-    # -------- feedback: intensidade ---------
-    m = re.search(
-        r"(?:intensidade\s*(?:do\s*)?)?feedback\s*(?:strength)?\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
-    )
+    m = re.search(r"(?:intensidade\s*(?:do\s*)?)?feedback\s*(?:strength)?\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
     if m:
         val = _to_float(m.group(1))
         if val is not None:
             changes["feedback_strength"] = val
             matches.append(f"feedback_strength -> {val}")
 
-    # -------- feedback: escala ---------
-    m = re.search(
-        r"(?:escala\s*(?:radial\s*)?(?:do\s*)?feedback|feedback\s*scale)\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
-    )
+    m = re.search(r"(?:escala\s*(?:radial\s*)?(?:do\s*)?feedback|feedback\s*scale)\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
     if m:
         val = _to_float(m.group(1))
         if val is not None:
             changes["feedback_scale_kpc"] = val
             matches.append(f"feedback_scale_kpc -> {val}")
 
-    # -------- simulacao ---------
     m = re.search(r"(\d+)\s*(?:particulas?|tracadores?|particles?|tracers?)", t)
     if m:
         changes["n_particles"] = int(m.group(1))
@@ -401,7 +326,6 @@ def parse_natural_language_config(text: str) -> tuple[dict, list[str]]:
         changes["record_every"] = int(m.group(1))
         matches.append(f"record_every -> {changes['record_every']}")
 
-    # -------- filtro: descarta mudancas identicas ao estado atual ---------
     filtered: dict = {}
     for key, value in changes.items():
         current = st.session_state.get(key)
@@ -413,7 +337,6 @@ def parse_natural_language_config(text: str) -> tuple[dict, list[str]]:
     return filtered, matches
 
 
-# Regras de clamp/snap por chave de widget
 _NL_NUM_RULES = {
     "log_m200": (8.0, 14.0, 0.1, False),
     "concentration": (2.0, 25.0, 0.5, False),
@@ -439,11 +362,6 @@ _NL_STR_KEYS = {"candidate", "halo_model", "density_model", "sim_halo_model"}
 
 
 def apply_nl_changes(changes: dict) -> tuple[list[str], list[str]]:
-    """Aplica mudancas no st.session_state com clamp/snap nos ranges.
-
-    Deve ser chamado ANTES de qualquer widget com key= ser instanciado.
-    Retorna (aplicados, ignorados).
-    """
     if not changes:
         return [], []
     applied: list[str] = []
@@ -465,7 +383,6 @@ def apply_nl_changes(changes: dict) -> tuple[list[str], list[str]]:
             applied.append(f"{key} = {num}")
         elif key in _NL_STR_KEYS:
             text = str(value)
-            # Valida opcoes conhecidas para selectboxes
             valid_options = {
                 "candidate": CANDIDATE_OPTIONS,
                 "halo_model": HALO_MODEL_OPTIONS,
@@ -482,9 +399,6 @@ def apply_nl_changes(changes: dict) -> tuple[list[str], list[str]]:
     return applied, skipped
 
 
-# Aplicacao imediata de mudancas pendentes (drenado no topo do run,
-# antes de qualquer widget ser instanciado). Util para preservar a
-# instrucao entre reruns disparados pelo botao do assistente.
 _pending = st.session_state.pop("nl_pending_changes", None)
 if _pending:
     _applied, _skipped = apply_nl_changes(_pending)
@@ -562,8 +476,7 @@ def _mass_fraction(radius_over_rs, concentration, model, core_radius_kpc,
     if model.upper().startswith("NFW") and feedback_strength <= 0:
         return nfw_f(np.minimum(np.maximum(radius_over_rs, 1e-12), concentration)) / nfw_f(concentration)
     lookup = build_profile_lookup(
-        concentration=concentration,
-        model=model,
+        concentration=concentration, model=model,
         core_x=max(core_radius_kpc / rs, 1e-5),
         feedback_strength=feedback_strength,
         feedback_scale_x=max(feedback_scale_kpc / rs, 1e-5),
@@ -576,6 +489,10 @@ def _mass_fraction(radius_over_rs, concentration, model, core_radius_kpc,
 def rotation_components(radius_kpc, m200_msun, concentration, m_baryon_msun,
                         a_baryon_kpc, model="NFW", core_radius_kpc=3.0,
                         feedback_strength=0.0, feedback_scale_kpc=3.0):
+    """Curva de rotacao de halo + componente bariônica de Hernquist.
+
+    Retorna tambem M_DM(<r) e M_baryon(<r) para diagnostico de fracao.
+    """
     r200, rs, _ = nfw_parameters(m200_msun, concentration)
     r = np.maximum(np.asarray(radius_kpc, dtype=float), 1e-8)
     fraction = _mass_fraction(
@@ -588,7 +505,20 @@ def rotation_components(radius_kpc, m200_msun, concentration, m_baryon_msun,
     m_b_enclosed = m_baryon_msun * r**2 / (r + a_safe) ** 2
     v_b = np.sqrt(np.maximum(G_ASTRO * m_b_enclosed / r, 0.0))
     v_total = np.sqrt(v_dm**2 + v_b**2)
-    return v_dm, v_b, v_total, r200, rs
+    return v_dm, v_b, v_total, r200, rs, m_dm, m_b_enclosed
+
+
+def dark_matter_fraction_at_radius(radius_kpc, m200_msun, concentration, m_baryon_msun,
+                                   a_baryon_kpc, model="NFW", core_radius_kpc=3.0,
+                                   feedback_strength=0.0, feedback_scale_kpc=3.0):
+    """Fracao M_DM / (M_DM + M_baryon) dentro de cada raio."""
+    _, _, _, _, _, m_dm, m_b = rotation_components(
+        radius_kpc, m200_msun, concentration, m_baryon_msun, a_baryon_kpc,
+        model, core_radius_kpc, feedback_strength, feedback_scale_kpc,
+    )
+    total = m_dm + m_b
+    frac = np.where(total > 0, m_dm / total, 0.0)
+    return m_dm, m_b, frac
 
 
 def maxwell_speed_pdf(speed, sigma):
@@ -615,19 +545,13 @@ def _header_token(value):
 
 
 HEADER_ALIASES = {
-    "radius_kpc": {
-        "radiuskpc", "rkpc", "radius", "r", "raiokpc", "raio", "raioskpc",
-        "galactocentricradiuskpc", "galactocentricradius", "radialdistancekpc",
-    },
-    "v_obs_kms": {
-        "vobskms", "vobs", "observedvelocitykms", "velocitykms", "circularvelocitykms",
-        "vrotkms", "vrot", "velocidadekms", "velocidadeobservadakms", "velocidadekmps",
-        "observedvelocity", "velocityobservedkms",
-    },
-    "v_err_kms": {
-        "verrkms", "verr", "velocityerrorkms", "velocityuncertaintykms", "errorvelocitykms",
-        "sigma_vkms", "sigma_v", "errovelocidadekms", "incertezavelocidadekms", "errorbar",
-    },
+    "radius_kpc": {"radiuskpc", "rkpc", "radius", "r", "raiokpc", "raio", "raioskpc",
+                   "galactocentricradiuskpc", "galactocentricradius", "radialdistancekpc"},
+    "v_obs_kms": {"vobskms", "vobs", "observedvelocitykms", "velocitykms", "circularvelocitykms",
+                  "vrotkms", "vrot", "velocidadekms", "velocidadeobservadakms", "velocidadekmps",
+                  "observedvelocity", "velocityobservedkms"},
+    "v_err_kms": {"verrkms", "verr", "velocityerrorkms", "velocityuncertaintykms", "errorvelocitykms",
+                  "sigma_vkms", "sigma_v", "errovelocidadekms", "incertezavelocidadekms", "errorbar"},
 }
 
 
@@ -639,13 +563,11 @@ def load_observational_csv(uploaded_file):
         token_to_standard[_header_token(standard)] = standard
         for alias in aliases:
             token_to_standard[_header_token(alias)] = standard
-
     best_columns = []
     best_frame = None
     best_separator = "desconhecido"
     best_score = (-1, -1)
     parse_errors = []
-
     for separator, separator_name in attempts:
         try:
             kwargs = {"sep": separator, "engine": "python", "encoding": "utf-8-sig"}
@@ -680,13 +602,10 @@ def load_observational_csv(uploaded_file):
         except Exception as exc:
             parse_errors.append(str(exc))
             continue
-
     detected_tokens = {_header_token(col) for col in best_columns}
     looks_like_simulation_history = (
         any(token in detected_tokens for token in {"tempoadimensional", "time", "timeadimensional"})
-        and any(token in detected_tokens for token in {
-            "energiaespecificamediaproxy", "energy", "totalenergy", "energyproxy"
-        })
+        and any(token in detected_tokens for token in {"energiaespecificamediaproxy", "energy", "totalenergy", "energyproxy"})
     )
     header_text = repr(best_columns or "nao foi possivel ler o cabecalho")
     if looks_like_simulation_history:
@@ -694,19 +613,13 @@ def load_observational_csv(uploaded_file):
             "Este arquivo parece ser um historico da simulacao (tempo versus energia), "
             "nao dados observacionais de curva de rotacao. Cabecalhos detectados: "
             f"{header_text}. Para comparar a curva de rotacao, use as colunas obrigatorias "
-            "radius_kpc e v_obs_kms; v_err_kms e opcional. Voce pode baixar um CSV-modelo "
-            "na propria aba Curvas de rotacao."
+            "radius_kpc e v_obs_kms; v_err_kms e opcional."
         )
-    if {"radius_kpc", "v_obs_kms"}.issubset(
-        {token_to_standard.get(_header_token(c)) for c in best_columns}
-    ):
+    if {"radius_kpc", "v_obs_kms"}.issubset({token_to_standard.get(_header_token(c)) for c in best_columns}):
         reason = "As colunas foram reconhecidas, mas nao encontrei linhas numericas validas."
     else:
         reason = "Nao encontrei as colunas obrigatorias de raio e velocidade observada."
-    raise ValueError(
-        f"{reason} Cabecalhos detectados: {header_text}. "
-        "Colunas obrigatorias: radius_kpc e v_obs_kms; a coluna v_err_kms e opcional."
-    )
+    raise ValueError(f"{reason} Cabecalhos detectados: {header_text}.")
 
 
 # ------------------ SIMULACAO DE TRACADORES -----------------
@@ -750,21 +663,19 @@ def explain_simulation_physics(step, time_value, params, energy, energy_drift, v
     if not np.isfinite(drift_abs):
         energy_comment = "A variacao relativa da energia nao pode ser avaliada porque a energia inicial e proxima de zero."
     elif drift_abs < 1.0:
-        energy_comment = "O desvio relativo da energia proxy e pequeno (<1%); neste intervalo, o diagnostico e consistente com boa estabilidade numerica, sem garanti-la por si so."
+        energy_comment = "O desvio relativo da energia proxy e pequeno (<1%); neste intervalo, o diagnostico e consistente com boa estabilidade numerica."
     elif drift_abs < 5.0:
-        energy_comment = "O desvio relativo da energia proxy e moderado (1-5%); vale testar passo temporal menor e verificar a suavizacao."
+        energy_comment = "O desvio relativo da energia proxy e moderado (1-5%); vale testar passo temporal menor."
     else:
-        energy_comment = "O desvio relativo da energia proxy supera 5%; recomenda-se reduzir o passo temporal e investigar encontros proximos, suavizacao e erro de integracao."
-
+        energy_comment = "O desvio relativo da energia proxy supera 5%; recomenda-se reduzir o passo temporal."
     g_value = float(params.get("g_dimless", float("nan")))
     dt_value = float(params.get("dt", float("nan")))
     if str(event_type).lower() in {"inicializacao", "reinicializacao", "reinicio_apos_conclusao"}:
-        phase = "As condicoes iniciais foram sorteadas a partir da semente definida; as velocidades incluem componentes tangenciais e radiais em torno do potencial esferico."
+        phase = "As condicoes iniciais foram sorteadas a partir da semente definida."
     elif str(event_type).lower() in {"pausa", "retomada", "inicio", "conclusao"}:
-        phase = f"Evento de controle: {event_type}. A distribuicao continua sendo de tracadores em um potencial de halo fixo; os tracadores nao exercem gravidade uns sobre os outros."
+        phase = f"Evento de controle: {event_type}. Tracadores em potencial fixo."
     else:
-        phase = "O estado foi amostrado no intervalo de registro configurado, durante a evolucao leapfrog no potencial de halo fixo."
-
+        phase = "O estado foi amostrado no intervalo de registro configurado."
     drift_text = f"{float(energy_drift):+.4g}%" if np.isfinite(energy_drift) else "N/D"
     return (
         f"Evento={event_type}; estado={status}; passo={int(step)}/{n_steps} ({progress:.1f}%); "
@@ -772,8 +683,7 @@ def explain_simulation_physics(step, time_value, params, energy, energy_drift, v
         f"G adimensional={g_value:.5g}, delta t={dt_value:.5g}; "
         f"energia especifica media proxy={float(energy):.7g}; desvio desde o inicio={drift_text}. "
         f"Velocidade RMS={float(velocity_rms):.6g}; raio RMS={float(radius_rms):.6g}; "
-        f"raio medio={float(mean_radius):.6g}. {energy_comment} "
-        "A energia e um diagnostico de consistencia da integracao no potencial fixo; diferencas podem resultar do passo temporal, suavizacao, interpolacao e aproximacoes do modelo."
+        f"raio medio={float(mean_radius):.6g}. {energy_comment}"
     )
 
 
@@ -785,7 +695,6 @@ def record_simulation_history(event_type="snapshot", positions=None, velocities=
         velocities = st.session_state.get("sim_velocities")
     if positions is None or velocities is None:
         return
-
     positions = np.asarray(positions, dtype=float)
     velocities = np.asarray(velocities, dtype=float)
     params = dict(params or st.session_state.get("sim_params", {}))
@@ -795,7 +704,6 @@ def record_simulation_history(event_type="snapshot", positions=None, velocities=
         step = int(st.session_state.get("sim_step", 0))
     step = int(step)
     time_value = float(step * float(params.get("dt", 0.0)))
-
     if energy is None:
         mass_x = st.session_state.get("sim_mass_x")
         potential_x = st.session_state.get("sim_potential_x")
@@ -804,14 +712,12 @@ def record_simulation_history(event_type="snapshot", positions=None, velocities=
         else:
             energy = float("nan")
     energy = float(energy)
-
     energy_series = st.session_state.get("sim_energy", [])
     energy_initial = float(energy_series[0]) if len(energy_series) else float("nan")
     if np.isfinite(energy_initial) and abs(energy_initial) > 1e-12 and np.isfinite(energy):
         energy_drift = 100.0 * (energy - energy_initial) / abs(energy_initial)
     else:
         energy_drift = float("nan")
-
     velocity_rms = float(np.sqrt(np.mean(np.sum(velocities ** 2, axis=1))))
     radii = np.linalg.norm(positions, axis=1)
     radius_rms = float(np.sqrt(np.mean(radii ** 2)))
@@ -821,7 +727,6 @@ def record_simulation_history(event_type="snapshot", positions=None, velocities=
         step, time_value, params, energy, energy_drift, velocity_rms,
         radius_rms, mean_radius, event_type, status_value,
     )
-
     entry = {
         "recorded_at": datetime.now().isoformat(timespec="seconds"),
         "run_id": int(st.session_state.get("simulation_run_counter", 0)),
@@ -855,9 +760,7 @@ def record_current_simulation_event(event_type, status=None):
         event_type=event_type,
         positions=st.session_state.sim_positions,
         velocities=st.session_state.sim_velocities,
-        params=params,
-        status=status,
-        step=st.session_state.get("sim_step", 0),
+        params=params, status=status, step=st.session_state.get("sim_step", 0),
     )
 
 
@@ -885,19 +788,15 @@ def cached_history_dataframe(history):
 
 def initialise_simulation(params, event_type="inicializacao"):
     lookup = build_profile_lookup(
-        concentration=params["concentration"],
-        model=params["halo_model"],
-        core_x=params["core_radius_over_rs"],
-        feedback_strength=params["feedback_strength"],
+        concentration=params["concentration"], model=params["halo_model"],
+        core_x=params["core_radius_over_rs"], feedback_strength=params["feedback_strength"],
         feedback_scale_x=params["feedback_scale_over_rs"],
     )
     mass_x, mass_fraction, potential_x = lookup
     positions, velocities = create_initial_tracers(
         params["n_particles"], params["seed"], params["concentration"], mass_x, mass_fraction, params["g_dimless"]
     )
-    accelerations = tracer_acceleration(
-        positions, params["g_dimless"], mass_x, mass_fraction, params["softening"]
-    )
+    accelerations = tracer_acceleration(positions, params["g_dimless"], mass_x, mass_fraction, params["softening"])
     st.session_state.sim_positions = positions
     st.session_state.sim_velocities = velocities
     st.session_state.sim_accelerations = accelerations
@@ -912,13 +811,9 @@ def initialise_simulation(params, event_type="inicializacao"):
     st.session_state.sim_params = params.copy()
     st.session_state.simulation_run_counter = int(st.session_state.get("simulation_run_counter", 0)) + 1
     record_simulation_history(
-        event_type=event_type,
-        positions=positions,
-        velocities=velocities,
-        energy=st.session_state.sim_energy[0],
-        params=params,
-        status=st.session_state.sim_status,
-        step=0,
+        event_type=event_type, positions=positions, velocities=velocities,
+        energy=st.session_state.sim_energy[0], params=params,
+        status=st.session_state.sim_status, step=0,
     )
 
 
@@ -949,13 +844,9 @@ def integrate_chunk(params, max_chunk=200):
             energy_now = tracer_energy_proxy(pos, vel, params["g_dimless"], mass_x, potential_x)
             st.session_state.sim_energy.append(energy_now)
             record_simulation_history(
-                event_type="instantaneo_periodico",
-                positions=pos,
-                velocities=vel,
-                energy=energy_now,
-                params=params,
-                status=st.session_state.sim_status,
-                step=st.session_state.sim_step,
+                event_type="instantaneo_periodico", positions=pos, velocities=vel,
+                energy=energy_now, params=params,
+                status=st.session_state.sim_status, step=st.session_state.sim_step,
             )
     st.session_state.sim_positions = pos
     st.session_state.sim_velocities = vel
@@ -1037,13 +928,17 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
     section("2. Curvas de rotacao e dados")
     table(report_data.get("rotation_rows", []))
 
+    if report_data.get("dm_diagnostic_rows"):
+        section("3. Diagnostico de materia escura")
+        table(report_data.get("dm_diagnostic_rows", []))
+
     figure_warnings = []
     named_figures = dict(figures or {})
     if rotation_figure is not None and not named_figures:
         named_figures["Curva de rotacao"] = rotation_figure
 
     if named_figures:
-        section("3. Visualizacoes cientificas (PNG via Kaleido)")
+        section("4. Visualizacoes cientificas (PNG via Kaleido)")
         for figure_title, figure in named_figures.items():
             temp_path = None
             try:
@@ -1056,12 +951,8 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
                     margin=dict(l=105, r=55, t=110, b=105),
                     legend=dict(bgcolor="rgba(255,255,255,0.88)", bordercolor="#d4dae5", borderwidth=1),
                 )
-                image_bytes = static_figure.to_image(
-                    format="png", width=1400, height=800, scale=1, engine="kaleido"
-                )
-                with tempfile.NamedTemporaryFile(
-                    prefix="dark_matter_plot_", suffix=".png", delete=False
-                ) as temp_img:
+                image_bytes = static_figure.to_image(format="png", width=1400, height=800, scale=1, engine="kaleido")
+                with tempfile.NamedTemporaryFile(prefix="dark_matter_plot_", suffix=".png", delete=False) as temp_img:
                     temp_img.write(image_bytes)
                     temp_path = temp_img.name
                 image_width_mm = 180.0
@@ -1097,10 +988,10 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
                     except Exception:
                         pass
 
-    section("4. Configuracao e estado da simulacao")
+    section("5. Configuracao e estado da simulacao")
     table(report_data.get("simulation_rows", []))
 
-    section("5. Historico de instantaneos da simulacao")
+    section("6. Historico de instantaneos da simulacao")
     history_rows = report_data.get("history_rows", [])
     if history_rows:
         table(history_rows)
@@ -1108,7 +999,7 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
         pdf.set_font("Helvetica", "", 9)
         pdf.multi_cell(0, 5.5, "Nenhum instantaneo foi registrado nesta sessao.", new_x="LMARGIN", new_y="NEXT")
 
-    section("6. Log automatico: interpretacao fisica de cada momento")
+    section("7. Log automatico: interpretacao fisica de cada momento")
     logs = report_data.get("physics_log", [])
     if logs:
         pdf.set_font("Helvetica", "", 8.5)
@@ -1119,7 +1010,7 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
         pdf.set_font("Helvetica", "", 9)
         pdf.multi_cell(0, 5.5, "O log sera preenchido quando a simulacao for inicializada e avancar.", new_x="LMARGIN", new_y="NEXT")
 
-    section("7. Interpretacao e limitacoes cientificas")
+    section("8. Interpretacao e limitacoes cientificas")
     pdf.set_font("Helvetica", "", 9)
     notes = [
         "O perfil NFW e parametrizado por massa M200 e concentracao; R200 e rs sao derivados com H0 de referencia igual a 70 km/s/Mpc.",
@@ -1130,6 +1021,7 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
         "A secao de choque por massa e reportada em cm^2/g. O comprimento livre medio calculado na escala rs e apenas uma estimativa local com a densidade do perfil adotado.",
         "A energia registrada e uma proxy de energia especifica media do modelo numerico, nao uma medicao experimental nem a energia total de um sistema autogravitante completo.",
         "O assistente de linguagem natural apenas escreve nas chaves do st.session_state; toda a fisica e a numerica permanecem as mesmas do modelo.",
+        "A fracao de materia escura exibida e M_DM(<r) / [M_DM(<r) + M_baryon(<r)] para um halo NFW/SIDM normalizado a M200 dentro de R200. Nao inclui correcoes de selecao observacional.",
     ]
     for note in notes:
         pdf.multi_cell(0, 5.5, _pdf_ascii("- " + note), new_x="LMARGIN", new_y="NEXT")
@@ -1149,13 +1041,224 @@ st.markdown(
 st.caption("Modelagem astrofisica + graficos Plotly + integracao numerica + historico + PDF + linguagem natural")
 
 # -------------------------- ABAS ----------------------------
-tab_model, tab_rotation, tab_feedback, tab_sim, tab_assistant = st.tabs([
+tab_dm, tab_model, tab_rotation, tab_feedback, tab_sim, tab_assistant = st.tabs([
+    "⑥ O que é matéria escura?",
     "① Modelos teoricos e particulas",
     "② Curvas de rotacao",
     "③ Feedback barionico e densidade",
     "④ Simulacao, calculadora e relatorio",
     "⑤ Assistente IA (linguagem natural)",
 ])
+
+# ============================================================
+# ABA ⑥ (primeira) - O QUE E MATERIA ESCURA?
+# ============================================================
+with tab_dm:
+    st.subheader("🌌 O que é matéria escura?")
+    st.markdown(
+        """
+        <div class="dm-callout">
+        <b>Matéria escura</b> é uma forma de matéria que <b>não emite, absorve ou reflete luz</b> de forma
+        detectável — ela interage gravitacionalmente com a matéria comum, mas é transparente para radiação
+        eletromagnética. Sabemos que ela existe porque <b>a matéria que vemos não explica os movimentos
+        que medimos</b>.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("### Por que precisamos dela? As evidências")
+    ev1, ev2, ev3 = st.columns(3)
+    with ev1:
+        st.markdown("#### 🔭 Curvas de rotação")
+        st.markdown(
+            "Em galáxias espirais, a velocidade orbital do gás e das estrelas **não cai** depois que "
+            "a matéria visível acaba. Sem matéria escura, deveria cair como `v ∝ 1/√r` (Kepler). "
+            "Ela fica **plana** em ~220 km/s até dezenas de kpc — sinal de massa extra invisível."
+        )
+    with ev2:
+        st.markdown("#### 🔍 Lentes gravitacionais")
+        st.markdown(
+            "A luz de galáxias distantes é curvada por massas que **não vemos** — aglomerados como o "
+            "Bullet Cluster mostram que a massa total está separada do gás quente, indicando matéria "
+            "escura colisionalmente livre."
+        )
+    with ev3:
+        st.markdown("#### 📡 CMB e estrutura")
+        st.markdown(
+            "As anisotropias do fundo cósmico de micro-ondas e a formação de estruturas em larga escala "
+            "só batem com o modelo ΛCDM se ~85% da matéria for **fria e não-bariônica**."
+        )
+
+    st.divider()
+    st.markdown("### Demonstração numérica com os parâmetros atuais")
+    st.caption(
+        "Os valores padrão do app estão calibrados para a **Via Láctea**: M200 = 10¹² M☉, "
+        "concentração c = 10, massa bariônica M_bárion ≈ 5×10¹⁰ M☉. Os controles na aba ① permitem "
+        "alterar cada um destes parâmetros; o diagnóstico abaixo é recalculado automaticamente."
+    )
+
+    # Recalcula usando os valores atuais do session_state
+    m200_now = 10.0 ** st.session_state["log_m200"]
+    m_baryon_now = 10.0 ** st.session_state["log_mbaryon"]
+    c_now = st.session_state["concentration"]
+    a_now = st.session_state["a_baryon"]
+    core_now = st.session_state["core_radius_kpc"]
+    rmax_now = st.session_state["r_plot_max"]
+    model_now = "SIDM" if st.session_state["halo_model"].upper().startswith("SIDM") else "NFW"
+    fb_now = st.session_state["feedback_strength"]
+    fbs_now = st.session_state["feedback_scale_kpc"]
+
+    r200_dm, rs_dm, _ = nfw_parameters(m200_now, c_now)
+    r_diag = np.array([8.0, 15.0, 30.0])  # raios didaticos: Sol, disco externo, halo interno
+    r_diag = r_diag[r_diag <= max(rmax_now, 30.0)]
+    if len(r_diag) == 0:
+        r_diag = np.array([max(rmax_now * 0.5, 5.0)])
+
+    v_dm_d, v_b_d, v_tot_d, _, _, m_dm_d, m_b_d = rotation_components(
+        r_diag, m200_now, c_now, m_baryon_now, a_now,
+        model=model_now, core_radius_kpc=core_now,
+        feedback_strength=fb_now, feedback_scale_kpc=fbs_now,
+    )
+    dm_frac_d = m_dm_d / np.maximum(m_dm_d + m_b_d, 1e-30)
+
+    # Métricas de topo
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("M200 (halo total)", f"{m200_now:.2e} M☉")
+    col2.metric("M_bárion (visível)", f"{m_baryon_now:.2e} M☉")
+    col3.metric("Razão M200 / M_bárion", f"{m200_now / max(m_baryon_now, 1e-30):.1f}")
+    # Fração em 30 kpc se possível
+    r30 = min(30.0, rmax_now)
+    _, _, f30 = dark_matter_fraction_at_radius(
+        np.array([r30]), m200_now, c_now, m_baryon_now, a_now,
+        model=model_now, core_radius_kpc=core_now,
+        feedback_strength=fb_now, feedback_scale_kpc=fbs_now,
+    )
+    col4.metric(f"Fração de ME em {r30:.0f} kpc", f"{float(f30[0]) * 100:.1f}%")
+
+    # Curva completa com/sem matéria escura
+    radii_dm = np.linspace(max(0.2, rmax_now / 200.0), rmax_now, 300)
+    v_nfw_d, v_bar_d, v_tot_d, _, _, _, _ = rotation_components(
+        radii_dm, m200_now, c_now, m_baryon_now, a_now,
+        model="NFW", core_radius_kpc=core_now,
+        feedback_strength=0.0, feedback_scale_kpc=fbs_now,
+    )
+    # Expectativa Kepleriana: se toda a massa fosse bariônica e concentrada,
+    # v ~ sqrt(G M_b / r) após o raio visível.
+    v_kepler = np.sqrt(G_ASTRO * m_baryon_now / np.maximum(radii_dm, 1e-8))
+
+    fig_dm = go.Figure()
+    fig_dm.add_trace(go.Scatter(
+        x=radii_dm, y=v_tot_d, mode="lines", name="Com matéria escura (NFW+bárions)",
+        line=dict(color="#8b7cff", width=4),
+    ))
+    fig_dm.add_trace(go.Scatter(
+        x=radii_dm, y=v_bar_d, mode="lines", name="SÓ bárions (sem ME)",
+        line=dict(color="#ffbd69", width=3, dash="dash"),
+    ))
+    fig_dm.add_trace(go.Scatter(
+        x=radii_dm, y=v_kepler, mode="lines", name="Expectativa Kepleriana (v ∝ 1/√r)",
+        line=dict(color="#f472b6", width=2, dash="dot"),
+    ))
+    fig_dm.update_layout(
+        template="plotly_dark", height=480,
+        title="Diagnóstico: por que a matéria escura é necessária",
+        xaxis_title="Raio galactocêntrico (kpc)", yaxis_title="Velocidade circular (km/s)",
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
+        legend=dict(orientation="h", y=1.13),
+    )
+    st.plotly_chart(fig_dm, use_container_width=True)
+
+    st.markdown(
+        """
+        <div class="dm-callout">
+        <b>Leitura do gráfico:</b> a curva <span style="color:#8b7cff"><b>roxa</b></span> (com ME) permanece
+        aproximadamente plana. A curva <span style="color:#ffbd69"><b>laranja</b></span> (só bárions) e a
+        <span style="color:#f472b6"><b>rosa pontilhada</b></span> (Kepler) caem após o raio visível.
+        Sem matéria escura, as estrelas nas partes externas da galáxia deveriam orbitar muito mais devagar
+        — mas elas não orbitam. A discrepância entre as curvas é a <b>evidência clássica</b> de matéria escura.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Fração de ME em função do raio
+    r_frac = np.linspace(max(0.5, rmax_now / 100.0), rmax_now, 200)
+    _, _, frac_dm_curve = dark_matter_fraction_at_radius(
+        r_frac, m200_now, c_now, m_baryon_now, a_now,
+        model=model_now, core_radius_kpc=core_now,
+        feedback_strength=fb_now, feedback_scale_kpc=fbs_now,
+    )
+    fig_frac = go.Figure()
+    fig_frac.add_trace(go.Scatter(
+        x=r_frac, y=100.0 * frac_dm_curve, mode="lines",
+        name="Fração de matéria escura",
+        line=dict(color="#58c4dd", width=3),
+        fill="tozeroy", fillcolor="rgba(88,196,221,0.15)",
+    ))
+    fig_frac.add_hline(y=50, line=dict(color="#aabbd7", dash="dot", width=1),
+                       annotation_text="50% (equipartição)", annotation_position="top left")
+    fig_frac.update_layout(
+        template="plotly_dark", height=380,
+        title="Quanto da massa dentro de cada raio é matéria escura?",
+        xaxis_title="Raio galactocêntrico (kpc)", yaxis_title="M_DM / M_total (%)",
+        yaxis_range=[0, 100],
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
+    )
+    st.plotly_chart(fig_frac, use_container_width=True)
+    st.caption(
+        "No centro da galáxia, os bárions dominam; na periferia, a matéria escura representa "
+        "mais de 80–90% da massa total. Esta transição é a assinatura observacional do halo."
+    )
+
+    # Tabela de diagnóstico por raio
+    st.markdown("### Tabela de diagnóstico")
+    diag_df = pd.DataFrame({
+        "Raio (kpc)": r_diag,
+        "v_DM (km/s)": v_dm_d,
+        "v_bárion (km/s)": v_b_d,
+        "v_total (km/s)": v_tot_d,
+        "M_DM (<r) [M☉]": m_dm_d,
+        "M_bárion (<r) [M☉]": m_b_d,
+        "Fração de ME": [f"{x*100:.1f}%" for x in dm_frac_d],
+    })
+    st.dataframe(diag_df, use_container_width=True, hide_index=True)
+
+    st.divider()
+    st.markdown("### O que a matéria escura NÃO é")
+    nao1, nao2, nao3 = st.columns(3)
+    with nao1:
+        st.markdown(
+            "**Não é modificação da gravidade**  \n"
+            "Alternativas como MOND explicam curvas de rotação, mas falham em lentes "
+            "do Bullet Cluster e no CMB."
+        )
+    with nao2:
+        st.markdown(
+            "**Não é antimatéria**  \n"
+            "Antimatéria aniquilaria com matéria comum, produzindo raios γ que não observamos."
+        )
+    with nao3:
+        st.markdown(
+            "**Não é buraco negro comum**  \n"
+            "Buracos negros primordiais (MACHOs) foram descartados por microlentes em "
+            "larga escala — mas continuam em discussão para massas específicas."
+        )
+
+    st.markdown("### O que ela PODERIA ser")
+    st.markdown(
+        "- **WIMPs** (Weakly Interacting Massive Particles): partículas massivas que interagem pela força fraca.\n"
+        "- **Axions**: partículas ultraleves previstas para resolver o problema CP forte da QCD.\n"
+        "- **Neutrinos estéreis**: neutrinos pesados que não interagem pela força fraca padrão.\n"
+        "- **SIDM** (Self-Interacting Dark Matter): matéria escura que colide consigo mesma, resolvendo "
+        "problemas de pequena escala como o \"core-cusp problem\".\n"
+        "- **Outros**: supersimetria, dimensões extras, etc."
+    )
+    st.info(
+        "Nenhuma dessas hipóteses foi confirmada. A natureza microscópica da matéria escura é um dos "
+        "maiores problemas abertos da física contemporânea. Use as abas ① a ④ para explorar cada "
+        "cenário com parâmetros diferentes."
+    )
 
 # ============================================================
 # ABA 1 - MODELOS TEORICOS
@@ -1167,18 +1270,15 @@ with tab_model:
         "O perfil SIDM usa um nucleo fenomenologico ajustavel; a secao de choque e apresentada tambem por "
         "meio de uma estimativa local de comprimento livre medio."
     )
+    st.caption(
+        "**Nota pedagógica:** com os valores padrão, você está modelando a Via Láctea. "
+        "Se você reduzir `log_m200` para 10 (galáxia anã) ou aumentar para 14 (aglomerado), "
+        "a curva de rotação e a fração de matéria escura mudam drasticamente."
+    )
     col_a, col_b, col_c = st.columns(3)
     with col_a:
-        candidate = st.selectbox(
-            "Candidato / cenario microscopico",
-            CANDIDATE_OPTIONS,
-            key="candidate",
-        )
-        halo_model = st.selectbox(
-            "Perfil de halo para analises complementares",
-            HALO_MODEL_OPTIONS,
-            key="halo_model",
-        )
+        candidate = st.selectbox("Candidato / cenario microscopico", CANDIDATE_OPTIONS, key="candidate")
+        halo_model = st.selectbox("Perfil de halo para analises complementares", HALO_MODEL_OPTIONS, key="halo_model")
         log_m200 = st.slider("Log10 da massa M200 (massas solares)", 8.0, 14.0, step=0.1, key="log_m200")
         concentration = st.slider("Concentracao do halo c", 2.0, 25.0, step=0.5, key="concentration")
     with col_b:
@@ -1189,8 +1289,7 @@ with tab_model:
     with col_c:
         sigma_over_m = st.number_input(
             "Secao de choque por massa sigma/m (cm^2/g)",
-            min_value=0.0, max_value=100.0, step=0.1,
-            key="sigma_over_m",
+            min_value=0.0, max_value=100.0, step=0.1, key="sigma_over_m",
             help="Parametro descritivo de autointeracao; nao e usado para inferir automaticamente o raio do nucleo.",
         )
         sigma_v = st.slider("Dispersao de velocidade por componente (km/s)", 20.0, 300.0, step=5.0, key="sigma_v")
@@ -1219,6 +1318,28 @@ with tab_model:
         mfp_label = "Infinito"
     mm5.metric("Livre medio estimado em rs", mfp_label)
 
+    # Diagnóstico de consistência SIDM: se λ >> R200, o núcleo não é auto-consistente
+    if sigma_over_m > 0 and np.isfinite(r200):
+        lambda_mfp = mean_free_path_kpc
+        if lambda_mfp > 5 * r200:
+            st.warning(
+                f"⚠️ Consistência SIDM: o livre caminho médio estimado ({lambda_mfp:.0f} kpc) é muito maior "
+                f"que R200 ({r200:.0f} kpc). Neste regime, a matéria escura é **colisionalmente livre** e "
+                f"um núcleo de {core_radius_kpc:.1f} kpc não seria produzido por autointeração. Para gerar "
+                f"um núcleo, seria necessário σ/m ≳ {100 / max(lambda_mfp, 1e-3) * 10:.1f} cm²/g ou um "
+                f"histórico de formação que concentre a colisão no centro."
+            )
+        elif lambda_mfp > r200:
+            st.info(
+                f"ℹ️ SIDM marginal: λ ≈ {lambda_mfp:.0f} kpc > R200 = {r200:.0f} kpc. O núcleo é "
+                f"fenomenológico; a autointeração é subdominante no halo."
+            )
+        else:
+            st.success(
+                f"✅ SIDM colisional: λ ≈ {lambda_mfp:.1f} kpc < R200 = {r200:.0f} kpc. Neste regime, "
+                f"o núcleo é consistente com a seção de choque."
+            )
+
     st.markdown("#### Perfil de densidade: NFW versus SIDM")
     r_density = np.geomspace(0.03, max(r_plot_max, 0.1), 300)
     rho_nfw = profile_density(r_density, m200, concentration, core_radius_kpc, "NFW")
@@ -1232,6 +1353,11 @@ with tab_model:
         xaxis_type="log", yaxis_type="log", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
     )
     st.plotly_chart(fig_density_compare, use_container_width=True)
+    st.caption(
+        "O perfil NFW tem densidade que diverge no centro (`ρ ∝ 1/r`). O perfil SIDM com núcleo achata "
+        "a densidade central. Observações de galáxias anãs e de baixa massa favorecem núcleos, o que "
+        "motivou modelos SIDM."
+    )
 
     st.markdown("#### Distribuicao de velocidades")
     rng_velocity = np.random.default_rng(int(seed_velocity))
@@ -1268,6 +1394,11 @@ with tab_rotation:
         "Compare um halo NFW com um perfil SIDM com nucleo e feedback barionico. Os pontos podem ser "
         "importados de um CSV; o aplicativo tambem possui dados sinteticos demonstrativos."
     )
+    st.caption(
+        "**Chave para entender matéria escura:** a curva **sem matéria escura** (apenas bárions) "
+        "cai após o raio visível, enquanto a curva **com matéria escura** permanece plana. "
+        "É exatamente esse contraste que se observa em galáxias reais."
+    )
     uploaded = st.file_uploader(
         "Carregar dados observacionais em CSV (opcional)", type=["csv", "txt"],
         help="Colunas canonicas: radius_kpc e v_obs_kms. v_err_kms e opcional. Sao aceitos aliases e separadores comuns.",
@@ -1284,6 +1415,9 @@ with tab_rotation:
         "4.0,118.0,6.0\n"
         "6.0,132.0,6.0\n"
         "8.0,140.0,7.0\n"
+        "12.0,180.0,8.0\n"
+        "20.0,210.0,10.0\n"
+        "30.0,220.0,12.0\n"
     )
     st.download_button(
         "Baixar CSV-modelo para curvas de rotacao",
@@ -1296,14 +1430,18 @@ with tab_rotation:
     feedback_strength_current = float(st.session_state.get("feedback_strength", 0.25))
     feedback_scale_current = float(st.session_state.get("feedback_scale_kpc", 3.0))
     radii = np.linspace(max(0.15, r_plot_max / 150.0), r_plot_max, 240)
-    v_nfw_dm, v_baryon, v_nfw_total, _, rs = rotation_components(
+    v_nfw_dm, v_baryon, v_nfw_total, _, rs, m_dm_arr, m_b_arr = rotation_components(
         radii, m200, concentration, m_baryon, a_baryon, model="NFW",
     )
-    v_sidm_dm, _, v_sidm_total, _, _ = rotation_components(
+    v_sidm_dm, _, v_sidm_total, _, _, _, _ = rotation_components(
         radii, m200, concentration, m_baryon, a_baryon,
         model="SIDM", core_radius_kpc=core_radius_kpc,
         feedback_strength=feedback_strength_current, feedback_scale_kpc=feedback_scale_current,
     )
+    # Expectativa sem matéria escura (apenas bárions) — v_baryon já é isso.
+    # Expectativa Kepleriana: se a massa bariônica fosse toda concentrada no centro.
+    v_kepler = np.sqrt(G_ASTRO * m_baryon / np.maximum(radii, 1e-8))
+
     selected_curve = st.radio(
         "Modelo usado para calcular os residuos",
         ["NFW + barions", "SIDM + feedback barionico"], horizontal=True,
@@ -1332,7 +1470,7 @@ with tab_rotation:
     if obs_df is None:
         rng_obs = np.random.default_rng(2025)
         r_obs = np.linspace(max(0.8, r_plot_max / 20.0), r_plot_max * 0.9, 14)
-        _, _, v_model_obs, _, _ = rotation_components(
+        _, _, v_model_obs, _, _, _, _ = rotation_components(
             r_obs, m200, concentration, m_baryon, a_baryon, model="NFW",
         )
         errors = np.maximum(5.0, 0.04 * v_model_obs)
@@ -1342,14 +1480,20 @@ with tab_rotation:
             source_label = "Dados sinteticos (CSV rejeitado)"
 
     fig_rot = go.Figure()
-    fig_rot.add_trace(go.Scatter(x=radii, y=v_nfw_total, mode="lines", name="NFW + barions",
-                                 line=dict(color="#8b7cff", width=3)))
-    fig_rot.add_trace(go.Scatter(x=radii, y=v_sidm_total, mode="lines", name="SIDM + feedback",
+    # Curva principal: com matéria escura
+    fig_rot.add_trace(go.Scatter(x=radii, y=v_nfw_total, mode="lines", name="Com ME: NFW + bárions",
+                                 line=dict(color="#8b7cff", width=3.5)))
+    fig_rot.add_trace(go.Scatter(x=radii, y=v_sidm_total, mode="lines", name="Com ME: SIDM + feedback",
                                  line=dict(color="#58c4dd", width=3)))
-    fig_rot.add_trace(go.Scatter(x=radii, y=v_nfw_dm, mode="lines", name="Componente escura NFW",
-                                 line=dict(color="#b5aaff", width=1.7, dash="dash")))
-    fig_rot.add_trace(go.Scatter(x=radii, y=v_baryon, mode="lines", name="Componente barionica",
-                                 line=dict(color="#ffbd69", width=1.8, dash="dot")))
+    # Curva sem matéria escura: destacada
+    fig_rot.add_trace(go.Scatter(x=radii, y=v_baryon, mode="lines", name="SEM matéria escura (só bárions)",
+                                 line=dict(color="#ffbd69", width=3, dash="dash")))
+    # Expectativa Kepleriana
+    fig_rot.add_trace(go.Scatter(x=radii, y=v_kepler, mode="lines", name="Expectativa Kepler (v ∝ 1/√r)",
+                                 line=dict(color="#f472b6", width=1.8, dash="dot")))
+    # Componente escura pura (opcional, mais fina)
+    fig_rot.add_trace(go.Scatter(x=radii, y=v_nfw_dm, mode="lines", name="Componente escura NFW (só DM)",
+                                 line=dict(color="#b5aaff", width=1.4, dash="longdash")))
     marker_kwargs = {
         "x": obs_df["radius_kpc"], "y": obs_df["v_obs_kms"], "mode": "markers",
         "name": source_label,
@@ -1359,12 +1503,56 @@ with tab_rotation:
         marker_kwargs["error_y"] = dict(type="data", array=obs_df["v_err_kms"].fillna(0), visible=True, thickness=1.2)
     fig_rot.add_trace(go.Scatter(**marker_kwargs))
     fig_rot.update_layout(
-        template="plotly_dark", height=520, title="Curva de rotacao galactica",
+        template="plotly_dark", height=560, title="Curva de rotacao galactica: com vs sem materia escura",
         xaxis_title="Raio galactocentrico (kpc)", yaxis_title="Velocidade circular (km/s)",
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
         legend=dict(orientation="h", y=1.13),
     )
     st.plotly_chart(fig_rot, use_container_width=True)
+
+    # Diagnóstico de fração de ME
+    with st.expander("🧪 Diagnóstico de matéria escura em função do raio", expanded=True):
+        _, _, dm_frac_curve = dark_matter_fraction_at_radius(
+            radii, m200, concentration, m_baryon, a_baryon,
+            model="NFW", core_radius_kpc=core_radius_kpc,
+            feedback_strength=feedback_strength_current, feedback_scale_kpc=feedback_scale_current,
+        )
+        fig_frac = go.Figure()
+        fig_frac.add_trace(go.Scatter(
+            x=radii, y=100.0 * dm_frac_curve, mode="lines",
+            name="Fração M_DM / M_total",
+            line=dict(color="#58c4dd", width=3),
+            fill="tozeroy", fillcolor="rgba(88,196,221,0.15)",
+        ))
+        fig_frac.add_hline(y=50, line=dict(color="#aabbd7", dash="dot", width=1))
+        fig_frac.update_layout(
+            template="plotly_dark", height=340,
+            title="Fração de matéria escura dentro de cada raio",
+            xaxis_title="Raio galactocêntrico (kpc)", yaxis_title="M_DM / M_total (%)",
+            yaxis_range=[0, 100],
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
+        )
+        st.plotly_chart(fig_frac, use_container_width=True)
+        # Métricas chave
+        idx_30 = np.argmin(np.abs(radii - min(30.0, r_plot_max)))
+        f30 = float(dm_frac_curve[idx_30])
+        idx_8 = np.argmin(np.abs(radii - min(8.0, r_plot_max)))
+        f8 = float(dm_frac_curve[idx_8])
+        v30 = float(v_nfw_total[idx_30])
+        vk30 = float(v_kepler[idx_30])
+        c1, c2, c3 = st.columns(3)
+        c1.metric(f"Fração de ME em 8 kpc", f"{f8*100:.1f}%")
+        c2.metric(f"Fração de ME em {radii[idx_30]:.0f} kpc", f"{f30*100:.1f}%")
+        c3.metric(
+            f"v({radii[idx_30]:.0f} kpc): observado vs Kepler",
+            f"{v30:.0f} vs {vk30:.0f} km/s",
+            delta=f"+{(v30 - vk30):.0f} km/s",
+        )
+        st.caption(
+            "Se não houvesse matéria escura, a velocidade em 30 kpc seria Kepleriana "
+            "(~" + f"{vk30:.0f}" + " km/s). A observação mostra ~" + f"{v30:.0f}" + " km/s — "
+            "a diferença é a massa escura faltante."
+        )
 
     if uploaded is None:
         st.info("Os pontos sao sinteticos e servem apenas para demonstracao; nao representam medidas de uma galaxia especifica.")
@@ -1394,6 +1582,14 @@ with tab_rotation:
     k2.metric("RMSE", f"{rmse:.2f} km/s")
     k3.metric("Erro absoluto medio", f"{mae:.2f} km/s")
     k4.metric("Qui-quadrado medio", f"{chi2_red:.2f}" if np.isfinite(chi2_red) else "N/D")
+    # Classificação do ajuste
+    if np.isfinite(chi2_red):
+        if chi2_red < 2:
+            st.success(f"χ² ≈ {chi2_red:.2f} → ajuste bom")
+        elif chi2_red < 5:
+            st.info(f"χ² ≈ {chi2_red:.2f} → ajuste aceitável")
+        else:
+            st.warning(f"χ² ≈ {chi2_red:.2f} → ajuste ruim: modelo incompatível com os dados dentro das barras de erro")
 
     st.session_state["rotation_metrics"] = {
         "source": source_label,
@@ -1464,6 +1660,11 @@ with tab_feedback:
         xaxis_type="log", yaxis_type="log", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
     )
     st.plotly_chart(fb_fig, use_container_width=True)
+    st.caption(
+        "O feedback barionico (supernovas, AGN, ventos) pode **remover** matéria escura do centro da galáxia, "
+        "transformando um perfil NFW pontudo em um perfil com núcleo. Observações de galáxias anãs "
+        "mostram que isso acontece na natureza."
+    )
 
     st.markdown("#### Mapa espacial 2D da densidade")
     st.caption("Mapa de corte de densidade volumetrica. Nao e um mapa de lentes gravitacionais nem calcula convergencia κ.")
@@ -1525,15 +1726,10 @@ with tab_sim:
 
     _, rs_sim, _ = nfw_parameters(m200, concentration)
     current_params = {
-        "n_particles": int(n_particles),
-        "n_steps": int(n_steps),
-        "g_dimless": float(g_dimless),
-        "dt": float(dt),
-        "seed": int(sim_seed),
-        "softening": float(softening),
-        "concentration": float(concentration),
-        "record_every": int(record_every),
-        "halo_model": sim_halo_model,
+        "n_particles": int(n_particles), "n_steps": int(n_steps),
+        "g_dimless": float(g_dimless), "dt": float(dt), "seed": int(sim_seed),
+        "softening": float(softening), "concentration": float(concentration),
+        "record_every": int(record_every), "halo_model": sim_halo_model,
         "core_radius_over_rs": float(core_radius_kpc / rs_sim),
         "feedback_strength": float(feedback_strength),
         "feedback_scale_over_rs": float(feedback_scale / rs_sim),
@@ -1673,8 +1869,7 @@ with tab_sim:
             if all_history:
                 show_history_details = st.checkbox(
                     "Carregar tabela detalhada, logs e exportacao completa",
-                    value=False,
-                    key="show_history_details",
+                    value=False, key="show_history_details",
                     help="Os detalhes sao carregados sob demanda para manter a simulacao fluida.",
                 )
                 if show_history_details:
@@ -1687,8 +1882,7 @@ with tab_sim:
                     st.download_button(
                         "Baixar historico completo com parametros e log (CSV)",
                         data=history_df.to_csv(index=False).encode("utf-8"),
-                        file_name="historico_fisico_dark_matter_lab.csv",
-                        mime="text/csv",
+                        file_name="historico_fisico_dark_matter_lab.csv", mime="text/csv",
                         key="download_full_simulation_history",
                     )
                     st.markdown("**Log fisico mais recente**")
@@ -1721,6 +1915,17 @@ with tab_sim:
         value = rotation_metrics.get(key)
         return f"{value:.4g}{suffix}" if isinstance(value, (int, float, np.number)) and np.isfinite(value) else "N/D"
 
+    # Diagnóstico de matéria escura para o PDF
+    r30_report = min(30.0, r_plot_max)
+    _, _, f30_report = dark_matter_fraction_at_radius(
+        np.array([r30_report]), m200, concentration, m_baryon, a_baryon,
+        model="SIDM" if halo_model.upper().startswith("SIDM") else "NFW",
+        core_radius_kpc=core_radius_kpc,
+        feedback_strength=feedback_strength, feedback_scale_kpc=feedback_scale,
+    )
+    v_obs_30 = float(np.interp(r30_report, radii, v_nfw_total))
+    v_kep_30 = float(np.interp(r30_report, radii, v_kepler))
+
     physics_rows = [
         ("Candidato", candidate), ("Modelo / perfil selecionado", halo_model),
         ("Massa M200", f"{m200:.5e} massas solares"), ("R200", f"{r200:.4g} kpc"),
@@ -1742,6 +1947,15 @@ with tab_sim:
         ("CSV validado", str(rotation_metrics.get("csv_valid", False))),
         ("Cabecalhos CSV", rotation_metrics.get("original_headers", "N/D")),
     ]
+    dm_diagnostic_rows = [
+        ("M200 (halo total)", f"{m200:.4e} M☉"),
+        ("M_bárion (visível)", f"{m_baryon:.4e} M☉"),
+        ("Razão M200 / M_bárion", f"{m200 / max(m_baryon, 1e-30):.2f}"),
+        (f"Fração de ME em {r30_report:.0f} kpc", f"{float(f30_report[0])*100:.2f}%"),
+        (f"v observado em {r30_report:.0f} kpc", f"{v_obs_30:.1f} km/s"),
+        (f"v Kepleriano em {r30_report:.0f} kpc", f"{v_kep_30:.1f} km/s"),
+        ("Diferença (v_obs − v_Kepler)", f"{v_obs_30 - v_kep_30:+.1f} km/s"),
+    ]
     sim_rows = [
         ("Estado", simulation_metrics.get("status", st.session_state.sim_status)),
         ("Particulas-tracadoras", str(n_particles)), ("Passos previstos", str(n_steps)),
@@ -1754,15 +1968,14 @@ with tab_sim:
     ]
     if st.button(
         "📄 Gerar relatorio PDF completo",
-        type="primary",
-        use_container_width=True,
+        type="primary", use_container_width=True,
         help="Compila parametros, graficos Plotly em PNG, diagnostico energetico, historico e log fisico.",
         key="generate_dark_matter_pdf",
     ):
         report_figures = {
             "Perfis de densidade: NFW versus SIDM": fig_density_compare,
             "Distribuicao de velocidades": fig_velocity,
-            "Curva de rotacao: teoria versus observacao": fig_rot,
+            "Curva de rotacao: com versus sem materia escura": fig_rot,
             "Perfil radial com feedback barionico": fb_fig,
             "Mapa espacial 2D de densidade": fig_map,
         }
@@ -1813,6 +2026,7 @@ with tab_sim:
                 {
                     "physics_rows": physics_rows,
                     "rotation_rows": rotation_rows,
+                    "dm_diagnostic_rows": dm_diagnostic_rows,
                     "simulation_rows": sim_rows,
                     "history_rows": history_rows,
                     "physics_log": physics_log_rows,
@@ -1832,10 +2046,8 @@ with tab_sim:
         st.download_button(
             "⬇️ Baixar relatorio PDF",
             data=st.session_state["dark_matter_pdf_bytes"],
-            file_name="relatorio_dark_matter_lab.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-            key="download_dark_matter_pdf",
+            file_name="relatorio_dark_matter_lab.pdf", mime="application/pdf",
+            use_container_width=True, key="download_dark_matter_pdf",
         )
         if st.session_state.get("dark_matter_pdf_chart_warning"):
             warnings = st.session_state["dark_matter_pdf_chart_warning"]
@@ -1845,13 +2057,13 @@ with tab_sim:
             for warning in warnings:
                 st.caption(warning)
     st.caption(
-        "O PDF agrega os graficos disponiveis (densidade, velocidades, curvas de rotacao, feedback, mapa espacial e, "
-        "quando inicializada, simulacao e energia), cada um exportado via Kaleido em PNG de 1400 x 800 px; inclui tambem "
-        "historico de instantaneos, parametros e log automatico da interpretacao fisica."
+        "O PDF agrega os graficos disponiveis (densidade, velocidades, curvas de rotacao, feedback, mapa espacial, "
+        "diagnostico de ME e, quando inicializada, simulacao e energia), cada um exportado via Kaleido em PNG de "
+        "1400 x 800 px."
     )
 
 # ============================================================
-# ABA 5 - ASSISTENTE DE CONFIGURACAO POR LINGUAGEM NATURAL
+# ABA 5 - ASSISTENTE DE LINGUAGEM NATURAL
 # ============================================================
 with tab_assistant:
     st.subheader("🤖 Assistente de configuracao por linguagem natural")
@@ -1859,8 +2071,7 @@ with tab_assistant:
         '<div class="nl-hint">Descreva livremente um cenario fisico ou cole uma instrucao de outra IA. '
         'O parser reconhece PT/EN, normaliza acentos e mapeia os termos diretamente para as chaves do '
         '<code>st.session_state</code> que alimentam todos os sliders, selectboxes e numeros do app. '
-        'Apos aplicar, todas as abas (graficos, simulacao, historico, PDF) sao recalculadas automaticamente.'
-        "</div>",
+        'Apos aplicar, todas as abas sao recalculadas automaticamente.</div>',
         unsafe_allow_html=True,
     )
 
@@ -1869,15 +2080,14 @@ with tab_assistant:
         "- *\"Configure uma galaxia parecida com a Via Lactea, com secao de choque SIDM de 1.5 e concentracao 12\"*\n"
         "- *\"Galaxia ana com M200 de 10^9.5, nucleo SIDM de 0.8 kpc e sigma/m 2.0\"*\n"
         "- *\"Aglomerado de galaxias com massa M200 de 1e15, concentracao 4, feedback 0.4\"*\n"
-        "- *\"Use NFW, M200 10^12.5, bariônica 10^11, escala barionica 4 kpc, sigma_v 150, dispersao 150 km/s\"*\n"
+        "- *\"Use NFW, M200 10^12.5, bariônica 10^11, escala barionica 4 kpc, dispersão 150 km/s\"*\n"
         "- *\"Simulacao com 2000 particulas, 5000 passos, dt 0.005, g 0.08, seed 123, registrar a cada 50 passos\"*"
     )
 
     nl_text = st.text_area(
         "Instrucao (PT/EN):",
         value=st.session_state.get("nl_last_input", ""),
-        height=120,
-        key="nl_assistant_input",
+        height=120, key="nl_assistant_input",
         placeholder="Ex.: Galaxia tipo Via Lactea com SIDM sigma/m 1.5, concentracao 12, feedback 0.3 e 2000 particulas.",
     )
 
@@ -1895,7 +2105,6 @@ with tab_assistant:
 
     if reset_clicked:
         for key, value in DEFAULT_WIDGET_STATE.items():
-            # Preserva historico de simulacao e estado de UI
             if key in {"simulation_history", "simulation_run_counter", "sim_status", "sim_step"}:
                 continue
             st.session_state[key] = value
@@ -1906,9 +2115,6 @@ with tab_assistant:
         st.rerun()
 
     if apply_clicked:
-        # Etapa 1: parseia e faz stage das mudancas; o drenado ocorre no
-        # topo do proximo run, ANTES de qualquer widget ser instanciado.
-        # Isso evita StreamlitAPIException por escrever em chave ja registrada.
         changes, matches = parse_natural_language_config(nl_text or "")
         st.session_state["nl_last_input"] = nl_text or ""
         st.session_state["nl_last_matches"] = matches
@@ -1920,7 +2126,6 @@ with tab_assistant:
             st.session_state["nl_last_timestamp"] = datetime.now().strftime("%H:%M:%S")
         st.rerun()
 
-    # -------- Relatorio da ultima aplicacao ---------
     last_ts = st.session_state.get("nl_last_timestamp", "")
     applied = st.session_state.get("nl_last_applied", [])
     skipped = st.session_state.get("nl_last_skipped", [])
@@ -1947,7 +2152,6 @@ with tab_assistant:
             "(quando em execucao), o historico e o proximo PDF ja refletem a nova configuracao."
         )
 
-    # -------- Visualizacao do estado atual ---------
     with st.expander("🔎 Inspecionar estado atual dos parametros (session_state)", expanded=False):
         state_rows = []
         for key in DEFAULT_WIDGET_STATE.keys():
@@ -1969,19 +2173,18 @@ with tab_assistant:
                  if k in DEFAULT_WIDGET_STATE and k not in {"simulation_history", "dark_matter_pdf_bytes"}},
                 indent=2, ensure_ascii=False, default=str,
             ).encode("utf-8"),
-            file_name="estado_dark_matter_lab.json",
-            mime="application/json",
+            file_name="estado_dark_matter_lab.json", mime="application/json",
             key="download_state_json",
         )
 
     st.markdown("##### Como o parser decide")
     st.markdown(
         "1. **Presets** (*Via Lactea*, *galaxia ana*, *aglomerado*) definem um ponto de partida.\n"
-        "2. **Parametros explicitos** no texto sobrescrevem o preset (ex.: `sigma/m 1.5` apos mencionar Via Lactea).\n"
-        "3. **Clamp/snap**: cada chave tem range e passo (ex.: `sigma_v` multiplo de 5, `concentration` multiplo de 0.5).\n"
-        "4. **Selectboxes** aceitam apenas opcoes validas — termos invalidos vao para *ignorados* sem quebrar o app.\n"
-        "5. **Staging + rerun**: o botao grava as mudancas em `nl_pending_changes` e chama `st.rerun()`; "
-        "o topo do script drena esse buffer **antes** de qualquer widget, evitando o erro de chave ja registrada."
+        "2. **Parametros explicitos** no texto sobrescrevem o preset.\n"
+        "3. **Clamp/snap**: cada chave tem range e passo (ex.: `sigma_v` multiplo de 5).\n"
+        "4. **Selectboxes** aceitam apenas opcoes validas.\n"
+        "5. **Staging + rerun**: o botao grava em `nl_pending_changes` e chama `st.rerun()`; o topo do script "
+        "drena esse buffer **antes** de qualquer widget, evitando o erro de chave ja registrada."
     )
 
 # ------------------------- RODAPE ---------------------------
@@ -1993,5 +2196,6 @@ st.markdown(
     "- Curvas observacionais so sao reais quando fornecidas por um conjunto externo validado via CSV; os dados sinteticos sao apenas demonstrativos.  \n"
     "- O mapa espacial mostra um corte da densidade e nao calcula lentes gravitacionais.  \n"
     "- A integracao acompanha tracadores em potencial fixo; tracadores nao interagem entre si. O diagnostico energetico e uma aproximacao numerica.  \n"
-    "- O assistente de linguagem natural apenas escreve nas chaves do `st.session_state`; toda a fisica e a numerica permanecem identicas as do modelo manual."
+    "- O assistente de linguagem natural apenas escreve nas chaves do `st.session_state`; toda a fisica e a numerica permanecem identicas as do modelo manual.  \n"
+    "- A fracao de materia escura exibida e M_DM(<r) / [M_DM(<r) + M_baryon(<r)] para um halo NFW/SIDM normalizado a M200 dentro de R200."
 )
