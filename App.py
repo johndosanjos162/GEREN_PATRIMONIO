@@ -467,53 +467,219 @@ def nfw_parameters(m200_msun, concentration):
     return r200, rs, rho_s
 
 
+# ============================================================
+# KERNELS NUMBA — FISICA DA MATERIA ESCURA
+# ============================================================
+# Estas funcoes sao o nucleo numerico mais pesado do app: cada
+# renderizacao de pagina chama halo_shape, build_profile_lookup e
+# profile_density diversas vezes, cada uma integrando sobre
+# 2.200-4.000 pontos. Os @njit(cache=True) abaixo compilam esses
+# lacos para codigo de maquina, mantendo a mesma formula e a mesma
+# precisao em ponto flutuante (fastmath desligado).
+
+@njit(cache=True)
+def _halo_shape_numba(x, use_sidm, core_x, feedback_strength, feedback_scale_x):
+    """Perfil adimensional rho/rho_s (Numba).
+
+    x: array 1D (raio em unidades de rs, ja incluindo x=0).
+    use_sidm: True para SIDM (nucleo), False para NFW.
+    core_x, feedback_strength, feedback_scale_x: escalares ja
+        normalizados por rs no chamador.
+    """
+    n = x.shape[0]
+    out = np.empty(n, dtype=np.float64)
+    for i in range(n):
+        xi = x[i]
+        xi_safe = xi if xi > 1e-10 else 1e-10
+        if use_sidm:
+            shape = 1.0 / ((xi_safe + core_x) * (1.0 + xi_safe) ** 2)
+        else:
+            shape = 1.0 / (xi_safe * (1.0 + xi_safe) ** 2)
+        suppression = 1.0 - feedback_strength * np.exp(-xi / feedback_scale_x)
+        out[i] = shape * suppression
+    return out
+
+
+@njit(cache=True)
+def _integrate_profile_core(x_grid, shape):
+    """Integra perfil para massa encerrada e potencial (Numba).
+
+    Recebe x_grid (array 1D, com x=0 no inicio) e shape (avaliacao
+    de _halo_shape_numba no mesmo grid). Retorna (mass_fraction,
+    potential) normalizados para M(<R200)=1.
+
+    Matematica identica a versao vetorizada Python:
+      integrand[i] = x^2 * shape
+      increments   = 0.5*(f[i+1]+f[i])*dx
+      cumulative   = cumsum(increments) comecando em 0
+      mass_frac    = cumulative/norm
+      kernel       = integrand/norm/x (com kernel[0]=kernel[1])
+      outer_int[i] = sum_{j>=i} 0.5*(kernel[j+1]+kernel[j])*dx_j
+      Phi/G        = -(mass_frac/x + outer_int)
+    """
+    n = x_grid.shape[0]
+    integrand = np.empty(n, dtype=np.float64)
+    for i in range(n):
+        x = x_grid[i]
+        integrand[i] = x * x * shape[i]
+
+    # Inicializa array de massa encerrada e potencial
+    mass_fraction = np.empty(n, dtype=np.float64)
+    potential = np.empty(n, dtype=np.float64)
+
+    if n == 1:
+        mass_fraction[0] = 1.0
+        potential[0] = -1.0 / max(x_grid[0], 1e-8)
+        return mass_fraction, potential
+
+    # Integracao trapezoidal cumulativa
+    cumulative = np.empty(n, dtype=np.float64)
+    cumulative[0] = 0.0
+    for i in range(1, n):
+        dx = x_grid[i] - x_grid[i - 1]
+        cumulative[i] = cumulative[i - 1] + 0.5 * (integrand[i] + integrand[i - 1]) * dx
+
+    norm = cumulative[n - 1]
+    if norm < 1e-30:
+        norm = 1e-30
+
+    for i in range(n):
+        mf = cumulative[i] / norm
+        if mf < 0.0:
+            mass_fraction[i] = 0.0
+        elif mf > 1.0:
+            mass_fraction[i] = 1.0
+        else:
+            mass_fraction[i] = mf
+
+    # Kernel = dmdx / x
+    kernel = np.empty(n, dtype=np.float64)
+    for i in range(n):
+        x = x_grid[i]
+        if x > 0.0:
+            kernel[i] = (integrand[i] / norm) / x
+        else:
+            kernel[i] = 0.0
+    kernel[0] = kernel[1]
+
+    # Soma reversa dos incrementos trapezoidais
+    outer_integral = np.zeros(n, dtype=np.float64)
+    acc = 0.0
+    for i in range(n - 2, -1, -1):
+        dx = x_grid[i + 1] - x_grid[i]
+        acc += 0.5 * (kernel[i + 1] + kernel[i]) * dx
+        outer_integral[i] = acc
+
+    # Potencial Phi/G = -(M(<r)/r + integral_r^R200 dM/s)
+    for i in range(n):
+        x_safe = x_grid[i] if x_grid[i] > 1e-8 else 1e-8
+        potential[i] = -(mass_fraction[i] / x_safe + outer_integral[i])
+    potential[0] = potential[1]
+
+    return mass_fraction, potential
+
+
+@njit(cache=True)
+def _profile_density_numba(x_query, x_norm, use_sidm, core_x, feedback_strength,
+                            feedback_scale_x, m200_over_4pi_rs3):
+    """Densidade de halo normalizada para M(<R200)=M200 (Numba).
+
+    x_query: pontos onde a densidade sera avaliada (array 1D).
+    x_norm:  grade de normalizacao (array 1D, tipicamente 4000 pts).
+    m200_over_4pi_rs3: m200/(4*pi*rs^3) — pre-fator de normalizacao.
+    Retorna: rho(x_query) em Msun/kpc^3.
+    """
+    n = x_norm.shape[0]
+
+    # Avalia shape no grid de normalizacao
+    shape_norm = np.empty(n, dtype=np.float64)
+    for i in range(n):
+        xi = x_norm[i]
+        xi_safe = xi if xi > 1e-10 else 1e-10
+        if use_sidm:
+            shape_i = 1.0 / ((xi_safe + core_x) * (1.0 + xi_safe) ** 2)
+        else:
+            shape_i = 1.0 / (xi_safe * (1.0 + xi_safe) ** 2)
+        suppression = 1.0 - feedback_strength * np.exp(-xi / feedback_scale_x)
+        shape_norm[i] = shape_i * suppression
+
+    # Integral trapezoidal de x^2 * shape
+    integral = 0.0
+    for i in range(n - 1):
+        dx = x_norm[i + 1] - x_norm[i]
+        f0 = x_norm[i] * x_norm[i] * shape_norm[i]
+        f1 = x_norm[i + 1] * x_norm[i + 1] * shape_norm[i + 1]
+        integral += 0.5 * (f0 + f1) * dx
+
+    if integral < 1e-30:
+        integral = 1e-30
+    rho0 = m200_over_4pi_rs3 / integral
+
+    # Avalia densidade nos pontos pedidos
+    m = x_query.shape[0]
+    out = np.empty(m, dtype=np.float64)
+    for i in range(m):
+        xi = x_query[i]
+        xi_safe = xi if xi > 1e-10 else 1e-10
+        if use_sidm:
+            shape_i = 1.0 / ((xi_safe + core_x) * (1.0 + xi_safe) ** 2)
+        else:
+            shape_i = 1.0 / (xi_safe * (1.0 + xi_safe) ** 2)
+        suppression = 1.0 - feedback_strength * np.exp(-xi / feedback_scale_x)
+        out[i] = rho0 * shape_i * suppression
+
+    return out
+
+
+# ============================================================
+# WRAPPERS PYTHON — MESMA ASSINATURA, CHAMAM OS KERNELS NUMBA
+# ============================================================
 def halo_shape(x, model="NFW", core_x=0.15, feedback_strength=0.0, feedback_scale_x=0.15):
-    x = np.asarray(x, dtype=float)
-    x_safe = np.maximum(x, 1e-10)
-    if model.upper().startswith("SIDM"):
-        shape = 1.0 / ((x_safe + max(core_x, 1e-5)) * (1.0 + x_safe) ** 2)
-    else:
-        shape = 1.0 / (x_safe * (1.0 + x_safe) ** 2)
-    scale = max(float(feedback_scale_x), 1e-5)
-    suppression = 1.0 - np.clip(float(feedback_strength), 0.0, 100.0) * np.exp(-x / scale)
-    return shape * suppression
+    """Perfil adimensional rho/rho_s — wrapper sobre _halo_shape_numba.
+
+    A logica de detecao de modelo, os clamps de core_x e feedback_scale_x
+    e o clip de feedback_strength para [0, 100] sao identicos ao original.
+    """
+    x_arr = np.ascontiguousarray(np.atleast_1d(np.asarray(x, dtype=np.float64)).ravel())
+    use_sidm = model.upper().startswith("SIDM")
+    core_x_safe = max(float(core_x), 1e-5)
+    fb_clamped = min(max(float(feedback_strength), 0.0), 100.0)
+    scale_safe = max(float(feedback_scale_x), 1e-5)
+    return _halo_shape_numba(x_arr, use_sidm, core_x_safe, fb_clamped, scale_safe)
 
 
 def profile_density(radius_kpc, m200_msun, concentration, core_radius_kpc=3.0,
                     model="NFW", feedback_strength=0.0, feedback_scale_kpc=3.0):
+    """Densidade de halo normalizada — wrapper sobre _profile_density_numba."""
     r200, rs, _ = nfw_parameters(m200_msun, concentration)
     x_core = max(core_radius_kpc / rs, 1e-5)
     x_fb = max(feedback_scale_kpc / rs, 1e-5)
-    x_norm = np.linspace(0.0, float(concentration), 4000)
-    shape_norm = halo_shape(x_norm, model, x_core, feedback_strength, x_fb)
-    integral = trapezoid_compat(shape_norm * x_norm**2, x_norm)
-    rho0 = m200_msun / (4.0 * np.pi * rs**3 * max(integral, 1e-30))
-    radius = np.asarray(radius_kpc, dtype=float)
-    x = np.maximum(radius / rs, 1e-10)
-    return rho0 * halo_shape(x, model, x_core, feedback_strength, x_fb)
+
+    x_norm = np.ascontiguousarray(np.linspace(0.0, float(concentration), 4000), dtype=np.float64)
+    radius = np.asarray(radius_kpc, dtype=np.float64)
+    x_query = np.ascontiguousarray(np.maximum(radius / rs, 1e-10), dtype=np.float64)
+
+    use_sidm = model.upper().startswith("SIDM")
+    core_x_safe = max(float(x_core), 1e-5)
+    fb_clamped = min(max(float(feedback_strength), 0.0), 100.0)
+    scale_safe = max(float(x_fb), 1e-5)
+    prefactor = m200_msun / (4.0 * np.pi * rs**3)
+
+    return _profile_density_numba(
+        x_query, x_norm, use_sidm, core_x_safe, fb_clamped, scale_safe, prefactor,
+    )
 
 
 def build_profile_lookup(concentration, model="NFW", core_x=0.15,
                           feedback_strength=0.0, feedback_scale_x=0.15, grid_size=3500):
+    """Massa encerrada + potencial — wrapper sobre _integrate_profile_core."""
     c = max(float(concentration), 1e-3)
     x_grid = np.unique(np.concatenate(([0.0], np.geomspace(1e-6, c, grid_size))))
     shape = halo_shape(x_grid, model, core_x, feedback_strength, feedback_scale_x)
-    integrand = x_grid**2 * shape
-    dx = np.diff(x_grid)
-    increments = 0.5 * (integrand[1:] + integrand[:-1]) * dx
-    cumulative = np.concatenate(([0.0], np.cumsum(increments)))
-    norm = max(float(cumulative[-1]), 1e-30)
-    mass_fraction = np.clip(cumulative / norm, 0.0, 1.0)
-    dmdx = integrand / norm
-    kernel = np.zeros_like(x_grid)
-    np.divide(dmdx, x_grid, out=kernel, where=x_grid > 0)
-    if len(kernel) > 1:
-        kernel[0] = kernel[1]
-    outer_integral = np.zeros_like(x_grid)
-    reverse_increments = 0.5 * (kernel[1:] + kernel[:-1]) * dx
-    outer_integral[:-1] = np.cumsum(reverse_increments[::-1])[::-1]
-    potential = -(mass_fraction / np.maximum(x_grid, 1e-8) + outer_integral)
-    potential[0] = potential[1] if len(potential) > 1 else -1.0
+    mass_fraction, potential = _integrate_profile_core(
+        np.ascontiguousarray(x_grid, dtype=np.float64),
+        np.ascontiguousarray(shape, dtype=np.float64),
+    )
     return x_grid, mass_fraction, potential
 
 
@@ -674,13 +840,7 @@ def create_initial_tracers(n, seed, concentration, mass_x, mass_fraction, g_diml
 
 @njit(cache=True)
 def tracer_acceleration(positions, g_dimless, mass_x, mass_fraction, softening):
-    """Aceleracao gravitacional de cada tracador (compilada via Numba).
-
-    Equivalente vetorizado:
-        r = ||pos||
-        enclosed = interp(r, mass_x, mass_fraction)
-        a = -g * enclosed * pos / (r^2 + eps^2)^1.5
-    """
+    """Aceleracao gravitacional de cada tracador (compilada via Numba)."""
     n = positions.shape[0]
     out = np.empty((n, 2), dtype=np.float64)
     eps2 = softening * softening
@@ -699,13 +859,7 @@ def tracer_acceleration(positions, g_dimless, mass_x, mass_fraction, softening):
 
 @njit(cache=True)
 def tracer_energy_proxy(positions, velocities, g_dimless, mass_x, potential_x):
-    """Energia especifica media proxy dos tracadores (compilada via Numba).
-
-    Equivalente vetorizado:
-        E_i = 0.5 * |v_i|^2 + g * phi(r_i)
-        phi(r) = interp(r, mass_x, potential_x) para r <= mass_x[-1]
-                 -1/r caso contrario
-    """
+    """Energia especifica media proxy dos tracadores (compilada via Numba)."""
     n = positions.shape[0]
     r_max = mass_x[-1]
     total = 0.0
@@ -1258,7 +1412,9 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
         "Assistente IA escreve em st.session_state; fisica inalterada.",
         "Fracao de ME = M_DM(<r) / [M_DM(<r) + M_baryon(<r)].",
         "Campos numericos liberados; faixas amplas podem produzir configuracoes fora do regime validado.",
-        "Aceleracao e energia proxy compiladas via Numba @njit(cache=True); a matematica e identica a versao vetorizada.",
+        "Perfil (halo_shape), integracao massa/potencial (build_profile_lookup) e densidade "
+        "(profile_density) compilados via Numba @njit(cache=True) — mesma matematica, mesma precisao.",
+        "Tracadores (aceleracao e energia proxy) tambem compilados via Numba @njit(cache=True).",
         "Blocos de integracao de 50 passos para manter a UI responsiva.",
     ]
     for note in notes:
@@ -1285,7 +1441,7 @@ st.title("🌌 Dark Matter Lab")
 st.markdown(
     '<p class="lab-subtitle">Laboratorio interativo: halos NFW, SIDM, dinamica estelar, feedback '
     'barionico, simulacoes numericas, assistente IA e campos livres.'
-    + ('<span class="numba-badge">⚡ Numba JIT ativo</span>' if NUMBA_AVAILABLE
+    + ('<span class="numba-badge">⚡ Numba JIT ativo — fisica compilada</span>' if NUMBA_AVAILABLE
        else '<span class="numba-badge">⚠️ Numba ausente — fallback numpy</span>')
     + '</p>',
     unsafe_allow_html=True,
@@ -1913,9 +2069,6 @@ with tab_sim:
             return
         params = st.session_state.sim_params
         if st.session_state.sim_status == "Executando":
-            # ATENCAO: max_chunk=50 (era 200) para atualizacao fluida da UI.
-            # Com Numba @njit(cache=True) cada chunk e rapido, e 50 passos
-            # mantem o ciclo UI < 5 s mesmo com muitas particulas.
             integrate_chunk(params, max_chunk=50)
             if st.session_state.sim_status == "Concluida":
                 st.rerun()
@@ -2064,7 +2217,8 @@ with tab_sim:
         ("dt", f"{dt:.5g}"), ("seed", str(sim_seed)),
         ("Perfil potencial", sim_halo_model),
         ("Feedback", f"{feedback_strength:.3g}"),
-        ("Kernel de aceleracao", "Numba njit" if NUMBA_AVAILABLE else "numpy fallback"),
+        ("Kernels de fisica", "Numba njit" if NUMBA_AVAILABLE else "numpy fallback"),
+        ("Kernels de simulacao", "Numba njit" if NUMBA_AVAILABLE else "numpy fallback"),
         ("Bloco de integracao", "50 passos (UI fluida)"),
     ]
 
@@ -2313,9 +2467,12 @@ st.markdown(
     "- Campos numéricos liberados para qualquer valor; faixas amplas podem produzir configurações fora do regime fisicamente validado.  \n"
     "- O assistente IA escreve apenas em `st.session_state`; a física e a numérica permanecem inalteradas.  \n"
     "- Presets calibrados por: Cautun et al. (2020) para Via Láctea; Antlia B para anãs; Umetsu et al. (2020) para aglomerados; Bullet Cluster para σ/m.  \n"
-    "- **Numba JIT**: `tracer_acceleration` e `tracer_energy_proxy` são compiladas via `@njit(cache=True)`. "
-    "A matemática é idêntica à versão vetorizada; a diferença é apenas de desempenho. "
-    "Se o numba não estiver instalado, o app funciona com numpy puro (fallback).  \n"
-    "- **Blocos de integração de 50 passos**: a UI atualiza a cada ~4 s em vez de ~16 s (com 200 passos), "
-    "dando a sensação de fluidez durante toda a simulação."
+    "- **Numba JIT (física)**: `halo_shape`, `build_profile_lookup` e `profile_density` usam "
+    "`@njit(cache=True)` nos laços de integração. A regra dos trapézios, a grade, os clamps "
+    "e as constantes cosmológicas são idênticos ao código Python original — a saída numérica é a mesma.  \n"
+    "- **Numba JIT (simulação)**: `tracer_acceleration` e `tracer_energy_proxy` também usam "
+    "`@njit(cache=True)`.  \n"
+    "- **Blocos de integração de 50 passos**: a UI atualiza a cada ~4 s em vez de ~16 s, "
+    "dando a sensação de fluidez durante toda a simulação.  \n"
+    "- Se o Numba não estiver instalado, o app funciona com numpy puro (fallback automático)."
 )
