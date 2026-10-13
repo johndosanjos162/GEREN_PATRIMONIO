@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 import re
 import tempfile
 import unicodedata
@@ -65,9 +66,16 @@ for _key, _value in {
     "feedback_scale_kpc": 3.0,
     "sim_status": "Nao iniciada",
     "sim_step": 0,
+    # Historico da sessao e cumulativo entre reinicializacoes da simulacao.
+    "simulation_history": [],
+    "simulation_run_counter": 0,
+    "dark_matter_pdf_bytes": None,
+    "dark_matter_pdf_chart_warning": None,
 }.items():
     if _key not in st.session_state:
         st.session_state[_key] = _value
+
+MAX_SIMULATION_HISTORY = 5000
 
 
 # ----------------------- MODELOS FISICOS --------------------
@@ -231,6 +239,8 @@ def load_observational_csv(uploaded_file):
     v_err_kms. Tambem identifica historicos de simulacao enviados por engano.
     """
     raw = uploaded_file.getvalue()
+    # Tentar separadores explicitos primeiro evita que o autodetector do pandas
+    # interprete incorretamente arquivos com poucas linhas ou colunas.
     attempts = [(",", "virgula"), (";", "ponto e virgula"), ("\t", "tab"), (None, "auto")]
     token_to_standard = {}
     for standard, aliases in HEADER_ALIASES.items():
@@ -340,57 +350,164 @@ def tracer_acceleration(positions, g_dimless, mass_x, mass_fraction, softening):
     return -g_dimless * enclosed[:, None] * positions / denom[:, None]
 
 
-def tracer_diagnostics(positions, velocities, g_dimless, mass_x, potential_x):
-    """Diagnosticos instantaneos dos tracadores em potencial fixo.
-
-    Ponto unico de calculo da energia proxy, raio RMS, velocidade RMS, raio
-    maximo e contagem de tracadores fora do halo (r > R200 em unidades de rs).
-    Reutilizado tanto pela UI ao vivo quanto pelo historico e pelo PDF, para
-    nao duplicar a logica de diagnostico.
-    """
+def tracer_energy_proxy(positions, velocities, g_dimless, mass_x, potential_x):
     r = np.maximum(np.linalg.norm(positions, axis=1), 1e-8)
     kinetic = 0.5 * np.sum(velocities**2, axis=1)
     phi = np.interp(r, mass_x, potential_x, left=potential_x[0], right=np.nan)
     outside = r > mass_x[-1]
     if np.any(outside):
         phi[outside] = -1.0 / r[outside]
-    speed_sq = np.sum(velocities**2, axis=1)
-    return {
-        "energy_proxy": float(np.mean(kinetic + g_dimless * phi)),
-        "rms_radius": float(np.sqrt(np.mean(r**2))),
-        "rms_speed": float(np.sqrt(np.mean(speed_sq))),
-        "max_radius": float(np.max(r)),
-        "n_escaped": int(np.sum(outside)),
+    return float(np.mean(kinetic + g_dimless * phi))
+
+
+def explain_simulation_physics(step, time_value, params, energy, energy_drift, velocity_rms,
+                               radius_rms, mean_radius, event_type, status):
+    """Texto automatico e interpretativo associado a cada instantaneo."""
+    n_steps = max(int(params.get("n_steps", 1)), 1)
+    progress = 100.0 * min(max(int(step), 0), n_steps) / n_steps
+    drift_abs = abs(float(energy_drift)) if np.isfinite(energy_drift) else float("nan")
+    if not np.isfinite(drift_abs):
+        energy_comment = "A variacao relativa da energia nao pode ser avaliada porque a energia inicial e proxima de zero."
+    elif drift_abs < 1.0:
+        energy_comment = "O desvio relativo da energia proxy e pequeno (<1%); neste intervalo, o diagnostico e consistente com boa estabilidade numerica, sem garanti-la por si so."
+    elif drift_abs < 5.0:
+        energy_comment = "O desvio relativo da energia proxy e moderado (1-5%); vale testar passo temporal menor e verificar a suavizacao."
+    else:
+        energy_comment = "O desvio relativo da energia proxy supera 5%; recomenda-se reduzir o passo temporal e investigar encontros proximos, suavizacao e erro de integracao."
+
+    g_value = float(params.get("g_dimless", float("nan")))
+    dt_value = float(params.get("dt", float("nan")))
+    if str(event_type).lower() in {"inicializacao", "reinicializacao", "reinicio_apos_conclusao"}:
+        phase = "As condicoes iniciais foram sorteadas a partir da semente definida; as velocidades incluem componentes tangenciais e radiais em torno do potencial esferico."
+    elif str(event_type).lower() in {"pausa", "retomada", "inicio", "conclusao"}:
+        phase = f"Evento de controle: {event_type}. A distribuicao continua sendo de tracadores em um potencial de halo fixo; os tracadores nao exercem gravidade uns sobre os outros."
+    else:
+        phase = "O estado foi amostrado no intervalo de registro configurado, durante a evolucao leapfrog no potencial de halo fixo."
+
+    drift_text = f"{float(energy_drift):+.4g}%" if np.isfinite(energy_drift) else "N/D"
+    return (
+        f"Evento={event_type}; estado={status}; passo={int(step)}/{n_steps} ({progress:.1f}%); "
+        f"tempo adimensional t={float(time_value):.6g}. {phase} "
+        f"G adimensional={g_value:.5g}, delta t={dt_value:.5g}; "
+        f"energia especifica media proxy={float(energy):.7g}; desvio desde o inicio={drift_text}. "
+        f"Velocidade RMS={float(velocity_rms):.6g}; raio RMS={float(radius_rms):.6g}; "
+        f"raio medio={float(mean_radius):.6g}. {energy_comment} "
+        "A energia e um diagnostico de consistencia da integracao no potencial fixo; diferencas podem resultar do passo temporal, suavizacao, interpolacao e aproximacoes do modelo."
+    )
+
+
+def record_simulation_history(event_type="snapshot", positions=None, velocities=None, energy=None,
+                              params=None, status=None, step=None):
+    """Armazena um instantaneo compacto: parametros, diagnostico e explicacao fisica."""
+    if positions is None:
+        positions = st.session_state.get("sim_positions")
+    if velocities is None:
+        velocities = st.session_state.get("sim_velocities")
+    if positions is None or velocities is None:
+        return
+
+    positions = np.asarray(positions, dtype=float)
+    velocities = np.asarray(velocities, dtype=float)
+    params = dict(params or st.session_state.get("sim_params", {}))
+    if not params:
+        return
+    if step is None:
+        step = int(st.session_state.get("sim_step", 0))
+    step = int(step)
+    time_value = float(step * float(params.get("dt", 0.0)))
+
+    if energy is None:
+        mass_x = st.session_state.get("sim_mass_x")
+        potential_x = st.session_state.get("sim_potential_x")
+        if mass_x is not None and potential_x is not None:
+            energy = tracer_energy_proxy(positions, velocities, params["g_dimless"], mass_x, potential_x)
+        else:
+            energy = float("nan")
+    energy = float(energy)
+
+    energy_series = st.session_state.get("sim_energy", [])
+    energy_initial = float(energy_series[0]) if len(energy_series) else float("nan")
+    if np.isfinite(energy_initial) and abs(energy_initial) > 1e-12 and np.isfinite(energy):
+        energy_drift = 100.0 * (energy - energy_initial) / abs(energy_initial)
+    else:
+        energy_drift = float("nan")
+
+    velocity_rms = float(np.sqrt(np.mean(np.sum(velocities ** 2, axis=1))))
+    radii = np.linalg.norm(positions, axis=1)
+    radius_rms = float(np.sqrt(np.mean(radii ** 2)))
+    mean_radius = float(np.mean(radii))
+    status_value = str(status if status is not None else st.session_state.get("sim_status", "Desconhecido"))
+    drift_for_log = energy_drift
+    physics_log = explain_simulation_physics(
+        step, time_value, params, energy, drift_for_log, velocity_rms,
+        radius_rms, mean_radius, event_type, status_value,
+    )
+
+    entry = {
+        "recorded_at": datetime.now().isoformat(timespec="seconds"),
+        "run_id": int(st.session_state.get("simulation_run_counter", 0)),
+        "event_type": str(event_type),
+        "step": step,
+        "n_steps": int(params.get("n_steps", 0)),
+        "time_adimensional": time_value,
+        "status": status_value,
+        "energy_specific_mean_proxy": energy,
+        "energy_initial_proxy": energy_initial,
+        "energy_delta_proxy": float(energy - energy_initial) if np.isfinite(energy) and np.isfinite(energy_initial) else float("nan"),
+        "energy_drift_percent": float(energy_drift),
+        "velocity_rms": velocity_rms,
+        "radius_rms": radius_rms,
+        "mean_radius": mean_radius,
+        "parameters": params.copy(),
+        "physics_log": physics_log,
     }
+    history = list(st.session_state.get("simulation_history", []))
+    history.append(entry)
+    st.session_state["simulation_history"] = history[-MAX_SIMULATION_HISTORY:]
+    st.session_state["simulation_history_version"] = int(st.session_state.get("simulation_history_version", 0)) + 1
+    st.session_state["latest_physics_log"] = physics_log
 
 
-def tracer_energy_proxy(positions, velocities, g_dimless, mass_x, potential_x):
-    """Wrapper retrocompativel para a energia proxy media."""
-    return tracer_diagnostics(positions, velocities, g_dimless, mass_x, potential_x)["energy_proxy"]
+def record_current_simulation_event(event_type, status=None):
+    """Registra evento de controle usando o estado atual da simulacao."""
+    if not all(key in st.session_state for key in ("sim_positions", "sim_velocities", "sim_params")):
+        return
+    params = st.session_state.sim_params
+    record_simulation_history(
+        event_type=event_type,
+        positions=st.session_state.sim_positions,
+        velocities=st.session_state.sim_velocities,
+        params=params,
+        status=status,
+        step=st.session_state.get("sim_step", 0),
+    )
 
 
-def _history_dataframe(history):
-    """Converte a lista de diagnosticos em DataFrame ordenado."""
-    if not history:
-        return pd.DataFrame(columns=[
-            "passo", "tempo_adimensional", "energia_especifica_media_proxy",
-            "raio_rms_rs", "velocidade_rms", "raio_maximo_rs", "tracadores_fora",
-        ])
-    return pd.DataFrame([
-        {
-            "passo": int(entry["step"]),
-            "tempo_adimensional": float(entry["time"]),
-            "energia_especifica_media_proxy": float(entry["energy_proxy"]),
-            "raio_rms_rs": float(entry["rms_radius"]),
-            "velocidade_rms": float(entry["rms_speed"]),
-            "raio_maximo_rs": float(entry["max_radius"]),
-            "tracadores_fora": int(entry["n_escaped"]),
-        }
-        for entry in history
-    ])
+def history_dataframe(history):
+    """Converte o historico para uma tabela exportavel sem perder os parametros."""
+    columns = [
+        "recorded_at", "run_id", "event_type", "step", "n_steps", "time_adimensional", "status",
+        "energy_specific_mean_proxy", "energy_initial_proxy", "energy_delta_proxy", "energy_drift_percent",
+        "velocity_rms", "radius_rms", "mean_radius", "parameters_json", "physics_log",
+    ]
+    rows = []
+    for item in history:
+        row = {key: item.get(key) for key in columns if key not in {"parameters_json"}}
+        row["parameters_json"] = json.dumps(item.get("parameters", {}), ensure_ascii=False, sort_keys=True)
+        rows.append(row)
+    return pd.DataFrame(rows, columns=columns)
 
 
-def initialise_simulation(params):
+def cached_history_dataframe(history):
+    """Evita reconstruir a tabela completa em cada atualizacao visual do fragmento."""
+    version = int(st.session_state.get("simulation_history_version", 0))
+    if st.session_state.get("simulation_history_dataframe_cache_version") != version:
+        st.session_state["simulation_history_dataframe_cache"] = history_dataframe(history)
+        st.session_state["simulation_history_dataframe_cache_version"] = version
+    return st.session_state.get("simulation_history_dataframe_cache", pd.DataFrame())
+
+
+def initialise_simulation(params, event_type="inicializacao"):
     lookup = build_profile_lookup(
         concentration=params["concentration"],
         model=params["halo_model"],
@@ -413,12 +530,20 @@ def initialise_simulation(params):
     st.session_state.sim_potential_x = potential_x
     st.session_state.sim_step = 0
     st.session_state.sim_snapshots = [positions.copy()]
-    initial_diag = tracer_diagnostics(positions, velocities, params["g_dimless"], mass_x, potential_x)
-    st.session_state.sim_history = [{"step": 0, "time": 0.0, **initial_diag}]
     st.session_state.sim_times = [0.0]
-    st.session_state.sim_energy = [initial_diag["energy_proxy"]]
+    st.session_state.sim_energy = [tracer_energy_proxy(positions, velocities, params["g_dimless"], mass_x, potential_x)]
     st.session_state.sim_status = "Pronta para executar"
     st.session_state.sim_params = params.copy()
+    st.session_state.simulation_run_counter = int(st.session_state.get("simulation_run_counter", 0)) + 1
+    record_simulation_history(
+        event_type=event_type,
+        positions=positions,
+        velocities=velocities,
+        energy=st.session_state.sim_energy[0],
+        params=params,
+        status=st.session_state.sim_status,
+        step=0,
+    )
 
 
 def integrate_chunk(params, max_chunk=200):
@@ -444,19 +569,24 @@ def integrate_chunk(params, max_chunk=200):
         if (st.session_state.sim_step % max(1, params["record_every"]) == 0
                 or st.session_state.sim_step == params["n_steps"]):
             st.session_state.sim_snapshots.append(pos.copy())
-            diag = tracer_diagnostics(pos, vel, params["g_dimless"], mass_x, potential_x)
-            st.session_state.sim_history.append({
-                "step": st.session_state.sim_step,
-                "time": st.session_state.sim_step * dt,
-                **diag,
-            })
             st.session_state.sim_times.append(st.session_state.sim_step * dt)
-            st.session_state.sim_energy.append(diag["energy_proxy"])
+            energy_now = tracer_energy_proxy(pos, vel, params["g_dimless"], mass_x, potential_x)
+            st.session_state.sim_energy.append(energy_now)
+            record_simulation_history(
+                event_type="instantaneo_periodico",
+                positions=pos,
+                velocities=vel,
+                energy=energy_now,
+                params=params,
+                status=st.session_state.sim_status,
+                step=st.session_state.sim_step,
+            )
     st.session_state.sim_positions = pos
     st.session_state.sim_velocities = vel
     st.session_state.sim_accelerations = acc
-    if st.session_state.sim_step >= params["n_steps"]:
+    if st.session_state.sim_step >= params["n_steps"] and st.session_state.sim_status != "Concluida":
         st.session_state.sim_status = "Concluida"
+        record_current_simulation_event("conclusao", status="Concluida")
 
 
 # -------------------------- RELATORIO PDF -------------------
@@ -483,49 +613,15 @@ class DarkMatterPDF(FPDF):
         self.cell(0, 8, f"Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')} | Pagina {self.page_no()}", align="C")
 
 
-def _render_plotly_to_png(figure, width=1400, height=800):
-    """Exporta uma figura Plotly para PNG via Kaleido, com layout fixo.
+def generate_pdf_report(report_data, figures=None, rotation_figure=None):
+    """Compila parametros, diagnosticos, logs e graficos Plotly num PDF.
 
-    Levanta RuntimeError com mensagem acionavel quando o Kaleido nao esta
-    disponivel, para que a UI/PDF possam exibir uma alternativa clara.
-    """
-    static_figure = go.Figure(figure)
-    static_figure.update_layout(
-        width=width,
-        height=height,
-        autosize=False,
-        template="plotly_white",
-        paper_bgcolor="#ffffff",
-        plot_bgcolor="#ffffff",
-        font=dict(family="Arial, sans-serif", size=15, color="#182235"),
-        title=dict(font=dict(size=23, color="#182235")),
-        margin=dict(l=105, r=45, t=105, b=100),
-        legend=dict(bgcolor="rgba(255,255,255,0.85)", bordercolor="#d4dae5", borderwidth=1),
-    )
-    try:
-        return static_figure.to_image(format="png", width=width, height=height, scale=1, engine="kaleido")
-    except ValueError as exc:
-        # Plotly dispara ValueError quando o motor nao esta instalado.
-        raise RuntimeError(
-            "Kaleido nao esta instalado ou a versao e incompativel. "
-            "Instale as dependencias de requirements.txt (kaleido) e verifique "
-            "se a versao do Plotly e compativel. Detalhe: " + str(exc)[:280]
-        ) from exc
-    except Exception as exc:  # pragma: no cover - depende do ambiente
-        raise RuntimeError(
-            "Falha ao exportar a figura Plotly para PNG via Kaleido. "
-            "Verifique as dependencias do ambiente. Detalhe: " + str(exc)[:280]
-        ) from exc
+    Cada grafico e exportado pelo Kaleido para PNG de 1400 x 800 pixels,
+    gravado temporariamente e inserido no documento FPDF sem redimensionamento
+    nao proporcional. Os avisos de renderizacao sao retornados sem impedir que
+    o restante do relatorio seja criado.
 
-
-def generate_pdf_report(report_data, rotation_figure=None):
-    """Gera PDF e, quando Kaleido esta disponivel, incorpora a curva Plotly como PNG.
-
-    A figura e renderizada com dimensoes fixas (1400 x 800 px) para manter a
-    composicao consistente, gravada temporariamente e inserida no FPDF. Eixos,
-    ticks, legenda e titulos fazem parte da imagem exportada.
-
-    Retorna (bytes_pdf, aviso_exportacao_figura_ou_None).
+    Retorna (bytes_pdf, lista_de_avisos_ou_None).
     """
     pdf = DarkMatterPDF(format="A4")
     pdf.set_auto_page_break(auto=True, margin=16)
@@ -534,7 +630,11 @@ def generate_pdf_report(report_data, rotation_figure=None):
     pdf.set_font("Helvetica", "B", 19)
     pdf.multi_cell(0, 10, "Laboratorio de Materia Escura", new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("Helvetica", "", 10)
-    pdf.multi_cell(0, 6, "Relatorio reproduzivel de parametros, modelos, diagnosticos numericos e comparacao de curvas de rotacao.", new_x="LMARGIN", new_y="NEXT")
+    pdf.multi_cell(
+        0, 6,
+        "Relatorio reproduzivel de parametros, modelos, diagnosticos numericos, historico e visualizacoes cientificas.",
+        new_x="LMARGIN", new_y="NEXT",
+    )
     pdf.ln(3)
 
     def section(title):
@@ -571,91 +671,118 @@ def generate_pdf_report(report_data, rotation_figure=None):
     section("2. Curvas de rotacao e dados")
     table(report_data.get("rotation_rows", []))
 
-    figure_warning = None
-    temporary_image_path = None
-    if rotation_figure is not None:
-        try:
-            image_bytes = _render_plotly_to_png(rotation_figure, width=1400, height=800)
-            with tempfile.NamedTemporaryFile(prefix="dark_matter_plot_", suffix=".png", delete=False) as temp_img:
-                temp_img.write(image_bytes)
-                temporary_image_path = temp_img.name
+    figure_warnings = []
+    named_figures = dict(figures or {})
+    if rotation_figure is not None and not named_figures:
+        named_figures["Curva de rotacao"] = rotation_figure
 
-            image_width_mm = 180
-            image_height_mm = image_width_mm * 800.0 / 1400.0
-            required_height = 8 + 10 + image_height_mm + 5
-            if pdf.get_y() + required_height > pdf.h - pdf.b_margin:
-                pdf.add_page()
-            section("Curva de rotacao - imagem estatica Plotly")
-            pdf.set_font("Helvetica", "", 8)
-            pdf.multi_cell(
-                0, 4.5,
-                "Figura exportada em dimensoes fixas de 1400 x 800 px via Kaleido. "
-                "Os titulos, eixos, graduacoes e legenda sao preservados na imagem.",
-                new_x="LMARGIN", new_y="NEXT",
-            )
-            pdf.ln(2)
-            pdf.image(temporary_image_path, x=15, w=image_width_mm)
-            pdf.ln(3)
-        except RuntimeError as exc:
-            figure_warning = str(exc)
-            section("Grafico Plotly nao incorporado")
-            pdf.set_font("Helvetica", "", 9)
-            pdf.multi_cell(
-                0, 5.5,
-                _pdf_ascii(
-                    "A curva de rotacao nao pode ser incorporada ao PDF. "
-                    + figure_warning
-                    + " Os dados numericos continuam disponiveis nas secoes 1-3 e o CSV pode ser "
-                      "baixado na propria interface."
-                ),
-                new_x="LMARGIN", new_y="NEXT",
-            )
-        except Exception as exc:
-            figure_warning = (
-                "Nao foi possivel incorporar a imagem Plotly. Detalhe: " + str(exc)[:350]
-            )
-            section("Grafico Plotly nao incorporado")
-            pdf.set_font("Helvetica", "", 9)
-            pdf.multi_cell(0, 5.5, _pdf_ascii(figure_warning), new_x="LMARGIN", new_y="NEXT")
-        finally:
-            if temporary_image_path:
-                try:
-                    Path(temporary_image_path).unlink(missing_ok=True)
-                except Exception:
-                    pass
+    if named_figures:
+        section("3. Visualizacoes cientificas (PNG via Kaleido)")
+        for figure_title, figure in named_figures.items():
+            temp_path = None
+            try:
+                static_figure = go.Figure(figure)
+                static_figure.update_layout(
+                    width=1400,
+                    height=800,
+                    autosize=False,
+                    template="plotly_white",
+                    paper_bgcolor="#ffffff",
+                    plot_bgcolor="#ffffff",
+                    font=dict(family="Arial, sans-serif", size=15, color="#182235"),
+                    title=dict(font=dict(size=23, color="#182235")),
+                    margin=dict(l=105, r=55, t=110, b=105),
+                    legend=dict(
+                        bgcolor="rgba(255,255,255,0.88)",
+                        bordercolor="#d4dae5",
+                        borderwidth=1,
+                    ),
+                )
+                # Mantem uma tela fixa e exportacao proporcional; eixos/titulos
+                # sao desenhados pelo Plotly dentro da imagem, nao recriados no PDF.
+                image_bytes = static_figure.to_image(
+                    format="png", width=1400, height=800, scale=1, engine="kaleido"
+                )
+                with tempfile.NamedTemporaryFile(
+                    prefix="dark_matter_plot_", suffix=".png", delete=False
+                ) as temp_img:
+                    temp_img.write(image_bytes)
+                    temp_path = temp_img.name
 
-    section("3. Configuracao e estado da simulacao")
+                image_width_mm = 180.0
+                image_height_mm = image_width_mm * 800.0 / 1400.0
+                heading_height = 9.0
+                caption_height = 8.0
+                if pdf.get_y() + heading_height + caption_height + image_height_mm + 5 > pdf.h - pdf.b_margin:
+                    pdf.add_page()
+                pdf.set_text_color(28, 49, 87)
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.multi_cell(0, 7, _pdf_ascii(figure_title), new_x="LMARGIN", new_y="NEXT")
+                pdf.set_text_color(65, 75, 95)
+                pdf.set_font("Helvetica", "", 8)
+                pdf.multi_cell(
+                    0, 4.2,
+                    "Imagem estatica exportada em 1400 x 800 px; titulo, eixos, graduacoes e legenda fazem parte do PNG.",
+                    new_x="LMARGIN", new_y="NEXT",
+                )
+                pdf.image(temp_path, x=15, w=image_width_mm)
+                pdf.ln(4)
+            except Exception as exc:
+                warning = (
+                    f"{figure_title}: falha na exportacao PNG via Kaleido. Verifique Plotly/Kaleido "
+                    f"e a instalacao indicada no requirements.txt. Detalhe: {str(exc)[:240]}"
+                )
+                figure_warnings.append(warning)
+                pdf.set_text_color(120, 45, 45)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.multi_cell(0, 5.2, _pdf_ascii("Grafico nao incorporado: " + warning), new_x="LMARGIN", new_y="NEXT")
+                pdf.set_text_color(35, 42, 55)
+            finally:
+                if temp_path:
+                    try:
+                        Path(temp_path).unlink(missing_ok=True)
+                    except Exception:
+                        pass
+
+    section("4. Configuracao e estado da simulacao")
     table(report_data.get("simulation_rows", []))
 
-    section("4. Historico da simulacao")
+    section("5. Historico de instantaneos da simulacao")
     history_rows = report_data.get("history_rows", [])
     if history_rows:
         table(history_rows)
     else:
         pdf.set_font("Helvetica", "", 9)
-        pdf.multi_cell(
-            0, 5.5,
-            _pdf_ascii("Nenhuma simulacao foi executada nesta sessao ate o momento."),
-            new_x="LMARGIN", new_y="NEXT",
-        )
+        pdf.multi_cell(0, 5.5, "Nenhum instantaneo foi registrado nesta sessao.", new_x="LMARGIN", new_y="NEXT")
 
-    section("5. Interpretacao e limitacoes cientificas")
+    section("6. Log automatico: interpretacao fisica de cada momento")
+    logs = report_data.get("physics_log", [])
+    if logs:
+        pdf.set_font("Helvetica", "", 8.5)
+        for item in logs:
+            pdf.multi_cell(0, 4.8, _pdf_ascii(item), new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(1)
+    else:
+        pdf.set_font("Helvetica", "", 9)
+        pdf.multi_cell(0, 5.5, "O log sera preenchido quando a simulacao for inicializada e avancar.", new_x="LMARGIN", new_y="NEXT")
+
+    section("7. Interpretacao e limitacoes cientificas")
     pdf.set_font("Helvetica", "", 9)
     notes = [
         "O perfil NFW e parametrizado por massa M200 e concentracao; R200 e rs sao derivados com H0 de referencia igual a 70 km/s/Mpc.",
         "O perfil SIDM com nucleo e o efeito de feedback sao parametrizacoes fenomenologicas para exploracao; nao sao simulacoes hidrodinamicas nem solucoes completas de transporte colisional.",
         "A distribuicao de velocidades e uma amostra Maxwelliana idealizada com dispersao por componente. Nao equivale a uma solucao completa da equacao de Jeans.",
         "Os pontos observacionais sao sinteticos quando nenhum CSV valido e carregado. Os resultados quantitativos nao devem ser interpretados como descoberta ou limite experimental.",
-        "A integracao acompanha tracadores em potencial fixo. As particulas-tracadoras nao interagem umas com as outras, e a suavizacao pode introduzir desvios no diagnostico energetico.",
+        "A integracao acompanha tracadores em potencial fixo. As particulas-tracadoras nao interagem umas com as outras, e a suavizacao e a interpolacao podem introduzir desvios no diagnostico energetico.",
         "A secao de choque por massa e reportada em cm^2/g. O comprimento livre medio calculado na escala rs e apenas uma estimativa local com a densidade do perfil adotado.",
-        "O historico da simulacao agrega diagnosticos instantaneos (energia proxy, raio RMS, velocidade RMS, raio maximo e tracadores fora de R200) em cada gravacao, sem recalcular a dinamica dos tracadores.",
+        "A energia registrada e uma proxy de energia especifica media do modelo numerico, nao uma medicao experimental nem a energia total de um sistema autogravitante completo.",
     ]
     for note in notes:
         pdf.multi_cell(0, 5.5, _pdf_ascii("- " + note), new_x="LMARGIN", new_y="NEXT")
 
     output = pdf.output()
     pdf_bytes = output.encode("latin-1") if isinstance(output, str) else bytes(output)
-    return pdf_bytes, figure_warning
+    return pdf_bytes, (figure_warnings or None)
 
 
 # ---------------------- CABECALHO ---------------------------
@@ -1068,17 +1195,23 @@ with tab_sim:
         reset_clicked = st.button("↺ Reiniciar", use_container_width=True)
 
     if reset_clicked:
-        initialise_simulation(current_params)
+        initialise_simulation(current_params, event_type="reinicializacao")
+        st.session_state.sim_status = "Pausada"
+        record_current_simulation_event("reinicio_pronto", status="Pausada")
         st.rerun()
 
     if start_clicked:
+        was_paused = bool(have_sim and not config_changed and st.session_state.sim_status == "Pausada")
         if not have_sim or config_changed or st.session_state.sim_status in ["Nao iniciada", "Concluida"]:
-            initialise_simulation(current_params)
+            event_type = "reinicio_apos_conclusao" if have_sim and st.session_state.sim_status == "Concluida" else "inicializacao"
+            initialise_simulation(current_params, event_type=event_type)
         st.session_state.sim_status = "Executando"
+        record_current_simulation_event("retomada" if was_paused else "inicio", status="Executando")
         st.rerun()
 
     if pause_clicked:
         st.session_state.sim_status = "Pausada"
+        record_current_simulation_event("pausa", status="Pausada")
         st.rerun()
 
     status = st.session_state.sim_status
@@ -1107,8 +1240,8 @@ with tab_sim:
         step = st.session_state.sim_step
         pos_now = st.session_state.sim_positions
         vel_now = st.session_state.sim_velocities
-        history = st.session_state.get("sim_history", [])
-        history_df = _history_dataframe(history)
+        times = np.asarray(st.session_state.sim_times)
+        energies = np.asarray(st.session_state.sim_energy)
         completion = 100.0 * step / max(params["n_steps"], 1)
         st.progress(min(1.0, completion / 100.0), text=f"Progresso: {completion:.1f}%")
 
@@ -1116,11 +1249,8 @@ with tab_sim:
         m1.metric("Passo atual", f"{step:,} / {params['n_steps']:,}")
         m2.metric("Tempo adimensional", f"{step * params['dt']:.3f}")
         m3.metric("Velocidade RMS", f"{np.sqrt(np.mean(np.sum(vel_now**2, axis=1))):.4f}")
-        if len(history_df) > 0 and abs(history_df["energia_especifica_media_proxy"].iloc[0]) > 1e-12:
-            drift = 100.0 * (
-                history_df["energia_especifica_media_proxy"].iloc[-1]
-                - history_df["energia_especifica_media_proxy"].iloc[0]
-            ) / abs(history_df["energia_especifica_media_proxy"].iloc[0])
+        if len(energies) > 0 and abs(energies[0]) > 1e-12:
+            drift = 100.0 * (energies[-1] - energies[0]) / abs(energies[0])
             m4.metric("Variacao da energia proxy", f"{drift:+.3g}%")
         else:
             drift = float("nan")
@@ -1149,12 +1279,7 @@ with tab_sim:
             st.plotly_chart(fig_particles, use_container_width=True)
         with sim_col2:
             fig_e = go.Figure()
-            if len(history_df) > 0:
-                fig_e.add_trace(go.Scatter(
-                    x=history_df["tempo_adimensional"],
-                    y=history_df["energia_especifica_media_proxy"],
-                    mode="lines+markers", name="Energia proxy media",
-                ))
+            fig_e.add_trace(go.Scatter(x=times, y=energies, mode="lines+markers", name="Energia proxy media"))
             fig_e.update_layout(
                 template="plotly_dark", height=430, title="Diagnostico de energia",
                 xaxis_title="Tempo adimensional", yaxis_title="Energia especifica (proxy)",
@@ -1168,40 +1293,47 @@ with tab_sim:
         else:
             st.caption("Execucao pausada ou aguardando inicio.")
 
-        with st.expander("Historico da simulacao", expanded=False):
-            st.caption(
-                "Diagnosticos instantaneos registrados a cada N passos. Reutilizam a mesma rotina "
-                "de diagnostico usada no painel ao vivo, sem recalcular a dinamica dos tracadores."
-            )
-            if history_df.empty:
-                st.info("Nenhum registro ainda. Inicie a simulacao para popular o historico.")
+        df_history = pd.DataFrame({
+            "tempo_adimensional": times,
+            "energia_especifica_media_proxy": energies,
+        })
+        st.download_button(
+            "⬇️ Exportar historico fisico da simulacao (CSV)",
+            data=df_history.to_csv(index=False).encode("utf-8"),
+            file_name="historico_simulacao_energia.csv", mime="text/csv",
+            key="download_sim_history",
+        )
+
+        all_history = st.session_state.get("simulation_history", [])
+        with st.expander(f"🧭 Historico automatico e log fisico ({len(all_history)} registros)", expanded=False):
+            if all_history:
+                show_history_details = st.checkbox(
+                    "Carregar tabela detalhada, logs e exportacao completa",
+                    value=False,
+                    key="show_history_details",
+                    help="Os detalhes sao carregados sob demanda para manter a simulacao fluida.",
+                )
+                if show_history_details:
+                    history_df = cached_history_dataframe(all_history)
+                    visible_cols = [
+                        "recorded_at", "run_id", "event_type", "step", "time_adimensional", "status",
+                        "energy_specific_mean_proxy", "energy_drift_percent", "velocity_rms", "radius_rms",
+                    ]
+                    st.dataframe(history_df[visible_cols].tail(30), use_container_width=True, hide_index=True)
+                    st.download_button(
+                        "Baixar historico completo com parametros e log (CSV)",
+                        data=history_df.to_csv(index=False).encode("utf-8"),
+                        file_name="historico_fisico_dark_matter_lab.csv",
+                        mime="text/csv",
+                        key="download_full_simulation_history",
+                    )
+                    st.markdown("**Log fisico mais recente**")
+                    for record in all_history[-8:][::-1]:
+                        st.write(f"**Execucao {record['run_id']} · passo {record['step']} · {record['event_type']}** — {record['physics_log']}")
+                else:
+                    st.caption("O historico esta sendo armazenado automaticamente. Ative a opcao acima para consultar e exportar os detalhes.")
             else:
-                fig_history = go.Figure()
-                fig_history.add_trace(go.Scatter(
-                    x=history_df["tempo_adimensional"], y=history_df["raio_rms_rs"],
-                    mode="lines+markers", name="Raio RMS (r/rs)",
-                    line=dict(color="#58c4dd"),
-                ))
-                fig_history.add_trace(go.Scatter(
-                    x=history_df["tempo_adimensional"], y=history_df["raio_maximo_rs"],
-                    mode="lines", name="Raio maximo (r/rs)",
-                    line=dict(color="#ffbd69", dash="dash"),
-                ))
-                fig_history.update_layout(
-                    template="plotly_dark", height=360,
-                    title="Evolucao do raio dos tracadores",
-                    xaxis_title="Tempo adimensional", yaxis_title="r / rs",
-                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
-                    legend=dict(orientation="h", y=1.12),
-                )
-                st.plotly_chart(fig_history, use_container_width=True)
-                st.dataframe(history_df, use_container_width=True, hide_index=True)
-                st.download_button(
-                    "⬇️ Exportar historico da simulacao (CSV)",
-                    data=history_df.to_csv(index=False).encode("utf-8"),
-                    file_name="historico_simulacao.csv", mime="text/csv",
-                    key="download_sim_history",
-                )
+                st.info("O historico sera preenchido automaticamente quando voce iniciar ou reinicializar uma simulacao.")
 
     simulation_live_panel()
 
@@ -1256,44 +1388,75 @@ with tab_sim:
         ("Raio RMS de velocidade atual", f"{simulation_metrics.get('velocity_rms', float('nan')):.5g}" if np.isfinite(simulation_metrics.get('velocity_rms', float('nan'))) else "N/D"),
         ("Variacao da energia proxy", f"{simulation_metrics.get('energy_drift_percent', float('nan')):.5g}%" if np.isfinite(simulation_metrics.get('energy_drift_percent', float('nan'))) else "N/D"),
     ]
-
-    history = st.session_state.get("sim_history", [])
-    if history:
-        first = history[0]
-        last = history[-1]
-        history_rows = [
-            ("Registros no historico", str(len(history))),
-            ("Passo inicial / final", f"{first['step']} / {last['step']}"),
-            ("Tempo inicial / final", f"{first['time']:.5g} / {last['time']:.5g}"),
-            ("Energia proxy inicial", f"{first['energy_proxy']:.6g}"),
-            ("Energia proxy final", f"{last['energy_proxy']:.6g}"),
-            ("Raio RMS inicial / final (r/rs)", f"{first['rms_radius']:.5g} / {last['rms_radius']:.5g}"),
-            ("Velocidade RMS inicial / final", f"{first['rms_speed']:.5g} / {last['rms_speed']:.5g}"),
-            ("Raio maximo final (r/rs)", f"{last['max_radius']:.5g}"),
-            ("Tracadores fora de R200 (final)", str(last['n_escaped'])),
-        ]
-    else:
-        history_rows = []
-
     if st.button(
-        "📄 Gerar relatorio PDF",
+        "📄 Gerar relatorio PDF completo",
         type="primary",
         use_container_width=True,
-        help="Gera um PDF com parametros, metricas, historico e a curva de rotacao Plotly em imagem estatica.",
+        help="Compila parametros, graficos Plotly em PNG, diagnostico energetico, historico e log fisico.",
         key="generate_dark_matter_pdf",
     ):
-        with st.spinner("Gerando PDF e exportando a curva Plotly em PNG..."):
-            pdf_bytes, pdf_chart_warning = generate_pdf_report(
+        report_figures = {
+            "Perfis de densidade: NFW versus SIDM": fig_density_compare,
+            "Distribuicao de velocidades": fig_velocity,
+            "Curva de rotacao: teoria versus observacao": fig_rot,
+            "Perfil radial com feedback barionico": fb_fig,
+            "Mapa espacial 2D de densidade": fig_map,
+        }
+        if have_sim:
+            report_pos = st.session_state.sim_positions
+            report_fig_particles = go.Figure()
+            report_fig_particles.add_trace(go.Scattergl(
+                x=report_pos[:, 0], y=report_pos[:, 1], mode="markers", name="Tracadores",
+                marker=dict(size=4, color=np.linalg.norm(report_pos, axis=1), colorscale="Viridis",
+                            showscale=True, colorbar=dict(title="r / rs")),
+            ))
+            report_fig_particles.update_layout(
+                template="plotly_dark", title="Configuracao instantanea de tracadores",
+                xaxis_title="x / rs", yaxis_title="y / rs", height=430,
+            )
+            report_fig_particles.update_yaxes(scaleanchor="x", scaleratio=1)
+            report_fig_energy = go.Figure()
+            report_fig_energy.add_trace(go.Scatter(
+                x=st.session_state.sim_times, y=st.session_state.sim_energy,
+                mode="lines+markers", name="Energia proxy media",
+            ))
+            report_fig_energy.update_layout(
+                template="plotly_dark", title="Diagnostico de energia da simulacao",
+                xaxis_title="Tempo adimensional", yaxis_title="Energia especifica (proxy)", height=430,
+            )
+            report_figures["Estado atual dos tracadores"] = report_fig_particles
+            report_figures["Evolucao temporal da energia"] = report_fig_energy
+
+        all_history = st.session_state.get("simulation_history", [])
+        history_rows = []
+        for item in all_history[-24:]:
+            drift_text = f"{item['energy_drift_percent']:+.4g}%" if np.isfinite(item.get("energy_drift_percent", float("nan"))) else "N/D"
+            params_json = json.dumps(item.get("parameters", {}), ensure_ascii=True, sort_keys=True)
+            history_rows.append((
+                f"Execucao {item['run_id']} · passo {item['step']}",
+                f"{item['recorded_at']} | {item['event_type']} | t={item['time_adimensional']:.5g} | "
+                f"Eproxy={item['energy_specific_mean_proxy']:.6g} | E0={item.get('energy_initial_proxy', float('nan')):.6g} | "
+                f"deltaE={item.get('energy_delta_proxy', float('nan')):.5g} | drift={drift_text} | "
+                f"vRMS={item['velocity_rms']:.5g} | Rrms={item['radius_rms']:.5g} | estado={item['status']} | "
+                f"Parametros deste instantaneo: {params_json}"
+            ))
+        physics_log_rows = [
+            f"[{item['recorded_at']}] Execucao {item['run_id']}, passo {item['step']}: {item['physics_log']}"
+            for item in all_history[-30:]
+        ]
+        with st.spinner("Gerando PDF, exportando figuras em PNG e compilando o historico..."):
+            pdf_bytes, pdf_chart_warnings = generate_pdf_report(
                 {
                     "physics_rows": physics_rows,
                     "rotation_rows": rotation_rows,
                     "simulation_rows": sim_rows,
                     "history_rows": history_rows,
+                    "physics_log": physics_log_rows,
                 },
-                rotation_figure=fig_rot,
+                figures=report_figures,
             )
             st.session_state["dark_matter_pdf_bytes"] = pdf_bytes
-            st.session_state["dark_matter_pdf_chart_warning"] = pdf_chart_warning
+            st.session_state["dark_matter_pdf_chart_warning"] = pdf_chart_warnings
             st.session_state["dark_matter_pdf_generated_at"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
     if st.session_state.get("dark_matter_pdf_bytes"):
@@ -1311,16 +1474,16 @@ with tab_sim:
             key="download_dark_matter_pdf",
         )
         if st.session_state.get("dark_matter_pdf_chart_warning"):
-            st.warning(
-                "O PDF foi criado, mas o grafico nao foi incorporado. "
-                "Instale as dependencias de requirements.txt (incluindo Kaleido) e verifique "
-                "a compatibilidade com a versao do Plotly. Detalhe: "
-                + st.session_state["dark_matter_pdf_chart_warning"]
-            )
+            warnings = st.session_state["dark_matter_pdf_chart_warning"]
+            if isinstance(warnings, str):
+                warnings = [warnings]
+            st.warning("O PDF foi criado, mas algumas figuras nao puderam ser incorporadas:")
+            for warning in warnings:
+                st.caption(warning)
     st.caption(
-        "O relatorio inclui parametros, metricas de ajuste, historico da simulacao, limitacoes cientificas e, "
-        "quando o Kaleido esta instalado corretamente, a curva de rotacao Plotly exportada em PNG de 1400 x 800 px, "
-        "com titulo, eixos e legenda."
+        "O PDF agrega os graficos disponiveis (densidade, velocidades, curvas de rotacao, feedback, mapa espacial e, "
+        "quando inicializada, simulacao e energia), cada um exportado via Kaleido em PNG de 1400 x 800 px; inclui tambem "
+        "historico de instantaneos, parametros e log automatico da interpretacao fisica."
     )
 
 # ------------------------- RODAPE ---------------------------
@@ -1331,6 +1494,5 @@ st.markdown(
     "- O perfil SIDM com nucleo e o feedback barionico sao modelos fenomenologicos ajustaveis, nao simulacoes completas de materia escura autointeragente ou hidrodinamica.  \n"
     "- Curvas observacionais so sao reais quando fornecidas por um conjunto externo validado via CSV; os dados sinteticos sao apenas demonstrativos.  \n"
     "- O mapa espacial mostra um corte da densidade e nao calcula lentes gravitacionais.  \n"
-    "- A integracao acompanha tracadores em potencial fixo; tracadores nao interagem entre si. O diagnostico energetico e uma aproximacao numerica.  \n"
-    "- O historico da simulacao agrega diagnosticos instantaneos em cada gravacao e reutiliza a mesma rotina do painel ao vivo, sem duplicar a logica de integracao."
+    "- A integracao acompanha tracadores em potencial fixo; tracadores nao interagem entre si. O diagnostico energetico e uma aproximacao numerica."
 )
