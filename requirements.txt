@@ -1,5 +1,5 @@
 # Core numérico
-numpy>=1.24,<2.2
+numpy>=2.5,<2.6
 scipy>=1.10
 
 # DataFrames
@@ -14,10 +14,11 @@ streamlit>=1.30,<1.40
 # Exportação
 kaleido==0.2.1
 fpdf2>=2.7,<3.0
+pillow>=12.0,<13.0
 
 # JIT — versões compatíveis com Python 3.14
-numba>=0.65,<0.67
-llvmlite>=0.47,<0.50
+numba>=0.63,<0.68
+llvmlite>=0.43,<0.48
 
 # Fila assíncrona
 celery>=5.3,<5.5
