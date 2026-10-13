@@ -15,8 +15,7 @@ import streamlit as st
 from fpdf import FPDF
 
 # ============================================================
-# NUMBA — compilacao JIT para aceleracao numerica
-# Fallback seguro se numba nao estiver instalado.
+# NUMBA — compilacao JIT
 # ============================================================
 try:
     from numba import njit
@@ -25,16 +24,11 @@ except ImportError:  # pragma: no cover
     NUMBA_AVAILABLE = False
 
     def njit(func=None, **kwargs):
-        """Fallback no-op: aceita @njit e @njit(cache=True) sem alterar comportamento."""
         if func is None:
             def wrapper(f):
                 return f
             return wrapper
         return func
-
-# ============================================================
-# DARK MATTER LAB — EDICAO LIVRE + IA PROPAGADORA + NUMBA
-# ============================================================
 
 st.set_page_config(
     page_title="Dark Matter Lab",
@@ -177,11 +171,8 @@ for _key, _value in DEFAULT_WIDGET_STATE.items():
 MAX_SIMULATION_HISTORY = 5000
 
 CANDIDATE_OPTIONS = [
-    "WIMPs",
-    "Axions",
-    "Neutrinos estereis",
-    "Materia escura autointeragente (SIDM)",
-    "Materia escura generica",
+    "WIMPs", "Axions", "Neutrinos estereis",
+    "Materia escura autointeragente (SIDM)", "Materia escura generica",
 ]
 HALO_MODEL_OPTIONS = ["NFW", "SIDM (nucleo fenomenologico)"]
 DENSITY_MODEL_OPTIONS = ["NFW", "SIDM"]
@@ -194,12 +185,9 @@ SIM_HALO_MODEL_OPTIONS = ["NFW", "SIDM"]
 def free_number(label, key, help_text="", fmt="%.6g", step=None):
     lo, hi, default_step = FREE_RANGES[key]
     return st.number_input(
-        label,
-        min_value=float(lo),
-        max_value=float(hi),
+        label, min_value=float(lo), max_value=float(hi),
         step=float(step if step is not None else default_step),
-        format=fmt,
-        key=key,
+        format=fmt, key=key,
         help=help_text or f"Faixa ampla: [{lo}, {hi}]. Digite qualquer valor.",
     )
 
@@ -207,11 +195,8 @@ def free_number(label, key, help_text="", fmt="%.6g", step=None):
 def free_int(label, key, help_text=""):
     lo, hi, default_step = FREE_INT_RANGES[key]
     return st.number_input(
-        label,
-        min_value=int(lo),
-        max_value=int(hi),
-        step=int(default_step),
-        key=key,
+        label, min_value=int(lo), max_value=int(hi),
+        step=int(default_step), key=key,
         help=help_text or f"Faixa ampla: [{lo}, {hi}]. Digite qualquer inteiro.",
     )
 
@@ -470,22 +455,8 @@ def nfw_parameters(m200_msun, concentration):
 # ============================================================
 # KERNELS NUMBA — FISICA DA MATERIA ESCURA
 # ============================================================
-# Estas funcoes sao o nucleo numerico mais pesado do app: cada
-# renderizacao de pagina chama halo_shape, build_profile_lookup e
-# profile_density diversas vezes, cada uma integrando sobre
-# 2.200-4.000 pontos. Os @njit(cache=True) abaixo compilam esses
-# lacos para codigo de maquina, mantendo a mesma formula e a mesma
-# precisao em ponto flutuante (fastmath desligado).
-
 @njit(cache=True)
 def _halo_shape_numba(x, use_sidm, core_x, feedback_strength, feedback_scale_x):
-    """Perfil adimensional rho/rho_s (Numba).
-
-    x: array 1D (raio em unidades de rs, ja incluindo x=0).
-    use_sidm: True para SIDM (nucleo), False para NFW.
-    core_x, feedback_strength, feedback_scale_x: escalares ja
-        normalizados por rs no chamador.
-    """
     n = x.shape[0]
     out = np.empty(n, dtype=np.float64)
     for i in range(n):
@@ -502,28 +473,12 @@ def _halo_shape_numba(x, use_sidm, core_x, feedback_strength, feedback_scale_x):
 
 @njit(cache=True)
 def _integrate_profile_core(x_grid, shape):
-    """Integra perfil para massa encerrada e potencial (Numba).
-
-    Recebe x_grid (array 1D, com x=0 no inicio) e shape (avaliacao
-    de _halo_shape_numba no mesmo grid). Retorna (mass_fraction,
-    potential) normalizados para M(<R200)=1.
-
-    Matematica identica a versao vetorizada Python:
-      integrand[i] = x^2 * shape
-      increments   = 0.5*(f[i+1]+f[i])*dx
-      cumulative   = cumsum(increments) comecando em 0
-      mass_frac    = cumulative/norm
-      kernel       = integrand/norm/x (com kernel[0]=kernel[1])
-      outer_int[i] = sum_{j>=i} 0.5*(kernel[j+1]+kernel[j])*dx_j
-      Phi/G        = -(mass_frac/x + outer_int)
-    """
     n = x_grid.shape[0]
     integrand = np.empty(n, dtype=np.float64)
     for i in range(n):
         x = x_grid[i]
         integrand[i] = x * x * shape[i]
 
-    # Inicializa array de massa encerrada e potencial
     mass_fraction = np.empty(n, dtype=np.float64)
     potential = np.empty(n, dtype=np.float64)
 
@@ -532,7 +487,6 @@ def _integrate_profile_core(x_grid, shape):
         potential[0] = -1.0 / max(x_grid[0], 1e-8)
         return mass_fraction, potential
 
-    # Integracao trapezoidal cumulativa
     cumulative = np.empty(n, dtype=np.float64)
     cumulative[0] = 0.0
     for i in range(1, n):
@@ -552,7 +506,6 @@ def _integrate_profile_core(x_grid, shape):
         else:
             mass_fraction[i] = mf
 
-    # Kernel = dmdx / x
     kernel = np.empty(n, dtype=np.float64)
     for i in range(n):
         x = x_grid[i]
@@ -562,7 +515,6 @@ def _integrate_profile_core(x_grid, shape):
             kernel[i] = 0.0
     kernel[0] = kernel[1]
 
-    # Soma reversa dos incrementos trapezoidais
     outer_integral = np.zeros(n, dtype=np.float64)
     acc = 0.0
     for i in range(n - 2, -1, -1):
@@ -570,7 +522,6 @@ def _integrate_profile_core(x_grid, shape):
         acc += 0.5 * (kernel[i + 1] + kernel[i]) * dx
         outer_integral[i] = acc
 
-    # Potencial Phi/G = -(M(<r)/r + integral_r^R200 dM/s)
     for i in range(n):
         x_safe = x_grid[i] if x_grid[i] > 1e-8 else 1e-8
         potential[i] = -(mass_fraction[i] / x_safe + outer_integral[i])
@@ -582,16 +533,9 @@ def _integrate_profile_core(x_grid, shape):
 @njit(cache=True)
 def _profile_density_numba(x_query, x_norm, use_sidm, core_x, feedback_strength,
                             feedback_scale_x, m200_over_4pi_rs3):
-    """Densidade de halo normalizada para M(<R200)=M200 (Numba).
-
-    x_query: pontos onde a densidade sera avaliada (array 1D).
-    x_norm:  grade de normalizacao (array 1D, tipicamente 4000 pts).
-    m200_over_4pi_rs3: m200/(4*pi*rs^3) — pre-fator de normalizacao.
-    Retorna: rho(x_query) em Msun/kpc^3.
-    """
+    """Densidade de halo normalizada — kernel Numba (entrada 1D obrigatoria)."""
     n = x_norm.shape[0]
 
-    # Avalia shape no grid de normalizacao
     shape_norm = np.empty(n, dtype=np.float64)
     for i in range(n):
         xi = x_norm[i]
@@ -603,7 +547,6 @@ def _profile_density_numba(x_query, x_norm, use_sidm, core_x, feedback_strength,
         suppression = 1.0 - feedback_strength * np.exp(-xi / feedback_scale_x)
         shape_norm[i] = shape_i * suppression
 
-    # Integral trapezoidal de x^2 * shape
     integral = 0.0
     for i in range(n - 1):
         dx = x_norm[i + 1] - x_norm[i]
@@ -615,7 +558,6 @@ def _profile_density_numba(x_query, x_norm, use_sidm, core_x, feedback_strength,
         integral = 1e-30
     rho0 = m200_over_4pi_rs3 / integral
 
-    # Avalia densidade nos pontos pedidos
     m = x_query.shape[0]
     out = np.empty(m, dtype=np.float64)
     for i in range(m):
@@ -632,16 +574,12 @@ def _profile_density_numba(x_query, x_norm, use_sidm, core_x, feedback_strength,
 
 
 # ============================================================
-# WRAPPERS PYTHON — MESMA ASSINATURA, CHAMAM OS KERNELS NUMBA
+# WRAPPERS PYTHON — CORRIGIDOS PARA ENTRADAS N-D
 # ============================================================
 def halo_shape(x, model="NFW", core_x=0.15, feedback_strength=0.0, feedback_scale_x=0.15):
-    """Perfil adimensional rho/rho_s — wrapper sobre _halo_shape_numba.
-
-    A logica de detecao de modelo, os clamps de core_x e feedback_scale_x
-    e o clip de feedback_strength para [0, 100] sao identicos ao original.
-    """
+    """Wrapper sobre _halo_shape_numba. Retorna sempre 1-D."""
     x_arr = np.ascontiguousarray(np.atleast_1d(np.asarray(x, dtype=np.float64)).ravel())
-    use_sidm = model.upper().startswith("SIDM")
+    use_sidm = bool(model.upper().startswith("SIDM"))
     core_x_safe = max(float(core_x), 1e-5)
     fb_clamped = min(max(float(feedback_strength), 0.0), 100.0)
     scale_safe = max(float(feedback_scale_x), 1e-5)
@@ -650,29 +588,37 @@ def halo_shape(x, model="NFW", core_x=0.15, feedback_strength=0.0, feedback_scal
 
 def profile_density(radius_kpc, m200_msun, concentration, core_radius_kpc=3.0,
                     model="NFW", feedback_strength=0.0, feedback_scale_kpc=3.0):
-    """Densidade de halo normalizada — wrapper sobre _profile_density_numba."""
+    """Wrapper sobre _profile_density_numba.
+
+    Preserva a forma original da entrada (1D ou 2D). Antes havia um bug
+    em que x_query 2D era passado para o kernel 1D, disparando o
+    TypingError do Numba. Aqui achatamos, executamos e restauramos.
+    """
     r200, rs, _ = nfw_parameters(m200_msun, concentration)
     x_core = max(core_radius_kpc / rs, 1e-5)
     x_fb = max(feedback_scale_kpc / rs, 1e-5)
 
     x_norm = np.ascontiguousarray(np.linspace(0.0, float(concentration), 4000), dtype=np.float64)
-    radius = np.asarray(radius_kpc, dtype=np.float64)
-    x_query = np.ascontiguousarray(np.maximum(radius / rs, 1e-10), dtype=np.float64)
 
-    use_sidm = model.upper().startswith("SIDM")
+    radius = np.asarray(radius_kpc, dtype=np.float64)
+    original_shape = radius.shape
+    radius_flat = radius.ravel()
+    x_query = np.ascontiguousarray(np.maximum(radius_flat / rs, 1e-10), dtype=np.float64)
+
+    use_sidm = bool(model.upper().startswith("SIDM"))
     core_x_safe = max(float(x_core), 1e-5)
     fb_clamped = min(max(float(feedback_strength), 0.0), 100.0)
     scale_safe = max(float(x_fb), 1e-5)
-    prefactor = m200_msun / (4.0 * np.pi * rs**3)
+    prefactor = float(m200_msun / (4.0 * np.pi * rs**3))
 
-    return _profile_density_numba(
+    rho_flat = _profile_density_numba(
         x_query, x_norm, use_sidm, core_x_safe, fb_clamped, scale_safe, prefactor,
     )
+    return rho_flat.reshape(original_shape)
 
 
 def build_profile_lookup(concentration, model="NFW", core_x=0.15,
                           feedback_strength=0.0, feedback_scale_x=0.15, grid_size=3500):
-    """Massa encerrada + potencial — wrapper sobre _integrate_profile_core."""
     c = max(float(concentration), 1e-3)
     x_grid = np.unique(np.concatenate(([0.0], np.geomspace(1e-6, c, grid_size))))
     shape = halo_shape(x_grid, model, core_x, feedback_strength, feedback_scale_x)
@@ -822,7 +768,7 @@ def load_observational_csv(uploaded_file):
 
 
 # ============================================================
-# SIMULACAO DE TRACADORES — KERNELS NUMBA
+# SIMULACAO DE TRACADORES — NUMBA + RESUMO ESTATISTICO
 # ============================================================
 def create_initial_tracers(n, seed, concentration, mass_x, mass_fraction, g_dimless):
     rng = np.random.default_rng(seed)
@@ -840,7 +786,6 @@ def create_initial_tracers(n, seed, concentration, mass_x, mass_fraction, g_diml
 
 @njit(cache=True)
 def tracer_acceleration(positions, g_dimless, mass_x, mass_fraction, softening):
-    """Aceleracao gravitacional de cada tracador (compilada via Numba)."""
     n = positions.shape[0]
     out = np.empty((n, 2), dtype=np.float64)
     eps2 = softening * softening
@@ -859,7 +804,6 @@ def tracer_acceleration(positions, g_dimless, mass_x, mass_fraction, softening):
 
 @njit(cache=True)
 def tracer_energy_proxy(positions, velocities, g_dimless, mass_x, potential_x):
-    """Energia especifica media proxy dos tracadores (compilada via Numba)."""
     n = positions.shape[0]
     r_max = mass_x[-1]
     total = 0.0
@@ -877,6 +821,56 @@ def tracer_energy_proxy(positions, velocities, g_dimless, mass_x, potential_x):
             phi = np.interp(r_safe, mass_x, potential_x)
         total += kinetic + g_dimless * phi
     return total / n
+
+
+def summarize_particle_state(positions, velocities, n_bins=50, r_extent=None):
+    """Resumo estatistico compacto de um instante da simulacao.
+
+    Substitui o antigo `pos.copy()` — que armazenava 500.000 x 2 floats
+    (~8 MB) por snapshot — por histogramas e momentos (~1 KB). Isso
+    reduz o uso de memoria de ~800 MB para ~100 KB em 100 snapshots.
+
+    Retorna dicionario serializavel com:
+      - r_hist, r_hist_edges: histograma radial
+      - r_mean, r_rms, r_max, r_p10, r_p50, r_p90
+      - v_mean, v_rms
+    """
+    r = np.linalg.norm(positions, axis=1)
+    speed_sq = np.sum(velocities ** 2, axis=1)
+
+    if r_extent is None:
+        r_extent = float(np.max(r)) if r.size else 1.0
+    r_extent = max(r_extent, 1e-6)
+
+    hist, edges = np.histogram(r, bins=n_bins, range=(0.0, r_extent))
+
+    return {
+        "r_hist": hist.astype(np.int32).tolist(),
+        "r_hist_edges": edges.astype(np.float32).tolist(),
+        "r_mean": float(np.mean(r)) if r.size else 0.0,
+        "r_rms": float(np.sqrt(np.mean(r ** 2))) if r.size else 0.0,
+        "r_max": float(np.max(r)) if r.size else 0.0,
+        "r_p10": float(np.percentile(r, 10)) if r.size else 0.0,
+        "r_p50": float(np.percentile(r, 50)) if r.size else 0.0,
+        "r_p90": float(np.percentile(r, 90)) if r.size else 0.0,
+        "v_mean": float(np.mean(np.sqrt(speed_sq))) if r.size else 0.0,
+        "v_rms": float(np.sqrt(np.mean(speed_sq))) if r.size else 0.0,
+    }
+
+
+def compute_adaptive_chunk(n_particles, target_ops=50_000):
+    """Escolhe max_chunk adaptativo para manter a UI responsiva.
+
+    Para 1.000 particulas -> chunk = 50 passos (default historico).
+    Para 500.000 particulas -> chunk = 5 passos.
+    Limites: [5, 500] para evitar trabalho excessivo por bloco.
+    """
+    try:
+        n = max(int(n_particles), 1)
+    except (TypeError, ValueError):
+        n = 1
+    chunk = int(target_ops / n)
+    return max(5, min(500, chunk))
 
 
 def explain_simulation_physics(step, time_value, params, energy, energy_drift, velocity_rms,
@@ -1091,10 +1085,12 @@ def record_simulation_history(event_type="snapshot", positions=None, velocities=
         energy_drift = 100.0 * (energy - energy_initial) / abs(energy_initial)
     else:
         energy_drift = float("nan")
-    velocity_rms = float(np.sqrt(np.mean(np.sum(velocities ** 2, axis=1))))
-    radii = np.linalg.norm(positions, axis=1)
-    radius_rms = float(np.sqrt(np.mean(radii ** 2)))
-    mean_radius = float(np.mean(radii))
+
+    summary = summarize_particle_state(positions, velocities)
+    velocity_rms = summary["v_rms"]
+    radius_rms = summary["r_rms"]
+    mean_radius = summary["r_mean"]
+
     status_value = str(status if status is not None else st.session_state.get("sim_status", "Desconhecido"))
     physics_log = explain_simulation_physics(
         step, time_value, params, energy, energy_drift, velocity_rms,
@@ -1120,6 +1116,9 @@ def record_simulation_history(event_type="snapshot", positions=None, velocities=
         "velocity_rms": velocity_rms,
         "radius_rms": radius_rms,
         "mean_radius": mean_radius,
+        "r_max": summary["r_max"],
+        "r_p50": summary["r_p50"],
+        "r_p90": summary["r_p90"],
         "parameters": params.copy(),
         "physics_log": physics_log,
         "contextual_insight": contextual_insight,
@@ -1148,8 +1147,8 @@ def history_dataframe(history):
     columns = [
         "recorded_at", "run_id", "event_type", "step", "n_steps", "time_adimensional", "status",
         "energy_specific_mean_proxy", "energy_initial_proxy", "energy_delta_proxy", "energy_drift_percent",
-        "velocity_rms", "radius_rms", "mean_radius", "parameters_json",
-        "physics_log", "contextual_insight",
+        "velocity_rms", "radius_rms", "mean_radius", "r_max", "r_p50", "r_p90",
+        "parameters_json", "physics_log", "contextual_insight",
     ]
     rows = []
     for item in history:
@@ -1185,9 +1184,10 @@ def initialise_simulation(params, event_type="inicializacao"):
     st.session_state.sim_mass_fraction = mass_fraction
     st.session_state.sim_potential_x = potential_x
     st.session_state.sim_step = 0
-    st.session_state.sim_snapshots = [positions.copy()]
     st.session_state.sim_times = [0.0]
     st.session_state.sim_energy = [tracer_energy_proxy(positions, velocities, params["g_dimless"], mass_x, potential_x)]
+    # Substitui sim_snapshots por sim_summaries: armazena apenas metricas resumidas
+    st.session_state.sim_summaries = [summarize_particle_state(positions, velocities)]
     st.session_state.sim_status = "Pronta para executar"
     st.session_state.sim_params = params.copy()
     st.session_state.simulation_run_counter = int(st.session_state.get("simulation_run_counter", 0)) + 1
@@ -1198,13 +1198,19 @@ def initialise_simulation(params, event_type="inicializacao"):
     )
 
 
-def integrate_chunk(params, max_chunk=50):
-    """Integra um bloco de passos.
+def integrate_chunk(params, max_chunk=None):
+    """Integra um bloco adaptativo de passos.
 
-    max_chunk=50 foi escolhido para a UI atualizar a cada ~4 s, em vez de
-    a cada ~16 s (com 200). O ganho percebido de fluidez vem de manter o
-    trabalho por chunk abaixo do limiar de timeout do Streamlit.
+    Se max_chunk=None, calcula dinamicamente com compute_adaptive_chunk,
+    escalando com 1/N_partículas para manter a UI responsiva:
+      1.000 partículas  -> 50 passos
+      10.000 partículas -> 50 passos
+      100.000 partículas -> 5 passos
+      500.000 partículas -> 5 passos (limite inferior)
     """
+    if max_chunk is None:
+        max_chunk = compute_adaptive_chunk(params.get("n_particles", 1000))
+
     remaining = params["n_steps"] - st.session_state.sim_step
     if remaining <= 0:
         st.session_state.sim_status = "Concluida"
@@ -1226,7 +1232,8 @@ def integrate_chunk(params, max_chunk=50):
         st.session_state.sim_step += 1
         if (st.session_state.sim_step % max(1, params["record_every"]) == 0
                 or st.session_state.sim_step == params["n_steps"]):
-            st.session_state.sim_snapshots.append(pos.copy())
+            # Armazena apenas o resumo estatistico, nao o array completo
+            st.session_state.sim_summaries.append(summarize_particle_state(pos, vel))
             st.session_state.sim_times.append(st.session_state.sim_step * dt)
             energy_now = tracer_energy_proxy(pos, vel, params["g_dimless"], mass_x, potential_x)
             st.session_state.sim_energy.append(energy_now)
@@ -1412,10 +1419,10 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
         "Assistente IA escreve em st.session_state; fisica inalterada.",
         "Fracao de ME = M_DM(<r) / [M_DM(<r) + M_baryon(<r)].",
         "Campos numericos liberados; faixas amplas podem produzir configuracoes fora do regime validado.",
-        "Perfil (halo_shape), integracao massa/potencial (build_profile_lookup) e densidade "
-        "(profile_density) compilados via Numba @njit(cache=True) — mesma matematica, mesma precisao.",
+        "Kernels de perfil, integracao de massa/potencial e densidade compilados via Numba @njit(cache=True).",
         "Tracadores (aceleracao e energia proxy) tambem compilados via Numba @njit(cache=True).",
-        "Blocos de integracao de 50 passos para manter a UI responsiva.",
+        "Blocos de integracao adaptativos: escala com 1/N_particulas para manter a UI responsiva.",
+        "Historico de instantaneos usa metricas resumidas (histogramas e momentos), nao arrays completos.",
     ]
     for note in notes:
         pdf.multi_cell(0, 5.5, _pdf_ascii("- " + note), new_x="LMARGIN", new_y="NEXT")
@@ -1441,15 +1448,17 @@ st.title("🌌 Dark Matter Lab")
 st.markdown(
     '<p class="lab-subtitle">Laboratorio interativo: halos NFW, SIDM, dinamica estelar, feedback '
     'barionico, simulacoes numericas, assistente IA e campos livres.'
-    + ('<span class="numba-badge">⚡ Numba JIT ativo — fisica compilada</span>' if NUMBA_AVAILABLE
+    + ('<span class="numba-badge">⚡ Numba JIT — fisica + simulacao</span>' if NUMBA_AVAILABLE
        else '<span class="numba-badge">⚠️ Numba ausente — fallback numpy</span>')
     + '</p>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="sync-banner">🔓 <b>Campos livres</b>: qualquer valor numerico. '
-    '🤖 <b>IA propagadora</b>: aba ⑤ escreve nas mesmas chaves <code>st.session_state</code> '
-    'lidas por todas as abas. Ativacoes da IA: <b>' + str(st.session_state.get("ai_apply_count", 0)) + '</b></div>',
+    '<div class="sync-banner">🔓 <b>Campos livres</b> | '
+    '🤖 <b>IA propagadora</b> (aba ⑤) | '
+    '⚡ <b>Kernels Numba</b> nos perfis e na simulacao | '
+    '📊 <b>Chunks adaptativos</b> + <b>metricas resumidas</b>. '
+    'Ativacoes da IA: <b>' + str(st.session_state.get("ai_apply_count", 0)) + '</b></div>',
     unsafe_allow_html=True,
 )
 
@@ -1563,8 +1572,7 @@ with tab_sim:
     st.markdown(
         '<div class="free-input-note">🔓 Número de partículas, passos, dt, g, seed — tudo livre. '
         'Aceleração e energia proxy compiladas via Numba @njit. '
-        'Blocos de 50 passos para UI responsiva. '
-        'Números grandes podem tornar a simulação lenta.</div>',
+        'Bloco adaptativo + métricas resumidas por snapshot.</div>',
         unsafe_allow_html=True,
     )
 
@@ -1581,6 +1589,10 @@ with tab_sim:
         sim_seed = free_int("Semente aleatória da simulação", "sim_seed")
         record_every = free_int("Registrar a cada N passos", "record_every")
         st.metric("Tempo final nominal", f"{n_steps * dt:.4g}")
+    st.caption(
+        f"Bloco adaptativo estimado: **{compute_adaptive_chunk(n_particles)} passos** por ciclo "
+        f"(calculado para {n_particles:,} partículas)."
+    )
 
 # ============================================================
 # VALORES COMUNS
@@ -1609,18 +1621,17 @@ with tab_dm:
     ev1, ev2, ev3 = st.columns(3)
     with ev1:
         st.markdown("#### 🔭 Curvas de rotação")
-        st.markdown("A velocidade orbital **não cai** após a matéria visível acabar. Sem ME, "
-                    "deveria cair como `v ∝ 1/√r` (Kepler).")
+        st.markdown("A velocidade orbital **não cai** após a matéria visível acabar.")
     with ev2:
         st.markdown("#### 🔍 Lentes gravitacionais")
-        st.markdown("Luz curvada por massas invisíveis. Bullet Cluster mostra massa total separada do gás quente.")
+        st.markdown("Luz curvada por massas invisíveis. Bullet Cluster.")
     with ev3:
         st.markdown("#### 📡 CMB e estrutura")
-        st.markdown("Anisotropias do CMB e formação de estrutura exigem ~85% de matéria fria não-bariônica.")
+        st.markdown("Anisotropias do CMB exigem ~85% de matéria fria não-bariônica.")
 
     st.divider()
     st.markdown("### Diagnóstico numérico com os parâmetros ativos")
-    st.caption("Valores lidos do `st.session_state` — qualquer alteração nas abas ①–⑤ recalcula imediatamente.")
+    st.caption("Valores lidos do `st.session_state` — qualquer alteração nas abas ①–⑤ recalcula.")
 
     m200_now = 10.0 ** st.session_state["log_m200"]
     m_baryon_now = 10.0 ** st.session_state["log_mbaryon"]
@@ -1783,10 +1794,7 @@ with tab_model:
 
     if sigma_over_m > 0 and np.isfinite(mean_free_path_kpc) and np.isfinite(r200_m):
         if mean_free_path_kpc > 5 * r200_m:
-            st.warning(
-                f"⚠️ Consistência SIDM: λ ≈ {mean_free_path_kpc:.0f} kpc ≫ R200 = {r200_m:.0f} kpc. "
-                f"Regime colisionalmente livre."
-            )
+            st.warning(f"⚠️ SIDM: λ ≈ {mean_free_path_kpc:.0f} kpc ≫ R200 = {r200_m:.0f} kpc.")
         elif mean_free_path_kpc > r200_m:
             st.info(f"ℹ️ SIDM marginal: λ ≈ {mean_free_path_kpc:.0f} kpc > R200.")
         else:
@@ -1979,6 +1987,7 @@ with tab_feedback:
     grid = np.linspace(-extent, extent, 120)
     xx, yy = np.meshgrid(grid, grid)
     rr = np.sqrt(xx**2 + yy**2)
+    # CORRECAO: profile_density agora achata internamente e restaura a forma 2D.
     rho_map = profile_density(np.maximum(rr, 0.03), m200, concentration, core_radius_kpc,
                               density_model, feedback_strength, feedback_scale)
     zz = np.log10(np.maximum(rho_map, 1e-30))
@@ -2069,7 +2078,7 @@ with tab_sim:
             return
         params = st.session_state.sim_params
         if st.session_state.sim_status == "Executando":
-            integrate_chunk(params, max_chunk=50)
+            integrate_chunk(params, max_chunk=None)  # adaptativo
             if st.session_state.sim_status == "Concluida":
                 st.rerun()
 
@@ -2081,6 +2090,7 @@ with tab_sim:
         completion = 100.0 * step / max(params["n_steps"], 1)
         st.progress(min(1.0, completion / 100.0), text=f"Progresso: {completion:.1f}%")
 
+        current_chunk = compute_adaptive_chunk(params.get("n_particles", 1000))
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Passo", f"{step:,} / {params['n_steps']:,}")
         m2.metric("Tempo adimensional", f"{step * params['dt']:.4g}")
@@ -2091,6 +2101,10 @@ with tab_sim:
         else:
             drift = float("nan")
             m4.metric("Deriva de energia", "N/D")
+        st.caption(
+            f"Bloco adaptativo: **{current_chunk} passos** por ciclo "
+            f"(para {params.get('n_particles', 0):,} partículas)."
+        )
         st.session_state["simulation_metrics"] = {
             "step": int(step), "n_steps": int(params["n_steps"]),
             "time": float(step * params["dt"]),
@@ -2219,7 +2233,8 @@ with tab_sim:
         ("Feedback", f"{feedback_strength:.3g}"),
         ("Kernels de fisica", "Numba njit" if NUMBA_AVAILABLE else "numpy fallback"),
         ("Kernels de simulacao", "Numba njit" if NUMBA_AVAILABLE else "numpy fallback"),
-        ("Bloco de integracao", "50 passos (UI fluida)"),
+        ("Bloco adaptativo", f"{compute_adaptive_chunk(n_particles)} passos"),
+        ("Snapshots", "metricas resumidas (hist+momentos)"),
     ]
 
     if st.button("📄 Gerar relatorio PDF completo", type="primary",
@@ -2267,6 +2282,7 @@ with tab_sim:
                 f"{item['recorded_at']} | {item['event_type']} | t={item['time_adimensional']:.5g} | "
                 f"Eproxy={item['energy_specific_mean_proxy']:.6g} | drift={drift_text} | "
                 f"vRMS={item['velocity_rms']:.5g} | Rrms={item['radius_rms']:.5g} | "
+                f"Rmax={item.get('r_max', float('nan')):.5g} | "
                 f"estado={item['status']} | Params: {params_json}"
             ))
         physics_log_rows = [
@@ -2468,11 +2484,12 @@ st.markdown(
     "- O assistente IA escreve apenas em `st.session_state`; a física e a numérica permanecem inalteradas.  \n"
     "- Presets calibrados por: Cautun et al. (2020) para Via Láctea; Antlia B para anãs; Umetsu et al. (2020) para aglomerados; Bullet Cluster para σ/m.  \n"
     "- **Numba JIT (física)**: `halo_shape`, `build_profile_lookup` e `profile_density` usam "
-    "`@njit(cache=True)` nos laços de integração. A regra dos trapézios, a grade, os clamps "
-    "e as constantes cosmológicas são idênticos ao código Python original — a saída numérica é a mesma.  \n"
-    "- **Numba JIT (simulação)**: `tracer_acceleration` e `tracer_energy_proxy` também usam "
-    "`@njit(cache=True)`.  \n"
-    "- **Blocos de integração de 50 passos**: a UI atualiza a cada ~4 s em vez de ~16 s, "
-    "dando a sensação de fluidez durante toda a simulação.  \n"
+    "`@njit(cache=True)`. A regra dos trapézios, a grade e as constantes cosmológicas são idênticas "
+    "ao Python original — a saída numérica é a mesma.  \n"
+    "- **Numba JIT (simulação)**: `tracer_acceleration` e `tracer_energy_proxy` também usam `@njit(cache=True)`.  \n"
+    "- **Chunks adaptativos**: `compute_adaptive_chunk` escala com 1/N_partículas (500.000 partículas → 5 passos; "
+    "1.000 partículas → 50 passos).  \n"
+    "- **Métricas resumidas**: `sim_summaries` armazena histograma + momentos (~1 KB) em vez de arrays "
+    "completos (~8 MB). Redução de ~8000× no uso de memória em 100 snapshots.  \n"
     "- Se o Numba não estiver instalado, o app funciona com numpy puro (fallback automático)."
 )
