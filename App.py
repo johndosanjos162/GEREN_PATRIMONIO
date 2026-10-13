@@ -231,8 +231,6 @@ def load_observational_csv(uploaded_file):
     v_err_kms. Tambem identifica historicos de simulacao enviados por engano.
     """
     raw = uploaded_file.getvalue()
-    # Tentar separadores explicitos primeiro evita que o autodetector do pandas
-    # interprete incorretamente arquivos com poucas linhas ou colunas.
     attempts = [(",", "virgula"), (";", "ponto e virgula"), ("\t", "tab"), (None, "auto")]
     token_to_standard = {}
     for standard, aliases in HEADER_ALIASES.items():
@@ -342,14 +340,54 @@ def tracer_acceleration(positions, g_dimless, mass_x, mass_fraction, softening):
     return -g_dimless * enclosed[:, None] * positions / denom[:, None]
 
 
-def tracer_energy_proxy(positions, velocities, g_dimless, mass_x, potential_x):
+def tracer_diagnostics(positions, velocities, g_dimless, mass_x, potential_x):
+    """Diagnosticos instantaneos dos tracadores em potencial fixo.
+
+    Ponto unico de calculo da energia proxy, raio RMS, velocidade RMS, raio
+    maximo e contagem de tracadores fora do halo (r > R200 em unidades de rs).
+    Reutilizado tanto pela UI ao vivo quanto pelo historico e pelo PDF, para
+    nao duplicar a logica de diagnostico.
+    """
     r = np.maximum(np.linalg.norm(positions, axis=1), 1e-8)
     kinetic = 0.5 * np.sum(velocities**2, axis=1)
     phi = np.interp(r, mass_x, potential_x, left=potential_x[0], right=np.nan)
     outside = r > mass_x[-1]
     if np.any(outside):
         phi[outside] = -1.0 / r[outside]
-    return float(np.mean(kinetic + g_dimless * phi))
+    speed_sq = np.sum(velocities**2, axis=1)
+    return {
+        "energy_proxy": float(np.mean(kinetic + g_dimless * phi)),
+        "rms_radius": float(np.sqrt(np.mean(r**2))),
+        "rms_speed": float(np.sqrt(np.mean(speed_sq))),
+        "max_radius": float(np.max(r)),
+        "n_escaped": int(np.sum(outside)),
+    }
+
+
+def tracer_energy_proxy(positions, velocities, g_dimless, mass_x, potential_x):
+    """Wrapper retrocompativel para a energia proxy media."""
+    return tracer_diagnostics(positions, velocities, g_dimless, mass_x, potential_x)["energy_proxy"]
+
+
+def _history_dataframe(history):
+    """Converte a lista de diagnosticos em DataFrame ordenado."""
+    if not history:
+        return pd.DataFrame(columns=[
+            "passo", "tempo_adimensional", "energia_especifica_media_proxy",
+            "raio_rms_rs", "velocidade_rms", "raio_maximo_rs", "tracadores_fora",
+        ])
+    return pd.DataFrame([
+        {
+            "passo": int(entry["step"]),
+            "tempo_adimensional": float(entry["time"]),
+            "energia_especifica_media_proxy": float(entry["energy_proxy"]),
+            "raio_rms_rs": float(entry["rms_radius"]),
+            "velocidade_rms": float(entry["rms_speed"]),
+            "raio_maximo_rs": float(entry["max_radius"]),
+            "tracadores_fora": int(entry["n_escaped"]),
+        }
+        for entry in history
+    ])
 
 
 def initialise_simulation(params):
@@ -375,8 +413,10 @@ def initialise_simulation(params):
     st.session_state.sim_potential_x = potential_x
     st.session_state.sim_step = 0
     st.session_state.sim_snapshots = [positions.copy()]
+    initial_diag = tracer_diagnostics(positions, velocities, params["g_dimless"], mass_x, potential_x)
+    st.session_state.sim_history = [{"step": 0, "time": 0.0, **initial_diag}]
     st.session_state.sim_times = [0.0]
-    st.session_state.sim_energy = [tracer_energy_proxy(positions, velocities, params["g_dimless"], mass_x, potential_x)]
+    st.session_state.sim_energy = [initial_diag["energy_proxy"]]
     st.session_state.sim_status = "Pronta para executar"
     st.session_state.sim_params = params.copy()
 
@@ -404,10 +444,14 @@ def integrate_chunk(params, max_chunk=200):
         if (st.session_state.sim_step % max(1, params["record_every"]) == 0
                 or st.session_state.sim_step == params["n_steps"]):
             st.session_state.sim_snapshots.append(pos.copy())
+            diag = tracer_diagnostics(pos, vel, params["g_dimless"], mass_x, potential_x)
+            st.session_state.sim_history.append({
+                "step": st.session_state.sim_step,
+                "time": st.session_state.sim_step * dt,
+                **diag,
+            })
             st.session_state.sim_times.append(st.session_state.sim_step * dt)
-            st.session_state.sim_energy.append(
-                tracer_energy_proxy(pos, vel, params["g_dimless"], mass_x, potential_x)
-            )
+            st.session_state.sim_energy.append(diag["energy_proxy"])
     st.session_state.sim_positions = pos
     st.session_state.sim_velocities = vel
     st.session_state.sim_accelerations = acc
@@ -439,8 +483,43 @@ class DarkMatterPDF(FPDF):
         self.cell(0, 8, f"Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')} | Pagina {self.page_no()}", align="C")
 
 
+def _render_plotly_to_png(figure, width=1400, height=800):
+    """Exporta uma figura Plotly para PNG via Kaleido, com layout fixo.
+
+    Levanta RuntimeError com mensagem acionavel quando o Kaleido nao esta
+    disponivel, para que a UI/PDF possam exibir uma alternativa clara.
+    """
+    static_figure = go.Figure(figure)
+    static_figure.update_layout(
+        width=width,
+        height=height,
+        autosize=False,
+        template="plotly_white",
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+        font=dict(family="Arial, sans-serif", size=15, color="#182235"),
+        title=dict(font=dict(size=23, color="#182235")),
+        margin=dict(l=105, r=45, t=105, b=100),
+        legend=dict(bgcolor="rgba(255,255,255,0.85)", bordercolor="#d4dae5", borderwidth=1),
+    )
+    try:
+        return static_figure.to_image(format="png", width=width, height=height, scale=1, engine="kaleido")
+    except ValueError as exc:
+        # Plotly dispara ValueError quando o motor nao esta instalado.
+        raise RuntimeError(
+            "Kaleido nao esta instalado ou a versao e incompativel. "
+            "Instale as dependencias de requirements.txt (kaleido) e verifique "
+            "se a versao do Plotly e compativel. Detalhe: " + str(exc)[:280]
+        ) from exc
+    except Exception as exc:  # pragma: no cover - depende do ambiente
+        raise RuntimeError(
+            "Falha ao exportar a figura Plotly para PNG via Kaleido. "
+            "Verifique as dependencias do ambiente. Detalhe: " + str(exc)[:280]
+        ) from exc
+
+
 def generate_pdf_report(report_data, rotation_figure=None):
-    """Gera PDF e, quando Kaleido esta disponivel, incorpora uma curva Plotly como PNG.
+    """Gera PDF e, quando Kaleido esta disponivel, incorpora a curva Plotly como PNG.
 
     A figura e renderizada com dimensoes fixas (1400 x 800 px) para manter a
     composicao consistente, gravada temporariamente e inserida no FPDF. Eixos,
@@ -469,8 +548,6 @@ def generate_pdf_report(report_data, rotation_figure=None):
     def table(rows):
         pdf.set_font("Helvetica", "", 9)
         for key, value in rows:
-            # Cada par de celulas tem altura alinhada mesmo quando os valores
-            # ocupam mais de uma linha.
             key_text = _pdf_ascii(key)
             value_text = _pdf_ascii(value)
             key_width = 69
@@ -498,32 +575,13 @@ def generate_pdf_report(report_data, rotation_figure=None):
     temporary_image_path = None
     if rotation_figure is not None:
         try:
-            # Copia a figura para manter intacto o grafico renderizado na UI.
-            static_figure = go.Figure(rotation_figure)
-            static_figure.update_layout(
-                width=1400,
-                height=800,
-                autosize=False,
-                template="plotly_white",
-                paper_bgcolor="#ffffff",
-                plot_bgcolor="#ffffff",
-                font=dict(family="Arial, sans-serif", size=15, color="#182235"),
-                title=dict(font=dict(size=23, color="#182235")),
-                margin=dict(l=105, r=45, t=105, b=100),
-                legend=dict(bgcolor="rgba(255,255,255,0.85)", bordercolor="#d4dae5", borderwidth=1),
-            )
-            # engine='kaleido' solicita explicitamente o renderizador estatico.
-            image_bytes = static_figure.to_image(
-                format="png", width=1400, height=800, scale=1, engine="kaleido"
-            )
+            image_bytes = _render_plotly_to_png(rotation_figure, width=1400, height=800)
             with tempfile.NamedTemporaryFile(prefix="dark_matter_plot_", suffix=".png", delete=False) as temp_img:
                 temp_img.write(image_bytes)
                 temporary_image_path = temp_img.name
 
             image_width_mm = 180
             image_height_mm = image_width_mm * 800.0 / 1400.0
-            # Reserve espaco para titulo + legenda curta + figura, evitando que
-            # o cabecalho da figura fique isolado no fim da pagina anterior.
             required_height = 8 + 10 + image_height_mm + 5
             if pdf.get_y() + required_height > pdf.h - pdf.b_margin:
                 pdf.add_page()
@@ -538,11 +596,23 @@ def generate_pdf_report(report_data, rotation_figure=None):
             pdf.ln(2)
             pdf.image(temporary_image_path, x=15, w=image_width_mm)
             pdf.ln(3)
+        except RuntimeError as exc:
+            figure_warning = str(exc)
+            section("Grafico Plotly nao incorporado")
+            pdf.set_font("Helvetica", "", 9)
+            pdf.multi_cell(
+                0, 5.5,
+                _pdf_ascii(
+                    "A curva de rotacao nao pode ser incorporada ao PDF. "
+                    + figure_warning
+                    + " Os dados numericos continuam disponiveis nas secoes 1-3 e o CSV pode ser "
+                      "baixado na propria interface."
+                ),
+                new_x="LMARGIN", new_y="NEXT",
+            )
         except Exception as exc:
             figure_warning = (
-                "Nao foi possivel incorporar a imagem Plotly. Instale as dependencias de requirements.txt "
-                "(incluindo Kaleido) e verifique se a versao do Plotly e compativel. Detalhe: "
-                + str(exc)[:350]
+                "Nao foi possivel incorporar a imagem Plotly. Detalhe: " + str(exc)[:350]
             )
             section("Grafico Plotly nao incorporado")
             pdf.set_font("Helvetica", "", 9)
@@ -557,7 +627,19 @@ def generate_pdf_report(report_data, rotation_figure=None):
     section("3. Configuracao e estado da simulacao")
     table(report_data.get("simulation_rows", []))
 
-    section("4. Interpretacao e limitacoes cientificas")
+    section("4. Historico da simulacao")
+    history_rows = report_data.get("history_rows", [])
+    if history_rows:
+        table(history_rows)
+    else:
+        pdf.set_font("Helvetica", "", 9)
+        pdf.multi_cell(
+            0, 5.5,
+            _pdf_ascii("Nenhuma simulacao foi executada nesta sessao ate o momento."),
+            new_x="LMARGIN", new_y="NEXT",
+        )
+
+    section("5. Interpretacao e limitacoes cientificas")
     pdf.set_font("Helvetica", "", 9)
     notes = [
         "O perfil NFW e parametrizado por massa M200 e concentracao; R200 e rs sao derivados com H0 de referencia igual a 70 km/s/Mpc.",
@@ -566,6 +648,7 @@ def generate_pdf_report(report_data, rotation_figure=None):
         "Os pontos observacionais sao sinteticos quando nenhum CSV valido e carregado. Os resultados quantitativos nao devem ser interpretados como descoberta ou limite experimental.",
         "A integracao acompanha tracadores em potencial fixo. As particulas-tracadoras nao interagem umas com as outras, e a suavizacao pode introduzir desvios no diagnostico energetico.",
         "A secao de choque por massa e reportada em cm^2/g. O comprimento livre medio calculado na escala rs e apenas uma estimativa local com a densidade do perfil adotado.",
+        "O historico da simulacao agrega diagnosticos instantaneos (energia proxy, raio RMS, velocidade RMS, raio maximo e tracadores fora de R200) em cada gravacao, sem recalcular a dinamica dos tracadores.",
     ]
     for note in notes:
         pdf.multi_cell(0, 5.5, _pdf_ascii("- " + note), new_x="LMARGIN", new_y="NEXT")
@@ -1024,8 +1107,8 @@ with tab_sim:
         step = st.session_state.sim_step
         pos_now = st.session_state.sim_positions
         vel_now = st.session_state.sim_velocities
-        times = np.asarray(st.session_state.sim_times)
-        energies = np.asarray(st.session_state.sim_energy)
+        history = st.session_state.get("sim_history", [])
+        history_df = _history_dataframe(history)
         completion = 100.0 * step / max(params["n_steps"], 1)
         st.progress(min(1.0, completion / 100.0), text=f"Progresso: {completion:.1f}%")
 
@@ -1033,8 +1116,11 @@ with tab_sim:
         m1.metric("Passo atual", f"{step:,} / {params['n_steps']:,}")
         m2.metric("Tempo adimensional", f"{step * params['dt']:.3f}")
         m3.metric("Velocidade RMS", f"{np.sqrt(np.mean(np.sum(vel_now**2, axis=1))):.4f}")
-        if len(energies) > 0 and abs(energies[0]) > 1e-12:
-            drift = 100.0 * (energies[-1] - energies[0]) / abs(energies[0])
+        if len(history_df) > 0 and abs(history_df["energia_especifica_media_proxy"].iloc[0]) > 1e-12:
+            drift = 100.0 * (
+                history_df["energia_especifica_media_proxy"].iloc[-1]
+                - history_df["energia_especifica_media_proxy"].iloc[0]
+            ) / abs(history_df["energia_especifica_media_proxy"].iloc[0])
             m4.metric("Variacao da energia proxy", f"{drift:+.3g}%")
         else:
             drift = float("nan")
@@ -1063,7 +1149,12 @@ with tab_sim:
             st.plotly_chart(fig_particles, use_container_width=True)
         with sim_col2:
             fig_e = go.Figure()
-            fig_e.add_trace(go.Scatter(x=times, y=energies, mode="lines+markers", name="Energia proxy media"))
+            if len(history_df) > 0:
+                fig_e.add_trace(go.Scatter(
+                    x=history_df["tempo_adimensional"],
+                    y=history_df["energia_especifica_media_proxy"],
+                    mode="lines+markers", name="Energia proxy media",
+                ))
             fig_e.update_layout(
                 template="plotly_dark", height=430, title="Diagnostico de energia",
                 xaxis_title="Tempo adimensional", yaxis_title="Energia especifica (proxy)",
@@ -1077,16 +1168,40 @@ with tab_sim:
         else:
             st.caption("Execucao pausada ou aguardando inicio.")
 
-        df_history = pd.DataFrame({
-            "tempo_adimensional": times,
-            "energia_especifica_media_proxy": energies,
-        })
-        st.download_button(
-            "⬇️ Exportar historico da simulacao (CSV)",
-            data=df_history.to_csv(index=False).encode("utf-8"),
-            file_name="historico_simulacao.csv", mime="text/csv",
-            key="download_sim_history",
-        )
+        with st.expander("Historico da simulacao", expanded=False):
+            st.caption(
+                "Diagnosticos instantaneos registrados a cada N passos. Reutilizam a mesma rotina "
+                "de diagnostico usada no painel ao vivo, sem recalcular a dinamica dos tracadores."
+            )
+            if history_df.empty:
+                st.info("Nenhum registro ainda. Inicie a simulacao para popular o historico.")
+            else:
+                fig_history = go.Figure()
+                fig_history.add_trace(go.Scatter(
+                    x=history_df["tempo_adimensional"], y=history_df["raio_rms_rs"],
+                    mode="lines+markers", name="Raio RMS (r/rs)",
+                    line=dict(color="#58c4dd"),
+                ))
+                fig_history.add_trace(go.Scatter(
+                    x=history_df["tempo_adimensional"], y=history_df["raio_maximo_rs"],
+                    mode="lines", name="Raio maximo (r/rs)",
+                    line=dict(color="#ffbd69", dash="dash"),
+                ))
+                fig_history.update_layout(
+                    template="plotly_dark", height=360,
+                    title="Evolucao do raio dos tracadores",
+                    xaxis_title="Tempo adimensional", yaxis_title="r / rs",
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
+                    legend=dict(orientation="h", y=1.12),
+                )
+                st.plotly_chart(fig_history, use_container_width=True)
+                st.dataframe(history_df, use_container_width=True, hide_index=True)
+                st.download_button(
+                    "⬇️ Exportar historico da simulacao (CSV)",
+                    data=history_df.to_csv(index=False).encode("utf-8"),
+                    file_name="historico_simulacao.csv", mime="text/csv",
+                    key="download_sim_history",
+                )
 
     simulation_live_panel()
 
@@ -1141,11 +1256,30 @@ with tab_sim:
         ("Raio RMS de velocidade atual", f"{simulation_metrics.get('velocity_rms', float('nan')):.5g}" if np.isfinite(simulation_metrics.get('velocity_rms', float('nan'))) else "N/D"),
         ("Variacao da energia proxy", f"{simulation_metrics.get('energy_drift_percent', float('nan')):.5g}%" if np.isfinite(simulation_metrics.get('energy_drift_percent', float('nan'))) else "N/D"),
     ]
+
+    history = st.session_state.get("sim_history", [])
+    if history:
+        first = history[0]
+        last = history[-1]
+        history_rows = [
+            ("Registros no historico", str(len(history))),
+            ("Passo inicial / final", f"{first['step']} / {last['step']}"),
+            ("Tempo inicial / final", f"{first['time']:.5g} / {last['time']:.5g}"),
+            ("Energia proxy inicial", f"{first['energy_proxy']:.6g}"),
+            ("Energia proxy final", f"{last['energy_proxy']:.6g}"),
+            ("Raio RMS inicial / final (r/rs)", f"{first['rms_radius']:.5g} / {last['rms_radius']:.5g}"),
+            ("Velocidade RMS inicial / final", f"{first['rms_speed']:.5g} / {last['rms_speed']:.5g}"),
+            ("Raio maximo final (r/rs)", f"{last['max_radius']:.5g}"),
+            ("Tracadores fora de R200 (final)", str(last['n_escaped'])),
+        ]
+    else:
+        history_rows = []
+
     if st.button(
         "📄 Gerar relatorio PDF",
         type="primary",
         use_container_width=True,
-        help="Gera um PDF com parametros, metricas e a curva de rotacao Plotly em imagem estatica.",
+        help="Gera um PDF com parametros, metricas, historico e a curva de rotacao Plotly em imagem estatica.",
         key="generate_dark_matter_pdf",
     ):
         with st.spinner("Gerando PDF e exportando a curva Plotly em PNG..."):
@@ -1154,6 +1288,7 @@ with tab_sim:
                     "physics_rows": physics_rows,
                     "rotation_rows": rotation_rows,
                     "simulation_rows": sim_rows,
+                    "history_rows": history_rows,
                 },
                 rotation_figure=fig_rot,
             )
@@ -1177,12 +1312,15 @@ with tab_sim:
         )
         if st.session_state.get("dark_matter_pdf_chart_warning"):
             st.warning(
-                "O PDF foi criado, mas o grafico nao foi incorporado: "
+                "O PDF foi criado, mas o grafico nao foi incorporado. "
+                "Instale as dependencias de requirements.txt (incluindo Kaleido) e verifique "
+                "a compatibilidade com a versao do Plotly. Detalhe: "
                 + st.session_state["dark_matter_pdf_chart_warning"]
             )
     st.caption(
-        "O relatorio inclui os parametros atuais, metricas de ajuste, limitacoes cientificas e, quando o Kaleido esta "
-        "instalado corretamente, a curva de rotacao Plotly exportada em PNG de 1400 x 800 px, com titulo, eixos e legenda."
+        "O relatorio inclui parametros, metricas de ajuste, historico da simulacao, limitacoes cientificas e, "
+        "quando o Kaleido esta instalado corretamente, a curva de rotacao Plotly exportada em PNG de 1400 x 800 px, "
+        "com titulo, eixos e legenda."
     )
 
 # ------------------------- RODAPE ---------------------------
@@ -1193,5 +1331,6 @@ st.markdown(
     "- O perfil SIDM com nucleo e o feedback barionico sao modelos fenomenologicos ajustaveis, nao simulacoes completas de materia escura autointeragente ou hidrodinamica.  \n"
     "- Curvas observacionais so sao reais quando fornecidas por um conjunto externo validado via CSV; os dados sinteticos sao apenas demonstrativos.  \n"
     "- O mapa espacial mostra um corte da densidade e nao calcula lentes gravitacionais.  \n"
-    "- A integracao acompanha tracadores em potencial fixo; tracadores nao interagem entre si. O diagnostico energetico e uma aproximacao numerica."
+    "- A integracao acompanha tracadores em potencial fixo; tracadores nao interagem entre si. O diagnostico energetico e uma aproximacao numerica.  \n"
+    "- O historico da simulacao agrega diagnosticos instantaneos em cada gravacao e reutiliza a mesma rotina do painel ao vivo, sem duplicar a logica de integracao."
 )
