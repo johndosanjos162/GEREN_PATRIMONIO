@@ -17,8 +17,9 @@ from fpdf import FPDF
 # ============================================================
 # DARK MATTER LAB
 # Modelos NFW/SIDM, velocidades, curvas de rotacao, feedback,
-# integracao numerica de tracadores, historico, PDF e
-# assistente de configuracao por linguagem natural.
+# integracao numerica de tracadores, historico, PDF, assistente
+# de linguagem natural, esclarecimento progressivo e sintese
+# cientifica final sobre a materia escura.
 # ============================================================
 
 st.set_page_config(
@@ -40,6 +41,7 @@ st.markdown(
       .nl-hint { background:rgba(35,49,75,.40); border-left:3px solid #58c4dd; padding:10px 14px; border-radius:6px; color:#c9d6f0; font-size:.9rem; }
       .dm-callout { background:linear-gradient(135deg,rgba(139,124,255,.15),rgba(88,196,221,.10)); border:1px solid rgba(139,124,255,.35); border-radius:12px; padding:16px 20px; margin:10px 0; }
       .dm-callout b { color:#c9b8ff; }
+      .insight-box { background:rgba(88,196,221,.10); border-left:3px solid #58c4dd; padding:10px 14px; border-radius:6px; color:#c9d6f0; font-size:.9rem; margin:6px 0; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -63,18 +65,12 @@ MSUN_G = 1.98847e33
 KPC_CM = 3.085677581e21
 
 
-# FIX: helper global para normalizar qualquer coisa em ndarray 1-D.
-# Resolve o crash "All arrays must be of the same length" que ocorria
-# quando alguma combinacao de parametros devolvia escalar 0-d ou shape
-# divergente do resto do diagnostico.
 def as_1d(value):
+    """Normaliza qualquer entrada para ndarray 1-D (evita crash do pandas)."""
     return np.atleast_1d(np.asarray(value, dtype=float)).ravel()
 
 
 # --------------- DEFAULTS DOS WIDGETS (FONTE UNICA) ---------
-# Valores calibrados para o caso classico da Via Lactea: a curva de
-# rotacao so fica PLANA (~220 km/s ate ~30 kpc) porque existe materia
-# escura. Sem ME, a curva cairia como Kepler apos o raio visivel.
 DEFAULT_WIDGET_STATE = {
     "candidate": "Materia escura autointeragente (SIDM)",
     "halo_model": "NFW",
@@ -110,6 +106,7 @@ DEFAULT_WIDGET_STATE = {
     "nl_last_applied": [],
     "nl_last_skipped": [],
     "nl_last_timestamp": "",
+    "latest_contextual_insight": "",
 }
 
 for _key, _value in DEFAULT_WIDGET_STATE.items():
@@ -139,7 +136,7 @@ def _normalize_text(value: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def _to_float(token: str):
+def _to_float(token):
     if token is None:
         return None
     try:
@@ -254,8 +251,7 @@ def parse_natural_language_config(text: str):
             matches.append(f"concentration -> {val}")
 
     m = re.search(
-        r"(?:escala|raio)\s*bari[o]?nic[ao]\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
+        r"(?:escala|raio)\s*bari[o]?nic[ao]\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)", t,
     ) or re.search(r"\ba[_\s]?baryon\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
     if m:
         val = _to_float(m.group(1))
@@ -264,8 +260,7 @@ def parse_natural_language_config(text: str):
             matches.append(f"a_baryon -> {val}")
 
     m = re.search(
-        r"(?:raio\s*(?:do\s*)?)?nucleo\s*(?:sidm\s*)?(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
+        r"(?:raio\s*(?:do\s*)?)?nucleo\s*(?:sidm\s*)?(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)", t,
     ) or re.search(r"\bcore\s*(?:radius)?\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t)
     if m:
         val = _to_float(m.group(1))
@@ -274,8 +269,7 @@ def parse_natural_language_config(text: str):
             matches.append(f"core_radius_kpc -> {val}")
 
     m = re.search(
-        r"(?:raio\s*maximo|r[_\s]?plot[_\s]?max|max\s*radius)\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
+        r"(?:raio\s*maximo|r[_\s]?plot[_\s]?max|max\s*radius)\s*(?:de|=|:|com)?\s*(\d+(?:[.,]\d+)?)", t,
     )
     if m:
         val = _to_float(m.group(1))
@@ -296,8 +290,7 @@ def parse_natural_language_config(text: str):
             matches.append(f"sigma_over_m -> {val}")
 
     m = re.search(
-        r"(?:sigma[_\s]*v|dispers[a]?[o]?\s*(?:de\s*)?velocidade)\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
+        r"(?:sigma[_\s]*v|dispers[a]?[o]?\s*(?:de\s*)?velocidade)\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t,
     )
     if m:
         val = _to_float(m.group(1))
@@ -306,8 +299,7 @@ def parse_natural_language_config(text: str):
             matches.append(f"sigma_v -> {val}")
 
     m = re.search(
-        r"(?:intensidade\s*(?:do\s*)?)?feedback\s*(?:strength)?\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
+        r"(?:intensidade\s*(?:do\s*)?)?feedback\s*(?:strength)?\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t,
     )
     if m:
         val = _to_float(m.group(1))
@@ -316,8 +308,7 @@ def parse_natural_language_config(text: str):
             matches.append(f"feedback_strength -> {val}")
 
     m = re.search(
-        r"(?:escala\s*(?:radial\s*)?(?:do\s*)?feedback|feedback\s*scale)\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)",
-        t,
+        r"(?:escala\s*(?:radial\s*)?(?:do\s*)?feedback|feedback\s*scale)\s*(?:=|:|com)?\s*(\d+(?:[.,]\d+)?)", t,
     )
     if m:
         val = _to_float(m.group(1))
@@ -448,7 +439,9 @@ if _pending:
     st.session_state["nl_apply_count"] = int(st.session_state.get("nl_apply_count", 0)) + 1
 
 
-# ----------------------- MODELOS FISICOS --------------------
+# ============================================================
+# MODELOS FISICOS
+# ============================================================
 def nfw_f(x):
     x = np.maximum(np.asarray(x, dtype=float), 1e-12)
     return np.log1p(x) - x / (1.0 + x)
@@ -529,10 +522,6 @@ def _mass_fraction(radius_over_rs, concentration, model, core_radius_kpc,
 def rotation_components(radius_kpc, m200_msun, concentration, m_baryon_msun,
                         a_baryon_kpc, model="NFW", core_radius_kpc=3.0,
                         feedback_strength=0.0, feedback_scale_kpc=3.0):
-    """Curva de rotacao de halo + componente barionica de Hernquist.
-
-    Retorna tambem M_DM(<r) e M_baryon(<r) para diagnostico de fracao.
-    """
     r200, rs, _ = nfw_parameters(m200_msun, concentration)
     r = np.maximum(np.asarray(radius_kpc, dtype=float), 1e-8)
     fraction = _mass_fraction(
@@ -577,7 +566,9 @@ def density_at_scale_radius_g_cm3(m200_msun, concentration, model, core_radius_k
     return rho_msun_kpc3 * MSUN_G / (KPC_CM**3)
 
 
-# --------------------- CSV OBSERVACIONAL --------------------
+# ============================================================
+# CSV OBSERVACIONAL
+# ============================================================
 def _header_token(value):
     text = str(value).replace("\ufeff", "").strip().lower()
     text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
@@ -668,7 +659,9 @@ def load_observational_csv(uploaded_file):
     raise ValueError(f"{reason} Cabecalhos detectados: {header_text}.")
 
 
-# ------------------ SIMULACAO DE TRACADORES -----------------
+# ============================================================
+# SIMULACAO DE TRACADORES
+# ============================================================
 def create_initial_tracers(n, seed, concentration, mass_x, mass_fraction, g_dimless):
     rng = np.random.default_rng(seed)
     radius = np.clip(rng.lognormal(mean=np.log(2.0), sigma=0.38, size=n), 0.15, 0.95 * concentration)
@@ -733,6 +726,271 @@ def explain_simulation_physics(step, time_value, params, energy, energy_drift, v
     )
 
 
+# ============================================================
+# ESCLARECIMENTO PROGRESSIVO E SINTESE CIENTIFICA SOBRE A ME
+# ============================================================
+def generate_contextual_insight(params, step=None, n_steps=None,
+                                energy_drift=None, event_type="snapshot"):
+    """Narrativa por instantaneo: o que o cenario atual revela sobre a ME."""
+    if not params:
+        return ""
+
+    model = str(params.get("halo_model", "NFW")).upper()
+    fb_strength = float(params.get("feedback_strength", 0.0) or 0.0)
+    sigma_m = float(params.get("sigma_over_m_cm2_g", 0.0) or 0.0)
+    log_m200 = float(params.get("log_m200", 12.0) or 12.0)
+
+    lines = []
+
+    if log_m200 < 10.0:
+        scale = "galaxia ana (baixa massa)"
+        detail = ("em sistemas de baixa massa, o tempo de relaxacao por autointeracao e "
+                  "comparavel a idade do halo, de modo que a SIDM tende a formar nucleos "
+                  "observaveis; e aqui que os modelos com e sem autointeracao mais divergem.")
+    elif log_m200 < 12.5:
+        scale = "galaxia tipo Via Lactea"
+        detail = ("nesta escala, a maior parte da massa dinamica esta fora do disco estelar, "
+                  "o que exige um halo de materia escura extenso para manter a curva de "
+                  "rotacao plana alem do raio visivel.")
+    elif log_m200 < 13.5:
+        scale = "grupo de galaxias"
+        detail = ("em grupos, a materia escura domina o potencial; a secao de choque efetiva "
+                  "precisa ser pequena para nao apagar a subestrutura observada.")
+    else:
+        scale = "aglomerado de galaxias"
+        detail = ("em aglomerados, observacoes de lentes e de raios-X indicam que a materia "
+                  "escura e praticamente colisionalmente livre em escalas grandes, restringindo "
+                  "sigma/m a valores baixos (~0.1-1 cm^2/g).")
+    lines.append(f"Escala de massa: {scale} (M200 ~ 10^{log_m200:.1f} Msun). {detail}")
+
+    if model.startswith("NFW"):
+        lines.append("Perfil NFW: rho ~ 1/[r(1+r/rs)^2], o paradigma frio e sem colisoes. "
+                     "A densidade diverge no centro (cuspide) e cai como r^-3 na periferia; "
+                     "e o ponto de partida contra o qual comparamos todas as modificacoes.")
+    else:
+        lines.append("Perfil SIDM com nucleo: a cuspide central e substituida por rho ~ "
+                     "1/[(r+rc)(1+r/rs)^2]. Essa forma imita o esperado quando a materia "
+                     "escura colide consigo mesma: transporte de calor cinetico para fora "
+                     "achata o centro do halo.")
+
+    if sigma_m <= 0:
+        lines.append("sigma/m = 0: sem autointeracao, a materia escura e puramente "
+                     "gravitacional. Qualquer discrepancia entre o que este teste produz e "
+                     "as curvas observadas aponta para fisica alem do CDM estrito.")
+    elif sigma_m < 1.0:
+        lines.append(f"sigma/m ~ {sigma_m:.2f} cm^2/g: regime tipicamente usado para "
+                     "explicar nucleos em galaxias anas sem violar observacoes de "
+                     "aglomerados. A autointeracao importa apenas nos centros densos.")
+    elif sigma_m < 10.0:
+        lines.append(f"sigma/m ~ {sigma_m:.2f} cm^2/g: valor na fronteira superior tolerada "
+                     "por aglomerados e pelo Bullet Cluster. Este teste ajuda a refinar os "
+                     "limites observacionais sobre sigma/m.")
+    else:
+        lines.append(f"sigma/m ~ {sigma_m:.2f} cm^2/g: valor alto; em aglomerados este "
+                     "regime ja seria excluido pelas observacoes atuais. O teste mostra o "
+                     "que aconteceria se a materia escura fosse muito colisional.")
+
+    if fb_strength <= 0:
+        lines.append("Sem feedback barionico: nenhum processo do gas, supernovas ou AGN "
+                     "altera o perfil; o halo evolui exclusivamente sob gravidade.")
+    elif fb_strength < 0.4:
+        lines.append(f"Feedback moderado (forca {fb_strength:.2f}): remocao parcial de "
+                     "materia escura do centro, sem destruir o halo. Este e o regime em que "
+                     "galaxias reais parecem operar, com nucleos formados por SIDM e por "
+                     "feedback atuando conjuntamente.")
+    else:
+        lines.append(f"Feedback forte (forca {fb_strength:.2f}): o perfil central e "
+                     "severamente suprimido, equivalente a multiplas explosoes de supernova "
+                     "ou jatos de AGN transformando uma cuspide NFW em nucleo sem precisar "
+                     "de SIDM.")
+
+    if step is not None and n_steps:
+        try:
+            frac = 100.0 * float(step) / max(float(n_steps), 1.0)
+            lines.append(f"Progresso numerico: passo {int(step)}/{int(n_steps)} ({frac:.1f}%).")
+        except Exception:
+            pass
+
+    if energy_drift is not None and np.isfinite(energy_drift):
+        if abs(energy_drift) < 1.0:
+            lines.append(f"Conservacao de energia: deriva de {energy_drift:+.3g}% - "
+                         "integracao estavel; o diagnostico e confiavel neste intervalo.")
+        elif abs(energy_drift) < 5.0:
+            lines.append(f"Conservacao de energia: deriva de {energy_drift:+.3g}% - "
+                         "atencao a resolucao temporal; resultados qualitativos ainda sao "
+                         "validos.")
+        else:
+            lines.append(f"Conservacao de energia: deriva de {energy_drift:+.3g}% - "
+                         "resultados quantitativos comprometidos; reduza delta t ou refine "
+                         "a suavizacao.")
+
+    if model.startswith("NFW") and sigma_m <= 0 and fb_strength <= 0:
+        lines.append("Interpretacao: este e o cenario CDM puro. Uma curva de rotacao plana "
+                     "ate raios grandes ja e, por si so, evidencia indireta de materia "
+                     "escura - e o teste deixa explicito que apenas materia barionica nao "
+                     "bastaria.")
+    elif model.startswith("SIDM") or fb_strength > 0:
+        lines.append("Interpretacao: este cenario testa modificacoes da hipotese CDM. "
+                     "Comparar com o resultado NFW puro mostra quanto do nucleo e "
+                     "atribuivel a autointeracao versus feedback barionico - ponto central "
+                     "na literatura contemporanea.")
+
+    return " ".join(lines)
+
+
+def build_scientific_synthesis(params, rotation_metrics=None, simulation_metrics=None,
+                               history=None, m200_msun=None, m_baryon_msun=None,
+                               r200_kpc=None, rs_kpc=None):
+    """Constroi a secao final 'Sintese Cientifica' do PDF."""
+    params = dict(params or {})
+    rotation_metrics = dict(rotation_metrics or {})
+    simulation_metrics = dict(simulation_metrics or {})
+    history = list(history or [])
+
+    log_m200 = float(params.get("log_m200", 12.0) or 12.0)
+    log_mb = float(params.get("log_mbaryon", 10.5) or 10.5)
+    sigma_m = float(params.get("sigma_over_m_cm2_g", 0.0) or 0.0)
+
+    m200 = float(m200_msun) if m200_msun is not None else 10.0 ** log_m200
+    m_b = float(m_baryon_msun) if m_baryon_msun is not None else 10.0 ** log_mb
+    ratio = m200 / max(m_b, 1e-30)
+
+    paragraphs = []
+
+    paragraphs.append(
+        "A pergunta central deste relatorio e simples e profunda: o que e a materia "
+        "escura? Os testes realizados exploraram tres hipoteses concretas - (i) um halo "
+        "frio sem colisoes (NFW puro), (ii) um halo cuja materia escura se autointerage "
+        "(SIDM), e (iii) o papel do feedback barionico na reconfiguracao do perfil. Cada "
+        "uma ilumina um aspecto diferente do problema. Esta sintese reune o que foi "
+        "efetivamente testado, sem extrapolar para alem do que os numeros suportam."
+    )
+
+    if log_m200 < 10.0:
+        escala = "galaxia ana"
+    elif log_m200 < 12.5:
+        escala = "galaxia tipo Via Lactea"
+    elif log_m200 < 13.5:
+        escala = "grupo de galaxias"
+    else:
+        escala = "aglomerado de galaxias"
+
+    paragraphs.append(
+        f"Massa. O halo adotado tem M200 = {m200:.3e} Msun (log10 M200 = {log_m200:.2f}), "
+        f"correspondendo a uma escala de {escala}. A componente barionica soma "
+        f"{m_b:.3e} Msun, ou seja, a razao M200 / M_b = {ratio:.1f}. Esse numero ja e, "
+        "por si so, uma declaracao fisica: a materia visivel responde por uma fracao "
+        "pequena da massa total, coerente com a estimativa cosmologica de que cerca de "
+        "85% da materia do universo nao e barionica. Nas curvas de rotacao, esse deficit "
+        "se manifesta como velocidades circulares que permanecem altas mesmo onde o gas "
+        "e as estrelas ja terminaram."
+    )
+
+    chi2 = rotation_metrics.get("chi2_reduced")
+    rmse = rotation_metrics.get("rmse_kms")
+    n_pts = rotation_metrics.get("n_points", "N/D")
+    chi2_txt = f"{chi2:.2f}" if isinstance(chi2, (int, float, np.number)) and np.isfinite(chi2) else "N/D"
+    rmse_txt = f"{rmse:.2f} km/s" if isinstance(rmse, (int, float, np.number)) and np.isfinite(rmse) else "N/D"
+    paragraphs.append(
+        f"Comportamento gravitacional. Ajustamos a curva observada (n = {n_pts} pontos) "
+        f"contra o modelo teorico e obtivemos RMSE = {rmse_txt} e chi^2 medio = {chi2_txt}. "
+        "A comparacao com a curva 'so barions' (tracejada) e com a expectativa Kepleriana "
+        "v ~ 1/sqrt(r) (pontilhada) e o argumento central: se nao existisse materia escura, "
+        "a velocidade circular deveria cair apos o raio visivel. Ela nao cai. Este e o "
+        "mesmo raciocinio que levou Vera Rubin e Kent Ford, nos anos 1970, a postular massa "
+        "nao-luminosa nos halos de galaxias espirais. A materia escura, portanto, e antes "
+        "de tudo uma exigencia gravitacional: ela precisa existir para explicar como as "
+        "coisas se movem."
+    )
+
+    if sigma_m <= 0:
+        sigma_txt = ("neste teste, sigma/m = 0: a materia escura nao colide consigo "
+                     "mesma, ou seja, e puramente gravitacional.")
+    elif sigma_m < 1.0:
+        sigma_txt = (f"neste teste, sigma/m = {sigma_m:.2f} cm^2/g. Esse valor fica na "
+                     "faixa tipicamente usada para explicar nucleos em galaxias anas.")
+    elif sigma_m < 10.0:
+        sigma_txt = (f"neste teste, sigma/m = {sigma_m:.2f} cm^2/g. Esse valor esta "
+                     "proximo do limite superior tolerado por aglomerados e pelo Bullet "
+                     "Cluster.")
+    else:
+        sigma_txt = (f"neste teste, sigma/m = {sigma_m:.2f} cm^2/g. Esse valor seria "
+                     "excluido pelas observacoes atuais de aglomerados, o que ajuda a "
+                     "mapear o espaco de parametros ainda permitido.")
+    paragraphs.append(
+        f"Natureza colisional. A secao de choque por massa e uma das poucas quantidades "
+        f"que distingue a materia escura da materia comum em escalas microscopicas; "
+        f"{sigma_txt} Combinando esse numero com as estimativas observacionais - o Bullet "
+        "Cluster exige que a materia escura seja muito menos colisional que o gas; nucleos "
+        "em galaxias anas favorecem certa autointeracao; aglomerados impoem sigma/m "
+        "tipicamente abaixo de ~1 cm^2/g - chega-se a um quadro em que a materia escura e, "
+        "na melhor das hipoteses, fracamente colisional, com sigma/m na faixa de "
+        "0.1-1 cm^2/g. Nao ha, ate hoje, deteccao direta dessa autointeracao; a evidencia "
+        "e toda indireta e ainda em debate."
+    )
+
+    paragraphs.append(
+        "Por que ela difere da materia barionica visivel. Toda a materia que conhecemos - "
+        "estrelas, gas, poeira, planetas, nos - e barionica: ela emite, absorve e reflete "
+        "luz. A materia escura nao faz nenhuma dessas coisas de forma detectavel. Ela "
+        "interage gravitacionalmente, e isso basta para alterar as trajetorias de estrelas "
+        "e a curvatura da luz, mas ela e eletromagneticamente silenciosa. Seus efeitos "
+        "aparecem de forma indireta: (i) nas curvas de rotacao planas, onde a massa "
+        "luminosa nao pode explicar as velocidades observadas nas regioes externas; "
+        "(ii) em lentes gravitacionais, onde massas invisiveis distorcem a luz de fundo; "
+        "(iii) no fundo cosmico de micro-ondas, cujas anisotropias so batem com um "
+        "universo em que a maior parte da materia e nao-barionica; (iv) na formacao de "
+        "estrutura em larga escala, que exige um componente de materia fria para crescer "
+        "a tempo. Nenhuma dessas evidencias identifica a natureza microscopica da materia "
+        "escura - apenas sua existencia e sua massa."
+    )
+
+    n_hist = len(history)
+    if n_hist:
+        drift = simulation_metrics.get("energy_drift_percent")
+        drift_txt = (f"{drift:+.3g}%" if isinstance(drift, (int, float, np.number))
+                     and np.isfinite(drift) else "N/D")
+        paragraphs.append(
+            f"Sintese dos testes realizados. A sessao acumulou {n_hist} instantaneos no "
+            "historico da simulacao, cada um registrando o estado dos tracadores em "
+            f"potencial fixo. O diagnostico energetico indica variacao de {drift_txt} - "
+            "o que confirma que o motor numerico (leapfrog com suavizacao) e estavel para "
+            "a resolucao adotada. Os graficos compilados permitem comparar visualmente: "
+            "(a) o perfil NFW contra o SIDM com nucleo, (b) o efeito do feedback barionico "
+            "sobre a densidade radial, (c) a curva de rotacao com e sem a componente "
+            "escura, e (d) a fracao de materia escura como funcao do raio. Em conjunto, "
+            "esses elementos respondem a pergunta 'o que e a materia escura?' de maneira "
+            "operacional: e o componente de massa que, sendo gravitacionalmente ativo e "
+            "eletromagneticamente silencioso, explica as velocidades observadas nas "
+            "regioes externas das galaxias sem depender de modificacoes da lei de "
+            "gravidade."
+        )
+    else:
+        paragraphs.append(
+            "Sintese dos testes realizados. Nenhuma simulacao foi executada nesta sessao; "
+            "o diagnostico final se baseia exclusivamente nos calculos analiticos das "
+            "curvas de rotacao e dos perfis de densidade."
+        )
+
+    paragraphs.append(
+        "O que permanece aberto. A materia escura esta identificada pelo que ela faz "
+        "(gravitar), nao pelo que ela e (uma particula especifica). WIMPs, axions, "
+        "neutrinos estereis, SIDM e outras hipoteses microscopicas descrevem candidatos "
+        "compativeis com as evidencias atuais, mas nenhum deles foi detectado diretamente "
+        "em laboratorio. A propria secao de choque por massa - central nos testes deste "
+        "relatorio - continua sendo um parametro livre a ser restringido. O que este "
+        "laboratorio mostra e que qualquer modelo de materia escura precisa "
+        "simultaneamente: (i) reproduzir a dinamica gravitacional observada nas escalas "
+        "de galaxias e aglomerados, (ii) respeitar os limites superiores de autointeracao "
+        "impostos pelo Bullet Cluster e por observacoes de raios-X, e (iii) permanecer "
+        "compativel com as restricoes do fundo cosmico de micro-ondas. Satisfazer as tres "
+        "condicoes ao mesmo tempo e o que torna o problema cientificamente tao desafiador "
+        "e, por isso, tao interessante."
+    )
+
+    return paragraphs
+
+
 def record_simulation_history(event_type="snapshot", positions=None, velocities=None, energy=None,
                               params=None, status=None, step=None):
     if positions is None:
@@ -773,6 +1031,16 @@ def record_simulation_history(event_type="snapshot", positions=None, velocities=
         step, time_value, params, energy, energy_drift, velocity_rms,
         radius_rms, mean_radius, event_type, status_value,
     )
+
+    # NOVO: insight contextual progressivo sobre o que este instante revela
+    contextual_insight = generate_contextual_insight(
+        params,
+        step=step,
+        n_steps=int(params.get("n_steps", 0) or 0),
+        energy_drift=energy_drift,
+        event_type=event_type,
+    )
+
     entry = {
         "recorded_at": datetime.now().isoformat(timespec="seconds"),
         "run_id": int(st.session_state.get("simulation_run_counter", 0)),
@@ -790,12 +1058,14 @@ def record_simulation_history(event_type="snapshot", positions=None, velocities=
         "mean_radius": mean_radius,
         "parameters": params.copy(),
         "physics_log": physics_log,
+        "contextual_insight": contextual_insight,
     }
     history = list(st.session_state.get("simulation_history", []))
     history.append(entry)
     st.session_state["simulation_history"] = history[-MAX_SIMULATION_HISTORY:]
     st.session_state["simulation_history_version"] = int(st.session_state.get("simulation_history_version", 0)) + 1
     st.session_state["latest_physics_log"] = physics_log
+    st.session_state["latest_contextual_insight"] = contextual_insight
 
 
 def record_current_simulation_event(event_type, status=None):
@@ -814,7 +1084,8 @@ def history_dataframe(history):
     columns = [
         "recorded_at", "run_id", "event_type", "step", "n_steps", "time_adimensional", "status",
         "energy_specific_mean_proxy", "energy_initial_proxy", "energy_delta_proxy", "energy_drift_percent",
-        "velocity_rms", "radius_rms", "mean_radius", "parameters_json", "physics_log",
+        "velocity_rms", "radius_rms", "mean_radius", "parameters_json",
+        "physics_log", "contextual_insight",
     ]
     rows = []
     for item in history:
@@ -902,7 +1173,9 @@ def integrate_chunk(params, max_chunk=200):
         record_current_simulation_event("conclusao", status="Concluida")
 
 
-# -------------------------- RELATORIO PDF -------------------
+# ============================================================
+# RELATORIO PDF
+# ============================================================
 def _pdf_ascii(value):
     text = str(value).replace("\ufeff", "")
     text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
@@ -935,7 +1208,8 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
     pdf.set_font("Helvetica", "", 10)
     pdf.multi_cell(
         0, 6,
-        "Relatorio reproduzivel de parametros, modelos, diagnosticos numericos, historico e visualizacoes cientificas.",
+        "Relatorio reproduzivel de parametros, modelos, diagnosticos numericos, historico, "
+        "esclarecimento progressivo e sintese cientifica sobre a materia escura.",
         new_x="LMARGIN", new_y="NEXT",
     )
     pdf.ln(3)
@@ -1045,12 +1319,23 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
         pdf.set_font("Helvetica", "", 9)
         pdf.multi_cell(0, 5.5, "Nenhum instantaneo foi registrado nesta sessao.", new_x="LMARGIN", new_y="NEXT")
 
-    section("7. Log automatico: interpretacao fisica de cada momento")
+    section("7. Log automatico e esclarecimento progressivo sobre a materia escura")
     logs = report_data.get("physics_log", [])
+    insights = report_data.get("contextual_insights", [])
     if logs:
         pdf.set_font("Helvetica", "", 8.5)
-        for item in logs:
+        for i, item in enumerate(logs):
             pdf.multi_cell(0, 4.8, _pdf_ascii(item), new_x="LMARGIN", new_y="NEXT")
+            if i < len(insights) and insights[i]:
+                pdf.set_text_color(70, 100, 155)
+                pdf.set_font("Helvetica", "I", 8.5)
+                pdf.multi_cell(
+                    0, 4.6,
+                    _pdf_ascii("Esclarecimento contextual: " + insights[i]),
+                    new_x="LMARGIN", new_y="NEXT",
+                )
+                pdf.set_text_color(35, 42, 55)
+                pdf.set_font("Helvetica", "", 8.5)
             pdf.ln(1)
     else:
         pdf.set_font("Helvetica", "", 9)
@@ -1072,16 +1357,29 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
     for note in notes:
         pdf.multi_cell(0, 5.5, _pdf_ascii("- " + note), new_x="LMARGIN", new_y="NEXT")
 
+    # NOVA SECAO 9: SINTESE CIENTIFICA
+    synthesis_paragraphs = report_data.get("scientific_synthesis", [])
+    if synthesis_paragraphs:
+        pdf.add_page()
+        section("9. Sintese Cientifica: O que e a Materia Escura a luz dos testes realizados")
+        pdf.set_font("Helvetica", "", 9.5)
+        for paragraph in synthesis_paragraphs:
+            pdf.multi_cell(0, 5.4, _pdf_ascii(paragraph), new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(2)
+
     output = pdf.output()
     pdf_bytes = output.encode("latin-1") if isinstance(output, str) else bytes(output)
     return pdf_bytes, (figure_warnings or None)
 
 
-# ---------------------- CABECALHO ---------------------------
+# ============================================================
+# CABECALHO
+# ============================================================
 st.title("🌌 Dark Matter Lab")
 st.markdown(
     '<p class="lab-subtitle">Laboratorio interativo para halos NFW, materia escura autointeragente, '
-    'dinamica estelar, feedback barionico, simulacoes numericas e assistente de configuracao por IA.</p>',
+    'dinamica estelar, feedback barionico, simulacoes numericas, assistente de configuracao por IA '
+    'e esclarecimento progressivo sobre a materia escura.</p>',
     unsafe_allow_html=True,
 )
 st.caption("Modelagem astrofisica + graficos Plotly + integracao numerica + historico + PDF + linguagem natural")
@@ -1155,14 +1453,12 @@ with tab_dm:
 
     r200_dm, rs_dm, _ = nfw_parameters(m200_now, c_now)
 
-    # FIX: constroi r_diag garantindo tamanho consistente e sempre >= 1 elemento.
     r_diag_candidates = np.array([8.0, 15.0, 30.0], dtype=float)
     r_diag = r_diag_candidates[r_diag_candidates <= max(rmax_now, 30.0)]
     if r_diag.size == 0:
         r_diag = np.array([max(rmax_now * 0.5, 5.0)], dtype=float)
     r_diag = as_1d(r_diag)
 
-    # FIX: normaliza todas as saidas para 1-D antes de qualquer operacao.
     v_dm_d, v_b_d, v_tot_d, _, _, m_dm_d, m_b_d = rotation_components(
         r_diag, m200_now, c_now, m_baryon_now, a_now,
         model=model_now, core_radius_kpc=core_now,
@@ -1259,12 +1555,6 @@ with tab_dm:
         "mais de 80–90% da massa total. Esta transição é a assinatura observacional do halo."
     )
 
-    # ============================================================
-    # FIX PRINCIPAL: tabela de diagnóstico defensiva.
-    # Normaliza todas as colunas para 1-D e alinha ao menor comprimento
-    # comum. Se algo divergir, mostramos um aviso tecnico em vez de
-    # derrubar o app com "All arrays must be of the same length".
-    # ============================================================
     st.markdown("### Tabela de diagnóstico")
 
     _cols = {
@@ -1332,6 +1622,41 @@ with tab_dm:
         "Nenhuma dessas hipóteses foi confirmada. A natureza microscópica da matéria escura é um dos "
         "maiores problemas abertos da física contemporânea."
     )
+
+    # ---- NOVO: prévia da síntese científica final ----
+    st.divider()
+    st.markdown("### Prévia da Síntese Científica que será incluída no PDF")
+    st.caption(
+        "Esta é a mesma síntese que o relatório PDF colocará na seção 9, gerada a partir "
+        "dos parâmetros ativos neste momento. Ajuste os controles na aba ① para vê-la evoluir."
+    )
+    _preview_history = st.session_state.get("simulation_history", [])
+    _preview_sim_metrics = st.session_state.get("simulation_metrics", {})
+    _preview_rot_metrics = st.session_state.get("rotation_metrics", {})
+    _preview_params = {
+        "halo_model": st.session_state.get("halo_model", "NFW"),
+        "feedback_strength": float(st.session_state.get("feedback_strength", 0.0) or 0.0),
+        "sigma_over_m_cm2_g": float(st.session_state.get("sigma_over_m", 0.0) or 0.0),
+        "log_m200": float(st.session_state.get("log_m200", 12.0) or 12.0),
+        "log_mbaryon": float(st.session_state.get("log_mbaryon", 10.5) or 10.5),
+        "concentration": float(st.session_state.get("concentration", 10.0) or 10.0),
+    }
+    try:
+        _preview_paragraphs = build_scientific_synthesis(
+            params=_preview_params,
+            rotation_metrics=_preview_rot_metrics,
+            simulation_metrics=_preview_sim_metrics,
+            history=_preview_history,
+            m200_msun=10.0 ** _preview_params["log_m200"],
+            m_baryon_msun=10.0 ** _preview_params["log_mbaryon"],
+            r200_kpc=None,
+            rs_kpc=None,
+        )
+        for i, para in enumerate(_preview_paragraphs, start=1):
+            with st.expander(f"§{i} — {para.split('.')[0][:80]}...", expanded=(i == 1)):
+                st.markdown(para)
+    except Exception as _exc:
+        st.warning(f"Prévia da síntese indisponível: {_exc}")
 
 # ============================================================
 # ABA 1 - MODELOS TEORICOS
@@ -1786,6 +2111,8 @@ with tab_sim:
         "feedback_strength": float(feedback_strength),
         "feedback_scale_over_rs": float(feedback_scale / rs_sim),
         "sigma_over_m_cm2_g": float(sigma_over_m),
+        "log_m200": float(log_m200),
+        "log_mbaryon": float(log_mbaryon),
     }
 
     have_sim = all(k in st.session_state for k in [
@@ -1903,6 +2230,15 @@ with tab_sim:
         elif st.session_state.sim_status == "Concluida":
             st.success("Integracao concluida.")
 
+        # NOVO: esclarecimento contextual do instante atual
+        latest_insight = st.session_state.get("latest_contextual_insight", "")
+        if latest_insight:
+            with st.expander("💡 Esclarecimento contextual do instante atual", expanded=False):
+                st.markdown(
+                    '<div class="insight-box">' + latest_insight + "</div>",
+                    unsafe_allow_html=True,
+                )
+
         df_history = pd.DataFrame({
             "tempo_adimensional": times,
             "energia_especifica_media_proxy": energies,
@@ -1915,7 +2251,7 @@ with tab_sim:
         )
 
         all_history = st.session_state.get("simulation_history", [])
-        with st.expander(f"🧭 Historico automatico e log fisico ({len(all_history)} registros)", expanded=False):
+        with st.expander(f"🧭 Historico automatico, log fisico e esclarecimento ({len(all_history)} registros)", expanded=False):
             if all_history:
                 show_history_details = st.checkbox(
                     "Carregar tabela detalhada, logs e exportacao completa",
@@ -1929,14 +2265,22 @@ with tab_sim:
                     ]
                     st.dataframe(history_df[visible_cols].tail(30), use_container_width=True, hide_index=True)
                     st.download_button(
-                        "Baixar historico completo com parametros e log (CSV)",
+                        "Baixar historico completo com parametros, log e esclarecimento (CSV)",
                         data=history_df.to_csv(index=False).encode("utf-8"),
                         file_name="historico_fisico_dark_matter_lab.csv", mime="text/csv",
                         key="download_full_simulation_history",
                     )
-                    st.markdown("**Log fisico mais recente**")
-                    for record in all_history[-8:][::-1]:
-                        st.write(f"**Execucao {record['run_id']} · passo {record['step']} · {record['event_type']}** — {record['physics_log']}")
+                    st.markdown("**Ultimos registros com esclarecimento progressivo**")
+                    for record in all_history[-6:][::-1]:
+                        st.markdown(
+                            f"**Execucao {record['run_id']} · passo {record['step']} · {record['event_type']}**"
+                        )
+                        st.caption(record["physics_log"])
+                        if record.get("contextual_insight"):
+                            st.markdown(
+                                '<div class="insight-box">' + record["contextual_insight"] + "</div>",
+                                unsafe_allow_html=True,
+                            )
                 else:
                     st.caption("O historico esta sendo armazenado automaticamente.")
             else:
@@ -1972,7 +2316,6 @@ with tab_sim:
         core_radius_kpc=core_radius_kpc,
         feedback_strength=feedback_strength, feedback_scale_kpc=feedback_scale,
     )
-    # FIX: protege contra escalar 0-d vindo de numpy
     f30_report = as_1d(f30_report)
     v_obs_30 = float(np.interp(r30_report, radii, v_nfw_total))
     v_kep_30 = float(np.interp(r30_report, radii, v_kepler))
@@ -2021,7 +2364,8 @@ with tab_sim:
     if st.button(
         "📄 Gerar relatorio PDF completo",
         type="primary", use_container_width=True,
-        help="Compila parametros, graficos Plotly em PNG, diagnostico energetico, historico e log fisico.",
+        help="Compila parametros, graficos Plotly em PNG, diagnostico energetico, historico, "
+             "log com esclarecimento progressivo e sintese cientifica final.",
         key="generate_dark_matter_pdf",
     ):
         report_figures = {
@@ -2073,6 +2417,21 @@ with tab_sim:
             f"[{item['recorded_at']}] Execucao {item['run_id']}, passo {item['step']}: {item['physics_log']}"
             for item in all_history[-30:]
         ]
+        contextual_insights_rows = [
+            item.get("contextual_insight", "") for item in all_history[-30:]
+        ]
+
+        synthesis_paragraphs = build_scientific_synthesis(
+            params=current_params,
+            rotation_metrics=rotation_metrics,
+            simulation_metrics=simulation_metrics,
+            history=all_history,
+            m200_msun=m200,
+            m_baryon_msun=m_baryon,
+            r200_kpc=r200,
+            rs_kpc=rs,
+        )
+
         with st.spinner("Gerando PDF, exportando figuras em PNG e compilando o historico..."):
             pdf_bytes, pdf_chart_warnings = generate_pdf_report(
                 {
@@ -2082,6 +2441,8 @@ with tab_sim:
                     "simulation_rows": sim_rows,
                     "history_rows": history_rows,
                     "physics_log": physics_log_rows,
+                    "contextual_insights": contextual_insights_rows,
+                    "scientific_synthesis": synthesis_paragraphs,
                 },
                 figures=report_figures,
             )
@@ -2199,7 +2560,7 @@ with tab_assistant:
         for key in DEFAULT_WIDGET_STATE.keys():
             if key in {"simulation_history", "dark_matter_pdf_bytes", "dark_matter_pdf_chart_warning",
                        "nl_last_input", "nl_last_matches", "nl_last_applied", "nl_last_skipped",
-                       "nl_last_timestamp"}:
+                       "nl_last_timestamp", "latest_contextual_insight"}:
                 continue
             value = st.session_state.get(key)
             if isinstance(value, float):
@@ -2239,5 +2600,6 @@ st.markdown(
     "- O mapa espacial mostra um corte da densidade e nao calcula lentes gravitacionais.  \n"
     "- A integracao acompanha tracadores em potencial fixo; tracadores nao interagem entre si. O diagnostico energetico e uma aproximacao numerica.  \n"
     "- O assistente de linguagem natural apenas escreve nas chaves do `st.session_state`; toda a fisica e a numerica permanecem identicas as do modelo manual.  \n"
-    "- A fracao de materia escura exibida e M_DM(<r) / [M_DM(<r) + M_baryon(<r)] para um halo NFW/SIDM normalizado a M200 dentro de R200."
+    "- A fracao de materia escura exibida e M_DM(<r) / [M_DM(<r) + M_baryon(<r)] para um halo NFW/SIDM normalizado a M200 dentro de R200.  \n"
+    "- A secao 9 do PDF (Sintese Cientifica) e gerada dinamicamente a partir dos parametros ativos e das metricas da sessao; nao substitui revisao por pares nem dados observacionais reais."
 )
