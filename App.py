@@ -4,7 +4,9 @@ import io
 import json
 import re
 import tempfile
+import time
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
@@ -30,6 +32,33 @@ except ImportError:  # pragma: no cover
             return wrapper
         return func
 
+# ============================================================
+# CELERY + REDIS — deteccao automatica
+# ============================================================
+ASYNC_MODE = False
+REDIS_CLIENT = None
+celery_app = None
+run_simulation = None
+
+try:
+    import redis as _redis_module
+    from tasks import celery_app as _celery_app, run_simulation as _rs, REDIS_URL as _REDIS_URL
+    _client = _redis_module.Redis.from_url(_REDIS_URL, decode_responses=False)
+    _client.ping()
+    REDIS_CLIENT = _client
+    celery_app = _celery_app
+    run_simulation = _rs
+    ASYNC_MODE = True
+except Exception:
+    ASYNC_MODE = False
+    REDIS_CLIENT = None
+    celery_app = None
+    run_simulation = None
+
+# Fallback local (ThreadPoolExecutor)
+_LOCAL_EXECUTOR = ThreadPoolExecutor(max_workers=1)
+_LOCAL_TASKS: dict = {}
+
 st.set_page_config(
     page_title="Dark Matter Lab",
     page_icon="🌌",
@@ -53,6 +82,7 @@ st.markdown(
       .sync-banner { background:linear-gradient(90deg,rgba(139,124,255,.18),rgba(88,196,221,.12)); border:1px solid rgba(139,124,255,.35); border-radius:8px; padding:8px 14px; color:#d0daf2; font-size:.86rem; margin-bottom:6px; }
       .free-input-note { background:rgba(255,189,105,.10); border-left:3px solid #ffbd69; padding:8px 12px; border-radius:6px; color:#f0d9b0; font-size:.84rem; }
       .numba-badge { background:linear-gradient(90deg,rgba(88,196,221,.20),rgba(139,124,255,.15)); border:1px solid rgba(88,196,221,.35); border-radius:6px; padding:4px 10px; color:#a9e5f0; font-size:.8rem; display:inline-block; margin-left:8px; }
+      .async-badge { background:linear-gradient(90deg,rgba(114,214,164,.20),rgba(88,196,221,.15)); border:1px solid rgba(114,214,164,.40); border-radius:6px; padding:4px 10px; color:#a9e5c4; font-size:.8rem; display:inline-block; margin-left:8px; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -162,6 +192,12 @@ DEFAULT_WIDGET_STATE = {
     "latest_contextual_insight": "",
     "ai_last_source": "",
     "ai_apply_count": 0,
+    "async_task_id": None,
+    "async_history": [],
+    "async_elapsed": 0.0,
+    "async_kdtree_rebuilds": 0,
+    "async_started_at": 0.0,
+    "auto_record": True,
 }
 
 for _key, _value in DEFAULT_WIDGET_STATE.items():
@@ -533,7 +569,6 @@ def _integrate_profile_core(x_grid, shape):
 @njit(cache=True)
 def _profile_density_numba(x_query, x_norm, use_sidm, core_x, feedback_strength,
                             feedback_scale_x, m200_over_4pi_rs3):
-    """Densidade de halo normalizada — kernel Numba (entrada 1D obrigatoria)."""
     n = x_norm.shape[0]
 
     shape_norm = np.empty(n, dtype=np.float64)
@@ -573,11 +608,58 @@ def _profile_density_numba(x_query, x_norm, use_sidm, core_x, feedback_strength,
     return out
 
 
+@njit(cache=True, fastmath=False)
+def _leapfrog_batch(pos, vel, acc, mass_x, mass_fraction,
+                     g_dimless, softening, dt, n_inner):
+    """Roda n_inner passos de leapfrog dentro do worker (compilado)."""
+    eps2 = softening * softening
+    n = pos.shape[0]
+    for _ in range(n_inner):
+        for i in range(n):
+            vel[i, 0] += 0.5 * dt * acc[i, 0]
+            vel[i, 1] += 0.5 * dt * acc[i, 1]
+        for i in range(n):
+            pos[i, 0] += dt * vel[i, 0]
+            pos[i, 1] += dt * vel[i, 1]
+        for i in range(n):
+            x = pos[i, 0]
+            y = pos[i, 1]
+            r = np.sqrt(x * x + y * y)
+            r_safe = r if r > 1e-10 else 1e-10
+            enclosed = np.interp(r_safe, mass_x, mass_fraction)
+            denom = (r_safe * r_safe + eps2) ** 1.5
+            factor = -g_dimless * enclosed / denom
+            acc[i, 0] = factor * x
+            acc[i, 1] = factor * y
+        for i in range(n):
+            vel[i, 0] += 0.5 * dt * acc[i, 0]
+            vel[i, 1] += 0.5 * dt * acc[i, 1]
+    return pos, vel, acc
+
+
+@njit(cache=True, fastmath=False)
+def _energy_proxy_batch(pos, vel, g_dimless, mass_x, potential_x):
+    n = pos.shape[0]
+    r_max = mass_x[-1]
+    total = 0.0
+    for i in range(n):
+        x = pos[i, 0]
+        y = pos[i, 1]
+        r = np.sqrt(x * x + y * y)
+        r_safe = r if r > 1e-8 else 1e-8
+        kinetic = 0.5 * (vel[i, 0] ** 2 + vel[i, 1] ** 2)
+        if r_safe > r_max:
+            phi = -1.0 / r_safe
+        else:
+            phi = np.interp(r_safe, mass_x, potential_x)
+        total += kinetic + g_dimless * phi
+    return total / n
+
+
 # ============================================================
-# WRAPPERS PYTHON — CORRIGIDOS PARA ENTRADAS N-D
+# WRAPPERS PYTHON
 # ============================================================
 def halo_shape(x, model="NFW", core_x=0.15, feedback_strength=0.0, feedback_scale_x=0.15):
-    """Wrapper sobre _halo_shape_numba. Retorna sempre 1-D."""
     x_arr = np.ascontiguousarray(np.atleast_1d(np.asarray(x, dtype=np.float64)).ravel())
     use_sidm = bool(model.upper().startswith("SIDM"))
     core_x_safe = max(float(core_x), 1e-5)
@@ -588,18 +670,11 @@ def halo_shape(x, model="NFW", core_x=0.15, feedback_strength=0.0, feedback_scal
 
 def profile_density(radius_kpc, m200_msun, concentration, core_radius_kpc=3.0,
                     model="NFW", feedback_strength=0.0, feedback_scale_kpc=3.0):
-    """Wrapper sobre _profile_density_numba.
-
-    Preserva a forma original da entrada (1D ou 2D). Antes havia um bug
-    em que x_query 2D era passado para o kernel 1D, disparando o
-    TypingError do Numba. Aqui achatamos, executamos e restauramos.
-    """
     r200, rs, _ = nfw_parameters(m200_msun, concentration)
     x_core = max(core_radius_kpc / rs, 1e-5)
     x_fb = max(feedback_scale_kpc / rs, 1e-5)
 
     x_norm = np.ascontiguousarray(np.linspace(0.0, float(concentration), 4000), dtype=np.float64)
-
     radius = np.asarray(radius_kpc, dtype=np.float64)
     original_shape = radius.shape
     radius_flat = radius.ravel()
@@ -768,82 +843,16 @@ def load_observational_csv(uploaded_file):
 
 
 # ============================================================
-# SIMULACAO DE TRACADORES — NUMBA + RESUMO ESTATISTICO
+# RESUMO ESTATISTICO + CHUNK ADAPTATIVO + SPATIAL INDEX
 # ============================================================
-def create_initial_tracers(n, seed, concentration, mass_x, mass_fraction, g_dimless):
-    rng = np.random.default_rng(seed)
-    radius = np.clip(rng.lognormal(mean=np.log(2.0), sigma=0.38, size=n), 0.15, 0.95 * concentration)
-    phi = rng.uniform(0.0, 2.0 * np.pi, size=n)
-    positions = np.column_stack((radius * np.cos(phi), radius * np.sin(phi)))
-    enclosed_fraction = np.interp(radius, mass_x, mass_fraction, left=0.0, right=1.0)
-    vc = np.sqrt(np.maximum(g_dimless * enclosed_fraction / np.maximum(radius, 1e-8), 0.0))
-    tangential = vc * rng.normal(1.0, 0.08, size=n)
-    radial = vc * rng.normal(0.0, 0.12, size=n)
-    vx = radial * np.cos(phi) - tangential * np.sin(phi)
-    vy = radial * np.sin(phi) + tangential * np.cos(phi)
-    return positions, np.column_stack((vx, vy))
-
-
-@njit(cache=True)
-def tracer_acceleration(positions, g_dimless, mass_x, mass_fraction, softening):
-    n = positions.shape[0]
-    out = np.empty((n, 2), dtype=np.float64)
-    eps2 = softening * softening
-    for i in range(n):
-        x = positions[i, 0]
-        y = positions[i, 1]
-        r = np.sqrt(x * x + y * y)
-        r_safe = r if r > 1e-10 else 1e-10
-        enclosed = np.interp(r_safe, mass_x, mass_fraction)
-        denom = (r_safe * r_safe + eps2) ** 1.5
-        factor = -g_dimless * enclosed / denom
-        out[i, 0] = factor * x
-        out[i, 1] = factor * y
-    return out
-
-
-@njit(cache=True)
-def tracer_energy_proxy(positions, velocities, g_dimless, mass_x, potential_x):
-    n = positions.shape[0]
-    r_max = mass_x[-1]
-    total = 0.0
-    for i in range(n):
-        x = positions[i, 0]
-        y = positions[i, 1]
-        r = np.sqrt(x * x + y * y)
-        r_safe = r if r > 1e-8 else 1e-8
-        vx = velocities[i, 0]
-        vy = velocities[i, 1]
-        kinetic = 0.5 * (vx * vx + vy * vy)
-        if r_safe > r_max:
-            phi = -1.0 / r_safe
-        else:
-            phi = np.interp(r_safe, mass_x, potential_x)
-        total += kinetic + g_dimless * phi
-    return total / n
-
-
 def summarize_particle_state(positions, velocities, n_bins=50, r_extent=None):
-    """Resumo estatistico compacto de um instante da simulacao.
-
-    Substitui o antigo `pos.copy()` — que armazenava 500.000 x 2 floats
-    (~8 MB) por snapshot — por histogramas e momentos (~1 KB). Isso
-    reduz o uso de memoria de ~800 MB para ~100 KB em 100 snapshots.
-
-    Retorna dicionario serializavel com:
-      - r_hist, r_hist_edges: histograma radial
-      - r_mean, r_rms, r_max, r_p10, r_p50, r_p90
-      - v_mean, v_rms
-    """
+    """Resumo compacto por snapshot (~1 KB) em vez de array completo (~8 MB)."""
     r = np.linalg.norm(positions, axis=1)
     speed_sq = np.sum(velocities ** 2, axis=1)
-
     if r_extent is None:
         r_extent = float(np.max(r)) if r.size else 1.0
     r_extent = max(r_extent, 1e-6)
-
     hist, edges = np.histogram(r, bins=n_bins, range=(0.0, r_extent))
-
     return {
         "r_hist": hist.astype(np.int32).tolist(),
         "r_hist_edges": edges.astype(np.float32).tolist(),
@@ -859,20 +868,201 @@ def summarize_particle_state(positions, velocities, n_bins=50, r_extent=None):
 
 
 def compute_adaptive_chunk(n_particles, target_ops=50_000):
-    """Escolhe max_chunk adaptativo para manter a UI responsiva.
-
-    Para 1.000 particulas -> chunk = 50 passos (default historico).
-    Para 500.000 particulas -> chunk = 5 passos.
-    Limites: [5, 500] para evitar trabalho excessivo por bloco.
-    """
+    """Bloco adaptativo: escala com 1/N para manter a UI responsiva."""
     try:
         n = max(int(n_particles), 1)
     except (TypeError, ValueError):
         n = 1
-    chunk = int(target_ops / n)
-    return max(5, min(500, chunk))
+    return max(5, min(500, int(target_ops / n)))
 
 
+try:
+    from scipy.spatial import cKDTree
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
+    cKDTree = None
+
+
+class SpatialIndex:
+    """KDTree com reconstrucao adaptativa (so quando os pontos se movem)."""
+
+    def __init__(self, tolerance=0.01):
+        self.tree = None
+        self.ref_positions = None
+        self.tolerance = tolerance
+        self.n_rebuilds = 0
+
+    def build(self, positions):
+        if not SCIPY_AVAILABLE:
+            return
+        self.tree = cKDTree(positions)
+        self.ref_positions = positions.copy()
+        self.n_rebuilds += 1
+
+    def maybe_rebuild(self, positions):
+        if not SCIPY_AVAILABLE:
+            return False
+        if self.tree is None:
+            self.build(positions)
+            return True
+        drift = float(np.max(np.linalg.norm(positions - self.ref_positions, axis=1)))
+        if drift > self.tolerance:
+            self.build(positions)
+            return True
+        return False
+
+
+# ============================================================
+# SIMULACAO LOCAL (executa em thread ou Celery worker)
+# ============================================================
+def _build_mass_lookup_sim(concentration, model, core_x, fb, fb_scale_x, grid_size=3000):
+    return build_profile_lookup(
+        concentration=concentration, model=model,
+        core_x=core_x, feedback_strength=fb,
+        feedback_scale_x=fb_scale_x, grid_size=grid_size,
+    )
+
+
+def _run_simulation_local(params, seed):
+    """Executa a simulacao completa. Usada como fallback (thread local)."""
+    rng = np.random.default_rng(seed)
+    n = int(params["n_particles"])
+    n_steps = int(params["n_steps"])
+    dt = float(params["dt"])
+    g = float(params["g_dimless"])
+    eps = float(params["softening"])
+
+    mass_x, mass_frac, pot_x = _build_mass_lookup_sim(
+        concentration=float(params["concentration"]),
+        model=params["halo_model"],
+        core_x=float(params["core_radius_over_rs"]),
+        fb=float(params["feedback_strength"]),
+        fb_scale_x=float(params["feedback_scale_over_rs"]),
+    )
+
+    radius = np.clip(rng.lognormal(np.log(2.0), 0.38, size=n),
+                      0.15, 0.95 * float(params["concentration"]))
+    phi = rng.uniform(0.0, 2.0 * np.pi, size=n)
+    pos = np.column_stack((radius * np.cos(phi), radius * np.sin(phi)))
+    enc = np.interp(radius, mass_x, mass_frac, left=0.0, right=1.0)
+    vc = np.sqrt(np.maximum(g * enc / np.maximum(radius, 1e-8), 0.0))
+    vt = vc * rng.normal(1.0, 0.08, size=n)
+    vr = vc * rng.normal(0.0, 0.12, size=n)
+    vel = np.column_stack((
+        vr * np.cos(phi) - vt * np.sin(phi),
+        vr * np.sin(phi) + vt * np.cos(phi),
+    ))
+    acc = np.empty_like(pos)
+
+    chunk = compute_adaptive_chunk(n)
+    spatial = SpatialIndex(tolerance=0.01)
+
+    e0 = float(_energy_proxy_batch(pos, vel, g, mass_x, pot_x))
+    history = []
+    record_every = max(1, int(params.get("record_every", 100)))
+
+    initial = summarize_particle_state(pos, vel)
+    initial.update({
+        "step": 0, "time": 0.0, "energy": e0, "energy_initial": e0,
+        "energy_drift": 0.0, "status": "Executando",
+        "recorded_at": datetime.now().isoformat(timespec="seconds"),
+    })
+    history.append(initial)
+
+    step_done = 0
+    t0 = time.time()
+    while step_done < n_steps:
+        count = min(chunk, n_steps - step_done)
+        pos, vel, acc = _leapfrog_batch(pos, vel, acc, mass_x, mass_frac,
+                                          g, eps, dt, count)
+        step_done += count
+        if step_done % record_every < count or step_done == n_steps:
+            e_now = float(_energy_proxy_batch(pos, vel, g, mass_x, pot_x))
+            summary = summarize_particle_state(pos, vel)
+            summary.update({
+                "step": int(step_done), "time": float(step_done * dt),
+                "energy": e_now, "energy_initial": e0,
+                "energy_drift": float(100.0 * (e_now - e0) / abs(e0)) if abs(e0) > 1e-12 else 0.0,
+                "status": "Executando",
+                "recorded_at": datetime.now().isoformat(timespec="seconds"),
+            })
+            history.append(summary)
+        spatial.maybe_rebuild(pos)
+
+    elapsed = time.time() - t0
+    final = summarize_particle_state(pos, vel)
+    e_final = float(_energy_proxy_batch(pos, vel, g, mass_x, pot_x))
+    final.update({
+        "step": int(n_steps), "time": float(n_steps * dt),
+        "energy": e_final, "energy_initial": e0,
+        "energy_drift": float(100.0 * (e_final - e0) / abs(e0)) if abs(e0) > 1e-12 else 0.0,
+        "status": "Concluida",
+        "recorded_at": datetime.now().isoformat(timespec="seconds"),
+    })
+    history.append(final)
+
+    return {
+        "status": "Concluida",
+        "n_steps": n_steps,
+        "n_particles": n,
+        "elapsed_seconds": elapsed,
+        "history": history,
+        "n_kdtree_rebuilds": spatial.n_rebuilds,
+    }
+
+
+# ============================================================
+# ORQUESTRACAO ASSINCRONA
+# ============================================================
+def submit_simulation_async(params: dict, seed: int) -> str:
+    if ASYNC_MODE and run_simulation is not None:
+        task = run_simulation.delay(params, seed)
+        return task.id
+    fut = _LOCAL_EXECUTOR.submit(_run_simulation_local, params, seed)
+    tid = f"local-{int(time.time() * 1000)}"
+    _LOCAL_TASKS[tid] = fut
+    return tid
+
+
+def poll_simulation(task_id: str) -> dict:
+    if ASYNC_MODE and run_simulation is not None:
+        try:
+            from celery.result import AsyncResult
+            res = AsyncResult(task_id, app=celery_app)
+            if res.state == "PENDING":
+                return {"status": "Pendente", "progress": 0.0, "history": []}
+            if res.state == "PROGRESS":
+                meta = res.info or {}
+                return {
+                    "status": "Executando",
+                    "progress": float(meta.get("progress", 0.0)),
+                    "step": int(meta.get("step", 0)),
+                    "n_steps": int(meta.get("n_steps", 0)),
+                    "history": [],
+                    "last_summary": meta.get("last_summary", {}),
+                }
+            if res.state == "SUCCESS":
+                payload = res.result or {}
+                return {"status": "Concluida", "progress": 100.0, **payload}
+            return {"status": res.state, "progress": 0.0, "history": []}
+        except Exception as exc:
+            return {"status": "Erro", "progress": 0.0, "history": [], "error": str(exc)}
+
+    fut = _LOCAL_TASKS.get(task_id)
+    if fut is None:
+        return {"status": "Nao encontrado", "progress": 0.0, "history": []}
+    if fut.done():
+        try:
+            return {"status": "Concluida", "progress": 100.0, **(fut.result() or {})}
+        except Exception as exc:
+            return {"status": "Erro", "progress": 0.0, "history": [], "error": str(exc)}
+    return {"status": "Executando", "progress": 50.0, "history": []}
+
+
+# ============================================================
+# LOG E SINTESE CIENTIFICA
+# ============================================================
 def explain_simulation_physics(step, time_value, params, energy, energy_drift, velocity_rms,
                                radius_rms, mean_radius, event_type, status):
     n_steps = max(int(params.get("n_steps", 1)), 1)
@@ -904,9 +1094,6 @@ def explain_simulation_physics(step, time_value, params, energy, energy_drift, v
     )
 
 
-# ============================================================
-# ESCLARECIMENTO PROGRESSIVO E SINTESE CIENTIFICA
-# ============================================================
 def generate_contextual_insight(params, step=None, n_steps=None,
                                 energy_drift=None, event_type="snapshot"):
     if not params:
@@ -1052,202 +1239,6 @@ def build_scientific_synthesis(params, rotation_metrics=None, simulation_metrics
         "WIMPs, axions, neutrinos estereis, SIDM e outras hipoteses sao candidatos."
     )
     return paragraphs
-
-
-def record_simulation_history(event_type="snapshot", positions=None, velocities=None, energy=None,
-                              params=None, status=None, step=None):
-    if positions is None:
-        positions = st.session_state.get("sim_positions")
-    if velocities is None:
-        velocities = st.session_state.get("sim_velocities")
-    if positions is None or velocities is None:
-        return
-    positions = np.asarray(positions, dtype=float)
-    velocities = np.asarray(velocities, dtype=float)
-    params = dict(params or st.session_state.get("sim_params", {}))
-    if not params:
-        return
-    if step is None:
-        step = int(st.session_state.get("sim_step", 0))
-    step = int(step)
-    time_value = float(step * float(params.get("dt", 0.0)))
-    if energy is None:
-        mass_x = st.session_state.get("sim_mass_x")
-        potential_x = st.session_state.get("sim_potential_x")
-        if mass_x is not None and potential_x is not None:
-            energy = tracer_energy_proxy(positions, velocities, params["g_dimless"], mass_x, potential_x)
-        else:
-            energy = float("nan")
-    energy = float(energy)
-    energy_series = st.session_state.get("sim_energy", [])
-    energy_initial = float(energy_series[0]) if len(energy_series) else float("nan")
-    if np.isfinite(energy_initial) and abs(energy_initial) > 1e-12 and np.isfinite(energy):
-        energy_drift = 100.0 * (energy - energy_initial) / abs(energy_initial)
-    else:
-        energy_drift = float("nan")
-
-    summary = summarize_particle_state(positions, velocities)
-    velocity_rms = summary["v_rms"]
-    radius_rms = summary["r_rms"]
-    mean_radius = summary["r_mean"]
-
-    status_value = str(status if status is not None else st.session_state.get("sim_status", "Desconhecido"))
-    physics_log = explain_simulation_physics(
-        step, time_value, params, energy, energy_drift, velocity_rms,
-        radius_rms, mean_radius, event_type, status_value,
-    )
-    contextual_insight = generate_contextual_insight(
-        params, step=step,
-        n_steps=int(params.get("n_steps", 0) or 0),
-        energy_drift=energy_drift, event_type=event_type,
-    )
-    entry = {
-        "recorded_at": datetime.now().isoformat(timespec="seconds"),
-        "run_id": int(st.session_state.get("simulation_run_counter", 0)),
-        "event_type": str(event_type),
-        "step": step,
-        "n_steps": int(params.get("n_steps", 0)),
-        "time_adimensional": time_value,
-        "status": status_value,
-        "energy_specific_mean_proxy": energy,
-        "energy_initial_proxy": energy_initial,
-        "energy_delta_proxy": float(energy - energy_initial) if np.isfinite(energy) and np.isfinite(energy_initial) else float("nan"),
-        "energy_drift_percent": float(energy_drift),
-        "velocity_rms": velocity_rms,
-        "radius_rms": radius_rms,
-        "mean_radius": mean_radius,
-        "r_max": summary["r_max"],
-        "r_p50": summary["r_p50"],
-        "r_p90": summary["r_p90"],
-        "parameters": params.copy(),
-        "physics_log": physics_log,
-        "contextual_insight": contextual_insight,
-    }
-    history = list(st.session_state.get("simulation_history", []))
-    history.append(entry)
-    st.session_state["simulation_history"] = history[-MAX_SIMULATION_HISTORY:]
-    st.session_state["simulation_history_version"] = int(st.session_state.get("simulation_history_version", 0)) + 1
-    st.session_state["latest_physics_log"] = physics_log
-    st.session_state["latest_contextual_insight"] = contextual_insight
-
-
-def record_current_simulation_event(event_type, status=None):
-    if not all(key in st.session_state for key in ("sim_positions", "sim_velocities", "sim_params")):
-        return
-    params = st.session_state.sim_params
-    record_simulation_history(
-        event_type=event_type,
-        positions=st.session_state.sim_positions,
-        velocities=st.session_state.sim_velocities,
-        params=params, status=status, step=st.session_state.get("sim_step", 0),
-    )
-
-
-def history_dataframe(history):
-    columns = [
-        "recorded_at", "run_id", "event_type", "step", "n_steps", "time_adimensional", "status",
-        "energy_specific_mean_proxy", "energy_initial_proxy", "energy_delta_proxy", "energy_drift_percent",
-        "velocity_rms", "radius_rms", "mean_radius", "r_max", "r_p50", "r_p90",
-        "parameters_json", "physics_log", "contextual_insight",
-    ]
-    rows = []
-    for item in history:
-        row = {key: item.get(key) for key in columns if key != "parameters_json"}
-        row["parameters_json"] = json.dumps(item.get("parameters", {}), ensure_ascii=False, sort_keys=True)
-        rows.append(row)
-    return pd.DataFrame(rows, columns=columns)
-
-
-def cached_history_dataframe(history):
-    version = int(st.session_state.get("simulation_history_version", 0))
-    if st.session_state.get("simulation_history_dataframe_cache_version") != version:
-        st.session_state["simulation_history_dataframe_cache"] = history_dataframe(history)
-        st.session_state["simulation_history_dataframe_cache_version"] = version
-    return st.session_state.get("simulation_history_dataframe_cache", pd.DataFrame())
-
-
-def initialise_simulation(params, event_type="inicializacao"):
-    lookup = build_profile_lookup(
-        concentration=params["concentration"], model=params["halo_model"],
-        core_x=params["core_radius_over_rs"], feedback_strength=params["feedback_strength"],
-        feedback_scale_x=params["feedback_scale_over_rs"],
-    )
-    mass_x, mass_fraction, potential_x = lookup
-    positions, velocities = create_initial_tracers(
-        params["n_particles"], params["seed"], params["concentration"], mass_x, mass_fraction, params["g_dimless"]
-    )
-    accelerations = tracer_acceleration(positions, params["g_dimless"], mass_x, mass_fraction, params["softening"])
-    st.session_state.sim_positions = positions
-    st.session_state.sim_velocities = velocities
-    st.session_state.sim_accelerations = accelerations
-    st.session_state.sim_mass_x = mass_x
-    st.session_state.sim_mass_fraction = mass_fraction
-    st.session_state.sim_potential_x = potential_x
-    st.session_state.sim_step = 0
-    st.session_state.sim_times = [0.0]
-    st.session_state.sim_energy = [tracer_energy_proxy(positions, velocities, params["g_dimless"], mass_x, potential_x)]
-    # Substitui sim_snapshots por sim_summaries: armazena apenas metricas resumidas
-    st.session_state.sim_summaries = [summarize_particle_state(positions, velocities)]
-    st.session_state.sim_status = "Pronta para executar"
-    st.session_state.sim_params = params.copy()
-    st.session_state.simulation_run_counter = int(st.session_state.get("simulation_run_counter", 0)) + 1
-    record_simulation_history(
-        event_type=event_type, positions=positions, velocities=velocities,
-        energy=st.session_state.sim_energy[0], params=params,
-        status=st.session_state.sim_status, step=0,
-    )
-
-
-def integrate_chunk(params, max_chunk=None):
-    """Integra um bloco adaptativo de passos.
-
-    Se max_chunk=None, calcula dinamicamente com compute_adaptive_chunk,
-    escalando com 1/N_partículas para manter a UI responsiva:
-      1.000 partículas  -> 50 passos
-      10.000 partículas -> 50 passos
-      100.000 partículas -> 5 passos
-      500.000 partículas -> 5 passos (limite inferior)
-    """
-    if max_chunk is None:
-        max_chunk = compute_adaptive_chunk(params.get("n_particles", 1000))
-
-    remaining = params["n_steps"] - st.session_state.sim_step
-    if remaining <= 0:
-        st.session_state.sim_status = "Concluida"
-        return
-    count = min(max_chunk, remaining)
-    pos = st.session_state.sim_positions
-    vel = st.session_state.sim_velocities
-    acc = st.session_state.sim_accelerations
-    mass_x = st.session_state.sim_mass_x
-    mass_fraction = st.session_state.sim_mass_fraction
-    potential_x = st.session_state.sim_potential_x
-    dt = params["dt"]
-    for _ in range(count):
-        vel_half = vel + 0.5 * dt * acc
-        pos = pos + dt * vel_half
-        acc_new = tracer_acceleration(pos, params["g_dimless"], mass_x, mass_fraction, params["softening"])
-        vel = vel_half + 0.5 * dt * acc_new
-        acc = acc_new
-        st.session_state.sim_step += 1
-        if (st.session_state.sim_step % max(1, params["record_every"]) == 0
-                or st.session_state.sim_step == params["n_steps"]):
-            # Armazena apenas o resumo estatistico, nao o array completo
-            st.session_state.sim_summaries.append(summarize_particle_state(pos, vel))
-            st.session_state.sim_times.append(st.session_state.sim_step * dt)
-            energy_now = tracer_energy_proxy(pos, vel, params["g_dimless"], mass_x, potential_x)
-            st.session_state.sim_energy.append(energy_now)
-            record_simulation_history(
-                event_type="instantaneo_periodico", positions=pos, velocities=vel,
-                energy=energy_now, params=params,
-                status=st.session_state.sim_status, step=st.session_state.sim_step,
-            )
-    st.session_state.sim_positions = pos
-    st.session_state.sim_velocities = vel
-    st.session_state.sim_accelerations = acc
-    if st.session_state.sim_step >= params["n_steps"] and st.session_state.sim_status != "Concluida":
-        st.session_state.sim_status = "Concluida"
-        record_current_simulation_event("conclusao", status="Concluida")
 
 
 # ============================================================
@@ -1419,10 +1410,10 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
         "Assistente IA escreve em st.session_state; fisica inalterada.",
         "Fracao de ME = M_DM(<r) / [M_DM(<r) + M_baryon(<r)].",
         "Campos numericos liberados; faixas amplas podem produzir configuracoes fora do regime validado.",
-        "Kernels de perfil, integracao de massa/potencial e densidade compilados via Numba @njit(cache=True).",
-        "Tracadores (aceleracao e energia proxy) tambem compilados via Numba @njit(cache=True).",
-        "Blocos de integracao adaptativos: escala com 1/N_particulas para manter a UI responsiva.",
-        "Historico de instantaneos usa metricas resumidas (histogramas e momentos), nao arrays completos.",
+        "Kernels de perfil, integracao, densidade, leapfrog e energia compilados via Numba @njit(cache=True).",
+        "Blocos de integracao adaptativos (1/N_particulas) e metricas resumidas por snapshot.",
+        "Spatial index (KDTree) reconstruido apenas quando os pontos se movem alem da tolerancia.",
+        "Arquitetura assincrona: Celery+Redis quando disponivel; fallback ThreadPoolExecutor local.",
     ]
     for note in notes:
         pdf.multi_cell(0, 5.5, _pdf_ascii("- " + note), new_x="LMARGIN", new_y="NEXT")
@@ -1447,18 +1438,22 @@ def generate_pdf_report(report_data, figures=None, rotation_figure=None):
 st.title("🌌 Dark Matter Lab")
 st.markdown(
     '<p class="lab-subtitle">Laboratorio interativo: halos NFW, SIDM, dinamica estelar, feedback '
-    'barionico, simulacoes numericas, assistente IA e campos livres.'
-    + ('<span class="numba-badge">⚡ Numba JIT — fisica + simulacao</span>' if NUMBA_AVAILABLE
-       else '<span class="numba-badge">⚠️ Numba ausente — fallback numpy</span>')
+    'barionico, simulacoes assincronas, assistente IA e campos livres.'
+    + ('<span class="numba-badge">⚡ Numba JIT</span>' if NUMBA_AVAILABLE
+       else '<span class="numba-badge">⚠️ Numba ausente</span>')
+    + ('<span class="async-badge">🚀 Celery + Redis</span>' if ASYNC_MODE
+       else '<span class="async-badge">🧵 ThreadPool local</span>')
     + '</p>',
     unsafe_allow_html=True,
 )
 st.markdown(
     '<div class="sync-banner">🔓 <b>Campos livres</b> | '
     '🤖 <b>IA propagadora</b> (aba ⑤) | '
-    '⚡ <b>Kernels Numba</b> nos perfis e na simulacao | '
-    '📊 <b>Chunks adaptativos</b> + <b>metricas resumidas</b>. '
-    'Ativacoes da IA: <b>' + str(st.session_state.get("ai_apply_count", 0)) + '</b></div>',
+    '⚡ <b>Kernels Numba</b> | '
+    '📊 <b>Chunks adaptativos + métricas resumidas</b> | '
+    '🌐 <b>KDTree adaptativo</b> | '
+    '🚀 <b>' + ('Celery+Redis' if ASYNC_MODE else 'ThreadPoolExecutor local') + '</b>. '
+    'Ativações da IA: <b>' + str(st.session_state.get("ai_apply_count", 0)) + '</b></div>',
     unsafe_allow_html=True,
 )
 
@@ -1468,7 +1463,7 @@ tab_dm, tab_model, tab_rotation, tab_feedback, tab_sim, tab_assistant = st.tabs(
     "① Modelos teoricos e particulas",
     "② Curvas de rotacao",
     "③ Feedback barionico e densidade",
-    "④ Simulacao, calculadora e relatorio",
+    "④ Simulacao assincrona e relatorio",
     "⑤ Assistente IA / Importador de pesquisa",
 ])
 
@@ -1565,14 +1560,14 @@ with tab_feedback:
         density_model = st.selectbox("Perfil usado no mapa", DENSITY_MODEL_OPTIONS, key="density_model")
 
 # ============================================================
-# ABA ④ - SIMULACAO
+# ABA ④ - SIMULACAO ASSINCRONA
 # ============================================================
 with tab_sim:
-    st.subheader("Calculadora e execucao da simulacao")
+    st.subheader("Simulação assíncrona (worker em segundo plano)")
     st.markdown(
-        '<div class="free-input-note">🔓 Número de partículas, passos, dt, g, seed — tudo livre. '
-        'Aceleração e energia proxy compiladas via Numba @njit. '
-        'Bloco adaptativo + métricas resumidas por snapshot.</div>',
+        '<div class="free-input-note">🔓 Parâmetros livres. A simulação roda em worker '
+        'assíncrono (Celery+Redis ou ThreadPool local). A UI permanece responsiva durante o cálculo. '
+        'Kernels de leapfrog, energia, perfil e densidade são compilados via Numba.</div>',
         unsafe_allow_html=True,
     )
 
@@ -1587,11 +1582,18 @@ with tab_sim:
         softening = free_number("Suavização ε", "softening")
     with s3:
         sim_seed = free_int("Semente aleatória da simulação", "sim_seed")
-        record_every = free_int("Registrar a cada N passos", "record_every")
+        auto_record = st.checkbox("Registrar automaticamente (~200 snapshots)", value=True, key="auto_record")
+        if auto_record:
+            record_every = max(1, int(n_steps) // 200)
+            st.metric("Registrar a cada", f"{record_every} passos")
+        else:
+            record_every = free_int("Registrar a cada N passos", "record_every")
         st.metric("Tempo final nominal", f"{n_steps * dt:.4g}")
+
     st.caption(
-        f"Bloco adaptativo estimado: **{compute_adaptive_chunk(n_particles)} passos** por ciclo "
-        f"(calculado para {n_particles:,} partículas)."
+        f"Bloco adaptativo estimado: **{compute_adaptive_chunk(n_particles)} passos** · "
+        f"Snapshots esperados: **~{max(1, n_steps // max(1, record_every))}** · "
+        f"Modo: **{'Celery + Redis' if ASYNC_MODE else 'ThreadPoolExecutor local'}**"
     )
 
 # ============================================================
@@ -1758,7 +1760,7 @@ with tab_dm:
             params=_preview_params,
             rotation_metrics=st.session_state.get("rotation_metrics", {}),
             simulation_metrics=st.session_state.get("simulation_metrics", {}),
-            history=st.session_state.get("simulation_history", []),
+            history=st.session_state.get("async_history", []),
             m200_msun=10.0 ** _preview_params["log_m200"],
             m_baryon_msun=10.0 ** _preview_params["log_mbaryon"],
         )
@@ -1769,7 +1771,7 @@ with tab_dm:
         st.warning(f"Prévia indisponível: {_exc}")
 
 # ============================================================
-# CONTEUDO DAS ABAS 1, 2, 3, 4
+# CONTEUDO DAS ABAS 1, 2, 3
 # ============================================================
 with tab_model:
     r200_m, rs_m, _ = nfw_parameters(m200, concentration)
@@ -1987,7 +1989,6 @@ with tab_feedback:
     grid = np.linspace(-extent, extent, 120)
     xx, yy = np.meshgrid(grid, grid)
     rr = np.sqrt(xx**2 + yy**2)
-    # CORRECAO: profile_density agora achata internamente e restaura a forma 2D.
     rho_map = profile_density(np.maximum(rr, 0.03), m200, concentration, core_radius_kpc,
                               density_model, feedback_strength, feedback_scale)
     zz = np.log10(np.maximum(rho_map, 1e-30))
@@ -2006,6 +2007,9 @@ with tab_feedback:
     fig_map.update_yaxes(scaleanchor="x", scaleratio=1)
     st.plotly_chart(fig_map, use_container_width=True)
 
+# ============================================================
+# CONTEUDO DA ABA ④ - PAINEL ASSINCRONO + PDF
+# ============================================================
 with tab_sim:
     _, rs_sim, _ = nfw_parameters(m200, concentration)
     current_params = {
@@ -2020,173 +2024,125 @@ with tab_sim:
         "log_m200": float(log_m200), "log_mbaryon": float(log_mbaryon),
     }
 
-    have_sim = all(k in st.session_state for k in [
-        "sim_positions", "sim_velocities", "sim_accelerations", "sim_params",
-        "sim_mass_x", "sim_potential_x"
-    ])
-    config_changed = have_sim and st.session_state.sim_params != current_params
-
-    if config_changed:
-        st.warning("Parâmetros alterados desde a inicialização. Reinicie a simulação.")
-
     ctrl1, ctrl2, ctrl3 = st.columns(3)
     with ctrl1:
-        start_clicked = st.button("▶ Iniciar / continuar", type="primary",
-                                  use_container_width=True, disabled=bool(config_changed))
+        start_clicked = st.button("▶ Iniciar (worker assíncrono)", type="primary",
+                                   use_container_width=True, key="async_start")
     with ctrl2:
-        pause_clicked = st.button("⏸ Pausar", use_container_width=True,
-                                  disabled=(not have_sim or st.session_state.sim_status != "Executando"))
+        stop_clicked = st.button("⏹ Cancelar / limpar", use_container_width=True, key="async_stop")
     with ctrl3:
-        reset_clicked = st.button("↺ Reiniciar", use_container_width=True)
+        st.metric("Modo", "Celery+Redis" if ASYNC_MODE else "ThreadPool")
 
-    if reset_clicked:
-        initialise_simulation(current_params, event_type="reinicializacao")
-        st.session_state.sim_status = "Pausada"
-        record_current_simulation_event("reinicio_pronto", status="Pausada")
-        st.rerun()
     if start_clicked:
-        was_paused = bool(have_sim and not config_changed and st.session_state.sim_status == "Pausada")
-        if not have_sim or config_changed or st.session_state.sim_status in ["Nao iniciada", "Concluida"]:
-            ev = ("reinicio_apos_conclusao"
-                  if have_sim and st.session_state.sim_status == "Concluida" else "inicializacao")
-            initialise_simulation(current_params, event_type=ev)
-        st.session_state.sim_status = "Executando"
-        record_current_simulation_event("retomada" if was_paused else "inicio", status="Executando")
-        st.rerun()
-    if pause_clicked:
-        st.session_state.sim_status = "Pausada"
-        record_current_simulation_event("pausa", status="Pausada")
+        task_id = submit_simulation_async(current_params, int(sim_seed))
+        st.session_state["async_task_id"] = task_id
+        st.session_state["async_history"] = []
+        st.session_state["async_elapsed"] = 0.0
+        st.session_state["async_kdtree_rebuilds"] = 0
+        st.session_state["async_started_at"] = time.time()
+        st.session_state["sim_status"] = "Executando"
         st.rerun()
 
-    status = st.session_state.sim_status
-    status_color = "#72d6a4" if status == "Concluida" else ("#ffbd69" if status == "Executando" else "#aabbd7")
+    if stop_clicked:
+        st.session_state["async_task_id"] = None
+        st.session_state["async_history"] = []
+        st.session_state["sim_status"] = "Nao iniciada"
+        st.rerun()
+
+    task_id = st.session_state.get("async_task_id")
+    status_color = "#72d6a4" if st.session_state.get("sim_status") == "Concluida" else (
+        "#ffbd69" if st.session_state.get("sim_status") == "Executando" else "#aabbd7")
     st.markdown(
-        f'<div class="lab-card"><b>Estado:</b> <span style="color:{status_color}">{status}</span>'
-        + (f' · Passo {st.session_state.sim_step:,} / {current_params["n_steps"]:,}' if have_sim else "")
+        f'<div class="lab-card"><b>Task ID:</b> <code>{task_id or "—"}</code> · '
+        f'<b>Estado:</b> <span style="color:{status_color}">{st.session_state.get("sim_status", "Nao iniciada")}</span>'
+        + (f' · <b>Worker:</b> {"Celery" if ASYNC_MODE else "ThreadPool"}')
         + "</div>",
         unsafe_allow_html=True,
     )
 
-    @st.fragment(run_every=0.1 if st.session_state.sim_status == "Executando" else None)
-    def simulation_live_panel():
-        has_state = all(k in st.session_state for k in [
-            "sim_positions", "sim_velocities", "sim_accelerations", "sim_params",
-            "sim_mass_x", "sim_potential_x"
-        ])
-        if not has_state:
-            st.info("Simulação ainda não inicializada.")
+    @st.fragment(run_every=1.0 if st.session_state.get("sim_status") == "Executando" else None)
+    def async_simulation_panel():
+        tid = st.session_state.get("async_task_id")
+        if not tid:
+            st.info("Nenhuma simulação ativa. Ajuste os parâmetros e clique em **Iniciar (worker assíncrono)**.")
             return
-        params = st.session_state.sim_params
-        if st.session_state.sim_status == "Executando":
-            integrate_chunk(params, max_chunk=None)  # adaptativo
-            if st.session_state.sim_status == "Concluida":
-                st.rerun()
 
-        step = st.session_state.sim_step
-        pos_now = st.session_state.sim_positions
-        vel_now = st.session_state.sim_velocities
-        times = np.asarray(st.session_state.sim_times)
-        energies = np.asarray(st.session_state.sim_energy)
-        completion = 100.0 * step / max(params["n_steps"], 1)
-        st.progress(min(1.0, completion / 100.0), text=f"Progresso: {completion:.1f}%")
+        state = poll_simulation(tid)
+        status = state.get("status", "Desconhecido")
+        progress = float(state.get("progress", 0.0))
+        st.progress(min(1.0, progress / 100.0), text=f"{status} — {progress:.1f}%")
 
-        current_chunk = compute_adaptive_chunk(params.get("n_particles", 1000))
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Passo", f"{step:,} / {params['n_steps']:,}")
-        m2.metric("Tempo adimensional", f"{step * params['dt']:.4g}")
-        m3.metric("Velocidade RMS", f"{np.sqrt(np.mean(np.sum(vel_now**2, axis=1))):.4g}")
-        if len(energies) > 0 and abs(energies[0]) > 1e-12:
-            drift = 100.0 * (energies[-1] - energies[0]) / abs(energies[0])
-            m4.metric("Deriva de energia", f"{drift:+.3g}%")
-        else:
-            drift = float("nan")
-            m4.metric("Deriva de energia", "N/D")
-        st.caption(
-            f"Bloco adaptativo: **{current_chunk} passos** por ciclo "
-            f"(para {params.get('n_particles', 0):,} partículas)."
-        )
-        st.session_state["simulation_metrics"] = {
-            "step": int(step), "n_steps": int(params["n_steps"]),
-            "time": float(step * params["dt"]),
-            "velocity_rms": float(np.sqrt(np.mean(np.sum(vel_now**2, axis=1)))),
-            "energy_drift_percent": float(drift), "status": st.session_state.sim_status,
-        }
+        # Concluida: armazena o historico completo
+        if status == "Concluida":
+            history = state.get("history", [])
+            st.session_state["async_history"] = history
+            st.session_state["async_elapsed"] = float(state.get("elapsed_seconds", 0.0))
+            st.session_state["async_kdtree_rebuilds"] = int(state.get("n_kdtree_rebuilds", 0))
+            st.session_state["sim_status"] = "Concluida"
 
-        sim_col1, sim_col2 = st.columns([1.1, 1])
-        with sim_col1:
-            fig_particles = go.Figure()
-            fig_particles.add_trace(go.Scattergl(
-                x=pos_now[:, 0], y=pos_now[:, 1], mode="markers", name="Traçadores",
-                marker=dict(size=4, color=np.linalg.norm(pos_now, axis=1),
-                            colorscale="Viridis", showscale=True, colorbar=dict(title="r / rs")),
-            ))
-            fig_particles.update_layout(
-                template="plotly_dark", height=430,
-                title="Configuração instantânea (unidades de rs)",
-                xaxis_title="x / rs", yaxis_title="y / rs",
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
+        history = state.get("history", []) or st.session_state.get("async_history", [])
+        if history:
+            df = pd.DataFrame(history)
+            last = history[-1]
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Passo", f"{last.get('step', 0):,} / {state.get('n_steps', n_steps):,}")
+            m2.metric("Tempo adimensional", f"{last.get('time', 0.0):.4g}")
+            m3.metric("v RMS", f"{last.get('v_rms', 0.0):.4g}")
+            m4.metric("Deriva de energia", f"{last.get('energy_drift', 0.0):+.3g}%")
+
+            st.caption(
+                f"Bloco adaptativo: **{compute_adaptive_chunk(n_particles)} passos** · "
+                f"Snapshots: **{len(history)}** · "
+                f"KDTree rebuilds: **{st.session_state.get('async_kdtree_rebuilds', 0)}** · "
+                f"Tempo decorrido: **{st.session_state.get('async_elapsed', 0.0):.2f} s**"
             )
-            fig_particles.update_yaxes(scaleanchor="x", scaleratio=1)
-            st.plotly_chart(fig_particles, use_container_width=True)
-        with sim_col2:
-            fig_e = go.Figure()
-            fig_e.add_trace(go.Scatter(x=times, y=energies, mode="lines+markers", name="Energia proxy"))
-            fig_e.update_layout(
-                template="plotly_dark", height=430, title="Diagnóstico de energia",
-                xaxis_title="Tempo adimensional", yaxis_title="Energia específica (proxy)",
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
+
+            c1, c2 = st.columns(2)
+            with c1:
+                fig_e = go.Figure()
+                fig_e.add_trace(go.Scatter(x=df["time"], y=df["energy"],
+                                            mode="lines+markers", name="Energia proxy"))
+                fig_e.update_layout(
+                    template="plotly_dark", height=400,
+                    title="Energia específica (proxy) — worker assíncrono",
+                    xaxis_title="Tempo adimensional", yaxis_title="Energia específica",
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
+                )
+                st.plotly_chart(fig_e, use_container_width=True)
+            with c2:
+                fig_r = go.Figure()
+                fig_r.add_trace(go.Scatter(x=df["time"], y=df["r_rms"],
+                                            mode="lines+markers", name="r RMS"))
+                fig_r.add_trace(go.Scatter(x=df["time"], y=df["r_max"],
+                                            mode="lines", name="r max",
+                                            line=dict(dash="dash")))
+                fig_r.update_layout(
+                    template="plotly_dark", height=400,
+                    title="Raio RMS e máximo",
+                    xaxis_title="Tempo adimensional", yaxis_title="Raio (unid. de rs)",
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(8,14,28,.8)",
+                )
+                st.plotly_chart(fig_r, use_container_width=True)
+
+            st.markdown("### Histórico compacto (métricas resumidas)")
+            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.download_button(
+                "⬇️ Exportar histórico assíncrono (CSV)",
+                data=df.to_csv(index=False).encode("utf-8"),
+                file_name="historico_simulacao_async.csv",
+                mime="text/csv", key="download_async_history",
             )
-            st.plotly_chart(fig_e, use_container_width=True)
+        elif status == "Executando":
+            st.info("Simulação rodando em segundo plano. Os snapshots aparecerão assim que o primeiro bloco terminar.")
 
-        latest_insight = st.session_state.get("latest_contextual_insight", "")
-        if latest_insight:
-            with st.expander("💡 Esclarecimento contextual do instante atual", expanded=False):
-                st.markdown(f'<div class="insight-box">{latest_insight}</div>', unsafe_allow_html=True)
+    async_simulation_panel()
 
-        df_history = pd.DataFrame({
-            "tempo_adimensional": times,
-            "energia_especifica_media_proxy": energies,
-        })
-        st.download_button(
-            "⬇️ Exportar histórico físico (CSV)",
-            data=df_history.to_csv(index=False).encode("utf-8"),
-            file_name="historico_simulacao_energia.csv", mime="text/csv",
-            key="download_sim_history",
-        )
-
-        all_history = st.session_state.get("simulation_history", [])
-        with st.expander(f"🧭 Histórico + log + esclarecimento ({len(all_history)} registros)"):
-            if all_history:
-                show_details = st.checkbox("Carregar tabela detalhada e exportação",
-                                           value=False, key="show_history_details")
-                if show_details:
-                    history_df = cached_history_dataframe(all_history)
-                    st.dataframe(history_df.tail(30), use_container_width=True, hide_index=True)
-                    st.download_button(
-                        "Baixar histórico completo (CSV)",
-                        data=history_df.to_csv(index=False).encode("utf-8"),
-                        file_name="historico_fisico_dark_matter_lab.csv",
-                        mime="text/csv", key="download_full_simulation_history",
-                    )
-
-    simulation_live_panel()
-
-    st.markdown("#### Resumo dos parâmetros ativos")
-    st.dataframe(pd.DataFrame({
-        "Parametro": ["Candidato", "Perfil", "M200", "c", "σ/m", "σ_v", "Feedback",
-                      "N partículas", "Passos", "g", "dt", "seed", "ε"],
-        "Valor": [candidate, sim_halo_model, f"{m200:.4e}", f"{concentration:.4g}",
-                  f"{sigma_over_m:.4g}", f"{sigma_v:.4g}", f"{feedback_strength:.4g}",
-                  n_particles, n_steps, g_dimless, dt, sim_seed, softening],
-    }), use_container_width=True, hide_index=True)
-
+    # ---------------- PDF com histórico assíncrono ----------------
     rotation_metrics = st.session_state.get("rotation_metrics", {})
-    simulation_metrics = st.session_state.get("simulation_metrics", {})
-
-    def _fmt_metric(key, suffix=""):
-        value = rotation_metrics.get(key)
-        return (f"{value:.4g}{suffix}"
-                if isinstance(value, (int, float, np.number)) and np.isfinite(value) else "N/D")
+    async_history = st.session_state.get("async_history", [])
+    last = async_history[-1] if async_history else {}
+    drift_pct = last.get("energy_drift", float("nan"))
+    elapsed = st.session_state.get("async_elapsed", 0.0)
 
     r30_report = min(30.0, r_plot_max)
     _, _, f30_report = dark_matter_fraction_at_radius(
@@ -2212,9 +2168,12 @@ with tab_sim:
         ("Origem", rotation_metrics.get("source", "N/D")),
         ("Modelo", rotation_metrics.get("model", "N/D")),
         ("Pontos", str(rotation_metrics.get("n_points", "N/D"))),
-        ("RMSE", _fmt_metric("rmse_kms", " km/s")),
-        ("MAE", _fmt_metric("mae_kms", " km/s")),
-        ("χ² médio", _fmt_metric("chi2_reduced")),
+        ("RMSE", f"{rotation_metrics.get('rmse_kms', float('nan')):.4g} km/s"
+         if np.isfinite(rotation_metrics.get("rmse_kms", float("nan"))) else "N/D"),
+        ("MAE", f"{rotation_metrics.get('mae_kms', float('nan')):.4g} km/s"
+         if np.isfinite(rotation_metrics.get("mae_kms", float("nan"))) else "N/D"),
+        ("χ² médio", f"{rotation_metrics.get('chi2_reduced', float('nan')):.4g}"
+         if np.isfinite(rotation_metrics.get("chi2_reduced", float("nan"))) else "N/D"),
         ("CSV válido", str(rotation_metrics.get("csv_valid", False))),
     ]
     dm_diagnostic_rows = [
@@ -2224,20 +2183,23 @@ with tab_sim:
         (f"Fração ME em {r30_report:.0f} kpc", f"{float(f30_report[0])*100:.2f}%"),
     ]
     sim_rows = [
-        ("Estado", simulation_metrics.get("status", st.session_state.sim_status)),
+        ("Modo", "Celery + Redis" if ASYNC_MODE else "ThreadPool local"),
+        ("Task ID", str(st.session_state.get("async_task_id") or "—")),
+        ("Estado", st.session_state.get("sim_status", "Nao iniciada")),
         ("N partículas", str(n_particles)), ("Passos previstos", str(n_steps)),
-        ("Passo atual", str(simulation_metrics.get("step", st.session_state.sim_step))),
+        ("Passo atual", str(last.get("step", 0))),
         ("Tempo final nominal", f"{n_steps * dt:.5g}"), ("g", f"{g_dimless:.5g}"),
         ("dt", f"{dt:.5g}"), ("seed", str(sim_seed)),
         ("Perfil potencial", sim_halo_model),
         ("Feedback", f"{feedback_strength:.3g}"),
-        ("Kernels de fisica", "Numba njit" if NUMBA_AVAILABLE else "numpy fallback"),
-        ("Kernels de simulacao", "Numba njit" if NUMBA_AVAILABLE else "numpy fallback"),
+        ("Kernels", "Numba njit" if NUMBA_AVAILABLE else "numpy fallback"),
         ("Bloco adaptativo", f"{compute_adaptive_chunk(n_particles)} passos"),
-        ("Snapshots", "metricas resumidas (hist+momentos)"),
+        ("KDTree rebuilds", str(st.session_state.get("async_kdtree_rebuilds", 0))),
+        ("Tempo decorrido (s)", f"{elapsed:.3g}"),
+        ("Deriva de energia", f"{drift_pct:+.3g}%" if np.isfinite(drift_pct) else "N/D"),
     ]
 
-    if st.button("📄 Gerar relatorio PDF completo", type="primary",
+    if st.button("📄 Gerar relatório PDF completo", type="primary",
                  use_container_width=True, key="generate_dark_matter_pdf"):
         report_figures = {
             "Perfis de densidade: NFW vs SIDM": fig_density_compare,
@@ -2246,55 +2208,55 @@ with tab_sim:
             "Perfil radial com feedback": fb_fig,
             "Mapa espacial 2D": fig_map,
         }
-        if have_sim:
-            report_pos = st.session_state.sim_positions
-            report_fig_particles = go.Figure()
-            report_fig_particles.add_trace(go.Scattergl(
-                x=report_pos[:, 0], y=report_pos[:, 1], mode="markers", name="Traçadores",
-                marker=dict(size=4, color=np.linalg.norm(report_pos, axis=1),
-                            colorscale="Viridis", showscale=True, colorbar=dict(title="r / rs")),
-            ))
-            report_fig_particles.update_layout(
-                template="plotly_dark", title="Configuracao instantanea de tracadores",
-                xaxis_title="x / rs", yaxis_title="y / rs", height=430,
-            )
-            report_fig_particles.update_yaxes(scaleanchor="x", scaleratio=1)
-            report_fig_energy = go.Figure()
-            report_fig_energy.add_trace(go.Scatter(
-                x=st.session_state.sim_times, y=st.session_state.sim_energy,
-                mode="lines+markers", name="Energia proxy",
-            ))
-            report_fig_energy.update_layout(
-                template="plotly_dark", title="Diagnostico de energia",
+
+        if async_history:
+            df_h = pd.DataFrame(async_history)
+            fig_e_rep = go.Figure()
+            fig_e_rep.add_trace(go.Scatter(x=df_h["time"], y=df_h["energy"],
+                                            mode="lines+markers", name="Energia proxy"))
+            fig_e_rep.update_layout(
+                template="plotly_dark", title="Diagnóstico de energia (worker assíncrono)",
                 xaxis_title="Tempo adimensional", yaxis_title="Energia (proxy)", height=430,
             )
-            report_figures["Estado atual dos tracadores"] = report_fig_particles
-            report_figures["Evolucao temporal da energia"] = report_fig_energy
+            fig_r_rep = go.Figure()
+            fig_r_rep.add_trace(go.Scatter(x=df_h["time"], y=df_h["r_rms"],
+                                            mode="lines+markers", name="r RMS"))
+            fig_r_rep.add_trace(go.Scatter(x=df_h["time"], y=df_h["r_max"],
+                                            mode="lines", name="r max", line=dict(dash="dash")))
+            fig_r_rep.update_layout(
+                template="plotly_dark", title="Raio RMS e máximo",
+                xaxis_title="Tempo adimensional", yaxis_title="Raio (unid. de rs)", height=430,
+            )
+            report_figures["Diagnóstico de energia (assíncrono)"] = fig_e_rep
+            report_figures["Raio RMS e máximo"] = fig_r_rep
 
-        all_history = st.session_state.get("simulation_history", [])
         history_rows = []
-        for item in all_history[-24:]:
-            drift_text = (f"{item['energy_drift_percent']:+.4g}%"
-                          if np.isfinite(item.get("energy_drift_percent", float("nan"))) else "N/D")
-            params_json = json.dumps(item.get("parameters", {}), ensure_ascii=True, sort_keys=True)
+        for item in async_history[-24:]:
             history_rows.append((
-                f"Exec {item['run_id']} · passo {item['step']}",
-                f"{item['recorded_at']} | {item['event_type']} | t={item['time_adimensional']:.5g} | "
-                f"Eproxy={item['energy_specific_mean_proxy']:.6g} | drift={drift_text} | "
-                f"vRMS={item['velocity_rms']:.5g} | Rrms={item['radius_rms']:.5g} | "
-                f"Rmax={item.get('r_max', float('nan')):.5g} | "
-                f"estado={item['status']} | Params: {params_json}"
+                f"Passo {item.get('step', '?')}",
+                f"t={item.get('time', 0.0):.5g} | E={item.get('energy', 0.0):.6g} | "
+                f"drift={item.get('energy_drift', 0.0):+.4g}% | "
+                f"vRMS={item.get('v_rms', 0.0):.5g} | Rrms={item.get('r_rms', 0.0):.5g} | "
+                f"Rmax={item.get('r_max', 0.0):.5g} | p50={item.get('r_p50', 0.0):.5g} | "
+                f"p90={item.get('r_p90', 0.0):.5g} | estado={item.get('status', '?')}"
             ))
         physics_log_rows = [
-            f"[{item['recorded_at']}] Exec {item['run_id']}, passo {item['step']}: {item['physics_log']}"
-            for item in all_history[-30:]
+            f"[{item.get('recorded_at', '?')}] {explain_simulation_physics(item.get('step', 0), item.get('time', 0.0), current_params, item.get('energy', 0.0), item.get('energy_drift', 0.0), item.get('v_rms', 0.0), item.get('r_rms', 0.0), item.get('r_mean', 0.0), 'instantaneo_periodico', item.get('status', '?'))}"
+            for item in async_history[-30:]
         ]
-        contextual_insights_rows = [item.get("contextual_insight", "") for item in all_history[-30:]]
+        contextual_insights_rows = [
+            generate_contextual_insight(current_params, step=item.get("step", 0),
+                                         n_steps=n_steps, energy_drift=item.get("energy_drift", 0.0),
+                                         event_type="instantaneo_periodico")
+            for item in async_history[-30:]
+        ]
         synthesis_paragraphs = build_scientific_synthesis(
             params=current_params, rotation_metrics=rotation_metrics,
-            simulation_metrics=simulation_metrics, history=all_history,
+            simulation_metrics={"energy_drift_percent": drift_pct, "velocity_rms": last.get("v_rms", 0.0), "status": st.session_state.get("sim_status", "Nao iniciada")},
+            history=async_history,
             m200_msun=m200, m_baryon_msun=m_baryon, r200_kpc=r200, rs_kpc=rs,
         )
+
         with st.spinner("Gerando PDF..."):
             pdf_bytes, pdf_chart_warnings = generate_pdf_report(
                 {
@@ -2317,7 +2279,7 @@ with tab_sim:
         st.success("Relatório gerado em "
                    + st.session_state.get("dark_matter_pdf_generated_at", "esta sessão") + ".")
         st.download_button(
-            "⬇️ Baixar relatorio PDF",
+            "⬇️ Baixar relatório PDF",
             data=st.session_state["dark_matter_pdf_bytes"],
             file_name="relatorio_dark_matter_lab.pdf", mime="application/pdf",
             use_container_width=True, key="download_dark_matter_pdf",
@@ -2466,7 +2428,8 @@ with tab_assistant:
             if key in {"simulation_history", "dark_matter_pdf_bytes",
                        "dark_matter_pdf_chart_warning", "nl_last_input",
                        "nl_last_matches", "nl_last_applied", "nl_last_skipped",
-                       "nl_last_timestamp", "latest_contextual_insight", "ai_last_source"}:
+                       "nl_last_timestamp", "latest_contextual_insight", "ai_last_source",
+                       "async_history"}:
                 continue
             value = st.session_state.get(key)
             if isinstance(value, float):
@@ -2480,16 +2443,14 @@ st.markdown(
     "**Notas científicas e limitações**  \n"
     "- O perfil NFW é parametrizado por M200 e c; R200 e rs derivados com H0 = 70 km/s/Mpc.  \n"
     "- Perfil SIDM com núcleo e feedback são parametrizações fenomenológicas.  \n"
-    "- Campos numéricos liberados para qualquer valor; faixas amplas podem produzir configurações fora do regime fisicamente validado.  \n"
+    "- Campos numéricos liberados; faixas amplas podem produzir configurações fora do regime validado.  \n"
     "- O assistente IA escreve apenas em `st.session_state`; a física e a numérica permanecem inalteradas.  \n"
     "- Presets calibrados por: Cautun et al. (2020) para Via Láctea; Antlia B para anãs; Umetsu et al. (2020) para aglomerados; Bullet Cluster para σ/m.  \n"
-    "- **Numba JIT (física)**: `halo_shape`, `build_profile_lookup` e `profile_density` usam "
-    "`@njit(cache=True)`. A regra dos trapézios, a grade e as constantes cosmológicas são idênticas "
-    "ao Python original — a saída numérica é a mesma.  \n"
-    "- **Numba JIT (simulação)**: `tracer_acceleration` e `tracer_energy_proxy` também usam `@njit(cache=True)`.  \n"
-    "- **Chunks adaptativos**: `compute_adaptive_chunk` escala com 1/N_partículas (500.000 partículas → 5 passos; "
-    "1.000 partículas → 50 passos).  \n"
-    "- **Métricas resumidas**: `sim_summaries` armazena histograma + momentos (~1 KB) em vez de arrays "
-    "completos (~8 MB). Redução de ~8000× no uso de memória em 100 snapshots.  \n"
-    "- Se o Numba não estiver instalado, o app funciona com numpy puro (fallback automático)."
+    "- **Numba JIT**: kernels de perfil, integração, densidade, leapfrog e energia compilados via `@njit(cache=True)`.  \n"
+    "- **Chunks adaptativos**: `compute_adaptive_chunk` escala com 1/N_partículas.  \n"
+    "- **Métricas resumidas**: histórico armazena histograma + momentos (~1 KB) em vez de arrays completos.  \n"
+    "- **Spatial index**: KDTree com reconstrução adaptativa (drift > 1% do raio típico).  \n"
+    "- **Arquitetura assíncrona**: Celery + Redis quando disponível; fallback automático para `ThreadPoolExecutor` local.  \n"
+    "- Sem Numba, o app funciona com numpy puro (fallback automático). Sem Celery/Redis, roda em thread local.  \n"
+    "- Para ativar modo distribuído: `docker-compose up -d redis worker` (ver `tasks.py` e `docker-compose.yml`)."
 )
