@@ -28,11 +28,7 @@ AUTH_FILE = BASE / ".auth.json"
 LOCKOUT_FILE = BASE / ".lockout.json"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# Senha inicial (usada apenas na 1ª execução, se .auth.json não existir).
-# Deixe "" para o app pedir para definir na primeira vez.
 SENHA_INICIAL = "Videoaulas@2026"
-
-# Proteção contra força bruta
 MAX_TENTATIVAS = 4
 BLOQUEIO_MINUTOS = 15
 
@@ -45,47 +41,109 @@ _SERVER_INFO = {"port": None}
 
 
 # ============================================================
-# ABRIR PASTA (com múltiplos métodos e retorno de status)
+# ABRIR PASTA (Linux / WSL / Windows / Mac)
 # ============================================================
+def _detectar_wsl() -> bool:
+    if sys.platform != "linux":
+        return False
+    try:
+        with open("/proc/version") as f:
+            v = f.read().lower()
+        return "microsoft" in v or "wsl" in v
+    except Exception:
+        return False
+
+
+def _caminho_windows(path: Path) -> str | None:
+    """Se em WSL, devolve o equivalente em Windows (para Explorer)."""
+    try:
+        s = str(path.resolve())
+        # /mnt/c/Users/... → C:\Users\...
+        if s.startswith("/mnt/") and len(s) > 6:
+            drive = s[5].upper()
+            resto = s[7:].replace("/", "\\")
+            return f"{drive}:\\{resto}"
+        # /home/user/... → \\wsl$\Distro\home\user\...
+        distro = os.environ.get("WSL_DISTRO_NAME")
+        if not distro:
+            try:
+                with open("/etc/os-release") as f:
+                    for line in f:
+                        if line.startswith("NAME="):
+                            distro = line.split("=", 1)[1].strip().strip('"').split()[0]
+                            break
+            except Exception:
+                pass
+        if distro:
+            return "\\\\wsl$\\" + distro + "\\" + s.lstrip("/").replace("/", "\\")
+    except Exception:
+        pass
+    return None
+
+
 def abrir_pasta(path: Path) -> tuple[bool, str]:
-    """Tenta abrir a pasta no gerenciador do SO. Retorna (ok, mensagem)."""
     path = path.resolve()
     if not path.exists():
         return False, f"A pasta não existe: {path}"
     if not path.is_dir():
         return False, f"O caminho não é uma pasta: {path}"
 
+    tentativas: list[tuple[str, object]] = []
+
     if sys.platform.startswith("win"):
         tentativas = [
             ("os.startfile", lambda: os.startfile(str(path))),  # type: ignore
             ("explorer", lambda: subprocess.Popen(["explorer", str(path)])),
             ("cmd start", lambda: subprocess.Popen(
-                ["cmd", "/c", "start", "", str(path)], shell=False)),
+                ["cmd", "/c", "start", "", str(path)])),
             ("powershell", lambda: subprocess.Popen(
                 ["powershell", "-NoProfile", "-Command",
                  f"Start-Process -FilePath '{path}'"])),
         ]
-        erros = []
-        for nome, fn in tentativas:
-            try:
-                fn()
-                return True, f"✅ Aberto via `{nome}`."
-            except Exception as e:
-                erros.append(f"{nome}: {e}")
-        return False, "❌ Nenhum método funcionou:\n" + "\n".join(erros)
+    elif sys.platform == "darwin":
+        tentativas = [
+            ("open", lambda: subprocess.Popen(["open", str(path)])),
+        ]
+    else:
+        # Linux / WSL
+        if _detectar_wsl():
+            win_path = _caminho_windows(path)
+            if win_path:
+                tentativas.append((
+                    "explorer.exe (Windows)",
+                    lambda wp=win_path: subprocess.Popen(["explorer.exe", wp]),
+                ))
+            tentativas.append((
+                "wslview",
+                lambda: subprocess.Popen(["wslview", str(path)]),
+            ))
+        tentativas += [
+            ("xdg-open", lambda: subprocess.Popen(["xdg-open", str(path)])),
+            ("nautilus", lambda: subprocess.Popen(["nautilus", str(path)])),
+            ("dolphin", lambda: subprocess.Popen(["dolphin", str(path)])),
+            ("thunar", lambda: subprocess.Popen(["thunar", str(path)])),
+            ("nemo", lambda: subprocess.Popen(["nemo", str(path)])),
+            ("pcmanfm", lambda: subprocess.Popen(["pcmanfm", str(path)])),
+        ]
 
-    if sys.platform == "darwin":
+    erros = []
+    for nome, fn in tentativas:
         try:
-            subprocess.Popen(["open", str(path)])
-            return True, "✅ Aberto via `open`."
+            fn()  # type: ignore
+            return True, f"✅ Aberto via `{nome}`."
+        except FileNotFoundError:
+            erros.append(f"{nome}: comando não instalado")
         except Exception as e:
-            return False, f"❌ Falhou: {e}"
+            erros.append(f"{nome}: {e}")
 
-    try:
-        subprocess.Popen(["xdg-open", str(path)])
-        return True, "✅ Aberto via `xdg-open`."
-    except Exception as e:
-        return False, f"❌ Falhou: {e}"
+    detalhe = "\n".join(f"- {x}" for x in erros) if erros else "(sem tentativas)"
+    msg = (
+        "❌ Não consegui abrir a pasta automaticamente.\n\n"
+        "**Use o caminho mostrado acima** e cole no Explorer/Finder:\n"
+        "clique no ícone de copiar (canto superior direito do bloco do caminho).\n\n"
+        f"Tentativas:\n{detalhe}"
+    )
+    return False, msg
 
 
 # ============================================================
@@ -444,7 +502,6 @@ def arquivos_nao_registrados():
 
 
 def conteudo_da_pasta():
-    """Lista tudo que está em uploads/, mesmo que não seja vídeo."""
     if not UPLOAD_DIR.exists():
         return []
     itens = []
@@ -503,15 +560,22 @@ c3.metric("Espaço usado", f"{stt['gb']:.1f} GB")
 with st.sidebar:
     st.header("📂 Pasta de vídeos")
 
-    # Caminho sempre visível e copiável
-    st.caption("Caminho completo (clique para selecionar):")
+    st.caption("**Caminho no sistema (clique no ícone de copiar):**")
     st.code(str(UPLOAD_DIR), language=None)
+
+    # Se em WSL, mostra também o caminho Windows equivalente
+    if _detectar_wsl():
+        win_path = _caminho_windows(UPLOAD_DIR)
+        if win_path:
+            st.caption("**Equivalente no Windows (cole no Explorer):**")
+            st.code(win_path, language=None)
 
     col_a, col_b = st.columns(2)
     with col_a:
         if st.button("📂 Abrir pasta", use_container_width=True):
             ok, msg = abrir_pasta(UPLOAD_DIR)
             st.session_state.abrir_pasta_resultado = (ok, msg)
+            st.rerun()
     with col_b:
         if st.button("🔄 Re-escanear", use_container_width=True):
             st.rerun()
@@ -520,12 +584,10 @@ with st.sidebar:
         ok, msg = st.session_state.abrir_pasta_resultado
         if ok:
             st.success(msg)
-            st.caption("Se não viu a janela, ela pode estar **atrás do navegador**. "
-                       "Minimize o navegador ou use a barra de tarefas.")
+            st.caption("Se a janela não apareceu, veja **atrás do navegador** "
+                       "ou na barra de tarefas.")
         else:
             st.error(msg)
-            st.caption("Não consegui abrir automaticamente. "
-                       "Use o caminho acima: copie e cole no Explorer.")
 
     pend_count = len(arquivos_nao_registrados())
     if pend_count:
@@ -716,26 +778,26 @@ with tab_upload:
 
 # =============== IMPORTAR DA PASTA ===============
 with tab_pasta:
-    st.markdown(f"""
-    ### 📥 Importar arquivos que já estão na pasta
-    """)
+    st.markdown("### 📥 Importar arquivos que já estão na pasta")
 
-    # Caminho em destaque, com aviso se a pasta não existe
-    st.caption("**Pasta monitorada:**")
+    st.caption("**Pasta monitorada (clique no ícone de copiar):**")
     st.code(str(UPLOAD_DIR), language=None)
 
-    # Diagnóstico de existência + conteúdo
+    if _detectar_wsl():
+        win_path = _caminho_windows(UPLOAD_DIR)
+        if win_path:
+            st.caption("**Caminho para colar no Explorer do Windows:**")
+            st.code(win_path, language=None)
+
     if not UPLOAD_DIR.exists():
         st.error(
             f"❌ A pasta **não existe** no disco: `{UPLOAD_DIR}`\n\n"
-            "Isso é estranho — o app deveria tê-la criado. "
             "Feche o app, crie a pasta manualmente nesse caminho e reabra."
         )
     else:
         conteudo = conteudo_da_pasta()
         st.caption(f"✅ Pasta existe • **{len(conteudo)}** arquivo(s) dentro")
 
-        # Botão de abrir pasta + resultado
         col1, col2 = st.columns([1, 2])
         with col1:
             if st.button("📂 Abrir pasta no sistema", use_container_width=True):
@@ -746,26 +808,25 @@ with tab_pasta:
             if st.session_state.abrir_pasta_resultado is not None:
                 ok, msg = st.session_state.abrir_pasta_resultado
                 if ok:
-                    st.success(msg + " — se não apareceu, veja atrás do navegador.")
+                    st.success(msg)
                 else:
                     st.error(msg)
 
-        # Instruções passo a passo
         with st.expander("ℹ️ Como copiar os vídeos para cá (passo a passo)"):
             st.markdown(f"""
-            1. **Copie este caminho:**  
+            1. **Copie o caminho:**  
                `{UPLOAD_DIR}`
+               (use o ícone de copiar no canto direito do bloco acima)
             2. Abra o **Explorer** (Windows) / **Finder** (Mac)
             3. Cole o caminho na **barra de endereço** e aperte Enter
-            4. Copie seus vídeos para dentro da pasta
+            4. Copie os vídeos para dentro da pasta
             5. Volte aqui e clique em **🔄 Re-escanear** na barra lateral
             """)
 
-        # Lista de arquivos já na pasta (visualização in-app)
         st.divider()
         st.markdown("#### 📋 Arquivos atualmente em `uploads/`")
         if not conteudo:
-            st.info("A pasta está **vazia**. Copie seus vídeos para ela e clique em "
+            st.info("A pasta está **vazia**. Copie seus vídeos e clique em "
                     "**🔄 Re-escanear** na barra lateral.")
         else:
             for item in conteudo:
@@ -775,17 +836,14 @@ with tab_pasta:
                 marca = "🎬" if item["ext"] in VIDEO_EXTS else "📎"
                 st.text(f"{marca}  {item['rel']}   ({tamanho_str})")
 
-        # Seção de importação
         st.divider()
         st.markdown("#### ✅ Importar para o app")
         pendentes = arquivos_nao_registrados()
 
         if not pendentes:
             if conteudo:
-                st.success(
-                    "✅ Todos os vídeos de `uploads/` já estão cadastrados. "
-                    "Abra a aba **📚 Minhas aulas** para assistir."
-                )
+                st.success("✅ Todos os vídeos já estão cadastrados. "
+                           "Abra **📚 Minhas aulas** para assistir.")
             else:
                 st.warning("Não há vídeos para importar — a pasta está vazia.")
         else:
