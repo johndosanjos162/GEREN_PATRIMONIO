@@ -1,5 +1,8 @@
-"""Videoaulas — upload + importação de pasta. Arquivo único."""
+"""Videoaulas — login single-user + upload + importação de pasta."""
 
+import hashlib
+import hmac
+import json
 import os
 import re
 import shutil
@@ -16,11 +19,12 @@ from urllib.parse import quote
 import streamlit as st
 
 # ============================================================
-# PASTAS
+# PASTAS E CONFIG
 # ============================================================
 BASE = Path(__file__).parent.resolve()
 UPLOAD_DIR = BASE / "uploads"
 DB_PATH = BASE / "videoaulas.db"
+AUTH_FILE = BASE / ".auth.json"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 VIDEO_EXTS = {"mp4", "m4v", "webm", "mov", "mkv", "avi",
@@ -29,6 +33,86 @@ CODEC_OK = {"mp4", "m4v", "webm"}
 STATUS_OPCOES = ["não iniciada", "em andamento", "concluída"]
 
 _SERVER_INFO = {"port": None}
+
+
+# ============================================================
+# AUTENTICAÇÃO (single user)
+# ============================================================
+def _hash_senha(senha: str, salt: str | None = None) -> str:
+    salt = salt or os.urandom(16).hex()
+    h = hashlib.pbkdf2_hmac(
+        "sha256", senha.encode("utf-8"), bytes.fromhex(salt), 200_000
+    ).hex()
+    return f"{salt}${h}"
+
+
+def _verificar_senha(senha: str, hash_salvo: str) -> bool:
+    try:
+        salt, _ = hash_salvo.split("$", 1)
+    except ValueError:
+        return False
+    return hmac.compare_digest(_hash_senha(senha, salt), hash_salvo)
+
+
+def _carregar_hash():
+    if not AUTH_FILE.exists():
+        return None
+    try:
+        return json.loads(AUTH_FILE.read_text()).get("hash")
+    except Exception:
+        return None
+
+
+def _salvar_hash(h: str):
+    AUTH_FILE.write_text(json.dumps({"hash": h}))
+    try:
+        AUTH_FILE.chmod(0o600)
+    except Exception:
+        pass
+
+
+def tela_autenticacao():
+    st.markdown(
+        "<h1 style='text-align:center; margin-top:60px;'>🔐 Acesso restrito</h1>",
+        unsafe_allow_html=True,
+    )
+    salvo = _carregar_hash()
+
+    if salvo is None:
+        st.info(
+            "**Primeira execução** — defina a senha que será usada para acessar o app."
+        )
+        with st.form("setup_senha"):
+            s1 = st.text_input("Nova senha", type="password")
+            s2 = st.text_input("Confirmar senha", type="password")
+            ok = st.form_submit_button(
+                "Definir senha", use_container_width=True, type="primary"
+            )
+        if ok:
+            if not s1:
+                st.error("Digite uma senha.")
+            elif len(s1) < 4:
+                st.error("Use pelo menos 4 caracteres.")
+            elif s1 != s2:
+                st.error("As senhas não coincidem.")
+            else:
+                _salvar_hash(_hash_senha(s1))
+                st.session_state.authenticated = True
+                st.success("Senha definida com sucesso.")
+                st.rerun()
+        return
+
+    with st.form("login"):
+        pwd = st.text_input("Senha", type="password")
+        ok = st.form_submit_button(
+            "Entrar", use_container_width=True, type="primary"
+        )
+    if ok:
+        if _verificar_senha(pwd, salvo):
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Senha incorreta.")
 
 
 # ============================================================
@@ -106,7 +190,7 @@ def url_video(rel: str) -> str:
 
 
 # ============================================================
-# ABRIR PASTA NO SISTEMA OPERACIONAL
+# ABRIR PASTA NO SISTEMA
 # ============================================================
 def abrir_pasta(path: Path):
     try:
@@ -250,12 +334,20 @@ def arquivos_nao_registrados():
 
 
 # ============================================================
-# UI
+# BOOT
 # ============================================================
 st.set_page_config(page_title="Videoaulas", page_icon="🎬", layout="wide")
 init_db()
 iniciar_servidor()
 
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    tela_autenticacao()
+    st.stop()
+
+# ---------- LOGADO ----------
 if "video_atual" not in st.session_state:
     st.session_state.video_atual = None
 
@@ -278,16 +370,16 @@ with st.sidebar:
     st.code(str(UPLOAD_DIR), language=None)
     if st.button("📂 Abrir pasta uploads", use_container_width=True):
         abrir_pasta(UPLOAD_DIR)
-        st.toast("Pasta aberta no seu gerenciador de arquivos.")
+        st.toast("Pasta aberta no gerenciador de arquivos.")
 
     if st.button("🔄 Re-escanear pasta", use_container_width=True):
         st.rerun()
 
     pend_count = len(arquivos_nao_registrados())
     if pend_count:
-        st.info(f"📌 {pend_count} arquivo(s) na pasta aguardando importação")
+        st.info(f"📌 {pend_count} arquivo(s) aguardando importação")
     else:
-        st.caption("Nenhum arquivo pendente na pasta")
+        st.caption("Nenhum arquivo pendente")
 
     st.divider()
     st.header("🔎 Filtros")
@@ -295,6 +387,12 @@ with st.sidebar:
     f_disc = st.selectbox("Disciplina", ["Todas"] + disciplinas())
     f_status = st.selectbox("Status", ["Todos"] + STATUS_OPCOES)
     f_fav = st.checkbox("⭐ Apenas favoritos")
+
+    st.divider()
+    if st.button("🚪 Sair", use_container_width=True):
+        st.session_state.authenticated = False
+        st.session_state.video_atual = None
+        st.rerun()
 
 # -------- PLAYER --------
 if st.session_state.video_atual:
@@ -359,7 +457,7 @@ with tab_aulas:
     if not videos:
         st.info(
             "Nenhuma aula cadastrada ainda. "
-            "Use a aba **⬆️ Enviar vídeo** (arquivos pequenos) "
+            "Use **⬆️ Enviar vídeo** (arquivos pequenos) "
             "ou **📥 Importar da pasta** (arquivos grandes)."
         )
 
@@ -400,7 +498,7 @@ with tab_aulas:
             if v["tags"]:
                 st.caption("🏷️ " + v["tags"])
 
-# =============== ENVIAR VÍDEO (uploader) ===============
+# =============== ENVIAR VÍDEO ===============
 with tab_upload:
     st.markdown("""
     ### ⬆️ Enviar vídeo pelo navegador
@@ -451,13 +549,13 @@ with tab_pasta:
     
     **Pasta:** `{UPLOAD_DIR}`
     
-    1. Clique em **📂 Abrir pasta uploads** (na barra lateral) para abrir no Explorer/Finder
+    1. Clique em **📂 Abrir pasta uploads** (na barra lateral)
     2. Copie os vídeos (4–5 GB) para dentro dela — instantâneo no mesmo HD
     3. Clique em **🔄 Re-escanear pasta**
     4. Os arquivos aparecem abaixo → clique em **Importar**
     """)
 
-    if st.button("📂 Abrir pasta uploads agora", use_container_width=False):
+    if st.button("📂 Abrir pasta uploads agora"):
         abrir_pasta(UPLOAD_DIR)
         st.toast("Pasta aberta no gerenciador de arquivos.")
 
