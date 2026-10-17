@@ -1,8 +1,11 @@
-"""Videoaulas — importa de uploads/ + player local com Range. Arquivo único."""
+"""Videoaulas — upload + importação de pasta. Arquivo único."""
 
 import os
 import re
+import shutil
 import sqlite3
+import subprocess
+import sys
 import threading
 from contextlib import contextmanager
 from datetime import datetime
@@ -13,7 +16,7 @@ from urllib.parse import quote
 import streamlit as st
 
 # ============================================================
-# CONFIGURAÇÃO E PASTAS
+# PASTAS
 # ============================================================
 BASE = Path(__file__).parent.resolve()
 UPLOAD_DIR = BASE / "uploads"
@@ -22,14 +25,14 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 VIDEO_EXTS = {"mp4", "m4v", "webm", "mov", "mkv", "avi",
               "ogv", "flv", "wmv", "mpg", "mpeg", "ts"}
-CODEC_OK = {"mp4", "m4v", "webm"}          # tocam direto no navegador
+CODEC_OK = {"mp4", "m4v", "webm"}
 STATUS_OPCOES = ["não iniciada", "em andamento", "concluída"]
 
 _SERVER_INFO = {"port": None}
 
 
 # ============================================================
-# SERVIDOR HTTP COM RANGE (streaming de arquivos grandes)
+# SERVIDOR HTTP (Range)
 # ============================================================
 class RangeHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -43,12 +46,12 @@ class RangeHandler(SimpleHTTPRequestHandler):
         try:
             f = open(path, "rb")
         except OSError:
-            self.send_error(404, "File not found")
+            self.send_error(404)
             return None
         try:
             file_len = os.fstat(f.fileno()).st_size
-            range_header = self.headers.get("Range")
-            m = re.match(r"bytes=(\d+)-(\d*)", range_header) if range_header else None
+            rng = self.headers.get("Range")
+            m = re.match(r"bytes=(\d+)-(\d*)", rng) if rng else None
             if m:
                 start = int(m.group(1))
                 end = int(m.group(2)) if m.group(2) else file_len - 1
@@ -63,7 +66,6 @@ class RangeHandler(SimpleHTTPRequestHandler):
                 f.seek(start)
                 self._range_remaining = length
                 return f
-
             self.send_response(200)
             self.send_header("Content-Type", self.guess_type(path))
             self.send_header("Accept-Ranges", "bytes")
@@ -75,15 +77,15 @@ class RangeHandler(SimpleHTTPRequestHandler):
             raise
 
     def copyfile(self, source, outputfile):
-        remaining = getattr(self, "_range_remaining", None)
-        if remaining is not None:
+        rem = getattr(self, "_range_remaining", None)
+        if rem is not None:
             self._range_remaining = None
-            while remaining > 0:
-                chunk = source.read(min(256 * 1024, remaining))
+            while rem > 0:
+                chunk = source.read(min(256 * 1024, rem))
                 if not chunk:
                     break
                 outputfile.write(chunk)
-                remaining -= len(chunk)
+                rem -= len(chunk)
         else:
             super().copyfile(source, outputfile)
 
@@ -99,8 +101,23 @@ def iniciar_servidor():
     return httpd
 
 
-def url_video(arquivo_rel: str) -> str:
-    return f"http://127.0.0.1:{_SERVER_INFO['port']}/{quote(arquivo_rel)}"
+def url_video(rel: str) -> str:
+    return f"http://127.0.0.1:{_SERVER_INFO['port']}/{quote(rel)}"
+
+
+# ============================================================
+# ABRIR PASTA NO SISTEMA OPERACIONAL
+# ============================================================
+def abrir_pasta(path: Path):
+    try:
+        if sys.platform.startswith("win"):
+            os.startfile(str(path))  # type: ignore[attr-defined]
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", str(path)])
+        else:
+            subprocess.Popen(["xdg-open", str(path)])
+    except Exception:
+        pass
 
 
 # ============================================================
@@ -201,36 +218,35 @@ def estatisticas():
         total = conn.execute("SELECT COUNT(*) c FROM videos").fetchone()["c"]
         concluidas = conn.execute(
             "SELECT COUNT(*) c FROM videos WHERE status='concluída'").fetchone()["c"]
-        bytes_ = conn.execute(
-            "SELECT COALESCE(SUM(tamanho),0) s FROM videos").fetchone()["s"]
-    return {"total": total, "concluidas": concluidas, "gb": bytes_ / (1024**3)}
+        b = conn.execute("SELECT COALESCE(SUM(tamanho),0) s FROM videos").fetchone()["s"]
+    return {"total": total, "concluidas": concluidas, "gb": b / (1024**3)}
 
 
 def arquivos_nao_registrados():
     with db() as conn:
-        registrados = {r["arquivo"] for r in conn.execute("SELECT arquivo FROM videos")}
-    pendentes = []
+        reg = {r["arquivo"] for r in conn.execute("SELECT arquivo FROM videos")}
+    pend = []
     for p in UPLOAD_DIR.rglob("*"):
         if not p.is_file():
             continue
         if p.suffix.lower().lstrip(".") not in VIDEO_EXTS:
             continue
         rel = p.relative_to(UPLOAD_DIR).as_posix()
-        if rel in registrados:
+        if rel in reg:
             continue
         try:
             tam = p.stat().st_size
         except OSError:
             tam = 0
         partes = p.relative_to(UPLOAD_DIR).parts
-        disciplina_sug = partes[0] if len(partes) > 1 else ""
-        pendentes.append({
+        disc_sug = partes[0] if len(partes) > 1 else ""
+        pend.append({
             "rel": rel,
             "tamanho": tam,
             "titulo_sug": p.stem.replace("_", " "),
-            "disciplina_sug": disciplina_sug,
+            "disciplina_sug": disc_sug,
         })
-    return pendentes
+    return pend
 
 
 # ============================================================
@@ -246,8 +262,7 @@ if "video_atual" not in st.session_state:
 st.markdown("""
 <h1 style="margin-bottom: 4px;">🎬 Minhas Videoaulas</h1>
 <p style="color:#8fb8cc;font-size:13px;letter-spacing:1px;margin-top:0;">
-    Copie os vídeos direto para <code>uploads/</code> e clique em <b>Importar</b>.
-    Player com streaming Range — ideal para arquivos grandes (4–5 GB).
+    Envie vídeos pelo navegador ou copie arquivos grandes direto para a pasta.
 </p>
 """, unsafe_allow_html=True)
 
@@ -257,25 +272,22 @@ c1.metric("Total de aulas", stt["total"])
 c2.metric("Concluídas", stt["concluidas"])
 c3.metric("Espaço usado", f"{stt['gb']:.1f} GB")
 
+# -------- SIDEBAR --------
 with st.sidebar:
-    st.header("📥 Importar do uploads/")
-    st.markdown(f"""
-    **Pasta monitorada:**  
-    `{UPLOAD_DIR}`
-    
-    1. Copie o vídeo para essa pasta  
-    2. Clique em **🔄 Re-escanear**  
-    3. Vá na aba **📥 Importar**
-    """)
+    st.header("📂 Pasta de vídeos")
+    st.code(str(UPLOAD_DIR), language=None)
+    if st.button("📂 Abrir pasta uploads", use_container_width=True):
+        abrir_pasta(UPLOAD_DIR)
+        st.toast("Pasta aberta no seu gerenciador de arquivos.")
 
-    if st.button("🔄 Re-escanear uploads/", use_container_width=True):
+    if st.button("🔄 Re-escanear pasta", use_container_width=True):
         st.rerun()
 
-    pendentes_count = len(arquivos_nao_registrados())
-    if pendentes_count:
-        st.info(f"📌 {pendentes_count} arquivo(s) aguardando importação")
+    pend_count = len(arquivos_nao_registrados())
+    if pend_count:
+        st.info(f"📌 {pend_count} arquivo(s) na pasta aguardando importação")
     else:
-        st.caption("Nenhum arquivo pendente")
+        st.caption("Nenhum arquivo pendente na pasta")
 
     st.divider()
     st.header("🔎 Filtros")
@@ -284,7 +296,7 @@ with st.sidebar:
     f_status = st.selectbox("Status", ["Todos"] + STATUS_OPCOES)
     f_fav = st.checkbox("⭐ Apenas favoritos")
 
-# --------- PLAYER (topo) ---------
+# -------- PLAYER --------
 if st.session_state.video_atual:
     v = buscar(st.session_state.video_atual)
     if v:
@@ -300,13 +312,12 @@ if st.session_state.video_atual:
         else:
             ext = path.suffix.lower().lstrip(".")
             size_gb = v["tamanho"] / (1024**3)
-
             if ext in CODEC_OK or size_gb < 0.5:
                 st.video(url_video(v["arquivo"]))
             else:
                 st.warning(
-                    f"⚠️ `.{ext}` ({size_gb:.1f} GB) provavelmente **não toca no navegador** "
-                    f"(MKV/AVI/HEVC). Copie a URL abaixo no VLC → *Mídia → Abrir Fluxo de Rede* (Ctrl+N):"
+                    f"⚠️ `.{ext}` ({size_gb:.1f} GB) provavelmente não toca no navegador. "
+                    f"Copie a URL abaixo no VLC → *Mídia → Abrir Fluxo de Rede* (Ctrl+N):"
                 )
                 st.code(url_video(v["arquivo"]), language=None)
                 if st.button("🎥 Tentar no navegador mesmo assim",
@@ -334,34 +345,41 @@ if st.session_state.video_atual:
                 st.rerun()
         st.divider()
 
-# --------- ABAS ---------
-tab_aulas, tab_importar = st.tabs(["📚 Minhas aulas", "📥 Importar"])
+# -------- ABAS --------
+tab_aulas, tab_upload, tab_pasta = st.tabs(
+    ["📚 Minhas aulas", "⬆️ Enviar vídeo", "📥 Importar da pasta"]
+)
 
+# =============== MINHAS AULAS ===============
 with tab_aulas:
     videos = listar(busca, "" if f_disc == "Todas" else f_disc,
                     "" if f_status == "Todos" else f_status, favorito=f_fav)
     st.caption(f"**{len(videos)}** aula(s) encontrada(s)")
 
     if not videos:
-        st.info("Nenhuma aula cadastrada. Use a aba **📥 Importar** para adicionar.")
+        st.info(
+            "Nenhuma aula cadastrada ainda. "
+            "Use a aba **⬆️ Enviar vídeo** (arquivos pequenos) "
+            "ou **📥 Importar da pasta** (arquivos grandes)."
+        )
 
     for v in videos:
         path = UPLOAD_DIR / v["arquivo"]
         existe = path.exists()
         emoji = {"não iniciada": "⚪", "em andamento": "🟡", "concluída": "🟢"}[v["status"]]
-        favorito = "⭐ " if v["favorito"] else ""
+        fav = "⭐ " if v["favorito"] else ""
         ghost = "" if existe else "👻 "
         pct = f" • {v['progresso']}%" if v["progresso"] else ""
         gb = v["tamanho"] / (1024**3)
 
-        with st.expander(f"{ghost}{emoji} {favorito}{v['titulo']} — "
+        with st.expander(f"{ghost}{emoji} {fav}{v['titulo']} — "
                          f"*{v['disciplina'] or 'sem disciplina'}*{pct}"):
             c1, c2, c3 = st.columns([2, 1, 1])
             with c1:
                 if existe:
                     st.caption(f"📄 `{v['arquivo']}` • {gb:.2f} GB")
                 else:
-                    st.error(f"Arquivo ausente em uploads/: `{v['arquivo']}`")
+                    st.error(f"Arquivo ausente: `uploads/{v['arquivo']}`")
             with c2:
                 if existe and st.button("▶️ Assistir", key=f"p_{v['id']}",
                                         use_container_width=True, type="primary"):
@@ -382,24 +400,78 @@ with tab_aulas:
             if v["tags"]:
                 st.caption("🏷️ " + v["tags"])
 
-with tab_importar:
-    st.markdown(f"""
-    **Pasta monitorada:** `{UPLOAD_DIR}`
+# =============== ENVIAR VÍDEO (uploader) ===============
+with tab_upload:
+    st.markdown("""
+    ### ⬆️ Enviar vídeo pelo navegador
     
-    Copie os arquivos para essa pasta (pode criar subpastas por disciplina — o nome
-    da subpasta vira a disciplina padrão).
+    **Bom para arquivos até ~500 MB.** Para arquivos de 4–5 GB, use a aba
+    **📥 Importar da pasta** — o navegador não aguenta upload desse tamanho.
     """)
+
+    with st.form("form_upload", clear_on_submit=True):
+        arquivo = st.file_uploader(
+            "Selecione o arquivo de vídeo",
+            type=sorted(VIDEO_EXTS),
+            accept_multiple_files=False,
+        )
+        c1, c2 = st.columns(2)
+        titulo = c1.text_input("Título *", placeholder="Ex: Aula 03 — Crase")
+        disciplina = c2.text_input("Disciplina", placeholder="Ex: Português")
+        tags = st.text_input("Tags (separadas por vírgula)")
+        enviar = st.form_submit_button("⬆️ Enviar e cadastrar",
+                                       use_container_width=True, type="primary")
+
+    if enviar:
+        if not arquivo:
+            st.warning("Selecione um arquivo antes de enviar.")
+        elif not titulo.strip():
+            st.warning("Informe um título.")
+        else:
+            ext = Path(arquivo.name).suffix.lower().lstrip(".")
+            base = Path(arquivo.name).stem.replace(" ", "_")[:60]
+            stamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            nome = f"{base}_{stamp}.{ext}"
+            destino = UPLOAD_DIR / nome
+            try:
+                with st.spinner(f"Salvando {nome}..."):
+                    with open(destino, "wb") as f:
+                        shutil.copyfileobj(arquivo, f)
+                inserir(titulo.strip(), disciplina.strip(), nome,
+                        destino.stat().st_size, tags.strip())
+                st.success(f"✅ '{titulo}' enviada e cadastrada!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Falha ao salvar: {e}")
+
+# =============== IMPORTAR DA PASTA ===============
+with tab_pasta:
+    st.markdown(f"""
+    ### 📥 Importar arquivos que já estão na pasta
+    
+    **Pasta:** `{UPLOAD_DIR}`
+    
+    1. Clique em **📂 Abrir pasta uploads** (na barra lateral) para abrir no Explorer/Finder
+    2. Copie os vídeos (4–5 GB) para dentro dela — instantâneo no mesmo HD
+    3. Clique em **🔄 Re-escanear pasta**
+    4. Os arquivos aparecem abaixo → clique em **Importar**
+    """)
+
+    if st.button("📂 Abrir pasta uploads agora", use_container_width=False):
+        abrir_pasta(UPLOAD_DIR)
+        st.toast("Pasta aberta no gerenciador de arquivos.")
+
+    st.divider()
 
     pendentes = arquivos_nao_registrados()
 
     if not pendentes:
-        st.success("✅ Nenhum arquivo pendente. Todos os vídeos de `uploads/` já foram cadastrados.")
+        st.success("✅ Nenhum arquivo pendente em `uploads/`. Tudo já foi cadastrado.")
     else:
         st.info(f"📌 **{len(pendentes)}** arquivo(s) encontrado(s) para importar.")
 
         if st.button(f"⚡ Importar todos ({len(pendentes)})",
-                     use_container_width=True, type="primary",
-                     help="Usa nome do arquivo como título e nome da pasta como disciplina"):
+                     use_container_width=True, type="primary"):
             for item in pendentes:
                 inserir(item["titulo_sug"], item["disciplina_sug"],
                         item["rel"], item["tamanho"], "")
