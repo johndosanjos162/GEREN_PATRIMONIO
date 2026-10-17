@@ -1,4 +1,4 @@
-"""Videoaulas — login single-user + upload + importação de pasta."""
+"""Videoaulas — login + brute force + upload + importação de pasta."""
 
 import hashlib
 import hmac
@@ -11,7 +11,7 @@ import subprocess
 import sys
 import threading
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import quote
@@ -19,13 +19,29 @@ from urllib.parse import quote
 import streamlit as st
 
 # ============================================================
-# PASTAS E CONFIG
+# CONFIGURAÇÕES GERAIS
 # ============================================================
 BASE = Path(__file__).parent.resolve()
 UPLOAD_DIR = BASE / "uploads"
 DB_PATH = BASE / "videoaulas.db"
 AUTH_FILE = BASE / ".auth.json"
+LOCKOUT_FILE = BASE / ".lockout.json"
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+# ------------------------------------------------------------
+# SENHA INICIAL
+# Usada apenas na PRIMEIRA execução (quando .auth.json não existe).
+# Deixe "" para o app pedir para você definir na primeira vez.
+# Para trocar a senha depois: dentro do app, menu lateral → 🔐 Alterar senha.
+# Para resetar tudo: apague .auth.json na pasta do app.
+# ------------------------------------------------------------
+SENHA_INICIAL = "Videoaulas@2026"
+
+# ------------------------------------------------------------
+# PROTEÇÃO CONTRA FORÇA BRUTA
+# ------------------------------------------------------------
+MAX_TENTATIVAS = 4          # tentativas antes do bloqueio
+BLOQUEIO_MINUTOS = 15       # duração do bloqueio em minutos
 
 VIDEO_EXTS = {"mp4", "m4v", "webm", "mov", "mkv", "avi",
               "ogv", "flv", "wmv", "mpg", "mpeg", "ts"}
@@ -36,7 +52,7 @@ _SERVER_INFO = {"port": None}
 
 
 # ============================================================
-# AUTENTICAÇÃO (single user)
+# AUTENTICAÇÃO — hash de senha
 # ============================================================
 def _hash_senha(senha: str, salt: str | None = None) -> str:
     salt = salt or os.urandom(16).hex()
@@ -71,13 +87,84 @@ def _salvar_hash(h: str):
         pass
 
 
+# ============================================================
+# AUTENTICAÇÃO — controle de tentativas (brute force)
+# ============================================================
+def _ler_lockout() -> dict:
+    if not LOCKOUT_FILE.exists():
+        return {"tentativas": 0, "bloqueado_ate": None}
+    try:
+        return json.loads(LOCKOUT_FILE.read_text())
+    except Exception:
+        return {"tentativas": 0, "bloqueado_ate": None}
+
+
+def _salvar_lockout(data: dict):
+    LOCKOUT_FILE.write_text(json.dumps(data))
+    try:
+        LOCKOUT_FILE.chmod(0o600)
+    except Exception:
+        pass
+
+
+def _resetar_tentativas():
+    _salvar_lockout({"tentativas": 0, "bloqueado_ate": None})
+
+
+def _registrar_falha() -> dict:
+    data = _ler_lockout()
+    data["tentativas"] = data.get("tentativas", 0) + 1
+    if data["tentativas"] >= MAX_TENTATIVAS:
+        until = datetime.now() + timedelta(minutes=BLOQUEIO_MINUTOS)
+        data["bloqueado_ate"] = until.isoformat(timespec="seconds")
+    _salvar_lockout(data)
+    return data
+
+
+def _esta_bloqueado():
+    """Retorna datetime do fim do bloqueio, ou None se não está bloqueado."""
+    data = _ler_lockout()
+    ba = data.get("bloqueado_ate")
+    if not ba:
+        return None
+    try:
+        until = datetime.fromisoformat(ba)
+    except Exception:
+        return None
+    if datetime.now() < until:
+        return until
+    _resetar_tentativas()
+    return None
+
+
+# ============================================================
+# TELA DE LOGIN
+# ============================================================
 def tela_autenticacao():
     st.markdown(
         "<h1 style='text-align:center; margin-top:60px;'>🔐 Acesso restrito</h1>",
         unsafe_allow_html=True,
     )
+
+    # ---------- 1. Verifica bloqueio ----------
+    bloqueado_ate = _esta_bloqueado()
+    if bloqueado_ate:
+        restante = bloqueado_ate - datetime.now()
+        mins = int(restante.total_seconds() // 60)
+        segs = int(restante.total_seconds() % 60)
+        st.error(
+            f"🚫 **Acesso bloqueado** por excesso de tentativas. "
+            f"Tente novamente em **{mins}min {segs}s**."
+        )
+        st.caption(
+            f"💡 Para desbloquear imediatamente, apague o arquivo "
+            f"`{LOCKOUT_FILE}` na pasta do app."
+        )
+        return
+
     salvo = _carregar_hash()
 
+    # ---------- 2. Primeira execução: definir senha ----------
     if salvo is None:
         st.info(
             "**Primeira execução** — defina a senha que será usada para acessar o app."
@@ -97,10 +184,18 @@ def tela_autenticacao():
                 st.error("As senhas não coincidem.")
             else:
                 _salvar_hash(_hash_senha(s1))
+                _resetar_tentativas()
                 st.session_state.authenticated = True
                 st.success("Senha definida com sucesso.")
                 st.rerun()
         return
+
+    # ---------- 3. Login normal ----------
+    data = _ler_lockout()
+    tentativas = data.get("tentativas", 0)
+    restam = MAX_TENTATIVAS - tentativas
+    if tentativas > 0:
+        st.warning(f"⚠️ **{restam}** tentativa(s) restante(s) antes do bloqueio.")
 
     with st.form("login"):
         pwd = st.text_input("Senha", type="password")
@@ -109,14 +204,27 @@ def tela_autenticacao():
         )
     if ok:
         if _verificar_senha(pwd, salvo):
+            _resetar_tentativas()
             st.session_state.authenticated = True
             st.rerun()
         else:
-            st.error("Senha incorreta.")
+            data = _registrar_falha()
+            if data.get("bloqueado_ate"):
+                st.error(
+                    f"🚫 **Senha incorreta.** Você foi bloqueado por "
+                    f"{BLOQUEIO_MINUTOS} minutos."
+                )
+                st.caption(
+                    f"💡 Para desbloquear imediatamente, apague o arquivo "
+                    f"`{LOCKOUT_FILE}` na pasta do app."
+                )
+            else:
+                restam = MAX_TENTATIVAS - data["tentativas"]
+                st.error(f"Senha incorreta. **{restam}** tentativa(s) restante(s).")
 
 
 # ============================================================
-# SERVIDOR HTTP (Range)
+# SERVIDOR HTTP (Range) — para streaming de arquivos grandes
 # ============================================================
 class RangeHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -190,7 +298,7 @@ def url_video(rel: str) -> str:
 
 
 # ============================================================
-# ABRIR PASTA NO SISTEMA
+# ABRIR PASTA NO SISTEMA OPERACIONAL
 # ============================================================
 def abrir_pasta(path: Path):
     try:
@@ -343,11 +451,17 @@ iniciar_servidor()
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
+# ---------- Bloqueia acesso se não autenticado ----------
 if not st.session_state.authenticated:
+    # Se é a primeira execução e SENHA_INICIAL está definida, cria o hash
+    if not AUTH_FILE.exists() and SENHA_INICIAL:
+        _salvar_hash(_hash_senha(SENHA_INICIAL))
     tela_autenticacao()
     st.stop()
 
-# ---------- LOGADO ----------
+# ============================================================
+# APP LOGADO
+# ============================================================
 if "video_atual" not in st.session_state:
     st.session_state.video_atual = None
 
@@ -389,6 +503,27 @@ with st.sidebar:
     f_fav = st.checkbox("⭐ Apenas favoritos")
 
     st.divider()
+    # --- Alterar senha ---
+    with st.expander("🔐 Alterar senha"):
+        with st.form("form_alterar_senha"):
+            atual = st.text_input("Senha atual", type="password")
+            nova1 = st.text_input("Nova senha", type="password")
+            nova2 = st.text_input("Confirmar nova senha", type="password")
+            trocar = st.form_submit_button(
+                "Alterar", use_container_width=True, type="primary"
+            )
+        if trocar:
+            h = _carregar_hash()
+            if not _verificar_senha(atual, h or ""):
+                st.error("Senha atual incorreta.")
+            elif len(nova1) < 4:
+                st.error("Nova senha deve ter pelo menos 4 caracteres.")
+            elif nova1 != nova2:
+                st.error("Nova senha e confirmação não coincidem.")
+            else:
+                _salvar_hash(_hash_senha(nova1))
+                st.success("Senha alterada com sucesso!")
+
     if st.button("🚪 Sair", use_container_width=True):
         st.session_state.authenticated = False
         st.session_state.video_atual = None
