@@ -1,1 +1,19 @@
-streamlit>=1.30.0
+# ============================================================
+# Dependências do Aplicativo — Versão Streamlit
+# Python 3.9+ recomendado
+# ============================================================
+
+# Framework web
+streamlit>=1.36.0
+
+# Cliente da API DeepSeek (compatível com formato OpenAI)
+openai>=1.30.0
+
+# Requisições HTTP para APIs públicas
+requests>=2.31.0
+
+# SDK do VectorGov (opcional, para Direito)
+vectorgov>=0.1.0
+
+# SDK do Google Gemini (opcional, para busca geral)
+google-generativeai>=0.7.0
