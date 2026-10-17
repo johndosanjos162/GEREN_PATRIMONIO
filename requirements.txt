@@ -1,19 +1,14 @@
 # ============================================================
-# Dependências do Aplicativo — Versão Streamlit
+# Dependências do Aplicativo — Versão 100% Local (Ollama)
 # Python 3.9+ recomendado
 # ============================================================
 
 # Framework web
 streamlit>=1.36.0
 
-# Cliente da API DeepSeek (compatível com formato OpenAI)
-openai>=1.30.0
+# Cliente oficial do Ollama (comunicação com o servidor local)
+ollama>=0.3.0
 
-# Requisições HTTP para APIs públicas
-requests>=2.31.0
-
-# SDK do VectorGov (opcional, para Direito)
-vectorgov>=0.1.0
-
-# SDK do Google Gemini (opcional, para busca geral)
-google-generativeai>=0.7.0
+# Bibliotecas padrão do Python (não precisam ser instaladas):
+# - re   (expressões regulares)
+# - os   (variáveis de ambiente)
