@@ -28,20 +28,13 @@ AUTH_FILE = BASE / ".auth.json"
 LOCKOUT_FILE = BASE / ".lockout.json"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# ------------------------------------------------------------
-# SENHA INICIAL
-# Usada apenas na PRIMEIRA execução (quando .auth.json não existe).
-# Deixe "" para o app pedir para você definir na primeira vez.
-# Para trocar a senha depois: dentro do app, menu lateral → 🔐 Alterar senha.
-# Para resetar tudo: apague .auth.json na pasta do app.
-# ------------------------------------------------------------
+# Senha inicial (usada apenas na 1ª execução, se .auth.json não existir).
+# Deixe "" para o app pedir para definir na primeira vez.
 SENHA_INICIAL = "Videoaulas@2026"
 
-# ------------------------------------------------------------
-# PROTEÇÃO CONTRA FORÇA BRUTA
-# ------------------------------------------------------------
-MAX_TENTATIVAS = 4          # tentativas antes do bloqueio
-BLOQUEIO_MINUTOS = 15       # duração do bloqueio em minutos
+# Proteção contra força bruta
+MAX_TENTATIVAS = 4
+BLOQUEIO_MINUTOS = 15
 
 VIDEO_EXTS = {"mp4", "m4v", "webm", "mov", "mkv", "avi",
               "ogv", "flv", "wmv", "mpg", "mpeg", "ts"}
@@ -49,6 +42,50 @@ CODEC_OK = {"mp4", "m4v", "webm"}
 STATUS_OPCOES = ["não iniciada", "em andamento", "concluída"]
 
 _SERVER_INFO = {"port": None}
+
+
+# ============================================================
+# ABRIR PASTA (com múltiplos métodos e retorno de status)
+# ============================================================
+def abrir_pasta(path: Path) -> tuple[bool, str]:
+    """Tenta abrir a pasta no gerenciador do SO. Retorna (ok, mensagem)."""
+    path = path.resolve()
+    if not path.exists():
+        return False, f"A pasta não existe: {path}"
+    if not path.is_dir():
+        return False, f"O caminho não é uma pasta: {path}"
+
+    if sys.platform.startswith("win"):
+        tentativas = [
+            ("os.startfile", lambda: os.startfile(str(path))),  # type: ignore
+            ("explorer", lambda: subprocess.Popen(["explorer", str(path)])),
+            ("cmd start", lambda: subprocess.Popen(
+                ["cmd", "/c", "start", "", str(path)], shell=False)),
+            ("powershell", lambda: subprocess.Popen(
+                ["powershell", "-NoProfile", "-Command",
+                 f"Start-Process -FilePath '{path}'"])),
+        ]
+        erros = []
+        for nome, fn in tentativas:
+            try:
+                fn()
+                return True, f"✅ Aberto via `{nome}`."
+            except Exception as e:
+                erros.append(f"{nome}: {e}")
+        return False, "❌ Nenhum método funcionou:\n" + "\n".join(erros)
+
+    if sys.platform == "darwin":
+        try:
+            subprocess.Popen(["open", str(path)])
+            return True, "✅ Aberto via `open`."
+        except Exception as e:
+            return False, f"❌ Falhou: {e}"
+
+    try:
+        subprocess.Popen(["xdg-open", str(path)])
+        return True, "✅ Aberto via `xdg-open`."
+    except Exception as e:
+        return False, f"❌ Falhou: {e}"
 
 
 # ============================================================
@@ -88,7 +125,7 @@ def _salvar_hash(h: str):
 
 
 # ============================================================
-# AUTENTICAÇÃO — controle de tentativas (brute force)
+# AUTENTICAÇÃO — brute force
 # ============================================================
 def _ler_lockout() -> dict:
     if not LOCKOUT_FILE.exists():
@@ -115,14 +152,13 @@ def _registrar_falha() -> dict:
     data = _ler_lockout()
     data["tentativas"] = data.get("tentativas", 0) + 1
     if data["tentativas"] >= MAX_TENTATIVAS:
-        until = datetime.now() + timedelta(minutes=BLOQUEIO_MINUTOS)
-        data["bloqueado_ate"] = until.isoformat(timespec="seconds")
+        data["bloqueado_ate"] = (datetime.now() + timedelta(
+            minutes=BLOQUEIO_MINUTOS)).isoformat(timespec="seconds")
     _salvar_lockout(data)
     return data
 
 
 def _esta_bloqueado():
-    """Retorna datetime do fim do bloqueio, ou None se não está bloqueado."""
     data = _ler_lockout()
     ba = data.get("bloqueado_ate")
     if not ba:
@@ -145,8 +181,6 @@ def tela_autenticacao():
         "<h1 style='text-align:center; margin-top:60px;'>🔐 Acesso restrito</h1>",
         unsafe_allow_html=True,
     )
-
-    # ---------- 1. Verifica bloqueio ----------
     bloqueado_ate = _esta_bloqueado()
     if bloqueado_ate:
         restante = bloqueado_ate - datetime.now()
@@ -156,25 +190,17 @@ def tela_autenticacao():
             f"🚫 **Acesso bloqueado** por excesso de tentativas. "
             f"Tente novamente em **{mins}min {segs}s**."
         )
-        st.caption(
-            f"💡 Para desbloquear imediatamente, apague o arquivo "
-            f"`{LOCKOUT_FILE}` na pasta do app."
-        )
+        st.caption(f"💡 Desbloqueie apagando: `{LOCKOUT_FILE}`")
         return
 
     salvo = _carregar_hash()
-
-    # ---------- 2. Primeira execução: definir senha ----------
     if salvo is None:
-        st.info(
-            "**Primeira execução** — defina a senha que será usada para acessar o app."
-        )
+        st.info("**Primeira execução** — defina a senha que será usada para acessar.")
         with st.form("setup_senha"):
             s1 = st.text_input("Nova senha", type="password")
             s2 = st.text_input("Confirmar senha", type="password")
-            ok = st.form_submit_button(
-                "Definir senha", use_container_width=True, type="primary"
-            )
+            ok = st.form_submit_button("Definir senha", use_container_width=True,
+                                       type="primary")
         if ok:
             if not s1:
                 st.error("Digite uma senha.")
@@ -186,22 +212,19 @@ def tela_autenticacao():
                 _salvar_hash(_hash_senha(s1))
                 _resetar_tentativas()
                 st.session_state.authenticated = True
-                st.success("Senha definida com sucesso.")
                 st.rerun()
         return
 
-    # ---------- 3. Login normal ----------
     data = _ler_lockout()
     tentativas = data.get("tentativas", 0)
     restam = MAX_TENTATIVAS - tentativas
     if tentativas > 0:
-        st.warning(f"⚠️ **{restam}** tentativa(s) restante(s) antes do bloqueio.")
+        st.warning(f"⚠️ **{restam}** tentativa(s) restante(s).")
 
     with st.form("login"):
         pwd = st.text_input("Senha", type="password")
-        ok = st.form_submit_button(
-            "Entrar", use_container_width=True, type="primary"
-        )
+        ok = st.form_submit_button("Entrar", use_container_width=True,
+                                   type="primary")
     if ok:
         if _verificar_senha(pwd, salvo):
             _resetar_tentativas()
@@ -210,21 +233,15 @@ def tela_autenticacao():
         else:
             data = _registrar_falha()
             if data.get("bloqueado_ate"):
-                st.error(
-                    f"🚫 **Senha incorreta.** Você foi bloqueado por "
-                    f"{BLOQUEIO_MINUTOS} minutos."
-                )
-                st.caption(
-                    f"💡 Para desbloquear imediatamente, apague o arquivo "
-                    f"`{LOCKOUT_FILE}` na pasta do app."
-                )
+                st.error(f"🚫 **Senha incorreta.** Bloqueado por {BLOQUEIO_MINUTOS} minutos.")
+                st.caption(f"💡 Desbloqueie apagando: `{LOCKOUT_FILE}`")
             else:
                 restam = MAX_TENTATIVAS - data["tentativas"]
                 st.error(f"Senha incorreta. **{restam}** tentativa(s) restante(s).")
 
 
 # ============================================================
-# SERVIDOR HTTP (Range) — para streaming de arquivos grandes
+# SERVIDOR HTTP (Range)
 # ============================================================
 class RangeHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -295,21 +312,6 @@ def iniciar_servidor():
 
 def url_video(rel: str) -> str:
     return f"http://127.0.0.1:{_SERVER_INFO['port']}/{quote(rel)}"
-
-
-# ============================================================
-# ABRIR PASTA NO SISTEMA OPERACIONAL
-# ============================================================
-def abrir_pasta(path: Path):
-    try:
-        if sys.platform.startswith("win"):
-            os.startfile(str(path))  # type: ignore[attr-defined]
-        elif sys.platform == "darwin":
-            subprocess.Popen(["open", str(path)])
-        else:
-            subprocess.Popen(["xdg-open", str(path)])
-    except Exception:
-        pass
 
 
 # ============================================================
@@ -441,6 +443,25 @@ def arquivos_nao_registrados():
     return pend
 
 
+def conteudo_da_pasta():
+    """Lista tudo que está em uploads/, mesmo que não seja vídeo."""
+    if not UPLOAD_DIR.exists():
+        return []
+    itens = []
+    for p in sorted(UPLOAD_DIR.rglob("*")):
+        if p.is_file():
+            try:
+                tam = p.stat().st_size
+            except OSError:
+                tam = 0
+            itens.append({
+                "rel": p.relative_to(UPLOAD_DIR).as_posix(),
+                "tamanho": tam,
+                "ext": p.suffix.lower().lstrip("."),
+            })
+    return itens
+
+
 # ============================================================
 # BOOT
 # ============================================================
@@ -451,9 +472,7 @@ iniciar_servidor()
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
-# ---------- Bloqueia acesso se não autenticado ----------
 if not st.session_state.authenticated:
-    # Se é a primeira execução e SENHA_INICIAL está definida, cria o hash
     if not AUTH_FILE.exists() and SENHA_INICIAL:
         _salvar_hash(_hash_senha(SENHA_INICIAL))
     tela_autenticacao()
@@ -464,6 +483,8 @@ if not st.session_state.authenticated:
 # ============================================================
 if "video_atual" not in st.session_state:
     st.session_state.video_atual = None
+if "abrir_pasta_resultado" not in st.session_state:
+    st.session_state.abrir_pasta_resultado = None
 
 st.markdown("""
 <h1 style="margin-bottom: 4px;">🎬 Minhas Videoaulas</h1>
@@ -481,13 +502,30 @@ c3.metric("Espaço usado", f"{stt['gb']:.1f} GB")
 # -------- SIDEBAR --------
 with st.sidebar:
     st.header("📂 Pasta de vídeos")
-    st.code(str(UPLOAD_DIR), language=None)
-    if st.button("📂 Abrir pasta uploads", use_container_width=True):
-        abrir_pasta(UPLOAD_DIR)
-        st.toast("Pasta aberta no gerenciador de arquivos.")
 
-    if st.button("🔄 Re-escanear pasta", use_container_width=True):
-        st.rerun()
+    # Caminho sempre visível e copiável
+    st.caption("Caminho completo (clique para selecionar):")
+    st.code(str(UPLOAD_DIR), language=None)
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("📂 Abrir pasta", use_container_width=True):
+            ok, msg = abrir_pasta(UPLOAD_DIR)
+            st.session_state.abrir_pasta_resultado = (ok, msg)
+    with col_b:
+        if st.button("🔄 Re-escanear", use_container_width=True):
+            st.rerun()
+
+    if st.session_state.abrir_pasta_resultado is not None:
+        ok, msg = st.session_state.abrir_pasta_resultado
+        if ok:
+            st.success(msg)
+            st.caption("Se não viu a janela, ela pode estar **atrás do navegador**. "
+                       "Minimize o navegador ou use a barra de tarefas.")
+        else:
+            st.error(msg)
+            st.caption("Não consegui abrir automaticamente. "
+                       "Use o caminho acima: copie e cole no Explorer.")
 
     pend_count = len(arquivos_nao_registrados())
     if pend_count:
@@ -503,15 +541,13 @@ with st.sidebar:
     f_fav = st.checkbox("⭐ Apenas favoritos")
 
     st.divider()
-    # --- Alterar senha ---
     with st.expander("🔐 Alterar senha"):
         with st.form("form_alterar_senha"):
             atual = st.text_input("Senha atual", type="password")
             nova1 = st.text_input("Nova senha", type="password")
             nova2 = st.text_input("Confirmar nova senha", type="password")
-            trocar = st.form_submit_button(
-                "Alterar", use_container_width=True, type="primary"
-            )
+            trocar = st.form_submit_button("Alterar", use_container_width=True,
+                                           type="primary")
         if trocar:
             h = _carregar_hash()
             if not _verificar_senha(atual, h or ""):
@@ -527,6 +563,7 @@ with st.sidebar:
     if st.button("🚪 Sair", use_container_width=True):
         st.session_state.authenticated = False
         st.session_state.video_atual = None
+        st.session_state.abrir_pasta_resultado = None
         st.rerun()
 
 # -------- PLAYER --------
@@ -681,55 +718,105 @@ with tab_upload:
 with tab_pasta:
     st.markdown(f"""
     ### 📥 Importar arquivos que já estão na pasta
-    
-    **Pasta:** `{UPLOAD_DIR}`
-    
-    1. Clique em **📂 Abrir pasta uploads** (na barra lateral)
-    2. Copie os vídeos (4–5 GB) para dentro dela — instantâneo no mesmo HD
-    3. Clique em **🔄 Re-escanear pasta**
-    4. Os arquivos aparecem abaixo → clique em **Importar**
     """)
 
-    if st.button("📂 Abrir pasta uploads agora"):
-        abrir_pasta(UPLOAD_DIR)
-        st.toast("Pasta aberta no gerenciador de arquivos.")
+    # Caminho em destaque, com aviso se a pasta não existe
+    st.caption("**Pasta monitorada:**")
+    st.code(str(UPLOAD_DIR), language=None)
 
-    st.divider()
-
-    pendentes = arquivos_nao_registrados()
-
-    if not pendentes:
-        st.success("✅ Nenhum arquivo pendente em `uploads/`. Tudo já foi cadastrado.")
+    # Diagnóstico de existência + conteúdo
+    if not UPLOAD_DIR.exists():
+        st.error(
+            f"❌ A pasta **não existe** no disco: `{UPLOAD_DIR}`\n\n"
+            "Isso é estranho — o app deveria tê-la criado. "
+            "Feche o app, crie a pasta manualmente nesse caminho e reabra."
+        )
     else:
-        st.info(f"📌 **{len(pendentes)}** arquivo(s) encontrado(s) para importar.")
+        conteudo = conteudo_da_pasta()
+        st.caption(f"✅ Pasta existe • **{len(conteudo)}** arquivo(s) dentro")
 
-        if st.button(f"⚡ Importar todos ({len(pendentes)})",
-                     use_container_width=True, type="primary"):
-            for item in pendentes:
-                inserir(item["titulo_sug"], item["disciplina_sug"],
-                        item["rel"], item["tamanho"], "")
-            st.success(f"✅ {len(pendentes)} aula(s) importada(s)!")
-            st.rerun()
+        # Botão de abrir pasta + resultado
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            if st.button("📂 Abrir pasta no sistema", use_container_width=True):
+                ok, msg = abrir_pasta(UPLOAD_DIR)
+                st.session_state.abrir_pasta_resultado = (ok, msg)
+                st.rerun()
+        with col2:
+            if st.session_state.abrir_pasta_resultado is not None:
+                ok, msg = st.session_state.abrir_pasta_resultado
+                if ok:
+                    st.success(msg + " — se não apareceu, veja atrás do navegador.")
+                else:
+                    st.error(msg)
 
+        # Instruções passo a passo
+        with st.expander("ℹ️ Como copiar os vídeos para cá (passo a passo)"):
+            st.markdown(f"""
+            1. **Copie este caminho:**  
+               `{UPLOAD_DIR}`
+            2. Abra o **Explorer** (Windows) / **Finder** (Mac)
+            3. Cole o caminho na **barra de endereço** e aperte Enter
+            4. Copie seus vídeos para dentro da pasta
+            5. Volte aqui e clique em **🔄 Re-escanear** na barra lateral
+            """)
+
+        # Lista de arquivos já na pasta (visualização in-app)
         st.divider()
+        st.markdown("#### 📋 Arquivos atualmente em `uploads/`")
+        if not conteudo:
+            st.info("A pasta está **vazia**. Copie seus vídeos para ela e clique em "
+                    "**🔄 Re-escanear** na barra lateral.")
+        else:
+            for item in conteudo:
+                gb = item["tamanho"] / (1024**3)
+                mb = item["tamanho"] / (1024**2)
+                tamanho_str = f"{gb:.2f} GB" if gb >= 1 else f"{mb:.0f} MB"
+                marca = "🎬" if item["ext"] in VIDEO_EXTS else "📎"
+                st.text(f"{marca}  {item['rel']}   ({tamanho_str})")
 
-        for i, item in enumerate(pendentes):
-            gb = item["tamanho"] / (1024**3)
-            titulo_disp = item["titulo_sug"][:60]
-            disc_disp = f" — *{item['disciplina_sug']}*" if item["disciplina_sug"] else ""
-            with st.expander(f"📄 {titulo_disp}  ({gb:.2f} GB){disc_disp}"):
-                st.caption(f"Arquivo: `uploads/{item['rel']}`")
-                with st.form(key=f"imp_{i}"):
-                    c1, c2 = st.columns(2)
-                    titulo = c1.text_input("Título *", value=item["titulo_sug"])
-                    disc = c2.text_input("Disciplina", value=item["disciplina_sug"])
-                    tags = st.text_input("Tags (separadas por vírgula)")
-                    if st.form_submit_button("✅ Importar esta aula",
-                                             use_container_width=True, type="primary"):
-                        if not titulo.strip():
-                            st.warning("Informe um título.")
-                        else:
-                            inserir(titulo.strip(), disc.strip(),
-                                    item["rel"], item["tamanho"], tags.strip())
-                            st.success(f"✅ '{titulo}' importada!")
-                            st.rerun()
+        # Seção de importação
+        st.divider()
+        st.markdown("#### ✅ Importar para o app")
+        pendentes = arquivos_nao_registrados()
+
+        if not pendentes:
+            if conteudo:
+                st.success(
+                    "✅ Todos os vídeos de `uploads/` já estão cadastrados. "
+                    "Abra a aba **📚 Minhas aulas** para assistir."
+                )
+            else:
+                st.warning("Não há vídeos para importar — a pasta está vazia.")
+        else:
+            st.info(f"📌 **{len(pendentes)}** arquivo(s) novo(s) para importar.")
+
+            if st.button(f"⚡ Importar todos ({len(pendentes)})",
+                         use_container_width=True, type="primary"):
+                for item in pendentes:
+                    inserir(item["titulo_sug"], item["disciplina_sug"],
+                            item["rel"], item["tamanho"], "")
+                st.success(f"✅ {len(pendentes)} aula(s) importada(s)!")
+                st.rerun()
+
+            st.markdown("**Ou importe um por um:**")
+            for i, item in enumerate(pendentes):
+                gb = item["tamanho"] / (1024**3)
+                titulo_disp = item["titulo_sug"][:60]
+                disc_disp = f" — *{item['disciplina_sug']}*" if item["disciplina_sug"] else ""
+                with st.expander(f"📄 {titulo_disp}  ({gb:.2f} GB){disc_disp}"):
+                    st.caption(f"Arquivo: `uploads/{item['rel']}`")
+                    with st.form(key=f"imp_{i}"):
+                        c1, c2 = st.columns(2)
+                        titulo = c1.text_input("Título *", value=item["titulo_sug"])
+                        disc = c2.text_input("Disciplina", value=item["disciplina_sug"])
+                        tags = st.text_input("Tags (separadas por vírgula)")
+                        if st.form_submit_button("✅ Importar esta aula",
+                                                 use_container_width=True, type="primary"):
+                            if not titulo.strip():
+                                st.warning("Informe um título.")
+                            else:
+                                inserir(titulo.strip(), disc.strip(),
+                                        item["rel"], item["tamanho"], tags.strip())
+                                st.success(f"✅ '{titulo}' importada!")
+                                st.rerun()
