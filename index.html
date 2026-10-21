@@ -2,84 +2,119 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-
-<title>PM-SC Immersive Academy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PM-SC 2026 | Academia Imersiva</title>
 
 <style>
-*{box-sizing:border-box}
-
-body{
- margin:0;
- overflow:hidden;
- background:#061020;
- color:white;
- font-family:Arial,sans-serif;
+* {
+  box-sizing: border-box;
 }
 
-#menu{
- position:fixed;
- top:15px;
- left:15px;
- width:min(370px,94vw);
- max-height:85vh;
- overflow:auto;
- padding:20px;
- background:rgba(7,20,40,.95);
- border:1px solid #42aaff;
- border-radius:15px;
- z-index:10;
- box-shadow:0 0 25px #0066ff33;
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #06111e;
+  color: white;
+  font-family: Arial, sans-serif;
 }
 
-h2{color:#64caff;margin-top:0}
-h3{color:#a7dfff}
-
-button,select{
- padding:11px;
- margin:5px 0;
- border-radius:8px;
- border:1px solid #4089cf;
+#menu {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  width: min(390px, 94vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 18px;
+  background: rgba(7, 24, 43, .96);
+  border: 1px solid #50b9ff;
+  border-radius: 14px;
+  box-shadow: 0 0 24px #0055aa44;
 }
 
-button{
- background:#176bd0;
- color:white;
- cursor:pointer;
+h2 {
+  margin-top: 0;
+  color: #83d7ff;
 }
 
-button:hover{background:#3193ef}
-
-select{
- width:100%;
- background:#102b49;
- color:white;
+h3 {
+  color: #bceaff;
+  margin-bottom: 8px;
 }
 
-input{max-width:100%}
-
-#status{
- color:#b4e4ff;
- font-size:14px;
+button, select, input {
+  font: inherit;
 }
 
-#vrButton{
- position:fixed;
- bottom:20px;
- right:20px;
- z-index:20;
- padding:15px 22px;
+button, select {
+  border: 1px solid #4c9edb;
+  border-radius: 8px;
+  padding: 11px;
+  background: #155b96;
+  color: white;
+  margin: 5px 0;
 }
 
-small{color:#a9c4de}
+button {
+  cursor: pointer;
+}
+
+button:hover {
+  background: #247bc0;
+}
+
+select {
+  width: 100%;
+}
+
+input {
+  max-width: 100%;
+}
+
+#status {
+  color: #bde6ff;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#stats {
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+#enter {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 20;
+  padding: 15px 22px;
+  background: #1478c5;
+}
+
+#menuToggle {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+}
+
+small {
+  color: #c0d9eb;
+  line-height: 1.6;
+}
+
+#menu.hidden {
+  display: none;
+}
 </style>
 
 <script type="importmap">
 {
- "imports":{
-  "three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
-  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
- }
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+  }
 }
 </script>
 </head>
@@ -87,880 +122,1317 @@ small{color:#a9c4de}
 <body>
 
 <div id="menu">
-<h2>🎓 PM-SC Immersive Academy</h2>
+  <h2>PM-SC | Academia 2026</h2>
 
-<p id="status">Preparando ambiente...</p>
+  <p id="status">Preparando ambiente virtual...</p>
 
-<h3>Banco de questões</h3>
+  <h3>Modo de estudo</h3>
+  <select id="mode">
+    <option value="study">Estudo por disciplina</option>
+    <option value="exam">Simulado</option>
+    <option value="review">Revisão de erros</option>
+  </select>
 
-<input id="jsonFile" type="file"
- accept=".json,application/json">
+  <h3>Disciplina</h3>
+  <select id="subject">
+    <option value="Todas">Todas as disciplinas</option>
+  </select>
 
-<br><br>
+  <h3>Quantidade do simulado</h3>
+  <select id="examSize">
+    <option value="10">10 questões</option>
+    <option value="20">20 questões</option>
+    <option value="40">40 questões</option>
+    <option value="100">100 questões</option>
+  </select>
 
-<button id="demo">Carregar demonstração</button>
+  <button id="demo">Carregar demonstração</button>
+  <button id="start">Iniciar / Reiniciar</button>
 
-<h3>Disciplina</h3>
+  <h3>Banco de questões JSON</h3>
+  <input id="file" type="file"
+         accept=".json,application/json" multiple>
 
-<select id="subject">
-<option value="Todas">Todas as disciplinas</option>
-</select>
+  <h3>Desempenho</h3>
+  <div id="stats"></div>
 
-<h3>Desempenho</h3>
+  <button id="reset">Zerar estatísticas</button>
 
-<p id="stats"></p>
+  <hr>
 
-<button id="reset">Zerar estatísticas</button>
-
-<hr>
-
-<small>
-Na realidade virtual, utilize o gatilho dos
-controles ou o gesto de pinça com as mãos.
-</small>
+  <small>
+    Controle: gatilho para selecionar e analógico esquerdo
+    para caminhar.
+    <br><br>
+    Mãos: aponte e faça pinça para selecionar.
+    <br><br>
+    Teletransporte: selecione um dos círculos luminosos
+    no chão.
+    <br><br>
+    Para melhor nitidez, mantenha os painéis à frente
+    e ajuste corretamente o headset.
+    <br><br>
+    O progresso é salvo neste navegador.
+  </small>
 </div>
 
-<button id="vrButton">ENTRAR EM VR</button>
+<button id="menuToggle">Mostrar / ocultar menu</button>
+<button id="enter">ENTRAR EM VR</button>
 
 <script type="module">
 
 import * as THREE from "three";
 
 import {
- XRControllerModelFactory
+  XRControllerModelFactory
 } from "three/addons/webxr/XRControllerModelFactory.js";
 
 import {
- XRHandModelFactory
+  XRHandModelFactory
 } from "three/addons/webxr/XRHandModelFactory.js";
 
-const $=id=>document.getElementById(id);
+const $ = id => document.getElementById(id);
 
-const scene=new THREE.Scene();
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x06111e);
 
-scene.background=new THREE.Color(0x061020);
-
-const camera=new THREE.PerspectiveCamera(
- 70,innerWidth/innerHeight,.05,100
+const camera = new THREE.PerspectiveCamera(
+  70,
+  innerWidth / innerHeight,
+  0.05,
+  100
 );
 
-camera.position.set(0,1.6,0);
+camera.position.set(0, 1.65, 0);
 
-const renderer=new THREE.WebGLRenderer({
- antialias:true
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  powerPreference: "high-performance"
 });
 
-renderer.setPixelRatio(
- Math.min(devicePixelRatio,2)
-);
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.xr.enabled = true;
 
-renderer.setSize(innerWidth,innerHeight);
-
-renderer.xr.enabled=true;
+renderer.xr.setFramebufferScaleFactor(1.1);
 
 document.body.appendChild(renderer.domElement);
 
-// ILUMINAÇÃO
+const rig = new THREE.Group();
+rig.add(camera);
+scene.add(rig);
 
-scene.add(new THREE.HemisphereLight(
- 0xffffff,0x243d64,2.5
-));
-
-const light=new THREE.DirectionalLight(
- 0xffffff,2
+scene.add(
+  new THREE.HemisphereLight(
+    0xffffff,
+    0x304b6b,
+    2.2
+  )
 );
 
-light.position.set(2,5,3);
+const light = new THREE.DirectionalLight(
+  0xffffff,
+  1.7
+);
 
+light.position.set(2, 5, 3);
 scene.add(light);
 
-// GEOMETRIA DA SALA
-
-function box(w,h,d,color,x,y,z){
-
- const mesh=new THREE.Mesh(
-  new THREE.BoxGeometry(w,h,d),
-  new THREE.MeshStandardMaterial({color})
- );
-
- mesh.position.set(x,y,z);
-
- scene.add(mesh);
-
- return mesh;
-}
-
-// PISO
-
-box(12,.1,12,0x172b47,0,-.08,-2);
-
-// PAREDES
-
-box(12,4,.12,0x102747,0,2,-6);
-
-box(.12,4,12,0x102747,-6,2,-2);
-
-box(.12,4,12,0x102747,6,2,-2);
-
-// PAINÉIS
-
-box(4.8,3.4,.09,0x12385f,0,1.8,-3.6);
-
-box(2,2.4,.09,0x174267,-3.5,1.8,-4);
-
-box(2,2.4,.09,0x174267,3.5,1.8,-4);
-
-// DETALHES LUMINOSOS
-
-const glow=new THREE.MeshBasicMaterial({
- color:0x38bfff
-});
-
-function strip(w,h,x,y,z){
-
- const mesh=new THREE.Mesh(
-  new THREE.BoxGeometry(w,h,.025),
-  glow
- );
-
- mesh.position.set(x,y,z);
-
- scene.add(mesh);
-}
-
-strip(4.9,.035,0,3.52,-3.53);
-
-strip(4.9,.035,0,.08,-3.53);
-
-strip(2,.025,-3.5,3.02,-3.94);
-
-strip(2,.025,3.5,3.02,-3.94);
-
-// ELEMENTOS INTERATIVOS
-
-const clickable=[];
-const dynamic=[];
-
-const raycaster=new THREE.Raycaster();
-
-const rotation=new THREE.Matrix4();
-
-function textPanel(
- text,x,y,z,w,h,action=null
-){
-
- const canvas=document.createElement("canvas");
-
- canvas.width=1024;
- canvas.height=192;
-
- const ctx=canvas.getContext("2d");
-
- ctx.fillStyle=action?"#1d6095":"#123759";
-
- ctx.fillRect(0,0,1024,192);
-
- ctx.strokeStyle="#49bfff";
- ctx.lineWidth=5;
-
- ctx.strokeRect(3,3,1018,186);
-
- ctx.fillStyle="#ffffff";
-
- ctx.textAlign="center";
- ctx.textBaseline="middle";
-
- let size=46;
-
- ctx.font=`bold ${size}px Arial`;
-
- while(
-  ctx.measureText(text).width>955 &&
-  size>16
- ){
-  size-=2;
-  ctx.font=`bold ${size}px Arial`;
- }
-
- ctx.fillText(text,512,96);
-
- const texture=new THREE.CanvasTexture(canvas);
-
- const material=new THREE.MeshBasicMaterial({
-  map:texture,
-  transparent:true,
-  side:THREE.DoubleSide
- });
-
- const mesh=new THREE.Mesh(
-  new THREE.PlaneGeometry(w,h),
-  material
- );
-
- mesh.position.set(x,y,z);
-
- scene.add(mesh);
-
- dynamic.push(mesh);
-
- if(action){
-  mesh.userData.action=action;
-  clickable.push(mesh);
- }
-
- return mesh;
-}
-
-function clearPanels(){
-
- for(const mesh of dynamic){
-
-  scene.remove(mesh);
-
-  const i=clickable.indexOf(mesh);
-
-  if(i>=0)clickable.splice(i,1);
-
-  mesh.material.map.dispose();
-  mesh.material.dispose();
-  mesh.geometry.dispose();
- }
-
- dynamic.length=0;
-}
-
-function center(text,y,w=3.9,h=.23,action=null){
-
- return textPanel(
-  text,0,y,-3.51,w,h,action
- );
-}
-
-// DADOS
-
-let allQuestions=[];
-let filtered=[];
-let current=0;
-let answered=false;
-
-let progress={
- total:0,
- correct:0,
- bySubject:{}
-};
-
-try{
-
- const saved=JSON.parse(
-  localStorage.getItem("pmsc_academy_v2")||"null"
- );
-
- if(saved)progress=saved;
-
-}catch(e){}
-
-function save(){
-
- localStorage.setItem(
-  "pmsc_academy_v2",
-  JSON.stringify(progress)
- );
-
- updateStats();
-}
-
-function updateStats(){
-
- const p=progress;
-
- const percent=p.total
-  ?(100*p.correct/p.total).toFixed(1)
-  :0;
-
- $("stats").innerHTML=
-  `Respondidas: ${p.total}<br>
-   Acertos: ${p.correct}<br>
-   Aproveitamento: ${percent}%`;
-}
-
-// QUEBRA DE TEXTO
-
-function wrap(text,max=48){
-
- const words=String(text).split(/\s+/);
-
- const lines=[];
-
- let line="";
-
- for(const word of words){
-
-  const candidate=line
-   ?line+" "+word
-   :word;
-
-  if(candidate.length>max&&line){
-
-   lines.push(line);
-   line=word;
-
-  }else{
-
-   line=candidate;
-  }
- }
-
- if(line)lines.push(line);
-
- return lines;
-}
-
-// PAINEL PRINCIPAL
-
-function render(message=""){
-
- clearPanels();
-
- center("PM-SC IMMERSIVE ACADEMY",3.22,4.1,.26);
-
- if(!filtered.length){
-
-  center("CARREGUE QUESTOES PARA COMECAR",2.35);
-
-  center("USE O MENU FORA DA REALIDADE VIRTUAL",1.95);
-
-  return;
- }
-
- const q=filtered[current];
-
- center(q.subject.toUpperCase(),2.89,3.8,.22);
-
- const lines=wrap(q.question,47);
-
- lines.slice(0,3).forEach((line,i)=>{
-
-  center(line,2.61-i*.21,3.9,.19);
-
- });
-
- q.options.slice(0,5).forEach((option,i)=>{
-
-  const letter="ABCDE"[i];
-
-  const value=String(option).slice(0,57);
-
-  center(
-   `${letter}) ${value}`,
-   1.82-i*.29,
-   3.9,
-   .25,
-   ()=>answer(i)
+function box(w, h, d, color, x, y, z) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.8
+    })
   );
 
- });
-
- center(
-  message||`QUESTAO ${current+1} DE ${filtered.length}`,
-  .29,
-  3.9,
-  .22
- );
-
- center(
-  "PROXIMA QUESTAO",
-  -.02,
-  2.5,
-  .24,
-  next
- );
-
- // PAINEL ESQUERDO
-
- textPanel(
-  "DISCIPLINA",
-  -3.5,2.45,-3.94,1.75,.25
- );
-
- textPanel(
-  q.subject.slice(0,26),
-  -3.5,2.05,-3.94,1.75,.3
- );
-
- // PAINEL DIREITO
-
- textPanel(
-  "DESEMPENHO",
-  3.5,2.45,-3.94,1.75,.25
- );
-
- textPanel(
-  `${progress.correct} ACERTOS`,
-  3.5,2.05,-3.94,1.75,.3
- );
+  mesh.position.set(x, y, z);
+  scene.add(mesh);
+  return mesh;
 }
 
-function answer(selected){
+// SALA 3D
 
- if(answered)return;
+box(14, .12, 14, 0x183047, 0, -.1, -2);
+box(14, 4.5, .12, 0x112c49, 0, 2.2, -9);
+box(.12, 4.5, 14, 0x10283f, -7, 2.2, -2);
+box(.12, 4.5, 14, 0x10283f, 7, 2.2, -2);
 
- answered=true;
+box(5.8, 3.8, .1, 0x123e61, 0, 1.85, -3.6);
+box(2.4, 2.6, .1, 0x174563, -4.2, 1.85, -4);
+box(2.4, 2.6, .1, 0x174563, 4.2, 1.85, -4);
 
- const q=filtered[current];
+// DETALHES DA SALA
 
- const right=selected===q.correct;
+const lineMaterial = new THREE.MeshBasicMaterial({
+  color: 0x3dbbff
+});
 
- progress.total++;
+function lightStrip(w, h, x, y, z) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, .025),
+    lineMaterial
+  );
+  mesh.position.set(x, y, z);
+  scene.add(mesh);
+}
 
- if(right)progress.correct++;
+lightStrip(5.85, .035, 0, 3.77, -3.53);
+lightStrip(5.85, .035, 0, -.07, -3.53);
+lightStrip(2.4, .035, -4.2, 3.18, -3.94);
+lightStrip(2.4, .035, 4.2, 3.18, -3.94);
 
- if(!progress.bySubject[q.subject]){
+// INTERAÇÃO
 
-  progress.bySubject[q.subject]={
-   total:0,
-   correct:0
-  };
- }
+const interactive = [];
+const dynamic = [];
+const raycaster = new THREE.Raycaster();
+const rotation = new THREE.Matrix4();
 
- const subject=progress.bySubject[q.subject];
+function label(
+  text,
+  x,
+  y,
+  z,
+  width = 4.8,
+  height = .26,
+  action = null,
+  color = null
+) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 2048;
+  canvas.height = 256;
 
- subject.total++;
+  const ctx = canvas.getContext("2d");
 
- if(right)subject.correct++;
+  ctx.fillStyle = color || (
+    action ? "#176ca4" : "#123c60"
+  );
 
- save();
+  ctx.fillRect(0, 0, 2048, 256);
 
- render(
-  right
-   ?"RESPOSTA CORRETA!"
-   :`INCORRETA - GABARITO ${"ABCDE"[q.correct]}`
- );
+  ctx.strokeStyle = action ? "#a4eeff" : "#4b91bc";
+  ctx.lineWidth = 7;
+  ctx.strokeRect(5, 5, 2038, 246);
 
- if(q.explanation){
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
 
-  const explanation=wrap(q.explanation,48);
+  let size = 94;
 
-  explanation.slice(0,3).forEach((line,i)=>{
+  while (size > 28) {
+    ctx.font = `bold ${size}px Arial`;
 
-   textPanel(
-    line,
-    3.5,
-    1.55-i*.25,
-    -3.94,
-    1.85,
-    .22
-   );
+    if (ctx.measureText(String(text)).width < 1930) {
+      break;
+    }
 
+    size -= 3;
+  }
+
+  ctx.fillText(String(text), 1024, 128);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+
+  texture.anisotropy = Math.min(
+    8,
+    renderer.capabilities.getMaxAnisotropy()
+  );
+
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(width, height),
+    new THREE.MeshBasicMaterial({
+      map: texture,
+      side: THREE.DoubleSide
+    })
+  );
+
+  mesh.position.set(x, y, z);
+  scene.add(mesh);
+
+  dynamic.push(mesh);
+
+  if (action) {
+    mesh.userData.action = action;
+    interactive.push(mesh);
+  }
+
+  return mesh;
+}
+
+function clearPanels() {
+  for (const mesh of dynamic) {
+    scene.remove(mesh);
+
+    const index = interactive.indexOf(mesh);
+
+    if (index >= 0) {
+      interactive.splice(index, 1);
+    }
+
+    mesh.material.map.dispose();
+    mesh.material.dispose();
+    mesh.geometry.dispose();
+  }
+
+  dynamic.length = 0;
+}
+
+function wrap(text, max = 48) {
+  const words = String(text).split(/\s+/);
+  const lines = [];
+  let line = "";
+
+  for (const word of words) {
+    const candidate = line ? line + " " + word : word;
+
+    if (candidate.length > max && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+
+  if (line) lines.push(line);
+
+  return lines;
+}
+
+function center(
+  text,
+  y,
+  width = 4.9,
+  height = .25,
+  action = null,
+  color = null
+) {
+  return label(
+    text, 0, y, -3.51,
+    width, height, action, color
+  );
+}
+
+// DISCIPLINAS INICIAIS
+
+const subjects = [
+  "Língua Portuguesa",
+  "Informática",
+  "Direito Constitucional",
+  "Constituição de Santa Catarina",
+  "Direito Penal Comum",
+  "Direito Processual Penal Comum",
+  "Direito Penal Militar",
+  "Legislação Especial",
+  "Legislação de Trânsito",
+  "Legislação Institucional"
+];
+
+// BANCO DE QUESTÕES
+
+let questions = [];
+let pool = [];
+let current = 0;
+let answered = false;
+let examCorrect = 0;
+let examDone = 0;
+let examEnded = false;
+
+let selectedAnswers = [];
+let wrongQuestions = [];
+
+let stats = {
+  total: 0,
+  correct: 0,
+  subjects: {}
+};
+
+try {
+  const saved = JSON.parse(
+    localStorage.getItem("pmsc_2026_v4")
+  );
+
+  if (saved && typeof saved === "object") {
+    stats = saved;
+  }
+} catch (error) {
+  console.warn("Progresso não recuperado.");
+}
+
+try {
+  wrongQuestions = JSON.parse(
+    localStorage.getItem("pmsc_wrong_v4") || "[]"
+  );
+} catch (error) {
+  wrongQuestions = [];
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem(
+      "pmsc_2026_v4",
+      JSON.stringify(stats)
+    );
+
+    localStorage.setItem(
+      "pmsc_wrong_v4",
+      JSON.stringify(wrongQuestions)
+    );
+  } catch (error) {
+    console.warn("Não foi possível salvar.");
+  }
+
+  updateStats();
+}
+
+function updateStats() {
+  const percent = stats.total
+    ? (stats.correct * 100 / stats.total).toFixed(1)
+    : "0.0";
+
+  let html = `
+    Respondidas: ${stats.total}<br>
+    Acertos: ${stats.correct}<br>
+    Aproveitamento: ${percent}%<br>
+    Questões para revisão: ${wrongQuestions.length}
+  `;
+
+  for (const [name, value] of Object.entries(
+    stats.subjects || {}
+  )) {
+    const p = value.total
+      ? Math.round(value.correct * 100 / value.total)
+      : 0;
+
+    const safeName = document.createElement("span");
+    safeName.textContent = name;
+
+    html += `
+      <div style="margin-top:8px">
+        ${safeName.innerHTML}:
+        ${value.correct}/${value.total} (${p}%)
+      </div>
+    `;
+  }
+
+  $("stats").innerHTML = html;
+}
+
+// RENDERIZAÇÃO DAS QUESTÕES
+
+function render(message = "") {
+  clearPanels();
+
+  center(
+    "PM-SC 2026 | ACADEMIA IMERSIVA",
+    3.35, 5.1, .29
+  );
+
+  if (!pool.length) {
+    center(
+      "CARREGUE QUESTOES PARA COMECAR",
+      2.45
+    );
+
+    center(
+      "USE O MENU DO NAVEGADOR",
+      2.05
+    );
+
+    renderSidePanels();
+    return;
+  }
+
+  if (examEnded) {
+    renderExamResult();
+    return;
+  }
+
+  const q = pool[current];
+
+  center(
+    q.subject.toUpperCase().slice(0, 45),
+    3.01, 4.9, .24
+  );
+
+  const lines = wrap(q.question, 53);
+
+  lines.slice(0, 4).forEach((line, i) => {
+    center(
+      line,
+      2.73 - i * .205,
+      5.0,
+      .19
+    );
   });
- }
-}
 
-function next(){
+  q.options.slice(0, 5).forEach((option, i) => {
+    const letter = "ABCDE"[i];
+    const value = String(option).slice(0, 67);
 
- if(!filtered.length)return;
+    let color = null;
 
- current=(current+1)%filtered.length;
+    if (answered && $("mode").value !== "exam") {
+      if (i === q.correct) {
+        color = "#147c60";
+      } else if (i === selectedAnswers[current]) {
+        color = "#8d3340";
+      }
+    }
 
- answered=false;
+    center(
+      `${letter}) ${value}`,
+      1.75 - i * .285,
+      5.0,
+      .25,
+      () => answer(i),
+      color
+    );
+  });
 
- render();
-}
+  center(
+    message ||
+    `QUESTAO ${current + 1} DE ${pool.length}`,
+    .18, 4.9, .24
+  );
 
-// DISCIPLINAS
+  center(
+    "PROXIMA QUESTAO",
+    -.17, 2.7, .27,
+    nextQuestion
+  );
 
-function updateSubjects(){
+  if ($("mode").value === "exam") {
+    center(
+      `SIMULADO | RESPONDIDAS ${examDone}/${pool.length}`,
+      -.50, 4.7, .23
+    );
+  } else if (answered && q.explanation) {
+    const explanation = wrap(q.explanation, 37);
 
- const select=$("subject");
-
- select.innerHTML=
-  '<option value="Todas">Todas as disciplinas</option>';
-
- const subjects=[
-  ...new Set(allQuestions.map(q=>q.subject))
- ].sort();
-
- subjects.forEach(subject=>{
-
-  const option=document.createElement("option");
-
-  option.value=subject;
-  option.textContent=subject;
-
-  select.appendChild(option);
- });
-}
-
-function applyFilter(){
-
- const selected=$("subject").value;
-
- filtered=allQuestions.filter(q=>
-  selected==="Todas"||q.subject===selected
- );
-
- current=0;
- answered=false;
-
- render();
-}
-
-$("subject").onchange=applyFilter;
-
-// IMPORTAÇÃO DE JSON
-
-function normalize(q){
-
- const question=
-  q.enunciado||
-  q.pergunta||
-  q.questao||
-  q.question;
-
- const raw=
-  q.alternativas||
-  q.opcoes||
-  q.options;
-
- if(!question||!raw)return null;
-
- const keys=Array.isArray(raw)
-  ?null
-  :Object.keys(raw);
-
- const options=Array.isArray(raw)
-  ?raw
-  :Object.values(raw);
-
- if(
-  !Array.isArray(options)||
-  options.length<2||
-  options.length>5
- )return null;
-
- const answer=
-  q.correta??
-  q.resposta??
-  q.gabarito??
-  q.correct;
-
- let correct=-1;
-
- if(typeof answer==="number"){
-
-  correct=answer;
-
- }else if(typeof answer==="string"){
-
-  const value=answer.trim();
-
-  if(/^[A-E]$/i.test(value)){
-
-   correct=value.toUpperCase().charCodeAt(0)-65;
-
-  }else if(keys&&keys.includes(value)){
-
-   correct=keys.indexOf(value);
-
-  }else if(/^\d+$/.test(value)){
-
-   correct=Number(value);
-
-  }else{
-
-   correct=options.indexOf(value);
-  }
- }
-
- if(
-  !Number.isInteger(correct)||
-  correct<0||
-  correct>=options.length
- )return null;
-
- return{
-  question:String(question),
-  options:options.map(String),
-  correct,
-  subject:String(
-   q.disciplina||
-   q.materia||
-   q.subject||
-   "Geral"
-  ),
-  explanation:String(
-   q.explicacao||
-   q.comentario||
-   q.explanation||
-   ""
-  )
- };
-}
-
-$("jsonFile").onchange=async event=>{
-
- try{
-
-  const file=event.target.files[0];
-
-  if(!file)return;
-
-  const data=JSON.parse(await file.text());
-
-  const raw=Array.isArray(data)
-   ?data
-   :data.questoes||data.questions;
-
-  if(!Array.isArray(raw)){
-
-   throw Error("JSON sem lista de questoes.");
+    explanation.slice(0, 4).forEach((line, i) => {
+      label(
+        line,
+        4.2,
+        1.6 - i * .25,
+        -3.94,
+        2.05,
+        .22
+      );
+    });
   }
 
-  const valid=raw.map(normalize).filter(Boolean);
+  renderSidePanels();
+}
 
-  if(!valid.length){
+function renderSidePanels() {
+  label(
+    "DISCIPLINAS",
+    -4.2, 2.75, -3.94,
+    2.1, .28
+  );
 
-   throw Error(
-    "Nenhuma questao compativel encontrada."
-   );
+  const active = $("subject").value;
+
+  label(
+    active === "Todas"
+      ? "TODAS"
+      : active.slice(0, 24),
+    -4.2, 2.34, -3.94,
+    2.1, .28
+  );
+
+  label(
+    "DESEMPENHO",
+    4.2, 2.75, -3.94,
+    2.1, .28
+  );
+
+  label(
+    `${stats.correct} ACERTOS`,
+    4.2, 2.34, -3.94,
+    2.1, .28
+  );
+
+  label(
+    `${stats.total} RESPONDIDAS`,
+    4.2, 1.96, -3.94,
+    2.1, .28
+  );
+}
+
+function recordAnswer(q, correct) {
+  stats.total++;
+
+  if (correct) {
+    stats.correct++;
   }
 
-  allQuestions=valid;
+  if (!stats.subjects[q.subject]) {
+    stats.subjects[q.subject] = {
+      total: 0,
+      correct: 0
+    };
+  }
+
+  stats.subjects[q.subject].total++;
+
+  if (correct) {
+    stats.subjects[q.subject].correct++;
+  }
+
+  if (!correct) {
+    if (!wrongQuestions.some(item =>
+      item.question === q.question &&
+      item.subject === q.subject
+    )) {
+      wrongQuestions.push(q);
+    }
+  } else {
+    wrongQuestions = wrongQuestions.filter(item =>
+      !(
+        item.question === q.question &&
+        item.subject === q.subject
+      )
+    );
+  }
+
+  saveProgress();
+}
+
+function answer(selected) {
+  if (answered || examEnded || !pool.length) return;
+
+  answered = true;
+
+  const q = pool[current];
+  const right = selected === q.correct;
+
+  selectedAnswers[current] = selected;
+
+  recordAnswer(q, right);
+
+  if ($("mode").value === "exam") {
+    examDone++;
+
+    if (right) examCorrect++;
+
+    render("RESPOSTA REGISTRADA");
+  } else {
+    render(
+      right
+        ? "RESPOSTA CORRETA!"
+        : `INCORRETA | GABARITO ${"ABCDE"[q.correct]}`
+    );
+  }
+}
+
+function nextQuestion() {
+  if (!pool.length || examEnded) return;
+
+  if ($("mode").value === "exam" && !answered) {
+    render("RESPONDA ANTES DE AVANCAR");
+    return;
+  }
+
+  if (current >= pool.length - 1) {
+    if ($("mode").value === "exam") {
+      examEnded = true;
+      render();
+      return;
+    }
+
+    current = 0;
+  } else {
+    current++;
+  }
+
+  answered = false;
+  render();
+}
+
+function renderExamResult() {
+  center("SIMULADO FINALIZADO", 2.85, 4.9, .35);
+
+  center(
+    `ACERTOS: ${examCorrect} DE ${pool.length}`,
+    2.3, 4.8, .3
+  );
+
+  const percent = pool.length
+    ? (examCorrect * 100 / pool.length).toFixed(1)
+    : "0.0";
+
+  center(
+    `APROVEITAMENTO: ${percent}%`,
+    1.85, 4.8, .3
+  );
+
+  center(
+    "REINICIAR SIMULADO",
+    1.25, 3.5, .32,
+    startSession
+  );
+
+  renderSidePanels();
+}
+
+// FILTRO DE DISCIPLINAS
+
+function updateSubjects() {
+  const select = $("subject");
+  const previous = select.value;
+
+  select.innerHTML = "";
+
+  const all = document.createElement("option");
+  all.value = "Todas";
+  all.textContent = "Todas as disciplinas";
+  select.appendChild(all);
+
+  const available = [
+    ...new Set([
+      ...subjects,
+      ...questions.map(q => q.subject)
+    ])
+  ];
+
+  available.sort().forEach(subject => {
+    const option = document.createElement("option");
+    option.value = subject;
+    option.textContent = subject;
+    select.appendChild(option);
+  });
+
+  if (available.includes(previous)) {
+    select.value = previous;
+  }
+}
+
+function shuffle(array) {
+  const result = [...array];
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+
+  return result;
+}
+
+function startSession() {
+  const mode = $("mode").value;
+  const subject = $("subject").value;
+
+  let source = mode === "review"
+    ? [...wrongQuestions]
+    : [...questions];
+
+  if (subject !== "Todas") {
+    source = source.filter(
+      q => q.subject === subject
+    );
+  }
+
+  pool = shuffle(source);
+
+  if (mode === "exam") {
+    const size = Number($("examSize").value);
+    pool = pool.slice(0, size);
+  }
+
+  current = 0;
+  answered = false;
+  examCorrect = 0;
+  examDone = 0;
+  examEnded = false;
+  selectedAnswers = [];
+
+  render();
+
+  $("status").textContent = pool.length
+    ? `${pool.length} questões preparadas.`
+    : "Nenhuma questão disponível neste filtro.";
+}
+
+// NORMALIZAÇÃO DE JSON
+
+function normalizeQuestion(q) {
+  if (!q || typeof q !== "object") return null;
+
+  const question =
+    q.enunciado ||
+    q.pergunta ||
+    q.questao ||
+    q.question;
+
+  const raw =
+    q.alternativas ||
+    q.opcoes ||
+    q.options;
+
+  if (!question || !raw) return null;
+
+  const keys = Array.isArray(raw)
+    ? null
+    : Object.keys(raw);
+
+  const options = Array.isArray(raw)
+    ? raw
+    : Object.values(raw);
+
+  if (
+    !Array.isArray(options) ||
+    options.length < 2 ||
+    options.length > 5
+  ) return null;
+
+  const answer =
+    q.correta ??
+    q.resposta ??
+    q.gabarito ??
+    q.correct ??
+    q.answer;
+
+  let correct = -1;
+
+  if (typeof answer === "number") {
+    correct = answer;
+  } else if (typeof answer === "string") {
+    const value = answer.trim();
+
+    if (/^[A-E]$/i.test(value)) {
+      correct = value.toUpperCase().charCodeAt(0) - 65;
+    } else if (keys && keys.includes(value)) {
+      correct = keys.indexOf(value);
+    } else if (/^\d+$/.test(value)) {
+      correct = Number(value);
+    } else {
+      correct = options.findIndex(
+        item => String(item) === value
+      );
+    }
+  }
+
+  if (
+    !Number.isInteger(correct) ||
+    correct < 0 ||
+    correct >= options.length
+  ) return null;
+
+  return {
+    question: String(question),
+    options: options.map(String),
+    correct,
+    subject: String(
+      q.disciplina ||
+      q.materia ||
+      q.subject ||
+      "Geral"
+    ),
+    explanation: String(
+      q.explicacao ||
+      q.comentario ||
+      q.explanation ||
+      ""
+    )
+  };
+}
+
+$("file").addEventListener("change", async event => {
+  const files = [...event.target.files];
+
+  let imported = [];
+  let rejected = 0;
+  let errors = [];
+
+  for (const file of files) {
+    try {
+      const data = JSON.parse(await file.text());
+
+      const raw = Array.isArray(data)
+        ? data
+        : data.questoes || data.questions;
+
+      if (!Array.isArray(raw)) {
+        throw new Error("Lista de questões não encontrada");
+      }
+
+      for (const item of raw) {
+        const normalized = normalizeQuestion(item);
+
+        if (normalized) {
+          imported.push(normalized);
+        } else {
+          rejected++;
+        }
+      }
+    } catch (error) {
+      errors.push(`${file.name}: ${error.message}`);
+    }
+  }
+
+  if (imported.length) {
+    questions = imported;
+    updateSubjects();
+    startSession();
+  }
+
+  $("status").textContent =
+    `${imported.length} questões importadas. ` +
+    `${rejected} questões incompatíveis. ` +
+    errors.join(" | ");
+});
+
+// QUESTÕES DEMONSTRATIVAS
+
+$("demo").onclick = () => {
+  questions = [
+    {
+      question:
+        "Qual Constituição está atualmente vigente no Brasil?",
+      options: [
+        "Constituição de 1967",
+        "Constituição de 1988",
+        "Constituição de 1946",
+        "Constituição de 1934"
+      ],
+      correct: 1,
+      subject: "Direito Constitucional",
+      explanation:
+        "A Constituição Federal de 1988 está atualmente vigente."
+    },
+    {
+      question:
+        "Qual princípio exige atuação administrativa conforme a lei?",
+      options: [
+        "Legalidade",
+        "Publicidade",
+        "Eficiência",
+        "Moralidade"
+      ],
+      correct: 0,
+      subject: "Direito Constitucional",
+      explanation:
+        "O princípio da legalidade está previsto no artigo 37 da Constituição."
+    },
+    {
+      question:
+        "Qual artigo do Código Penal trata do furto?",
+      options: [
+        "Artigo 121",
+        "Artigo 155",
+        "Artigo 157",
+        "Artigo 171"
+      ],
+      correct: 1,
+      subject: "Direito Penal Comum",
+      explanation:
+        "O crime de furto está previsto no artigo 155 do Código Penal."
+    },
+    {
+      question:
+        "Qual artigo do Código Penal trata do roubo?",
+      options: [
+        "Artigo 155",
+        "Artigo 121",
+        "Artigo 157",
+        "Artigo 163"
+      ],
+      correct: 2,
+      subject: "Direito Penal Comum",
+      explanation:
+        "O crime de roubo está previsto no artigo 157 do Código Penal."
+    },
+    {
+      question:
+        "Qual é a capital do Estado de Santa Catarina?",
+      options: [
+        "Joinville",
+        "Blumenau",
+        "Florianópolis",
+        "Chapecó"
+      ],
+      correct: 2,
+      subject: "Constituição de Santa Catarina",
+      explanation:
+        "Florianópolis é a capital do Estado de Santa Catarina."
+    }
+  ];
 
   updateSubjects();
-  applyFilter();
+  startSession();
 
-  $("status").textContent=
-   `${valid.length} questoes carregadas.`;
-
- }catch(error){
-
-  $("status").textContent=
-   "Erro: "+error.message;
- }
+  $("status").textContent =
+    "Demonstração carregada. Questões apenas para teste.";
 };
 
-// DEMONSTRAÇÃO
+$("start").onclick = startSession;
+$("mode").onchange = startSession;
+$("subject").onchange = startSession;
 
-$("demo").onclick=()=>{
-
- allQuestions=[
-
-  {
-   question:
-    "Qual Constituicao esta atualmente vigente no Brasil?",
-   options:[
-    "Constituicao de 1967",
-    "Constituicao de 1988",
-    "Constituicao de 1946"
-   ],
-   correct:1,
-   subject:"Direito Constitucional",
-   explanation:
-    "A Constituicao Federal de 1988 e a constituicao vigente."
-  },
-
-  {
-   question:
-    "Qual principio exige que a administracao publica atue conforme a lei?",
-   options:[
-    "Legalidade",
-    "Publicidade",
-    "Eficiencia"
-   ],
-   correct:0,
-   subject:"Direito Administrativo",
-   explanation:
-    "O principio da legalidade vincula a atuacao administrativa ao ordenamento juridico."
-  },
-
-  {
-   question:
-    "Qual artigo do Codigo Penal trata do furto?",
-   options:[
-    "Artigo 121",
-    "Artigo 155",
-    "Artigo 157"
-   ],
-   correct:1,
-   subject:"Direito Penal",
-   explanation:
-    "O furto esta previsto no artigo 155 do Codigo Penal."
+$("reset").onclick = () => {
+  if (!confirm("Deseja zerar todas as estatísticas?")) {
+    return;
   }
 
- ];
+  stats = {
+    total: 0,
+    correct: 0,
+    subjects: {}
+  };
 
- updateSubjects();
- applyFilter();
-
- $("status").textContent=
-  "Demonstracao carregada.";
+  wrongQuestions = [];
+  saveProgress();
+  startSession();
 };
 
-// REINICIAR ESTATÍSTICAS
-
-$("reset").onclick=()=>{
-
- if(!confirm("Zerar as estatisticas?"))return;
-
- progress={
-  total:0,
-  correct:0,
-  bySubject:{}
- };
-
- save();
- render();
+$("menuToggle").onclick = () => {
+  $("menu").classList.toggle("hidden");
 };
 
-// INTERAÇÃO VR
+// TELETRANSPORTE
 
-const controllerFactory=
- new XRControllerModelFactory();
+const teleportMarkers = [];
 
-const handFactory=
- new XRHandModelFactory();
+function createTeleportMarker(x, z) {
+  const geometry = new THREE.RingGeometry(
+    .24, .38, 40
+  );
 
-function selectObject(source){
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x48e5ff,
+    side: THREE.DoubleSide
+  });
 
- rotation.identity();
+  const marker = new THREE.Mesh(
+    geometry,
+    material
+  );
 
- rotation.extractRotation(
-  source.matrixWorld
- );
+  marker.rotation.x = -Math.PI / 2;
+  marker.position.set(x, .012, z);
 
- raycaster.ray.origin.setFromMatrixPosition(
-  source.matrixWorld
- );
+  marker.userData.action = () => {
+    teleportTo(x, z);
+  };
 
- raycaster.ray.direction
-  .set(0,0,-1)
-  .applyMatrix4(rotation);
-
- const hits=raycaster.intersectObjects(
-  clickable,false
- );
-
- if(!hits.length)return;
-
- if(hits[0].distance>10)return;
-
- const action=hits[0].object.userData.action;
-
- if(typeof action==="function")action();
+  scene.add(marker);
+  interactive.push(marker);
+  teleportMarkers.push(marker);
 }
 
-for(let i=0;i<2;i++){
+function teleportTo(x, z) {
+  // Compensa a posição local atual do headset.
+  const head = new THREE.Vector3();
+  camera.getWorldPosition(head);
 
- const controller=renderer.xr.getController(i);
+  const offsetX = head.x - rig.position.x;
+  const offsetZ = head.z - rig.position.z;
 
- controller.addEventListener(
-  "selectstart",
-  ()=>selectObject(controller)
- );
+  rig.position.x = THREE.MathUtils.clamp(
+    x - offsetX, -5.4, 5.4
+  );
 
- scene.add(controller);
-
- const pointer=new THREE.Line(
-  new THREE.BufferGeometry().setFromPoints([
-   new THREE.Vector3(0,0,0),
-   new THREE.Vector3(0,0,-5)
-  ]),
-  new THREE.LineBasicMaterial({
-   color:0x44ddff
-  })
- );
-
- controller.add(pointer);
-
- const grip=renderer.xr.getControllerGrip(i);
-
- grip.add(
-  controllerFactory.createControllerModel(grip)
- );
-
- scene.add(grip);
-
- const hand=renderer.xr.getHand(i);
-
- hand.add(
-  handFactory.createHandModel(hand,"mesh")
- );
-
- hand.addEventListener(
-  "selectstart",
-  ()=>selectObject(hand)
- );
-
- scene.add(hand);
+  rig.position.z = THREE.MathUtils.clamp(
+    z - offsetZ, -6.2, 3.5
+  );
 }
 
-// ENTRAR EM VR
+createTeleportMarker(-2.5, -1.2);
+createTeleportMarker(2.5, -1.2);
+createTeleportMarker(0, -1.5);
+createTeleportMarker(-3, 1.5);
+createTeleportMarker(3, 1.5);
+createTeleportMarker(0, 2.5);
 
-$("vrButton").onclick=async()=>{
+// CONTROLES E RASTREAMENTO DAS MÃOS
 
- try{
+const controllerFactory =
+  new XRControllerModelFactory();
 
-  if(!navigator.xr){
+const handFactory =
+  new XRHandModelFactory();
 
-   throw Error("WebXR indisponivel.");
+const controllers = [];
+const hands = [];
+
+function selectObject(source) {
+  source.updateWorldMatrix(true, false);
+
+  rotation.identity();
+  rotation.extractRotation(source.matrixWorld);
+
+  raycaster.ray.origin.setFromMatrixPosition(
+    source.matrixWorld
+  );
+
+  raycaster.ray.direction
+    .set(0, 0, -1)
+    .applyMatrix4(rotation)
+    .normalize();
+
+  const hits = raycaster.intersectObjects(
+    interactive, false
+  );
+
+  if (!hits.length) return;
+
+  const hit = hits[0];
+
+  if (hit.distance > 12) return;
+
+  const action = hit.object.userData.action;
+
+  if (typeof action === "function") {
+    action();
   }
+}
 
-  const supported=
-   await navigator.xr.isSessionSupported(
-    "immersive-vr"
-   );
+for (let i = 0; i < 2; i++) {
+  const controller = renderer.xr.getController(i);
 
-  if(!supported){
+  controller.addEventListener(
+    "selectstart",
+    () => selectObject(controller)
+  );
 
-   throw Error("VR nao suportada.");
-  }
+  const pointer = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, -5)
+    ]),
+    new THREE.LineBasicMaterial({
+      color: 0x44ddff
+    })
+  );
 
-  const session=
-   await navigator.xr.requestSession(
-    "immersive-vr",
-    {
-     optionalFeatures:[
-      "local-floor",
-      "hand-tracking"
-     ]
+  controller.add(pointer);
+  rig.add(controller);
+
+  const grip = renderer.xr.getControllerGrip(i);
+
+  grip.add(
+    controllerFactory.createControllerModel(grip)
+  );
+
+  rig.add(grip);
+
+  const hand = renderer.xr.getHand(i);
+
+  hand.add(
+    handFactory.createHandModel(hand, "mesh")
+  );
+
+  hand.addEventListener(
+    "selectstart",
+    () => selectObject(hand)
+  );
+
+  rig.add(hand);
+
+  controllers.push(controller);
+  hands.push(hand);
+}
+
+// MOVIMENTAÇÃO PELO ANALÓGICO
+
+const clock = new THREE.Clock();
+
+const forward = new THREE.Vector3();
+const right = new THREE.Vector3();
+const movement = new THREE.Vector3();
+
+function updateMovement(delta) {
+  if (!renderer.xr.isPresenting) return;
+
+  const session = renderer.xr.getSession();
+
+  if (!session) return;
+
+  let axisX = 0;
+  let axisY = 0;
+
+  for (const source of session.inputSources) {
+    if (!source.gamepad) continue;
+
+    if (
+      source.handedness !== "left" &&
+      session.inputSources.length > 1
+    ) continue;
+
+    const axes = source.gamepad.axes;
+
+    if (axes.length >= 4) {
+      axisX = axes[2] || 0;
+      axisY = axes[3] || 0;
+    } else if (axes.length >= 2) {
+      axisX = axes[0] || 0;
+      axisY = axes[1] || 0;
     }
-   );
 
-  await renderer.xr.setSession(session);
+    break;
+  }
 
-  $("status").textContent=
-   "Realidade virtual iniciada.";
+  const deadzone = .18;
 
- }catch(error){
+  if (Math.abs(axisX) < deadzone) axisX = 0;
+  if (Math.abs(axisY) < deadzone) axisY = 0;
 
-  $("status").textContent=
-   "Erro VR: "+error.message;
- }
+  if (!axisX && !axisY) return;
+
+  const direction = new THREE.Vector3();
+
+  camera.getWorldDirection(direction);
+  direction.y = 0;
+  direction.normalize();
+
+  forward.copy(direction);
+
+  right.set(
+    -forward.z,
+    0,
+    forward.x
+  );
+
+  movement.set(0, 0, 0);
+
+  movement.addScaledVector(
+    forward, -axisY
+  );
+
+  movement.addScaledVector(
+    right, axisX
+  );
+
+  if (movement.lengthSq() > 1) {
+    movement.normalize();
+  }
+
+  const speed = 1.5;
+
+  rig.position.addScaledVector(
+    movement,
+    speed * Math.min(delta, .05)
+  );
+
+  rig.position.x = THREE.MathUtils.clamp(
+    rig.position.x, -5.4, 5.4
+  );
+
+  rig.position.z = THREE.MathUtils.clamp(
+    rig.position.z, -6.2, 3.5
+  );
+}
+
+// VR
+
+$("enter").onclick = async () => {
+  try {
+    if (!navigator.xr) {
+      throw new Error(
+        "WebXR indisponível neste navegador."
+      );
+    }
+
+    const supported =
+      await navigator.xr.isSessionSupported(
+        "immersive-vr"
+      );
+
+    if (!supported) {
+      throw new Error(
+        "Modo VR não suportado."
+      );
+    }
+
+    const session =
+      await navigator.xr.requestSession(
+        "immersive-vr",
+        {
+          optionalFeatures: [
+            "local-floor",
+            "hand-tracking"
+          ]
+        }
+      );
+
+    await renderer.xr.setSession(session);
+
+    $("status").textContent =
+      "Realidade virtual iniciada.";
+
+    $("enter").textContent = "SAIR DA VR";
+
+    session.addEventListener("end", () => {
+      $("enter").textContent = "ENTRAR EM VR";
+      $("status").textContent =
+        "Sessão de realidade virtual encerrada.";
+    });
+
+  } catch (error) {
+    $("status").textContent =
+      "Erro VR: " + error.message;
+  }
 };
+
+// SELEÇÃO COM MOUSE NO COMPUTADOR
+
+const mouse = new THREE.Vector2();
+
+renderer.domElement.addEventListener(
+  "click",
+  event => {
+    if (renderer.xr.isPresenting) return;
+
+    mouse.x =
+      (event.clientX / innerWidth) * 2 - 1;
+
+    mouse.y =
+      -(event.clientY / innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    const hits = raycaster.intersectObjects(
+      interactive, false
+    );
+
+    if (hits.length) {
+      const action = hits[0].object.userData.action;
+
+      if (typeof action === "function") {
+        action();
+      }
+    }
+  }
+);
 
 // REDIMENSIONAMENTO
 
-window.addEventListener("resize",()=>{
-
- camera.aspect=innerWidth/innerHeight;
-
- camera.updateProjectionMatrix();
-
- renderer.setSize(innerWidth,innerHeight);
+window.addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
 });
 
-// INICIAR
+// INICIALIZAÇÃO
 
+updateSubjects();
 updateStats();
 render();
 
-$("status").textContent=
- "Academia preparada para estudos.";
+$("status").textContent =
+  "Academia preparada. Importe suas questões JSON ou carregue a demonstração.";
 
-renderer.setAnimationLoop(()=>{
+renderer.setAnimationLoop(() => {
+  const delta = clock.getDelta();
 
- renderer.render(scene,camera);
+  updateMovement(delta);
 
+  renderer.render(scene, camera);
 });
 
 </script>
