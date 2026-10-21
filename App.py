@@ -668,9 +668,9 @@ with aba_livre:
         html_vr = html_template.replace("__Q_JSON__", q_json_str)
         html_vr = html_vr.replace("__MODO__", st.session_state["modo_atual"])
         
-        # Renderização limpa via st.iframe com Data URI (Resolve o aviso e o travamento)
+        # Correção aplicada: Removido o argumento 'scrolling=False' que gerava o TypeError
         encoded_html = urllib.parse.quote(html_vr)
-        st.iframe(f"data:text/html;charset=utf-8,{encoded_html}", height=720, scrolling=False)
+        st.iframe(f"data:text/html;charset=utf-8,{encoded_html}", height=720)
 
 # ==================== RODAPÉ ====================
 st.markdown("---")
