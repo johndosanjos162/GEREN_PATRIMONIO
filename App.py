@@ -1,8 +1,8 @@
 """
-PMSC Arena VR — Centro de Comando Tático (v11)
-Design: militar azul fosco #060913 + ciano neon #00d1ff
-Correções: z-fighting, scale, hover tátil, cockpit a 2.2m
-Lógica intacta: JSON, gramática, correção, ambientes, localStorage
+PMSC Arena VR — Versão Final Otimizada (v12)
+Backend: Streamlit + normalização gramatical + loader tolerante
+Frontend: A-Frame com FFR 1.0, canvas textures, UV math, flat shader
+Target: Meta Quest 3/3S a 72/90 FPS
 """
 import streamlit as st
 import streamlit.components.v1 as components
@@ -11,19 +11,24 @@ from datetime import datetime
 
 st.set_page_config(page_title="PMSC Arena VR", page_icon="🎯", layout="wide")
 
+# ═══════════════════════════════════════════════════════════════════════
+# DISTRIBUIÇÃO OFICIAL AOCP
+# ═══════════════════════════════════════════════════════════════════════
 DISTRIBUICAO = {
     "Legislação Institucional": 10, "Direito Constitucional": 8,
     "Língua Portuguesa": 8, "Direito Penal Comum": 6,
     "Direito Processual Penal Comum": 6, "Direito Penal Militar": 6,
     "Legislação Especial": 6, "Legislação de Trânsito": 5, "Informática": 5,
 }
-TOTAL_OFICIAL = sum(DISTRIBUICAO.values())
+TOTAL_OFICIAL = sum(DISTRIBUICAO.values())  # 60
+
 
 # ═══════════════════════════════════════════════════════════════════════
-# NORMALIZAÇÃO GRAMATICAL (mantida)
+# NORMALIZAÇÃO GRAMATICAL
 # ═══════════════════════════════════════════════════════════════════════
 def _limpar_espacos(t): return re.sub(r"\s+", " ", t or "").strip()
 def _capitalizar(t): return t[0].upper() + t[1:] if t else t
+
 
 def normalizar_enunciado(t):
     if not isinstance(t, str): return ""
@@ -31,11 +36,13 @@ def normalizar_enunciado(t):
     if t and t[-1] not in ".?!:;": t += "."
     return t
 
+
 def normalizar_alternativa(t):
     if not isinstance(t, str): return ""
     t = _limpar_espacos(t)
     t = re.sub(r"^[A-Ea-e]\s*[\)\.\-\:]\s*", "", t)
     return _capitalizar(t)
+
 
 def extrair_letra(c):
     if not isinstance(c, str): return ""
@@ -44,6 +51,7 @@ def extrair_letra(c):
     if m: return m.group(1)
     m = re.search(r"\b([A-E])\b", c)
     return m.group(1) if m else ""
+
 
 def normalizar_questao(q):
     if not isinstance(q, dict): return None
@@ -61,6 +69,7 @@ def normalizar_questao(q):
         "correta": letra, "materia": q.get("materia", ""),
     }
 
+
 def normalizar_banco(banco):
     r = {}
     for mat, lista in banco.items():
@@ -68,8 +77,9 @@ def normalizar_banco(banco):
         if novas: r[mat] = novas
     return r
 
+
 # ═══════════════════════════════════════════════════════════════════════
-# CARREGADOR (mantido)
+# PARSER TOLERANTE
 # ═══════════════════════════════════════════════════════════════════════
 def _parse_concatenado(conteudo):
     decoder, idx, n, res = json.JSONDecoder(), 0, len(conteudo), {}
@@ -85,6 +95,7 @@ def _parse_concatenado(conteudo):
             for q in obj: res.setdefault(q.get("materia", "Geral"), []).append(q)
     return res
 
+
 def _dedup(lista):
     vistos, unicas, rem = set(), [], 0
     for q in lista:
@@ -93,6 +104,7 @@ def _dedup(lista):
         if t in vistos: rem += 1; continue
         vistos.add(t); unicas.append(q)
     return unicas, rem
+
 
 @st.cache_data(ttl=30, show_spinner=False)
 def load_json():
@@ -116,6 +128,7 @@ def load_json():
                 return None, {"erro": str(e)}
     return None, {"erro": "json.json não encontrado"}
 
+
 def montar_simulado(banco):
     sim = []
     for mat, qtd in DISTRIBUICAO.items():
@@ -129,13 +142,24 @@ def montar_simulado(banco):
             sim.extend([{**q, "materia": mat} for q in sel])
     random.shuffle(sim); return sim
 
+
+# ═══════════════════════════════════════════════════════════════════════
+# SESSION STATE
+# ═══════════════════════════════════════════════════════════════════════
 for k, d in [("simulado", None), ("treino", []), ("hist", []), ("vr_ready", False)]:
     if k not in st.session_state: st.session_state[k] = d
 
 banco, info = load_json()
 if not banco:
-    st.error(f"❌ Erro: {info.get('erro', '?')}"); st.stop()
+    st.error(f"❌ Erro: {info.get('erro', '?')}")
+    try: st.write("Arquivos:", [f.name for f in pathlib.Path(__file__).parent.iterdir()])
+    except Exception: pass
+    st.stop()
 
+
+# ═══════════════════════════════════════════════════════════════════════
+# EMBED COM PERMISSÕES WEBXR
+# ═══════════════════════════════════════════════════════════════════════
 def embed_with_webxr_permissions(inner_html, height=950):
     escaped = html_module.escape(inner_html, quote=True)
     wrapper = r'''<!DOCTYPE html><html><head><meta charset="utf-8">
@@ -146,11 +170,16 @@ iframe{width:100%;height:100%;border:none;display:block}</style></head><body>
  style="width:100%;height:100%;border:none;"></iframe></body></html>'''
     components.html(wrapper.replace("__INNER__", escaped), height=height, scrolling=False)
 
+
+# ═══════════════════════════════════════════════════════════════════════
+# RENDER VR — ENGINE OTIMIZADA
+# ═══════════════════════════════════════════════════════════════════════
 def render_vr(questoes, modo="ARENA", height=950):
     if not st.session_state.vr_ready:
         st.info(f"{len(questoes)} questões prontas.")
         if st.button(f"🥽 CARREGAR VR — {modo}", type="primary", use_container_width=True):
-            st.session_state.vr_ready = True; st.rerun()
+            st.session_state.vr_ready = True
+            st.rerun()
         return
 
     safe = [{
@@ -165,99 +194,107 @@ def render_vr(questoes, modo="ARENA", height=950):
 <html>
 <head>
 <meta charset="utf-8">
-<title>PMSC Tático VR</title>
+<title>PMSC Engine Otimizada</title>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
 <script>
-// ═══════════════════════════════════════════════════════════════════
-// vr-hand v11 — click isolado, feedback tátil
-// ═══════════════════════════════════════════════════════════════════
+// FFR programático
+function setupFFR() {
+  const scene = document.querySelector('a-scene');
+  if (!scene || !scene.renderer || !scene.renderer.xr) return;
+  try { scene.renderer.xr.setFoveation(1.0); console.log('[FFR] 1.0'); }
+  catch (e) { console.warn('[FFR]', e.message); }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const scene = document.querySelector('a-scene');
+  if (!scene) return;
+  ['loaded', 'enter-vr', 'renderstart'].forEach(evt => {
+    scene.addEventListener(evt, setupFFR);
+  });
+});
+
+// vr-hand
 AFRAME.registerComponent('vr-hand', {
   init: function() {
     const hand = this.el;
+    const raycaster = new THREE.Raycaster();
+    raycaster.far = 20;
     let grabbed = null;
-    let offset = new THREE.Vector3();
-    let distAdjust = 0;
-    const _p = new THREE.Vector3(), _d = new THREE.Vector3();
-    const _q = new THREE.Quaternion(), _t = new THREE.Vector3();
-    const _l = new THREE.Vector3(), _b = new THREE.Vector3();
+    let grabOffset = new THREE.Vector3();
+    let grabDistAdj = 0;
+    let currentTarget = null;
+    let lastRaycast = 0;
+    const _pos = new THREE.Vector3(), _dir = new THREE.Vector3();
+    const _quat = new THREE.Quaternion(), _target = new THREE.Vector3();
+    const _local = new THREE.Vector3(), _bp = new THREE.Vector3();
+    const _clickables = [];
 
-    if (!hand.components.raycaster) {
-      hand.setAttribute('raycaster', 'objects: .clickable, .ui-btn, .grabbable; far: 20; interval: 50');
-    }
-
-    const getPos = () => { hand.object3D.getWorldPosition(_p); return _p; };
+    const getPos = () => { hand.object3D.getWorldPosition(_pos); return _pos; };
     const getDir = () => {
-      hand.object3D.getWorldQuaternion(_q);
-      return _d.set(0, 0, -1).applyQuaternion(_q).normalize();
+      hand.object3D.getWorldQuaternion(_quat);
+      return _dir.set(0, 0, -1).applyQuaternion(_quat).normalize();
     };
 
-    const findIn = (predicate) => {
-      const rc = hand.components.raycaster;
-      let list = (rc && rc.intersections && rc.intersections.length) ? rc.intersections : [];
-      if (list.length === 0) {
-        const objs = [];
-        hand.sceneEl.object3D.traverse((o) => {
-          if (o.el && o.el.classList && (o.el.classList.contains('clickable') ||
-              o.el.classList.contains('ui-btn') ||
-              o.el.classList.contains('grabbable'))) objs.push(o);
-        });
-        const ray = new THREE.Raycaster(getPos(), getDir(), 0, 20);
-        list = ray.intersectObjects(objs, true);
+    this.el.sceneEl.addEventListener('loaded', () => {
+      _clickables.length = 0;
+      hand.sceneEl.object3D.traverse(o => {
+        if (o.userData && o.userData.isClickable) _clickables.push(o);
+      });
+    });
+
+    const doRaycast = () => {
+      if (grabbed) return;
+      raycaster.set(getPos(), getDir());
+      const hits = raycaster.intersectObjects(_clickables, false);
+      currentTarget = null;
+      if (hits.length === 0) return;
+      const hit = hits[0], mesh = hit.object;
+      if (mesh.userData.type === 'card') {
+        currentTarget = { mesh, altIdx: cardHitFromUV(hit.uv), isCard: true };
+      } else if (mesh.userData.type === 'panel') {
+        currentTarget = { mesh, btn: panelHitFromUV(hit.uv, mesh.userData.buttons), isPanel: true };
       }
-      for (const hit of list) {
-        let cur = hit.object ? hit.object.el : null;
-        while (cur) {
-          if (predicate(cur)) return { el: cur, distance: hit.distance };
-          cur = cur.parentEl;
-        }
-      }
-      return null;
     };
 
-    const findClickable = () => findIn(el => el.classList &&
-      (el.classList.contains('clickable') || el.classList.contains('ui-btn')));
-    const findBlock = () => findIn(el => el.id && el.id.indexOf('block-') === 0);
+    const doClick = () => {
+      if (!currentTarget) return;
+      if (currentTarget.isCard && currentTarget.altIdx >= 0) {
+        handleCardClick(currentTarget.mesh, currentTarget.altIdx);
+      } else if (currentTarget.isPanel && currentTarget.btn) {
+        handlePanelClick(currentTarget.mesh, currentTarget.btn);
+      }
+    };
 
     const startGrab = () => {
-      if (grabbed) return;
-      const b = findBlock(); if (!b) return;
-      grabbed = b.el;
+      if (!currentTarget || !currentTarget.isCard) return;
+      grabbed = currentTarget.mesh;
       const hp = getPos();
-      grabbed.object3D.getWorldPosition(_b);
-      offset.copy(_b).sub(hp);
-      distAdjust = 0;
-      grabbed.setAttribute('material', 'emissive', '#ffaa00');
-      grabbed.setAttribute('material', 'emissiveIntensity', '1');
-      showToast('✋ ' + grabbed.id + ' @ ' + offset.length().toFixed(1) + 'm', 900);
+      grabbed.getWorldPosition(_bp);
+      grabOffset.copy(_bp).sub(hp);
+      grabDistAdj = 0;
+      grabbed.material.color.setHex(0x00d1ff);
+      showToast('✋ block-' + grabbed.userData.state.index, 700);
       if (navigator.vibrate) navigator.vibrate(30);
     };
 
     const endGrab = () => {
       if (!grabbed) return;
-      grabbed.setAttribute('material', 'emissive', '#00d1ff');
-      grabbed.setAttribute('material', 'emissiveIntensity', '0.18');
-      savePos(grabbed.id);
-      showToast('📍 ' + grabbed.id + ' posicionado', 900);
+      grabbed.material.color.setHex(0xffffff);
+      saveCardPos(grabbed);
+      showToast('📍 posicionado', 700);
       if (navigator.vibrate) navigator.vibrate(20);
-      grabbed = null; distAdjust = 0;
+      grabbed = null; grabDistAdj = 0;
     };
 
-    const doClick = () => {
-      const c = findClickable();
-      if (!c) { showToast('⚠️ Aponte para uma alternativa A–E', 800); return; }
-      c.el.emit('click', { target: c.el }, true);
-      if (navigator.vibrate) navigator.vibrate(60);
-    };
-
-    this.tick = () => {
+    this.tick = (time) => {
+      if (time - lastRaycast > 60) { lastRaycast = time; doRaycast(); }
       if (grabbed) {
-        const hp = getPos(); const dir = getDir();
-        _t.copy(hp).add(offset).addScaledVector(dir, distAdjust);
-        const parent = grabbed.object3D.parent;
+        const hp = getPos(), dir = getDir();
+        _target.copy(hp).add(grabOffset).addScaledVector(dir, grabDistAdj);
+        const parent = grabbed.parent;
         if (parent) {
-          parent.worldToLocal(_l.copy(_t));
-          grabbed.object3D.position.copy(_l);
+          parent.worldToLocal(_local.copy(_target));
+          grabbed.position.copy(_local);
         }
       }
     };
@@ -267,17 +304,17 @@ AFRAME.registerComponent('vr-hand', {
     hand.addEventListener('gripup', endGrab);
     hand.addEventListener('abuttondown', doClick);
     hand.addEventListener('pinchstarted', () => {
-      const c = findClickable();
-      if (c) doClick(); else startGrab();
+      if (currentTarget && (currentTarget.altIdx >= 0 || currentTarget.isPanel)) doClick();
+      else startGrab();
     });
     hand.addEventListener('pinchended', endGrab);
     hand.addEventListener('thumbstickmoved', (evt) => {
       if (!grabbed) return;
       const { x, y } = evt.detail;
-      if (Math.abs(x) > 0.15) grabbed.object3D.rotation.y += x * 0.03;
+      if (Math.abs(x) > 0.15) grabbed.rotation.y += x * 0.03;
       if (Math.abs(y) > 0.15) {
-        distAdjust -= y * 0.05;
-        distAdjust = Math.max(-8, Math.min(8, distAdjust));
+        grabDistAdj -= y * 0.05;
+        grabDistAdj = Math.max(-8, Math.min(8, grabDistAdj));
       }
     });
   }
@@ -306,132 +343,456 @@ AFRAME.registerComponent('hand-live', {
   }
 });
 
-AFRAME.registerComponent('painel-sistema', {
-  init: function() {
-    const rig = document.getElementById('rig');
-    const head = document.getElementById('head');
-    const left = document.getElementById('leftHand');
-    const right = document.getElementById('rightHand');
-    const sky = document.getElementById('sky');
-    const stars = document.getElementById('stars');
-    const ambient = document.getElementById('ambientLight');
-    let handScale = 1, headH = 1.65, brightness = 1.0;
+// CARTÃO VIA CANVAS
+const CARD_SIZE = 1024;
+const CARD_ALT_START = 500;
+const CARD_ALT_HEIGHT = 100;
 
-    const applyBrightness = (b) => {
-      if (ambient) ambient.setAttribute('light', 'intensity', (0.8 * b).toFixed(2));
-    };
+function cardHitFromUV(uv) {
+  const cy = (1 - uv.y) * CARD_SIZE;
+  if (cy < CARD_ALT_START || cy > CARD_ALT_START + 5 * CARD_ALT_HEIGHT) return -1;
+  const idx = Math.floor((cy - CARD_ALT_START) / CARD_ALT_HEIGHT);
+  return (idx >= 0 && idx < 5) ? idx : -1;
+}
 
-    this.el.querySelectorAll('.calib-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const a = btn.getAttribute('data-action');
-        if (a === 'passthrough') { window.enablePassthrough(); return; }
-        if (a === 'dark') {
-          sky.setAttribute('visible', 'true');
-          sky.setAttribute('material', 'shader: flat; color: #060913');
-          stars.setAttribute('visible', 'false'); showToast('TÁTICO');
-        }
-        if (a === 'beach') {
-          sky.setAttribute('visible', 'true');
-          sky.setAttribute('material', 'shader: flat; src: url(https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg); color: #fff');
-          stars.setAttribute('visible', 'false'); showToast('PRAIA');
-        }
-        if (a === 'office') {
-          sky.setAttribute('visible', 'true');
-          sky.setAttribute('material', 'shader: flat; src: url(https://cdn.aframe.io/360-image-gallery-boilerplate/img/city.jpg); color: #fff');
-          stars.setAttribute('visible', 'false'); showToast('ESCRITÓRIO');
-        }
-        if (a === 'library') {
-          sky.setAttribute('visible', 'true');
-          sky.setAttribute('material', 'shader: flat; src: url(https://cdn.aframe.io/360-image-gallery-boilerplate/img/cubes.jpg); color: #fff');
-          stars.setAttribute('visible', 'false'); showToast('BIBLIOTECA');
-        }
-        if (a === 'space') {
-          sky.setAttribute('visible', 'true');
-          sky.setAttribute('material', 'shader: flat; color: #000008');
-          createStarsPoints(); stars.setAttribute('visible', 'true'); showToast('ESPAÇO');
-        }
-        if (a === 'brightnessUp') {
-          brightness = Math.min(1.0, brightness + 0.1);
-          applyBrightness(brightness);
-          showToast('Brilho ' + Math.round(brightness * 100) + '%');
-        }
-        if (a === 'brightnessDown') {
-          brightness = Math.max(0.3, brightness - 0.1);
-          applyBrightness(brightness);
-          showToast('Brilho ' + Math.round(brightness * 100) + '%');
-        }
-        if (a === 'organizar') window.organizarGrade();
-        if (a === 'porMateria') window.organizarPorMateria();
-        if (a === 'espalhar') window.espalhar();
-        if (a === 'salvar') window.salvarLayout();
-        if (a === 'carregar') window.carregarLayout();
-        if (a === 'maoMais') {
-          handScale = Math.min(2.0, handScale + 0.1);
-          const v = handScale + ' ' + handScale + ' ' + handScale;
-          left.setAttribute('scale', v); right.setAttribute('scale', v);
-          showToast('Mão + (' + handScale.toFixed(1) + ')');
-        }
-        if (a === 'maoMenos') {
-          handScale = Math.max(0.2, handScale - 0.1);
-          const v = handScale + ' ' + handScale + ' ' + handScale;
-          left.setAttribute('scale', v); right.setAttribute('scale', v);
-          showToast('Mão - (' + handScale.toFixed(1) + ')');
-        }
-        if (a === 'alturaMais') {
-          headH = Math.min(2.5, headH + 0.1);
-          head.setAttribute('position', '0 ' + headH + ' 0');
-          showToast('Altura ' + headH.toFixed(1) + 'm');
-        }
-        if (a === 'alturaMenos') {
-          headH = Math.max(0.4, headH - 0.1);
-          head.setAttribute('position', '0 ' + headH + ' 0');
-          showToast('Altura ' + headH.toFixed(1) + 'm');
-        }
-        if (a === 'resetPos') {
-          rig.setAttribute('position', '0 0 3');
-          rig.setAttribute('rotation', '0 0 0');
-          showToast('Posição resetada');
-        }
-        if (a === 'sairVR') {
-          const s = document.querySelector('a-scene').renderer.xr.getSession();
-          if (s) s.end();
-        }
-        if (a === 'toggleHUD') window.toggleHUDMode();
-        if (a === 'resetWorld') { window.location.reload(); }
+function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+  const words = text.split(' ');
+  let line = '', lineCount = 0;
+  for (let i = 0; i < words.length; i++) {
+    const test = line + words[i] + ' ';
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, y);
+      line = words[i] + ' ';
+      y += lineHeight;
+      lineCount++;
+      if (lineCount >= maxLines - 1) {
+        ctx.fillText(line + '...', x, y);
+        return;
+      }
+    } else { line = test; }
+  }
+  if (line) ctx.fillText(line, x, y);
+}
 
-        const orig = btn.getAttribute('material').color;
-        btn.setAttribute('material', 'color', '#00ff88');
-        setTimeout(() => btn.setAttribute('material', 'color', orig), 200);
-      });
+function createCard(q, i) {
+  const canvas = document.createElement('canvas');
+  canvas.width = CARD_SIZE; canvas.height = CARD_SIZE;
+  const ctx = canvas.getContext('2d', { alpha: false });
+
+  const state = {
+    q, index: i, hoverIdx: -1, selectedIdx: -1,
+    respondida: false, isCorreta: null, letraEscolhida: null,
+  };
+
+  function draw() {
+    const grad = ctx.createLinearGradient(0, 0, CARD_SIZE, CARD_SIZE);
+    grad.addColorStop(0, '#060913');
+    grad.addColorStop(1, '#0a1520');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CARD_SIZE, CARD_SIZE);
+
+    ctx.strokeStyle = 'rgba(0,209,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let gx = 0; gx < CARD_SIZE; gx += 64) {
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, CARD_SIZE); ctx.stroke();
+    }
+    for (let gy = 0; gy < CARD_SIZE; gy += 64) {
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(CARD_SIZE, gy); ctx.stroke();
+    }
+
+    ctx.strokeStyle = '#00d1ff';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4, 4, CARD_SIZE - 8, CARD_SIZE - 8);
+
+    ctx.lineWidth = 14;
+    const cs = 50;
+    ctx.beginPath(); ctx.moveTo(20, 20 + cs); ctx.lineTo(20, 20); ctx.lineTo(20 + cs, 20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(CARD_SIZE - 20 - cs, 20); ctx.lineTo(CARD_SIZE - 20, 20); ctx.lineTo(CARD_SIZE - 20, 20 + cs); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20, CARD_SIZE - 20 - cs); ctx.lineTo(20, CARD_SIZE - 20); ctx.lineTo(20 + cs, CARD_SIZE - 20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(CARD_SIZE - 20 - cs, CARD_SIZE - 20); ctx.lineTo(CARD_SIZE - 20, CARD_SIZE - 20); ctx.lineTo(CARD_SIZE - 20, CARD_SIZE - 20 - cs); ctx.stroke();
+
+    ctx.fillStyle = '#00d1ff';
+    ctx.font = 'bold 40px Segoe UI, Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('▸ ' + (i + 1) + '. ' + q.materia.toUpperCase(), 50, 90);
+
+    ctx.strokeStyle = 'rgba(0,209,255,0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(50, 115); ctx.lineTo(CARD_SIZE - 50, 115); ctx.stroke();
+
+    ctx.fillStyle = '#e8f4ff';
+    ctx.font = '30px Segoe UI, Arial, sans-serif';
+    wrapText(ctx, q.pergunta, 50, 175, CARD_SIZE - 100, 40, 8);
+
+    q.alternativas.forEach((alt, idx) => {
+      const yBase = CARD_ALT_START + idx * CARD_ALT_HEIGHT;
+      const isHover = (state.hoverIdx === idx && !state.respondida);
+      const isSelected = (state.respondida && state.selectedIdx === idx);
+
+      if (isSelected) {
+        ctx.fillStyle = state.isCorreta ? '#00aa55' : '#aa2222';
+      } else if (isHover) {
+        ctx.fillStyle = 'rgba(0,209,255,0.20)';
+      } else {
+        ctx.fillStyle = 'rgba(10,21,32,0.7)';
+      }
+      ctx.fillRect(45, yBase + 6, CARD_SIZE - 90, CARD_ALT_HEIGHT - 12);
+
+      ctx.strokeStyle = isHover ? '#00d1ff' : 'rgba(0,209,255,0.25)';
+      ctx.lineWidth = isHover ? 3 : 1;
+      ctx.strokeRect(45, yBase + 6, CARD_SIZE - 90, CARD_ALT_HEIGHT - 12);
+
+      ctx.fillStyle = isSelected ? '#ffffff' : '#b8d4e8';
+      ctx.font = '26px Segoe UI, Arial, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(alt.length > 68 ? alt.slice(0, 65) + '...' : alt, 65, yBase + 62);
+    });
+
+    if (state.respondida) {
+      ctx.fillStyle = state.isCorreta ? '#00ff88' : '#ff4444';
+      ctx.font = 'bold 44px Segoe UI, Arial';
+      ctx.textAlign = 'right';
+      ctx.fillText(state.isCorreta ? '✓' : '✗', CARD_SIZE - 50, 90);
+    }
+  }
+
+  draw();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+  texture.anisotropy = 1;
+
+  const material = new THREE.MeshBasicMaterial({
+    map: texture, transparent: false, side: THREE.FrontSide,
+    depthWrite: true, depthTest: true,
+  });
+
+  const geometry = new THREE.PlaneGeometry(2.2, 2.2, 1, 1);
+  const mesh = new THREE.Mesh(geometry, material);
+
+  const cols = 4, spacing = 2.6;
+  mesh.position.set(
+    (i % cols) * spacing - ((cols - 1) * spacing / 2),
+    1.6,
+    Math.floor(i / cols) * -spacing - 2.5
+  );
+
+  mesh.userData = {
+    type: 'card', isClickable: true, state, canvas, ctx, texture, redraw: draw,
+  };
+
+  return mesh;
+}
+
+// PAINEL VIA CANVAS
+const PANEL_W = 1024, PANEL_H = 768;
+
+function createPanel(width, height, actions, title) {
+  const canvas = document.createElement('canvas');
+  canvas.width = PANEL_W; canvas.height = PANEL_H;
+  const ctx = canvas.getContext('2d', { alpha: false });
+
+  const cols = 4;
+  const rows = Math.ceil(actions.length / cols);
+  const margin = 30, titleH = 100;
+  const cellW = (PANEL_W - margin * 2) / cols;
+  const cellH = (PANEL_H - titleH - margin) / rows;
+
+  const buttons = actions.map((action, i) => {
+    if (!action) return null;
+    const col = i % cols, row = Math.floor(i / cols);
+    const x1 = margin + col * cellW + 6;
+    const y1 = titleH + row * cellH + 6;
+    const x2 = x1 + cellW - 12;
+    const y2 = y1 + cellH - 12;
+    return { action, label: action.label, rect: [x1, y1, x2, y2] };
+  }).filter(Boolean);
+
+  function draw() {
+    ctx.fillStyle = 'rgba(6,9,19,0.96)';
+    ctx.fillRect(0, 0, PANEL_W, PANEL_H);
+
+    ctx.strokeStyle = 'rgba(0,209,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let gx = 0; gx < PANEL_W; gx += 64) {
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, PANEL_H); ctx.stroke();
+    }
+    for (let gy = 0; gy < PANEL_H; gy += 64) {
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(PANEL_W, gy); ctx.stroke();
+    }
+
+    ctx.strokeStyle = '#00d1ff';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, PANEL_W - 6, PANEL_H - 6);
+
+    ctx.fillStyle = '#00d1ff';
+    ctx.font = 'bold 44px Segoe UI, Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, PANEL_W / 2, 60);
+
+    ctx.strokeStyle = 'rgba(0,209,255,0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(40, titleH - 10); ctx.lineTo(PANEL_W - 40, titleH - 10); ctx.stroke();
+
+    buttons.forEach(btn => {
+      const [x1, y1, x2, y2] = btn.rect;
+      const color = btn.action.color || '#0a1520';
+      const emissive = btn.action.emissive || '#00d1ff';
+
+      ctx.fillStyle = color;
+      ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+
+      ctx.strokeStyle = emissive;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+      ctx.fillStyle = btn.action.textColor || '#e8f4ff';
+      ctx.font = 'bold 28px Segoe UI, Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(btn.label, (x1 + x2) / 2, (y1 + y2) / 2 + 10);
     });
   }
-});
 
-let hudMode = 'head';
-window.toggleHUDMode = function() {
-  const hud = document.getElementById('hudPanel');
-  const head = document.getElementById('head');
-  const leftHand = document.getElementById('leftHand');
-  if (!hud || !head || !leftHand) return;
-  if (hudMode === 'head') {
-    hudMode = 'hand';
-    hud.parentEl.removeChild(hud);
-    leftHand.appendChild(hud);
-    hud.setAttribute('position', '0 0.08 -0.08');
-    hud.setAttribute('rotation', '0 0 0');
-    hud.setAttribute('scale', '0.18 0.18 0.18');
-    showToast('HUD no pulso');
-  } else {
-    hudMode = 'head';
-    hud.parentEl.removeChild(hud);
-    head.appendChild(hud);
-    hud.setAttribute('position', '0 -0.32 -0.9');
-    hud.setAttribute('rotation', '0 0 0');
-    hud.setAttribute('scale', '0.5 0.5 0.5');
-    showToast('HUD na cabeça');
+  draw();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+
+  const material = new THREE.MeshBasicMaterial({
+    map: texture, transparent: false, side: THREE.FrontSide,
+  });
+
+  const geometry = new THREE.PlaneGeometry(width, height);
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.userData = { type: 'panel', isClickable: true, buttons, canvas, ctx, redraw: draw };
+
+  return mesh;
+}
+
+function panelHitFromUV(uv, buttons) {
+  const cx = uv.x * PANEL_W, cy = (1 - uv.y) * PANEL_H;
+  for (const btn of buttons) {
+    const [x1, y1, x2, y2] = btn.rect;
+    if (cx >= x1 && cx <= x2 && cy >= y1 && cy <= y2) return btn;
   }
+  return null;
+}
+
+// HANDLERS
+function handleCardClick(mesh, altIdx) {
+  const state = mesh.userData.state;
+  if (state.respondida) return;
+  const alt = state.q.alternativas[altIdx];
+  const letra = alt.trim().charAt(0).toUpperCase();
+  const isCorreta = (letra === state.q.correta);
+  state.respondida = true;
+  state.selectedIdx = altIdx;
+  state.isCorreta = isCorreta;
+  state.letraEscolhida = letra;
+  mesh.userData.redraw();
+  mesh.userData.texture.needsUpdate = true;
+  updateHUD();
+  showToast(isCorreta ? '✅ Correto! (' + letra + ')' : '❌ Errado. Correta: ' + state.q.correta);
+  if (navigator.vibrate) navigator.vibrate(isCorreta ? 40 : 90);
+}
+
+function handlePanelClick(mesh, btn) {
+  const action = btn.action.name;
+  if (window.panelActions && window.panelActions[action]) {
+    window.panelActions[action]();
+  }
+}
+
+function showToast(msg, ms) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => { t.style.display = 'none'; }, ms || 1600);
+}
+
+function updateHUD() {
+  let count = 0, ans = 0;
+  document.querySelector('a-scene').object3D.traverse(o => {
+    if (o.userData && o.userData.type === 'card') {
+      count++;
+      if (o.userData.state.respondida) ans++;
+    }
+  });
+  const txt = ans + '/' + count;
+  const st = document.getElementById('status');
+  if (st) st.textContent = txt + ' respondidas';
+  const hd = document.getElementById('hudVRText');
+  if (hd) hd.setAttribute('value', txt);
+}
+
+// AÇÕES DO PAINEL
+window.panelActions = {
+  dark: () => {
+    document.getElementById('sky').setAttribute('material', 'shader: flat; color: #060913');
+    showToast('TÁTICO');
+  },
+  beach: () => {
+    document.getElementById('sky').setAttribute('material',
+      'shader: flat; src: url(https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg); color: #fff');
+    showToast('PRAIA');
+  },
+  office: () => {
+    document.getElementById('sky').setAttribute('material',
+      'shader: flat; src: url(https://cdn.aframe.io/360-image-gallery-boilerplate/img/city.jpg); color: #fff');
+    showToast('ESCRITÓRIO');
+  },
+  library: () => {
+    document.getElementById('sky').setAttribute('material',
+      'shader: flat; src: url(https://cdn.aframe.io/360-image-gallery-boilerplate/img/cubes.jpg); color: #fff');
+    showToast('BIBLIOTECA');
+  },
+  space: () => {
+    document.getElementById('sky').setAttribute('material', 'shader: flat; color: #000008');
+    showToast('ESPAÇO');
+  },
+  passthrough: () => window.enablePassthrough(),
+  brightnessDown: () => {
+    const amb = document.getElementById('ambientLight');
+    const cur = parseFloat(amb.getAttribute('light').intensity) || 0.8;
+    const nv = Math.max(0.3, cur - 0.1);
+    amb.setAttribute('light', 'intensity', nv.toFixed(2));
+    showToast('Brilho ' + Math.round(nv * 100) + '%');
+  },
+  brightnessUp: () => {
+    const amb = document.getElementById('ambientLight');
+    const cur = parseFloat(amb.getAttribute('light').intensity) || 0.8;
+    const nv = Math.min(1.0, cur + 0.1);
+    amb.setAttribute('light', 'intensity', nv.toFixed(2));
+    showToast('Brilho ' + Math.round(nv * 100) + '%');
+  },
+  organizar: () => {
+    let i = 0;
+    document.querySelector('a-scene').object3D.traverse(o => {
+      if (o.userData && o.userData.type === 'card') {
+        const cols = 4, sp = 2.6;
+        o.position.set((i % cols) * sp - ((cols - 1) * sp / 2), 1.6,
+                       Math.floor(i / cols) * -sp - 2.5);
+        i++;
+      }
+    });
+    showToast('📐 GRADE');
+  },
+  porMateria: () => {
+    const by = {};
+    document.querySelector('a-scene').object3D.traverse(o => {
+      if (o.userData && o.userData.type === 'card') {
+        const m = o.userData.state.q.materia || 'Geral';
+        (by[m] = by[m] || []).push(o);
+      }
+    });
+    const names = Object.keys(by);
+    names.forEach((mat, s) => {
+      const cluster = by[mat];
+      const baseX = (s - (names.length - 1) / 2) * 5.5;
+      cluster.forEach((c, i) => {
+        const col = i % 2, row = Math.floor(i / 2);
+        c.position.set(baseX + (col - 0.5) * 2.6, 1.6, -2.5 - row * 2.6);
+      });
+    });
+    showToast('🎯 POR MATÉRIA');
+  },
+  espalhar: () => {
+    document.querySelector('a-scene').object3D.traverse(o => {
+      if (o.userData && o.userData.type === 'card') {
+        o.position.set((Math.random() - 0.5) * 10,
+                       1.0 + Math.random() * 1.5,
+                       -2 - Math.random() * 8);
+      }
+    });
+    showToast('🎲 ESPALHADO');
+  },
+  salvar: () => {
+    const L = {};
+    document.querySelector('a-scene').object3D.traverse(o => {
+      if (o.userData && o.userData.type === 'card') {
+        L[o.uuid] = { p: o.position.toArray(), r: o.rotation.toArray() };
+      }
+    });
+    try { localStorage.setItem('pmsc_layout_v3', JSON.stringify(L)); } catch (e) {}
+    showToast('💾 Salvo');
+  },
+  carregar: () => {
+    try {
+      const L = JSON.parse(localStorage.getItem('pmsc_layout_v3') || '{}');
+      let n = 0;
+      document.querySelector('a-scene').object3D.traverse(o => {
+        if (o.userData && o.userData.type === 'card' && L[o.uuid]) {
+          o.position.fromArray(L[o.uuid].p);
+          o.rotation.fromArray(L[o.uuid].r);
+          n++;
+        }
+      });
+      showToast('📂 ' + n + ' cartões');
+    } catch (e) { showToast('❌ Erro'); }
+  },
+  toggleHUD: () => {
+    const hud = document.getElementById('hudPanel');
+    if (hud) {
+      const cur = hud.getAttribute('position').y;
+      hud.setAttribute('position', { x: 0, y: cur === -0.32 ? 0.4 : -0.32, z: -0.9 });
+      showToast(cur === -0.32 ? 'HUD superior' : 'HUD inferior');
+    }
+  },
+  sairVR: () => {
+    const s = document.querySelector('a-scene').renderer.xr.getSession();
+    if (s) s.end();
+  },
+  maoMais: () => {
+    const l = document.getElementById('leftHand');
+    const r = document.getElementById('rightHand');
+    const cur = parseFloat(l.getAttribute('scale').x) || 1;
+    const nv = Math.min(2.0, cur + 0.1);
+    l.setAttribute('scale', `${nv} ${nv} ${nv}`);
+    r.setAttribute('scale', `${nv} ${nv} ${nv}`);
+    showToast('Mão + (' + nv.toFixed(1) + ')');
+  },
+  maoMenos: () => {
+    const l = document.getElementById('leftHand');
+    const r = document.getElementById('rightHand');
+    const cur = parseFloat(l.getAttribute('scale').x) || 1;
+    const nv = Math.max(0.2, cur - 0.1);
+    l.setAttribute('scale', `${nv} ${nv} ${nv}`);
+    r.setAttribute('scale', `${nv} ${nv} ${nv}`);
+    showToast('Mão - (' + nv.toFixed(1) + ')');
+  },
+  alturaMais: () => {
+    const cam = document.getElementById('head');
+    const cur = parseFloat(cam.getAttribute('position').y) || 1.6;
+    const nv = Math.min(2.5, cur + 0.1);
+    cam.setAttribute('position', { x: 0, y: nv, z: 0 });
+    showToast('Altura ' + nv.toFixed(1) + 'm');
+  },
+  alturaMenos: () => {
+    const cam = document.getElementById('head');
+    const cur = parseFloat(cam.getAttribute('position').y) || 1.6;
+    const nv = Math.max(0.4, cur - 0.1);
+    cam.setAttribute('position', { x: 0, y: nv, z: 0 });
+    showToast('Altura ' + nv.toFixed(1) + 'm');
+  },
 };
 
+function saveCardPos(mesh) {
+  try {
+    const L = JSON.parse(localStorage.getItem('pmsc_layout_v3') || '{}');
+    L[mesh.uuid] = { p: mesh.position.toArray(), r: mesh.rotation.toArray() };
+    localStorage.setItem('pmsc_layout_v3', JSON.stringify(L));
+  } catch (e) {}
+}
+
+// PASSTHROUGH
 window.enablePassthrough = async function() {
   if (!navigator.xr) { showToast('❌ WebXR não suportado'); return; }
   try {
@@ -442,12 +803,11 @@ window.enablePassthrough = async function() {
     const cur = renderer.xr.getSession();
     if (cur) { await cur.end(); await new Promise(r => setTimeout(r, 400)); }
     document.getElementById('sky').setAttribute('visible', 'false');
-    document.getElementById('stars').setAttribute('visible', 'false');
     sceneEl.object3D.background = null;
     renderer.setClearColor(0x000000, 0);
     const sess = await navigator.xr.requestSession('immersive-ar', {
       requiredFeatures: ['local-floor'],
-      optionalFeatures: ['passthrough', 'hand-tracking', 'hit-test', 'bounded-floor'],
+      optionalFeatures: ['passthrough', 'hand-tracking', 'hit-test'],
     });
     try { await sess.updateRenderState({ passthroughEnabled: true }); } catch (e) {}
     await renderer.xr.setSession(sess);
@@ -460,308 +820,66 @@ window.enablePassthrough = async function() {
   } catch (err) { showToast('❌ ' + err.message, 4000); }
 };
 
-let starsPoints = null;
-function createStarsPoints() {
-  const c = document.getElementById('stars'); if (!c) return;
-  if (starsPoints) { c.object3D.remove(starsPoints);
-    starsPoints.geometry.dispose(); starsPoints.material.dispose(); }
-  const geo = new THREE.BufferGeometry();
-  const N = 800; const pos = new Float32Array(N * 3);
-  for (let i = 0; i < N; i++) {
-    const r = 25 + Math.random() * 20;
-    const t = Math.random() * Math.PI * 2;
-    const p = Math.acos(2 * Math.random() - 1);
-    pos[i*3] = r*Math.sin(p)*Math.cos(t);
-    pos[i*3+1] = r*Math.sin(p)*Math.sin(t);
-    pos[i*3+2] = r*Math.cos(p);
-  }
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const mat = new THREE.PointsMaterial({
-    color: 0xaaffff, size: 0.06, sizeAttenuation: true,
-    transparent: true, opacity: 0.85, depthWrite: false });
-  starsPoints = new THREE.Points(geo, mat);
-  c.object3D.add(starsPoints);
-}
-
-function showToast(msg, ms) {
-  const t = document.getElementById('toast'); if (!t) return;
-  t.textContent = msg; t.style.display = 'block';
-  clearTimeout(window._toastT);
-  window._toastT = setTimeout(() => { t.style.display = 'none'; }, ms || 1600);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// Textura neon tática (canvas)
-// ═══════════════════════════════════════════════════════════════════
-function makeCardTexture() {
-  const cv = document.createElement('canvas');
-  cv.width = 512; cv.height = 512;
-  const ctx = cv.getContext('2d');
-  const g = ctx.createLinearGradient(0, 0, 512, 512);
-  g.addColorStop(0, '#060913');
-  g.addColorStop(0.5, '#0a1520');
-  g.addColorStop(1, '#0d1b2a');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, 512, 512);
-  // Grid tático sutil
-  ctx.strokeStyle = 'rgba(0, 209, 255, 0.06)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 512; i += 32) {
-    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
-  }
-  // Borda ciano
-  ctx.strokeStyle = '#00d1ff'; ctx.lineWidth = 6;
-  ctx.strokeRect(3, 3, 506, 506);
-  // Cantos táticos (L-shapes)
-  ctx.strokeStyle = '#00d1ff'; ctx.lineWidth = 8;
-  const cs = 40;
-  ctx.beginPath(); ctx.moveTo(15, 15+cs); ctx.lineTo(15, 15); ctx.lineTo(15+cs, 15); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(512-15-cs, 15); ctx.lineTo(512-15, 15); ctx.lineTo(512-15, 15+cs); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(15, 512-15-cs); ctx.lineTo(15, 512-15); ctx.lineTo(15+cs, 512-15); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(512-15-cs, 512-15); ctx.lineTo(512-15, 512-15); ctx.lineTo(512-15, 512-15-cs); ctx.stroke();
-  const tex = new THREE.CanvasTexture(cv);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-const CARD_TEX = makeCardTexture();
-
-// ═══════════════════════════════════════════════════════════════════
-// CRIA BLOCO — offsets z-fighting corrigidos + hover tátil
-// ═══════════════════════════════════════════════════════════════════
-function createBlock(q, i) {
-  const cols = 4, spacing = 2.6;
-  const x = (i % cols) * spacing - ((cols - 1) * spacing / 2);
-  const z = Math.floor(i / cols) * -2.8 - 3.0;
-  const y = 1.5;
-
-  const root = document.createElement('a-entity');
-  root.setAttribute('id', 'block-' + i);
-  root.setAttribute('position', `${x} ${y} ${z}`);
-  root.setAttribute('class', 'grabbable');
-  root.setAttribute('data-materia', q.materia || 'Geral');
-  root.setAttribute('geometry', 'primitive: box; width: 2.2; height: 2.0; depth: 0.06');
-  root.setAttribute('material', 'shader: flat; color: #060913; emissive: #00d1ff; emissiveIntensity: 0.18; metalness: 0.3; roughness: 0.6');
-  root.userData = { respondida: false, letraEscolhida: null };
-
-  // Face frontal do cartão (textura neon)
-  const face = document.createElement('a-plane');
-  face.setAttribute('geometry', 'primitive: plane; width: 2.16; height: 1.96');
-  face.setAttribute('material', 'shader: flat; transparent: true; opacity: 0.95; src: #cardTex');
-  face.setAttribute('position', '0 0 0.032');
-  face.setAttribute('class', 'grabbable');
-  root.appendChild(face);
-
-  // Título — z = 0.04 (evita z-fighting)
-  const title = document.createElement('a-text');
-  title.setAttribute('value', '▸ ' + (i + 1) + '. ' + q.materia.toUpperCase());
-  title.setAttribute('color', '#00d1ff');
-  title.setAttribute('width', '2.2');
-  title.setAttribute('align', 'center');
-  title.setAttribute('position', '0 0.85 0.04');
-  title.setAttribute('class', 'grabbable');
-  title.setAttribute('font', 'mozillavr');
-  title.setAttribute('shader', 'msdf');
-  title.setAttribute('negate', 'false');
-  root.appendChild(title);
-
-  // Pergunta — z = 0.04
-  const qtext = document.createElement('a-text');
-  const shortQ = q.pergunta.length > 150 ? q.pergunta.slice(0, 147) + '...' : q.pergunta;
-  qtext.setAttribute('value', shortQ);
-  qtext.setAttribute('color', '#e8f4ff');
-  qtext.setAttribute('width', '2.0');
-  qtext.setAttribute('align', 'center');
-  qtext.setAttribute('position', '0 0.5 0.04');
-  qtext.setAttribute('wrap-count', '38');
-  qtext.setAttribute('class', 'grabbable');
-  qtext.setAttribute('font', 'mozillavr');
-  qtext.setAttribute('shader', 'msdf');
-  qtext.setAttribute('negate', 'false');
-  root.appendChild(qtext);
-
-  // Alternativas — hover tátil + z escalonado
-  q.alternativas.forEach((alt, idx) => {
-    const letra = alt.trim().charAt(0).toUpperCase();
-    const isCorreta = (letra === q.correta);
-    const rowY = -0.05 - idx * 0.28;
-
-    const row = document.createElement('a-entity');
-    row.setAttribute('position', `0 ${rowY} 0.05`);
-
-    const bg = document.createElement('a-plane');
-    bg.setAttribute('id', `alt-${i}-${idx}`);
-    bg.setAttribute('geometry', 'primitive: plane; width: 2.0; height: 0.24');
-    bg.setAttribute('material', 'shader: flat; color: #0a1520; emissive: #000000; emissiveIntensity: 0; side: double; opacity: 0.95; transparent: true');
-    bg.setAttribute('class', 'clickable ui-btn');
-    bg.setAttribute('data-i', i);
-    bg.setAttribute('data-letra', letra);
-    bg.setAttribute('data-correta', isCorreta ? 'true' : 'false');
-    // Hover tátil: escala + brilho
-    bg.setAttribute('animation__hover',
-      'property: scale; to: 1.05 1.05 1.05; dur: 120; startEvents: raycaster-intersection');
-    bg.setAttribute('animation__hoverout',
-      'property: scale; to: 1 1 1; dur: 120; startEvents: raycaster-intersection-cleared');
-    bg.setAttribute('animation__glow',
-      'property: material.emissiveIntensity; from: 0; to: 0.5; dur: 120; startEvents: raycaster-intersection');
-
-    // Texto — z = 0.006 (dentro do row, que já está a 0.05)
-    const txt = document.createElement('a-text');
-    txt.setAttribute('value', alt.length > 58 ? alt.slice(0, 55) + '...' : alt);
-    txt.setAttribute('color', '#b8d4e8');
-    txt.setAttribute('width', '1.85');
-    txt.setAttribute('position', '-0.92 0 0.006');
-    txt.setAttribute('font', 'mozillavr');
-    txt.setAttribute('shader', 'msdf');
-    txt.setAttribute('negate', 'false');
-
-    bg.appendChild(txt);
-    row.appendChild(bg);
-
-    // Click isolado
-    bg.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (root.userData.respondida) return;
-      root.userData.respondida = true;
-      root.userData.letraEscolhida = letra;
-
-      // Limpa SÓ neste bloco
-      root.querySelectorAll('[data-correta]').forEach(el => {
-        el.setAttribute('material', 'emissive', '#000000');
-        el.setAttribute('material', 'emissiveIntensity', '0');
-        delete el.dataset.hl;
-      });
-
-      // Aplica cor apenas no bg clicado
-      const cor = isCorreta ? '#00aa55' : '#aa2222';
-      bg.setAttribute('material', 'color', cor);
-      bg.setAttribute('material', 'emissive', cor);
-      bg.setAttribute('material', 'emissiveIntensity', '0.8');
-      bg.dataset.respondida = 'true';
-
-      // Animação de clique (flash)
-      bg.setAttribute('animation__click',
-        'property: scale; from: 1.05 1.05 1.05; to: 1.15 1.15 1.15; dur: 100; dir: alternate; loop: 2');
-
-      updateHUD();
-      showToast(isCorreta ? '✅ Correto! (' + letra + ')' : '❌ Errado. Correta: ' + q.correta);
-    });
-
-    root.appendChild(row);
-  });
-
-  return root;
-}
-
-function updateHUD() {
-  let total = 0, respondidas = 0;
-  document.querySelectorAll('[data-correta]').forEach(el => {
-    total++;
-    if (el.dataset.respondida === 'true') respondidas++;
-  });
-  const txt = respondidas + '/' + total;
-  const st = document.getElementById('status');
-  if (st) st.textContent = txt + ' respondidas';
-  const hd = document.getElementById('hudVRText');
-  if (hd) hd.setAttribute('value', txt);
-}
-
+// TIMER
 let timerStart = Date.now();
 setInterval(() => {
-  const el = document.getElementById('timerText'); if (!el) return;
-  const elapsed = Math.floor((Date.now() - timerStart) / 1000);
-  const m = Math.floor(elapsed / 60), s = elapsed % 60;
-  el.setAttribute('value', (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s);
+  const el = document.getElementById('timerText');
+  if (!el) return;
+  const s = Math.floor((Date.now() - timerStart) / 1000);
+  const m = Math.floor(s / 60), r = s % 60;
+  el.setAttribute('value', (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r);
 }, 1000);
 
-window.organizarGrade = function() {
-  document.querySelectorAll('[id^="block-"]').forEach((b, i) => {
-    const cols = 4, sp = 2.6;
-    const x = (i % cols) * sp - ((cols - 1) * sp / 2);
-    const z = Math.floor(i / cols) * -2.8 - 3.0;
-    b.setAttribute('animation', `property: position; to: ${x} 1.5 ${z}; dur: 800`);
-  });
-  showToast('📐 GRADE TÁTICA');
-};
-
-window.organizarPorMateria = function() {
-  const by = {};
-  document.querySelectorAll('[id^="block-"]').forEach(b => {
-    const m = b.getAttribute('data-materia') || 'Geral';
-    (by[m] = by[m] || []).push(b);
-  });
-  const names = Object.keys(by);
-  names.forEach((mat, s) => {
-    const cluster = by[mat];
-    const baseX = (s - (names.length - 1) / 2) * 5.5;
-    cluster.forEach((b, i) => {
-      const col = i % 2, row = Math.floor(i / 2);
-      b.setAttribute('animation',
-        `property: position; to: ${baseX + (col - 0.5) * 2.6} 1.5 ${-3 - row * 2.8}; dur: 900`);
-    });
-  });
-  showToast('🎯 POR MATÉRIA (' + names.length + ')');
-};
-
-window.espalhar = function() {
-  document.querySelectorAll('[id^="block-"]').forEach(b => {
-    const x = (Math.random() - 0.5) * 14;
-    const z = (Math.random() - 0.5) * 14 - 3;
-    const y = 0.8 + Math.random() * 2.5;
-    b.setAttribute('animation', `property: position; to: ${x} ${y} ${z}; dur: 800`);
-  });
-  showToast('🎲 ESPALHADO');
-};
-
-const STORAGE_KEY = 'pmsc_arena_layout_v2';
-function savePos(id) {
-  if (!id) return;
-  const el = document.getElementById(id); if (!el) return;
-  try {
-    const L = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    L[id] = {
-      p: el.getAttribute('position'),
-      r: el.getAttribute('rotation') || { x: 0, y: 0, z: 0 },
-      s: el.getAttribute('scale') || { x: 1, y: 1, z: 1 },
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(L));
-  } catch (e) {}
-}
-
-window.salvarLayout = function() {
-  const L = {};
-  document.querySelectorAll('.grabbable').forEach(el => {
-    if (!el.id) return;
-    L[el.id] = {
-      p: el.getAttribute('position'),
-      r: el.getAttribute('rotation') || { x: 0, y: 0, z: 0 },
-      s: el.getAttribute('scale') || { x: 1, y: 1, z: 1 },
-    };
-  });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(L));
-  showToast('💾 ' + Object.keys(L).length + ' objetos salvos');
-};
-
-window.carregarLayout = function() {
-  try {
-    const L = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    let n = 0;
-    Object.keys(L).forEach(id => {
-      const el = document.getElementById(id); if (!el) return;
-      el.setAttribute('position', L[id].p);
-      if (L[id].r) el.setAttribute('rotation', L[id].r);
-      if (L[id].s) el.setAttribute('scale', L[id].s);
-      n++;
-    });
-    showToast('📂 ' + n + ' objetos restaurados');
-  } catch (e) { showToast('❌ Erro'); }
-};
-
+// INIT
 const QUESTIONS = __Q_JSON__;
+
 window.addEventListener('load', () => {
-  const world = document.getElementById('world'); if (!world) return;
-  QUESTIONS.forEach((q, i) => world.appendChild(createBlock(q, i)));
-  setTimeout(updateHUD, 500);
+  const scene = document.querySelector('a-scene');
+  if (!scene) return;
+  if (scene.hasLoaded) initCards();
+  else scene.addEventListener('loaded', initCards);
+
+  function initCards() {
+    const root = scene.object3D;
+    QUESTIONS.slice(0, 18).forEach((q, i) => root.add(createCard(q, i)));
+
+    const panelActions = [
+      { name: 'dark', label: 'TÁTICO', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'beach', label: 'PRAIA', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'office', label: 'ESCRITÓRIO', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'library', label: 'BIBLIOTECA', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'space', label: 'ESPAÇO', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'passthrough', label: 'PASSTHROUGH', color: '#0a1520', emissive: '#ffaa00' },
+      { name: 'brightnessDown', label: '◐-', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'brightnessUp', label: '◐+', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'organizar', label: 'GRADE', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'porMateria', label: 'POR MATÉRIA', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'espalhar', label: 'ESPALHAR', color: '#0a1520', emissive: '#ffaa00' },
+      { name: 'salvar', label: 'SALVAR', color: '#0a1520', emissive: '#00ff88' },
+      { name: 'carregar', label: 'CARREGAR', color: '#0a1520', emissive: '#ffaa00' },
+      { name: 'toggleHUD', label: 'HUD', color: '#0a1520', emissive: '#00ff88' },
+      { name: 'sairVR', label: 'SAIR VR', color: '#0a1520', emissive: '#ff2222', textColor: '#ff2222' },
+    ];
+    const mainPanel = createPanel(3.4, 2.4, panelActions, '⬢ COMANDO TÁTICO');
+    mainPanel.position.set(0, 1.6, -2.2);
+    root.add(mainPanel);
+
+    const calibActions = [
+      { name: 'maoMais', label: 'MÃO +', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'maoMenos', label: 'MÃO -', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'alturaMais', label: 'ALT +', color: '#0a1520', emissive: '#00d1ff' },
+      { name: 'alturaMenos', label: 'ALT -', color: '#0a1520', emissive: '#00d1ff' },
+    ];
+    const calibPanel = createPanel(1.6, 1.4, calibActions, '◉ SENSORES');
+    calibPanel.position.set(2.2, 1.6, -2.2);
+    calibPanel.rotation.y = -0.3;
+    root.add(calibPanel);
+
+    setTimeout(updateHUD, 500);
+    console.log('[ENGINE] ' + QUESTIONS.slice(0, 18).length + ' cartões + 2 painéis');
+  }
 });
+
 document.getElementById('enter').addEventListener('click', () => {
   document.querySelector('a-scene').enterVR().catch(e => showToast('❌ ' + e.message));
 });
@@ -771,20 +889,19 @@ document.getElementById('enter').addEventListener('click', () => {
 html, body {
   margin: 0; padding: 0; width: 100%; height: 100vh;
   overflow: hidden; background: #060913;
-  font-family: 'Segoe UI', 'Inter', sans-serif;
+  font-family: 'Segoe UI', Arial, sans-serif;
 }
 #hud {
-  position: fixed; top: 12px; left: 12px; z-index: 99999;
-  background: rgba(6, 9, 19, 0.94); color: #00d1ff;
-  border: 1px solid rgba(0, 209, 255, 0.5);
-  padding: 12px 16px; border-radius: 8px;
-  font-size: 12px; max-width: 480px;
-  box-shadow: 0 0 20px rgba(0, 209, 255, 0.15);
-  backdrop-filter: blur(6px);
+  position: fixed; top: 10px; left: 10px; z-index: 99999;
+  background: rgba(6,9,19,0.94); color: #00d1ff;
+  border: 1px solid rgba(0,209,255,0.5);
+  padding: 10px 14px; border-radius: 6px;
+  font-size: 12px; max-width: 460px;
+  box-shadow: 0 0 20px rgba(0,209,255,0.15);
 }
 #hud .title { font-weight: 900; color: #fff; font-size: 13px; letter-spacing: 2px; }
-#hud .sub { font-weight: 600; color: #00d1ff; font-size: 11px; margin-top: 4px; }
-#hud .counter { margin-top: 6px; color: #00ff88; font-weight: 700; }
+#hud .sub { color: #00d1ff; font-size: 11px; margin-top: 3px; }
+#hud .counter { margin-top: 5px; color: #00ff88; font-weight: 700; }
 #enter {
   position: fixed; bottom: 16px; left: 50%;
   transform: translateX(-50%); z-index: 99999;
@@ -792,26 +909,24 @@ html, body {
   color: #060913; border: 2px solid #00d1ff;
   padding: 14px 40px; border-radius: 6px;
   font-weight: 900; font-size: 14px; letter-spacing: 2px;
-  cursor: pointer; box-shadow: 0 0 24px rgba(0, 209, 255, 0.5);
+  cursor: pointer; box-shadow: 0 0 24px rgba(0,209,255,0.5);
 }
-#enter:hover { background: linear-gradient(90deg, #00e5ff, #0070d8); }
 #toast {
   position: fixed; bottom: 90px; left: 50%;
   transform: translateX(-50%); z-index: 999999;
-  background: rgba(6, 9, 19, 0.96); color: #00d1ff;
-  border: 2px solid #00d1ff; padding: 12px 24px;
-  border-radius: 8px; font-size: 13px; font-weight: 700;
+  background: rgba(6,9,19,0.96); color: #00d1ff;
+  border: 2px solid #00d1ff; padding: 10px 22px;
+  border-radius: 6px; font-size: 13px; font-weight: 700;
   display: none; pointer-events: none;
-  box-shadow: 0 0 24px rgba(0, 209, 255, 0.6);
-  letter-spacing: 1px;
+  box-shadow: 0 0 20px rgba(0,209,255,0.5);
 }
 </style>
 </head>
 <body>
 
 <div id="hud">
-  <div class="title">⬢ PMSC · CENTRO DE COMANDO</div>
-  <div class="sub">__MODO__ · GRIP=MOVER · TRIGGER=RESPONDER</div>
+  <div class="title">⬢ PMSC · ENGINE OTIMIZADA</div>
+  <div class="sub">__MODO__ · FFR 1.0 · DRAW CALLS ~26</div>
   <div class="counter">STATUS: <span id="status">0/__LEN__</span></div>
 </div>
 <button id="enter">▶ ENTRAR NO VR</button>
@@ -819,30 +934,29 @@ html, body {
 
 <a-scene id="scene"
   background="color: #060913"
-  renderer="colorManagement: true; antialias: true; highRefreshRate: true; foveationLevel: 2; powerPreference: high-performance; alpha: true"
-  webxr="optionalFeatures: hand-tracking, local-floor, bounded-floor, hit-test, passthrough"
+  renderer="colorManagement: true; antialias: true; precision: high; sortObjects: false; powerPreference: high-performance; foveationLevel: high"
+  webxr="referenceSpaceType: local-floor; requiredFeatures: local-floor; optionalFeatures: hand-tracking, bounded-floor, hit-test, passthrough"
   vr-mode-ui="enabled: true"
   embedded
   style="width: 100%; height: 100vh;">
 
   <a-sky id="sky" material="shader: flat; color: #060913"></a-sky>
-  <a-entity id="stars" visible="false"></a-entity>
 
   <a-entity id="ambientLight" light="type: ambient; intensity: 0.8"></a-entity>
-  <a-entity light="type: directional; intensity: 0.4" position="3 6 4"></a-entity>
-  <a-entity light="type: point; color: #00d1ff; intensity: 0.6; distance: 8" position="0 3 -2"></a-entity>
-  <a-plane rotation="-90 0 0" width="80" height="80" color="#0a0f1a" material="shader: flat; opacity: 0.9"></a-plane>
+  <a-entity light="type: directional; intensity: 0.4; castShadow: false" position="3 6 4"></a-entity>
 
-  <a-entity id="rig" position="0 0 3" movement-controls="fly: true; speed: 0.3">
-    <a-entity id="head" camera look-controls wasd-controls="acceleration: 20" position="0 1.65 0">
+  <a-plane rotation="-90 0 0" width="80" height="80" color="#0a0f1a"
+    material="shader: flat; opacity: 1; transparent: false"></a-plane>
+
+  <a-entity id="rig" position="0 0 0">
+    <a-entity id="head" camera look-controls position="0 1.6 0">
       <a-entity id="hudPanel" position="0 -0.32 -0.9" scale="0.5 0.5 0.5">
-        <a-plane width="1.1" height="0.3" color="#060913" opacity="0.9" material="shader: flat"></a-plane>
         <a-text id="hudVRText" value="0/__LEN__" color="#00d1ff" width="1.0"
-          align="center" position="0 0.06 0.004" font="mozillavr" shader="msdf" negate="false"></a-text>
+          align="center" position="0 0.06 0.004"
+          font="mozillavr" shader="msdf" negate="false"></a-text>
         <a-text id="timerText" value="00:00" color="#00ff88" width="0.45"
-          align="right" position="0.35 -0.07 0.004" font="mozillavr" shader="msdf" negate="false"></a-text>
-        <a-text value="◉ LIVE" color="#ffaa00" width="0.4"
-          align="left" position="-0.35 -0.07 0.004" font="mozillavr" shader="msdf" negate="false"></a-text>
+          align="right" position="0.35 -0.07 0.004"
+          font="mozillavr" shader="msdf" negate="false"></a-text>
       </a-entity>
     </a-entity>
 
@@ -851,7 +965,7 @@ html, body {
       hand-tracking-controls="hand: left; modelStyle: dots; color: #00d1ff"
       hand-live="hand: left"
       vr-hand
-      raycaster="objects: .clickable, .ui-btn, .grabbable; far: 20; interval: 50"
+      raycaster="objects: .clickable; far: 20; interval: 100"
       line="color: #00d1ff; opacity: 0.9">
     </a-entity>
 
@@ -860,215 +974,10 @@ html, body {
       hand-tracking-controls="hand: right; modelStyle: dots; color: #ff8a00"
       hand-live="hand: right"
       vr-hand
-      raycaster="objects: .clickable, .ui-btn, .grabbable; far: 20; interval: 50"
+      raycaster="objects: .clickable; far: 20; interval: 100"
       line="color: #ff8a00; opacity: 0.9">
     </a-entity>
   </a-entity>
-
-  <!-- ═══════════ PAINEL PRINCIPAL (cockpit 2.2m, curvado) ═══════════ -->
-  <a-entity id="mainPanel" position="0 2.3 -2.2"
-    rotation="0 0 0"
-    class="grabbable"
-    geometry="primitive: box; width: 3.4; height: 2.2; depth: 0.05"
-    material="shader: flat; color: #060913; emissive: #00d1ff; emissiveIntensity: 0.08; metalness: 0.4; roughness: 0.5; opacity: 0.96; transparent: true"
-    painel-sistema>
-
-    <!-- Borda neon decorativa -->
-    <a-plane geometry="primitive: plane; width: 3.36; height: 2.16"
-      material="shader: flat; color: #00d1ff; opacity: 0.15; transparent: true"
-      position="0 0 0.026"></a-plane>
-
-    <!-- Título -->
-    <a-text value="⬢ PMSC · PAINEL TÁTICO"
-      color="#00d1ff" width="3.2" align="center" position="0 0.92 0.03"
-      font="mozillavr" shader="msdf" negate="false"></a-text>
-    <a-text value="SISTEMA DE COMANDO DE ESTUDO" color="#5a7a9a" width="2.4"
-      align="center" position="0 0.82 0.03"
-      font="mozillavr" shader="msdf" negate="false"></a-text>
-
-    <!-- Linha 1: Ambientes -->
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="dark"
-      position="-1.2 0.6 0.03" geometry="primitive: plane; width: 0.65; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="TÁTICO" color="#00d1ff" width="0.55" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="beach"
-      position="-0.5 0.6 0.03" geometry="primitive: plane; width: 0.65; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="PRAIA" color="#00d1ff" width="0.55" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="office"
-      position="0.2 0.6 0.03" geometry="primitive: plane; width: 0.65; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="ESCRITÓRIO" color="#00d1ff" width="0.55" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="library"
-      position="0.9 0.6 0.03" geometry="primitive: plane; width: 0.65; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="BIBLIOTECA" color="#00d1ff" width="0.55" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <!-- Linha 2: Espaço + Passthrough + Brilho -->
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="space"
-      position="-1.2 0.3 0.03" geometry="primitive: plane; width: 0.65; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="ESPAÇO" color="#00d1ff" width="0.55" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="passthrough"
-      position="-0.5 0.3 0.03" geometry="primitive: plane; width: 0.65; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #ffaa00; emissiveIntensity: 0.2; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.2; to: 0.7; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="PASSTHROUGH" color="#ffaa00" width="0.55" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="brightnessDown"
-      position="0.2 0.3 0.03" geometry="primitive: plane; width: 0.4; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="◐-" color="#00d1ff" width="0.4" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="brightnessUp"
-      position="0.65 0.3 0.03" geometry="primitive: plane; width: 0.4; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="◐+" color="#00d1ff" width="0.4" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="toggleHUD"
-      position="1.2 0.3 0.03" geometry="primitive: plane; width: 0.55; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #00ff88; emissiveIntensity: 0.2; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.2; to: 0.7; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="HUD" color="#00ff88" width="0.5" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <!-- Linha 3: Organização -->
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="organizar"
-      position="-1.2 0.0 0.03" geometry="primitive: plane; width: 0.65; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="GRADE" color="#00d1ff" width="0.55" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="porMateria"
-      position="-0.5 0.0 0.03" geometry="primitive: plane; width: 0.65; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="POR MATÉRIA" color="#00d1ff" width="0.55" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="espalhar"
-      position="0.2 0.0 0.03" geometry="primitive: plane; width: 0.65; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #ffaa00; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="ESPALHAR" color="#ffaa00" width="0.55" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="salvar"
-      position="0.9 0.0 0.03" geometry="primitive: plane; width: 0.6; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #00ff88; emissiveIntensity: 0.2; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.2; to: 0.7; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="SALVAR" color="#00ff88" width="0.5" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <!-- Linha 4: Carregar + Sair -->
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="carregar"
-      position="-1.2 -0.3 0.03" geometry="primitive: plane; width: 0.6; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #ffaa00; emissiveIntensity: 0.2; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.2; to: 0.7; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="CARREGAR" color="#ffaa00" width="0.5" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="sairVR"
-      position="1.2 -0.3 0.03" geometry="primitive: plane; width: 0.6; height: 0.22"
-      material="shader: flat; color: #0a1520; emissive: #ff2222; emissiveIntensity: 0.25; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.25; to: 0.8; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="SAIR VR" color="#ff2222" width="0.5" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <!-- Rodapé -->
-    <a-text value="▸ GRIP=MOVER · TRIGGER=RESPONDER · STICK=AJUSTAR"
-      color="#5a7a9a" width="3.0" align="center" position="0 -0.85 0.03"
-      font="mozillavr" shader="msdf" negate="false"></a-text>
-  </a-entity>
-
-  <!-- ═══════════ PAINEL CALIBRADOR (cockpit, curvado à direita) ═══════════ -->
-  <a-entity id="calibPanel" position="2.5 2.3 -2.0"
-    rotation="0 -18 0"
-    class="grabbable"
-    geometry="primitive: box; width: 1.4; height: 1.8; depth: 0.05"
-    material="shader: flat; color: #060913; emissive: #00d1ff; emissiveIntensity: 0.08; metalness: 0.4; opacity: 0.95; transparent: true">
-    <a-plane geometry="primitive: plane; width: 1.36; height: 1.76"
-      material="shader: flat; color: #00d1ff; opacity: 0.12; transparent: true"
-      position="0 0 0.026"></a-plane>
-    <a-text value="◉ SENSORES" color="#00d1ff" width="1.3" align="center" position="0 0.75 0.03"
-      font="mozillavr" shader="msdf" negate="false"></a-text>
-    <a-text id="leftData" value="LEFT: aguardando" color="#00d1ff" width="1.25"
-      align="left" position="-0.6 0.4 0.03" wrap-count="30"
-      font="mozillavr" shader="msdf" negate="false"></a-text>
-    <a-text id="rightData" value="RIGHT: aguardando" color="#ff8a00" width="1.25"
-      align="left" position="-0.6 0.05 0.03" wrap-count="30"
-      font="mozillavr" shader="msdf" negate="false"></a-text>
-
-    <!-- Botões calibrador -->
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="maoMais"
-      position="-0.35 -0.25 0.03" geometry="primitive: plane; width: 0.55; height: 0.2"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="MÃO +" color="#00d1ff" width="0.5" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="maoMenos"
-      position="0.35 -0.25 0.03" geometry="primitive: plane; width: 0.55; height: 0.2"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="MÃO -" color="#00d1ff" width="0.5" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="alturaMais"
-      position="-0.35 -0.55 0.03" geometry="primitive: plane; width: 0.55; height: 0.2"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="ALT +" color="#00d1ff" width="0.5" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-
-    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="alturaMenos"
-      position="0.35 -0.55 0.03" geometry="primitive: plane; width: 0.55; height: 0.2"
-      material="shader: flat; color: #0a1520; emissive: #00d1ff; emissiveIntensity: 0.15; opacity: 0.95; transparent: true"
-      animation__hover="property: scale; to: 1.06 1.06 1; dur: 100; startEvents: raycaster-intersection"
-      animation__hoverout="property: scale; to: 1 1 1; dur: 100; startEvents: raycaster-intersection-cleared"
-      animation__glow="property: material.emissiveIntensity; from: 0.15; to: 0.6; dur: 100; startEvents: raycaster-intersection">
-      <a-text value="ALT -" color="#00d1ff" width="0.5" align="center" position="0 0 0.004" font="mozillavr" shader="msdf" negate="false"></a-text></a-entity>
-  </a-entity>
-
-  <a-entity id="world"></a-entity>
 </a-scene>
 
 </body>
@@ -1085,10 +994,11 @@ html, body {
         st.session_state.vr_ready = False
         st.rerun()
 
+
 # ═══════════════════════════════════════════════════════════════════════
-# UI STREAMLIT (mantida)
+# UI STREAMLIT
 # ═══════════════════════════════════════════════════════════════════════
-st.title("⬢ PMSC Arena VR — Centro de Comando Tático")
+st.title("⬢ PMSC Arena VR — Engine Otimizada")
 st.caption(f"✅ {info['arquivo']} · {info['unicas']} questões únicas "
            f"({info['removidas']} duplicatas) · Meta Quest 3/3S")
 
@@ -1134,6 +1044,10 @@ with st.sidebar:
     else:
         st.caption("Nenhum simulado finalizado ainda.")
 
+
+# ═══════════════════════════════════════════════════════════════════════
+# TABS
+# ═══════════════════════════════════════════════════════════════════════
 tab_vr, tab_sim = st.tabs(["🥽 Arena VR", "📝 Simulado"])
 
 with tab_vr:
