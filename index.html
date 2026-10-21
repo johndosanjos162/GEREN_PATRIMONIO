@@ -2,119 +2,42 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PM-SC 2026 | Academia Imersiva</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PMSC 2026 | Academia Virtual VR</title>
 
 <style>
-* {
-  box-sizing: border-box;
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;background:#07111e;color:white;font-family:Arial,sans-serif}
+#menu{
+position:fixed;top:12px;left:12px;z-index:10;
+width:min(390px,94vw);max-height:85vh;overflow:auto;
+padding:18px;background:rgba(7,25,46,.96);
+border:1px solid #49baff;border-radius:14px
 }
-
-body {
-  margin: 0;
-  overflow: hidden;
-  background: #06111e;
-  color: white;
-  font-family: Arial, sans-serif;
+h2{margin:0 0 12px;color:#8ad8ff}
+h3{margin:14px 0 6px;color:#c5eaff}
+button,select,input{font:inherit}
+button,select{
+background:#155b96;color:white;border:1px solid #5da9e2;
+padding:10px;border-radius:8px;margin:5px 0;cursor:pointer
 }
-
-#menu {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 10;
-  width: min(390px, 94vw);
-  max-height: 88vh;
-  overflow-y: auto;
-  padding: 18px;
-  background: rgba(7, 24, 43, .96);
-  border: 1px solid #50b9ff;
-  border-radius: 14px;
-  box-shadow: 0 0 24px #0055aa44;
+select{width:100%}
+button:hover{background:#247bc0}
+#status{font-size:14px;color:#c4e9ff}
+#stats{line-height:1.6;font-size:14px}
+#enter{
+position:fixed;right:16px;bottom:16px;z-index:20;
+background:#1478c5;padding:15px 22px
 }
-
-h2 {
-  margin-top: 0;
-  color: #83d7ff;
-}
-
-h3 {
-  color: #bceaff;
-  margin-bottom: 8px;
-}
-
-button, select, input {
-  font: inherit;
-}
-
-button, select {
-  border: 1px solid #4c9edb;
-  border-radius: 8px;
-  padding: 11px;
-  background: #155b96;
-  color: white;
-  margin: 5px 0;
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  background: #247bc0;
-}
-
-select {
-  width: 100%;
-}
-
-input {
-  max-width: 100%;
-}
-
-#status {
-  color: #bde6ff;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-#stats {
-  line-height: 1.6;
-  font-size: 14px;
-}
-
-#enter {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 20;
-  padding: 15px 22px;
-  background: #1478c5;
-}
-
-#menuToggle {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 20;
-}
-
-small {
-  color: #c0d9eb;
-  line-height: 1.6;
-}
-
-#menu.hidden {
-  display: none;
-}
+small{color:#b9d0e5;line-height:1.5}
 </style>
 
 <script type="importmap">
 {
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
-  }
+"imports":{
+"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+"three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+}
 }
 </script>
 </head>
@@ -122,1318 +45,1000 @@ small {
 <body>
 
 <div id="menu">
-  <h2>PM-SC | Academia 2026</h2>
+<h2>PMSC 2026 | Academia Virtual</h2>
+<p id="status">Preparando ambiente...</p>
 
-  <p id="status">Preparando ambiente virtual...</p>
+<h3>Escolher ambiente</h3>
+<select id="environment">
+<option value="academy">Academia PMSC</option>
+<option value="living">Sala de estar moderna</option>
+<option value="beach">Praia</option>
+<option value="library">Biblioteca</option>
+<option value="future">Escritório futurista</option>
+<option value="nature">Natureza</option>
+<option value="penthouse">Cobertura de luxo</option>
+<option value="space">Estação espacial</option>
+<option value="minimal">Sala minimalista</option>
+<option value="random">Ambiente aleatório</option>
+</select>
 
-  <h3>Modo de estudo</h3>
-  <select id="mode">
-    <option value="study">Estudo por disciplina</option>
-    <option value="exam">Simulado</option>
-    <option value="review">Revisão de erros</option>
-  </select>
+<h3>Iluminação</h3>
+<select id="lighting">
+<option value="day">Dia</option>
+<option value="night">Noite</option>
+</select>
 
-  <h3>Disciplina</h3>
-  <select id="subject">
-    <option value="Todas">Todas as disciplinas</option>
-  </select>
+<h3>Modo de estudo</h3>
+<select id="mode">
+<option value="study">Estudo por disciplina</option>
+<option value="exam">Simulado</option>
+<option value="review">Revisão dos erros</option>
+</select>
 
-  <h3>Quantidade do simulado</h3>
-  <select id="examSize">
-    <option value="10">10 questões</option>
-    <option value="20">20 questões</option>
-    <option value="40">40 questões</option>
-    <option value="100">100 questões</option>
-  </select>
+<h3>Disciplina</h3>
+<select id="subject">
+<option value="Todas">Todas as disciplinas</option>
+</select>
 
-  <button id="demo">Carregar demonstração</button>
-  <button id="start">Iniciar / Reiniciar</button>
+<button id="demo">Carregar demonstração</button>
+<button id="start">Iniciar / Reiniciar</button>
 
-  <h3>Banco de questões JSON</h3>
-  <input id="file" type="file"
-         accept=".json,application/json" multiple>
+<h3>Importar questões JSON</h3>
+<input id="file" type="file" accept=".json,application/json" multiple>
 
-  <h3>Desempenho</h3>
-  <div id="stats"></div>
+<h3>Desempenho</h3>
+<div id="stats"></div>
+<button id="reset">Zerar estatísticas</button>
 
-  <button id="reset">Zerar estatísticas</button>
-
-  <hr>
-
-  <small>
-    Controle: gatilho para selecionar e analógico esquerdo
-    para caminhar.
-    <br><br>
-    Mãos: aponte e faça pinça para selecionar.
-    <br><br>
-    Teletransporte: selecione um dos círculos luminosos
-    no chão.
-    <br><br>
-    Para melhor nitidez, mantenha os painéis à frente
-    e ajuste corretamente o headset.
-    <br><br>
-    O progresso é salvo neste navegador.
-  </small>
+<hr>
+<small>
+Analógico esquerdo: caminhar.<br><br>
+Gatilho: selecionar.<br><br>
+Mãos: apontar e fazer pinça.<br><br>
+Marcadores luminosos: teletransporte.<br><br>
+Painel lateral no VR: trocar de ambiente.<br><br>
+O progresso fica salvo no navegador.
+</small>
 </div>
 
-<button id="menuToggle">Mostrar / ocultar menu</button>
 <button id="enter">ENTRAR EM VR</button>
 
 <script type="module">
 
 import * as THREE from "three";
+import {XRControllerModelFactory} from "three/addons/webxr/XRControllerModelFactory.js";
+import {XRHandModelFactory} from "three/addons/webxr/XRHandModelFactory.js";
 
-import {
-  XRControllerModelFactory
-} from "three/addons/webxr/XRControllerModelFactory.js";
+const $=id=>document.getElementById(id);
 
-import {
-  XRHandModelFactory
-} from "three/addons/webxr/XRHandModelFactory.js";
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x06111e);
 
-const $ = id => document.getElementById(id);
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x06111e);
-
-const camera = new THREE.PerspectiveCamera(
-  70,
-  innerWidth / innerHeight,
-  0.05,
-  100
+const camera=new THREE.PerspectiveCamera(
+70,innerWidth/innerHeight,.05,150
 );
+camera.position.set(0,1.65,0);
 
-camera.position.set(0, 1.65, 0);
-
-const renderer = new THREE.WebGLRenderer({
-  antialias: true,
-  powerPreference: "high-performance"
-});
-
-renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-renderer.xr.enabled = true;
-
-renderer.xr.setFramebufferScaleFactor(1.1);
-
-document.body.appendChild(renderer.domElement);
-
-const rig = new THREE.Group();
+const rig=new THREE.Group();
 rig.add(camera);
 scene.add(rig);
 
-scene.add(
-  new THREE.HemisphereLight(
-    0xffffff,
-    0x304b6b,
-    2.2
-  )
-);
-
-const light = new THREE.DirectionalLight(
-  0xffffff,
-  1.7
-);
-
-light.position.set(2, 5, 3);
-scene.add(light);
-
-function box(w, h, d, color, x, y, z) {
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    new THREE.MeshStandardMaterial({
-      color,
-      roughness: 0.8
-    })
-  );
-
-  mesh.position.set(x, y, z);
-  scene.add(mesh);
-  return mesh;
-}
-
-// SALA 3D
-
-box(14, .12, 14, 0x183047, 0, -.1, -2);
-box(14, 4.5, .12, 0x112c49, 0, 2.2, -9);
-box(.12, 4.5, 14, 0x10283f, -7, 2.2, -2);
-box(.12, 4.5, 14, 0x10283f, 7, 2.2, -2);
-
-box(5.8, 3.8, .1, 0x123e61, 0, 1.85, -3.6);
-box(2.4, 2.6, .1, 0x174563, -4.2, 1.85, -4);
-box(2.4, 2.6, .1, 0x174563, 4.2, 1.85, -4);
-
-// DETALHES DA SALA
-
-const lineMaterial = new THREE.MeshBasicMaterial({
-  color: 0x3dbbff
+const renderer=new THREE.WebGLRenderer({
+antialias:true,
+powerPreference:"high-performance"
 });
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.xr.enabled=true;
+renderer.xr.setFramebufferScaleFactor(1.2);
+document.body.appendChild(renderer.domElement);
 
-function lightStrip(w, h, x, y, z) {
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, .025),
-    lineMaterial
-  );
-  mesh.position.set(x, y, z);
-  scene.add(mesh);
+const ambient=new THREE.HemisphereLight(0xffffff,0x304b6b,2.4);
+scene.add(ambient);
+
+const sunlight=new THREE.DirectionalLight(0xffffff,2);
+sunlight.position.set(3,8,4);
+scene.add(sunlight);
+
+const environmentGroup=new THREE.Group();
+scene.add(environmentGroup);
+
+const dynamic=[];
+const interactive=[];
+const teleportMarkers=[];
+const raycaster=new THREE.Raycaster();
+const rotation=new THREE.Matrix4();
+
+function createBox(w,h,d,color,x,y,z){
+const m=new THREE.Mesh(
+new THREE.BoxGeometry(w,h,d),
+new THREE.MeshStandardMaterial({color,roughness:.75})
+);
+m.position.set(x,y,z);
+environmentGroup.add(m);
+return m;
 }
 
-lightStrip(5.85, .035, 0, 3.77, -3.53);
-lightStrip(5.85, .035, 0, -.07, -3.53);
-lightStrip(2.4, .035, -4.2, 3.18, -3.94);
-lightStrip(2.4, .035, 4.2, 3.18, -3.94);
-
-// INTERAÇÃO
-
-const interactive = [];
-const dynamic = [];
-const raycaster = new THREE.Raycaster();
-const rotation = new THREE.Matrix4();
-
-function label(
-  text,
-  x,
-  y,
-  z,
-  width = 4.8,
-  height = .26,
-  action = null,
-  color = null
-) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 2048;
-  canvas.height = 256;
-
-  const ctx = canvas.getContext("2d");
-
-  ctx.fillStyle = color || (
-    action ? "#176ca4" : "#123c60"
-  );
-
-  ctx.fillRect(0, 0, 2048, 256);
-
-  ctx.strokeStyle = action ? "#a4eeff" : "#4b91bc";
-  ctx.lineWidth = 7;
-  ctx.strokeRect(5, 5, 2038, 246);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-
-  let size = 94;
-
-  while (size > 28) {
-    ctx.font = `bold ${size}px Arial`;
-
-    if (ctx.measureText(String(text)).width < 1930) {
-      break;
-    }
-
-    size -= 3;
-  }
-
-  ctx.fillText(String(text), 1024, 128);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-
-  texture.anisotropy = Math.min(
-    8,
-    renderer.capabilities.getMaxAnisotropy()
-  );
-
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(width, height),
-    new THREE.MeshBasicMaterial({
-      map: texture,
-      side: THREE.DoubleSide
-    })
-  );
-
-  mesh.position.set(x, y, z);
-  scene.add(mesh);
-
-  dynamic.push(mesh);
-
-  if (action) {
-    mesh.userData.action = action;
-    interactive.push(mesh);
-  }
-
-  return mesh;
+function createSphere(r,color,x,y,z){
+const m=new THREE.Mesh(
+new THREE.SphereGeometry(r,16,12),
+new THREE.MeshStandardMaterial({color})
+);
+m.position.set(x,y,z);
+environmentGroup.add(m);
+return m;
 }
 
-function clearPanels() {
-  for (const mesh of dynamic) {
-    scene.remove(mesh);
-
-    const index = interactive.indexOf(mesh);
-
-    if (index >= 0) {
-      interactive.splice(index, 1);
-    }
-
-    mesh.material.map.dispose();
-    mesh.material.dispose();
-    mesh.geometry.dispose();
-  }
-
-  dynamic.length = 0;
+function createCylinder(top,bottom,height,color,x,y,z){
+const m=new THREE.Mesh(
+new THREE.CylinderGeometry(top,bottom,height,12),
+new THREE.MeshStandardMaterial({color})
+);
+m.position.set(x,y,z);
+environmentGroup.add(m);
+return m;
 }
 
-function wrap(text, max = 48) {
-  const words = String(text).split(/\s+/);
-  const lines = [];
-  let line = "";
-
-  for (const word of words) {
-    const candidate = line ? line + " " + word : word;
-
-    if (candidate.length > max && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = candidate;
-    }
-  }
-
-  if (line) lines.push(line);
-
-  return lines;
+function disposeEnvironment(){
+environmentGroup.traverse(o=>{
+if(!o.isMesh)return;
+o.geometry.dispose();
+if(Array.isArray(o.material)){
+o.material.forEach(m=>m.dispose());
+}else o.material.dispose();
+});
+environmentGroup.clear();
 }
 
-function center(
-  text,
-  y,
-  width = 4.9,
-  height = .25,
-  action = null,
-  color = null
-) {
-  return label(
-    text, 0, y, -3.51,
-    width, height, action, color
-  );
+function room(floor,wall){
+createBox(14,.12,14,floor,0,-.1,-2);
+createBox(14,5,.12,wall,0,2.5,-8);
+createBox(.12,5,14,wall,-7,2.5,-2);
+createBox(.12,5,14,wall,7,2.5,-2);
 }
 
-// DISCIPLINAS INICIAIS
+function desk(x,z,color=0x795548){
+createBox(1.7,.12,.8,color,x,.8,z);
+for(const dx of [-.7,.7]){
+for(const dz of [-.3,.3]){
+createBox(.08,.75,.08,0x444444,x+dx,.38,z+dz);
+}}
+}
 
-const subjects = [
-  "Língua Portuguesa",
-  "Informática",
-  "Direito Constitucional",
-  "Constituição de Santa Catarina",
-  "Direito Penal Comum",
-  "Direito Processual Penal Comum",
-  "Direito Penal Militar",
-  "Legislação Especial",
-  "Legislação de Trânsito",
-  "Legislação Institucional"
+function sofa(x,z){
+createBox(2.8,.5,1.1,0x526477,x,.45,z);
+createBox(2.8,.9,.3,0x394b60,x,.85,z-.45);
+createBox(.3,.65,1.1,0x394b60,x-1.25,.65,z);
+createBox(.3,.65,1.1,0x394b60,x+1.25,.65,z);
+}
+
+function tree(x,z){
+createCylinder(.13,.18,1.7,0x775038,x,.85,z);
+createSphere(.8,0x258344,x,2,z);
+createSphere(.6,0x2e9c51,x-.4,1.8,z);
+}
+
+function bookshelf(x,z){
+createBox(1.6,2.5,.45,0x67452e,x,1.25,z);
+for(let row=0;row<4;row++){
+createBox(1.5,.08,.5,0x3f2c20,x,.45+row*.55,z);
+for(let col=0;col<6;col++){
+const colors=[0x226699,0xa33939,0x28845a,0xc49b42];
+createBox(.17,.35,.24,colors[(row+col)%4],
+x-.58+col*.22,.66+row*.55,z);
+}}
+}
+
+function windowView(color){
+createBox(5,2.7,.08,0x263b50,0,2.2,-7.85);
+createBox(4.7,2.4,.03,color,0,2.2,-7.78);
+createBox(.09,2.4,.1,0xd8e2ec,0,2.2,-7.7);
+}
+
+const environments=[
+["academy","Academia PMSC"],
+["living","Sala de estar"],
+["beach","Praia"],
+["library","Biblioteca"],
+["future","Escritório futurista"],
+["nature","Natureza"],
+["penthouse","Cobertura de luxo"],
+["space","Estação espacial"],
+["minimal","Sala minimalista"]
 ];
 
-// BANCO DE QUESTÕES
+let currentEnvironment="academy";
 
-let questions = [];
-let pool = [];
-let current = 0;
-let answered = false;
-let examCorrect = 0;
-let examDone = 0;
-let examEnded = false;
+function buildEnvironment(type){
+disposeEnvironment();
 
-let selectedAnswers = [];
-let wrongQuestions = [];
+switch(type){
 
-let stats = {
-  total: 0,
-  correct: 0,
-  subjects: {}
+case "academy":
+scene.background=new THREE.Color(0x06111e);
+room(0x183047,0x10283f);
+createBox(5,.12,.3,0x2b9dd8,0,3.7,-7.7);
+desk(-3.8,-4.5,0x243c56);
+desk(3.8,-4.5,0x243c56);
+break;
+
+case "living":
+scene.background=new THREE.Color(0xb4c7d8);
+room(0xb8a28a,0xd7d4ce);
+sofa(-3.8,-4);
+desk(3.8,-4,0x94765d);
+windowView(0x8bbad7);
+break;
+
+case "beach":
+scene.background=new THREE.Color(0x86d5ff);
+createBox(60,.12,60,0xe8d39b,0,-.1,-10);
+createBox(60,.03,25,0x168fc4,0,-.02,-24);
+createSphere(1.1,0xffe9a0,-15,12,-35);
+for(const x of [-5,5]){
+createCylinder(.1,.18,3,0x926a41,x,1.5,-5);
+createSphere(1.2,0x278a53,x,3.1,-5);
+}
+desk(3.5,-3,0xc6a16e);
+break;
+
+case "library":
+scene.background=new THREE.Color(0x2b251f);
+room(0x5b4332,0x3b3027);
+bookshelf(-5,-5);
+bookshelf(-3,-5);
+bookshelf(3,-5);
+bookshelf(5,-5);
+desk(-3.5,-2);
+desk(3.5,-2);
+break;
+
+case "future":
+scene.background=new THREE.Color(0x050d1c);
+room(0x111b35,0x0b1630);
+for(const x of [-5,-3,3,5]){
+createBox(.08,3.2,.08,0x00cfff,x,1.7,-7.7);
+}
+desk(-3.8,-4,0x1a4366);
+desk(3.8,-4,0x1a4366);
+break;
+
+case "nature":
+scene.background=new THREE.Color(0x9dd8ef);
+createBox(80,.12,80,0x4c9b53,0,-.1,-10);
+for(const [x,z] of [
+[-6,-6],[6,-6],[-6,1],[6,1],[-3,-7],[3,-7]
+])tree(x,z);
+desk(3.8,-4,0x8b6848);
+break;
+
+case "penthouse":
+scene.background=new THREE.Color(0x6e9ac1);
+room(0xd2c9bd,0xe6e0d9);
+windowView(0x6291b5);
+sofa(-3.8,-4);
+desk(3.8,-4,0x303b48);
+for(const x of [-5,5]){
+createCylinder(.05,.05,2.5,0xc6b17b,x,1.25,-5);
+}
+break;
+
+case "space":
+scene.background=new THREE.Color(0x01040e);
+room(0x293344,0x1a2436);
+createSphere(2.3,0x237fc3,0,4,-30);
+for(let i=0;i<30;i++){
+createSphere(.04,0xffffff,
+Math.sin(i*2.7)*35,
+4+(i%7)*2,
+-15-(i%5)*8);
+}
+desk(3.8,-4,0x334b66);
+break;
+
+case "minimal":
+scene.background=new THREE.Color(0xdde5ec);
+room(0xe0e0e0,0xf0f0f0);
+desk(3.8,-4,0xaaaaaa);
+createBox(1.8,.2,1.8,0xbcbcbc,-4,.1,-4);
+break;
+}
+
+createBox(5.8,4.1,.12,0x0a213b,0,1.9,-3.65);
+createBox(2.5,3.2,.12,0x102d49,-4.25,1.8,-4.05);
+createBox(2.5,3.2,.12,0x102d49,4.25,1.8,-4.05);
+
+applyLighting();
+}
+
+function applyLighting(){
+const night=$("lighting").value==="night";
+ambient.intensity=night?1.1:2.4;
+sunlight.intensity=night?.5:2;
+if(currentEnvironment==="space"){
+ambient.intensity=1.4;
+sunlight.intensity=.8;
+}
+}
+
+function changeEnvironment(type){
+if(type==="random"){
+const available=environments.map(e=>e[0]);
+type=available[Math.floor(Math.random()*available.length)];
+}
+currentEnvironment=type;
+buildEnvironment(type);
+try{
+localStorage.setItem("pmsc_environment",type);
+}catch(e){}
+$("environment").value=type;
+$("status").textContent="Ambiente: "+
+(environments.find(e=>e[0]===type)?.[1]||type);
+render();
+}
+
+$("environment").onchange=e=>changeEnvironment(e.target.value);
+
+$("lighting").onchange=()=>{
+applyLighting();
+try{
+localStorage.setItem("pmsc_lighting",$("lighting").value);
+}catch(e){}
 };
 
-try {
-  const saved = JSON.parse(
-    localStorage.getItem("pmsc_2026_v4")
-  );
-
-  if (saved && typeof saved === "object") {
-    stats = saved;
-  }
-} catch (error) {
-  console.warn("Progresso não recuperado.");
-}
-
-try {
-  wrongQuestions = JSON.parse(
-    localStorage.getItem("pmsc_wrong_v4") || "[]"
-  );
-} catch (error) {
-  wrongQuestions = [];
-}
-
-function saveProgress() {
-  try {
-    localStorage.setItem(
-      "pmsc_2026_v4",
-      JSON.stringify(stats)
-    );
-
-    localStorage.setItem(
-      "pmsc_wrong_v4",
-      JSON.stringify(wrongQuestions)
-    );
-  } catch (error) {
-    console.warn("Não foi possível salvar.");
-  }
-
-  updateStats();
-}
-
-function updateStats() {
-  const percent = stats.total
-    ? (stats.correct * 100 / stats.total).toFixed(1)
-    : "0.0";
-
-  let html = `
-    Respondidas: ${stats.total}<br>
-    Acertos: ${stats.correct}<br>
-    Aproveitamento: ${percent}%<br>
-    Questões para revisão: ${wrongQuestions.length}
-  `;
-
-  for (const [name, value] of Object.entries(
-    stats.subjects || {}
-  )) {
-    const p = value.total
-      ? Math.round(value.correct * 100 / value.total)
-      : 0;
-
-    const safeName = document.createElement("span");
-    safeName.textContent = name;
-
-    html += `
-      <div style="margin-top:8px">
-        ${safeName.innerHTML}:
-        ${value.correct}/${value.total} (${p}%)
-      </div>
-    `;
-  }
-
-  $("stats").innerHTML = html;
-}
-
-// RENDERIZAÇÃO DAS QUESTÕES
-
-function render(message = "") {
-  clearPanels();
-
-  center(
-    "PM-SC 2026 | ACADEMIA IMERSIVA",
-    3.35, 5.1, .29
-  );
-
-  if (!pool.length) {
-    center(
-      "CARREGUE QUESTOES PARA COMECAR",
-      2.45
-    );
-
-    center(
-      "USE O MENU DO NAVEGADOR",
-      2.05
-    );
-
-    renderSidePanels();
-    return;
-  }
-
-  if (examEnded) {
-    renderExamResult();
-    return;
-  }
-
-  const q = pool[current];
-
-  center(
-    q.subject.toUpperCase().slice(0, 45),
-    3.01, 4.9, .24
-  );
-
-  const lines = wrap(q.question, 53);
-
-  lines.slice(0, 4).forEach((line, i) => {
-    center(
-      line,
-      2.73 - i * .205,
-      5.0,
-      .19
-    );
-  });
-
-  q.options.slice(0, 5).forEach((option, i) => {
-    const letter = "ABCDE"[i];
-    const value = String(option).slice(0, 67);
-
-    let color = null;
-
-    if (answered && $("mode").value !== "exam") {
-      if (i === q.correct) {
-        color = "#147c60";
-      } else if (i === selectedAnswers[current]) {
-        color = "#8d3340";
-      }
-    }
-
-    center(
-      `${letter}) ${value}`,
-      1.75 - i * .285,
-      5.0,
-      .25,
-      () => answer(i),
-      color
-    );
-  });
-
-  center(
-    message ||
-    `QUESTAO ${current + 1} DE ${pool.length}`,
-    .18, 4.9, .24
-  );
-
-  center(
-    "PROXIMA QUESTAO",
-    -.17, 2.7, .27,
-    nextQuestion
-  );
-
-  if ($("mode").value === "exam") {
-    center(
-      `SIMULADO | RESPONDIDAS ${examDone}/${pool.length}`,
-      -.50, 4.7, .23
-    );
-  } else if (answered && q.explanation) {
-    const explanation = wrap(q.explanation, 37);
-
-    explanation.slice(0, 4).forEach((line, i) => {
-      label(
-        line,
-        4.2,
-        1.6 - i * .25,
-        -3.94,
-        2.05,
-        .22
-      );
-    });
-  }
-
-  renderSidePanels();
-}
-
-function renderSidePanels() {
-  label(
-    "DISCIPLINAS",
-    -4.2, 2.75, -3.94,
-    2.1, .28
-  );
-
-  const active = $("subject").value;
-
-  label(
-    active === "Todas"
-      ? "TODAS"
-      : active.slice(0, 24),
-    -4.2, 2.34, -3.94,
-    2.1, .28
-  );
-
-  label(
-    "DESEMPENHO",
-    4.2, 2.75, -3.94,
-    2.1, .28
-  );
-
-  label(
-    `${stats.correct} ACERTOS`,
-    4.2, 2.34, -3.94,
-    2.1, .28
-  );
-
-  label(
-    `${stats.total} RESPONDIDAS`,
-    4.2, 1.96, -3.94,
-    2.1, .28
-  );
-}
-
-function recordAnswer(q, correct) {
-  stats.total++;
-
-  if (correct) {
-    stats.correct++;
-  }
-
-  if (!stats.subjects[q.subject]) {
-    stats.subjects[q.subject] = {
-      total: 0,
-      correct: 0
-    };
-  }
-
-  stats.subjects[q.subject].total++;
-
-  if (correct) {
-    stats.subjects[q.subject].correct++;
-  }
-
-  if (!correct) {
-    if (!wrongQuestions.some(item =>
-      item.question === q.question &&
-      item.subject === q.subject
-    )) {
-      wrongQuestions.push(q);
-    }
-  } else {
-    wrongQuestions = wrongQuestions.filter(item =>
-      !(
-        item.question === q.question &&
-        item.subject === q.subject
-      )
-    );
-  }
-
-  saveProgress();
-}
-
-function answer(selected) {
-  if (answered || examEnded || !pool.length) return;
-
-  answered = true;
-
-  const q = pool[current];
-  const right = selected === q.correct;
-
-  selectedAnswers[current] = selected;
-
-  recordAnswer(q, right);
-
-  if ($("mode").value === "exam") {
-    examDone++;
-
-    if (right) examCorrect++;
-
-    render("RESPOSTA REGISTRADA");
-  } else {
-    render(
-      right
-        ? "RESPOSTA CORRETA!"
-        : `INCORRETA | GABARITO ${"ABCDE"[q.correct]}`
-    );
-  }
-}
-
-function nextQuestion() {
-  if (!pool.length || examEnded) return;
-
-  if ($("mode").value === "exam" && !answered) {
-    render("RESPONDA ANTES DE AVANCAR");
-    return;
-  }
-
-  if (current >= pool.length - 1) {
-    if ($("mode").value === "exam") {
-      examEnded = true;
-      render();
-      return;
-    }
-
-    current = 0;
-  } else {
-    current++;
-  }
-
-  answered = false;
-  render();
-}
-
-function renderExamResult() {
-  center("SIMULADO FINALIZADO", 2.85, 4.9, .35);
-
-  center(
-    `ACERTOS: ${examCorrect} DE ${pool.length}`,
-    2.3, 4.8, .3
-  );
-
-  const percent = pool.length
-    ? (examCorrect * 100 / pool.length).toFixed(1)
-    : "0.0";
-
-  center(
-    `APROVEITAMENTO: ${percent}%`,
-    1.85, 4.8, .3
-  );
-
-  center(
-    "REINICIAR SIMULADO",
-    1.25, 3.5, .32,
-    startSession
-  );
-
-  renderSidePanels();
-}
-
-// FILTRO DE DISCIPLINAS
-
-function updateSubjects() {
-  const select = $("subject");
-  const previous = select.value;
-
-  select.innerHTML = "";
-
-  const all = document.createElement("option");
-  all.value = "Todas";
-  all.textContent = "Todas as disciplinas";
-  select.appendChild(all);
-
-  const available = [
-    ...new Set([
-      ...subjects,
-      ...questions.map(q => q.subject)
-    ])
-  ];
-
-  available.sort().forEach(subject => {
-    const option = document.createElement("option");
-    option.value = subject;
-    option.textContent = subject;
-    select.appendChild(option);
-  });
-
-  if (available.includes(previous)) {
-    select.value = previous;
-  }
-}
-
-function shuffle(array) {
-  const result = [...array];
-
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-
-  return result;
-}
-
-function startSession() {
-  const mode = $("mode").value;
-  const subject = $("subject").value;
-
-  let source = mode === "review"
-    ? [...wrongQuestions]
-    : [...questions];
-
-  if (subject !== "Todas") {
-    source = source.filter(
-      q => q.subject === subject
-    );
-  }
-
-  pool = shuffle(source);
-
-  if (mode === "exam") {
-    const size = Number($("examSize").value);
-    pool = pool.slice(0, size);
-  }
-
-  current = 0;
-  answered = false;
-  examCorrect = 0;
-  examDone = 0;
-  examEnded = false;
-  selectedAnswers = [];
-
-  render();
-
-  $("status").textContent = pool.length
-    ? `${pool.length} questões preparadas.`
-    : "Nenhuma questão disponível neste filtro.";
-}
-
-// NORMALIZAÇÃO DE JSON
-
-function normalizeQuestion(q) {
-  if (!q || typeof q !== "object") return null;
-
-  const question =
-    q.enunciado ||
-    q.pergunta ||
-    q.questao ||
-    q.question;
-
-  const raw =
-    q.alternativas ||
-    q.opcoes ||
-    q.options;
-
-  if (!question || !raw) return null;
-
-  const keys = Array.isArray(raw)
-    ? null
-    : Object.keys(raw);
-
-  const options = Array.isArray(raw)
-    ? raw
-    : Object.values(raw);
-
-  if (
-    !Array.isArray(options) ||
-    options.length < 2 ||
-    options.length > 5
-  ) return null;
-
-  const answer =
-    q.correta ??
-    q.resposta ??
-    q.gabarito ??
-    q.correct ??
-    q.answer;
-
-  let correct = -1;
-
-  if (typeof answer === "number") {
-    correct = answer;
-  } else if (typeof answer === "string") {
-    const value = answer.trim();
-
-    if (/^[A-E]$/i.test(value)) {
-      correct = value.toUpperCase().charCodeAt(0) - 65;
-    } else if (keys && keys.includes(value)) {
-      correct = keys.indexOf(value);
-    } else if (/^\d+$/.test(value)) {
-      correct = Number(value);
-    } else {
-      correct = options.findIndex(
-        item => String(item) === value
-      );
-    }
-  }
-
-  if (
-    !Number.isInteger(correct) ||
-    correct < 0 ||
-    correct >= options.length
-  ) return null;
-
-  return {
-    question: String(question),
-    options: options.map(String),
-    correct,
-    subject: String(
-      q.disciplina ||
-      q.materia ||
-      q.subject ||
-      "Geral"
-    ),
-    explanation: String(
-      q.explicacao ||
-      q.comentario ||
-      q.explanation ||
-      ""
-    )
-  };
-}
-
-$("file").addEventListener("change", async event => {
-  const files = [...event.target.files];
-
-  let imported = [];
-  let rejected = 0;
-  let errors = [];
-
-  for (const file of files) {
-    try {
-      const data = JSON.parse(await file.text());
-
-      const raw = Array.isArray(data)
-        ? data
-        : data.questoes || data.questions;
-
-      if (!Array.isArray(raw)) {
-        throw new Error("Lista de questões não encontrada");
-      }
-
-      for (const item of raw) {
-        const normalized = normalizeQuestion(item);
-
-        if (normalized) {
-          imported.push(normalized);
-        } else {
-          rejected++;
-        }
-      }
-    } catch (error) {
-      errors.push(`${file.name}: ${error.message}`);
-    }
-  }
-
-  if (imported.length) {
-    questions = imported;
-    updateSubjects();
-    startSession();
-  }
-
-  $("status").textContent =
-    `${imported.length} questões importadas. ` +
-    `${rejected} questões incompatíveis. ` +
-    errors.join(" | ");
-});
-
-// QUESTÕES DEMONSTRATIVAS
-
-$("demo").onclick = () => {
-  questions = [
-    {
-      question:
-        "Qual Constituição está atualmente vigente no Brasil?",
-      options: [
-        "Constituição de 1967",
-        "Constituição de 1988",
-        "Constituição de 1946",
-        "Constituição de 1934"
-      ],
-      correct: 1,
-      subject: "Direito Constitucional",
-      explanation:
-        "A Constituição Federal de 1988 está atualmente vigente."
-    },
-    {
-      question:
-        "Qual princípio exige atuação administrativa conforme a lei?",
-      options: [
-        "Legalidade",
-        "Publicidade",
-        "Eficiência",
-        "Moralidade"
-      ],
-      correct: 0,
-      subject: "Direito Constitucional",
-      explanation:
-        "O princípio da legalidade está previsto no artigo 37 da Constituição."
-    },
-    {
-      question:
-        "Qual artigo do Código Penal trata do furto?",
-      options: [
-        "Artigo 121",
-        "Artigo 155",
-        "Artigo 157",
-        "Artigo 171"
-      ],
-      correct: 1,
-      subject: "Direito Penal Comum",
-      explanation:
-        "O crime de furto está previsto no artigo 155 do Código Penal."
-    },
-    {
-      question:
-        "Qual artigo do Código Penal trata do roubo?",
-      options: [
-        "Artigo 155",
-        "Artigo 121",
-        "Artigo 157",
-        "Artigo 163"
-      ],
-      correct: 2,
-      subject: "Direito Penal Comum",
-      explanation:
-        "O crime de roubo está previsto no artigo 157 do Código Penal."
-    },
-    {
-      question:
-        "Qual é a capital do Estado de Santa Catarina?",
-      options: [
-        "Joinville",
-        "Blumenau",
-        "Florianópolis",
-        "Chapecó"
-      ],
-      correct: 2,
-      subject: "Constituição de Santa Catarina",
-      explanation:
-        "Florianópolis é a capital do Estado de Santa Catarina."
-    }
-  ];
-
-  updateSubjects();
-  startSession();
-
-  $("status").textContent =
-    "Demonstração carregada. Questões apenas para teste.";
-};
-
-$("start").onclick = startSession;
-$("mode").onchange = startSession;
-$("subject").onchange = startSession;
-
-$("reset").onclick = () => {
-  if (!confirm("Deseja zerar todas as estatísticas?")) {
-    return;
-  }
-
-  stats = {
-    total: 0,
-    correct: 0,
-    subjects: {}
-  };
-
-  wrongQuestions = [];
-  saveProgress();
-  startSession();
-};
-
-$("menuToggle").onclick = () => {
-  $("menu").classList.toggle("hidden");
-};
-
-// TELETRANSPORTE
-
-const teleportMarkers = [];
-
-function createTeleportMarker(x, z) {
-  const geometry = new THREE.RingGeometry(
-    .24, .38, 40
-  );
-
-  const material = new THREE.MeshBasicMaterial({
-    color: 0x48e5ff,
-    side: THREE.DoubleSide
-  });
-
-  const marker = new THREE.Mesh(
-    geometry,
-    material
-  );
-
-  marker.rotation.x = -Math.PI / 2;
-  marker.position.set(x, .012, z);
-
-  marker.userData.action = () => {
-    teleportTo(x, z);
-  };
-
-  scene.add(marker);
-  interactive.push(marker);
-  teleportMarkers.push(marker);
-}
-
-function teleportTo(x, z) {
-  // Compensa a posição local atual do headset.
-  const head = new THREE.Vector3();
-  camera.getWorldPosition(head);
-
-  const offsetX = head.x - rig.position.x;
-  const offsetZ = head.z - rig.position.z;
-
-  rig.position.x = THREE.MathUtils.clamp(
-    x - offsetX, -5.4, 5.4
-  );
-
-  rig.position.z = THREE.MathUtils.clamp(
-    z - offsetZ, -6.2, 3.5
-  );
-}
-
-createTeleportMarker(-2.5, -1.2);
-createTeleportMarker(2.5, -1.2);
-createTeleportMarker(0, -1.5);
-createTeleportMarker(-3, 1.5);
-createTeleportMarker(3, 1.5);
-createTeleportMarker(0, 2.5);
-
-// CONTROLES E RASTREAMENTO DAS MÃOS
-
-const controllerFactory =
-  new XRControllerModelFactory();
-
-const handFactory =
-  new XRHandModelFactory();
-
-const controllers = [];
-const hands = [];
-
-function selectObject(source) {
-  source.updateWorldMatrix(true, false);
-
-  rotation.identity();
-  rotation.extractRotation(source.matrixWorld);
-
-  raycaster.ray.origin.setFromMatrixPosition(
-    source.matrixWorld
-  );
-
-  raycaster.ray.direction
-    .set(0, 0, -1)
-    .applyMatrix4(rotation)
-    .normalize();
-
-  const hits = raycaster.intersectObjects(
-    interactive, false
-  );
-
-  if (!hits.length) return;
-
-  const hit = hits[0];
-
-  if (hit.distance > 12) return;
-
-  const action = hit.object.userData.action;
-
-  if (typeof action === "function") {
-    action();
-  }
-}
-
-for (let i = 0; i < 2; i++) {
-  const controller = renderer.xr.getController(i);
-
-  controller.addEventListener(
-    "selectstart",
-    () => selectObject(controller)
-  );
-
-  const pointer = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, -5)
-    ]),
-    new THREE.LineBasicMaterial({
-      color: 0x44ddff
-    })
-  );
-
-  controller.add(pointer);
-  rig.add(controller);
-
-  const grip = renderer.xr.getControllerGrip(i);
-
-  grip.add(
-    controllerFactory.createControllerModel(grip)
-  );
-
-  rig.add(grip);
-
-  const hand = renderer.xr.getHand(i);
-
-  hand.add(
-    handFactory.createHandModel(hand, "mesh")
-  );
-
-  hand.addEventListener(
-    "selectstart",
-    () => selectObject(hand)
-  );
-
-  rig.add(hand);
-
-  controllers.push(controller);
-  hands.push(hand);
-}
-
-// MOVIMENTAÇÃO PELO ANALÓGICO
-
-const clock = new THREE.Clock();
-
-const forward = new THREE.Vector3();
-const right = new THREE.Vector3();
-const movement = new THREE.Vector3();
-
-function updateMovement(delta) {
-  if (!renderer.xr.isPresenting) return;
-
-  const session = renderer.xr.getSession();
-
-  if (!session) return;
-
-  let axisX = 0;
-  let axisY = 0;
-
-  for (const source of session.inputSources) {
-    if (!source.gamepad) continue;
-
-    if (
-      source.handedness !== "left" &&
-      session.inputSources.length > 1
-    ) continue;
-
-    const axes = source.gamepad.axes;
-
-    if (axes.length >= 4) {
-      axisX = axes[2] || 0;
-      axisY = axes[3] || 0;
-    } else if (axes.length >= 2) {
-      axisX = axes[0] || 0;
-      axisY = axes[1] || 0;
-    }
-
-    break;
-  }
-
-  const deadzone = .18;
-
-  if (Math.abs(axisX) < deadzone) axisX = 0;
-  if (Math.abs(axisY) < deadzone) axisY = 0;
-
-  if (!axisX && !axisY) return;
-
-  const direction = new THREE.Vector3();
-
-  camera.getWorldDirection(direction);
-  direction.y = 0;
-  direction.normalize();
-
-  forward.copy(direction);
-
-  right.set(
-    -forward.z,
-    0,
-    forward.x
-  );
-
-  movement.set(0, 0, 0);
-
-  movement.addScaledVector(
-    forward, -axisY
-  );
-
-  movement.addScaledVector(
-    right, axisX
-  );
-
-  if (movement.lengthSq() > 1) {
-    movement.normalize();
-  }
-
-  const speed = 1.5;
-
-  rig.position.addScaledVector(
-    movement,
-    speed * Math.min(delta, .05)
-  );
-
-  rig.position.x = THREE.MathUtils.clamp(
-    rig.position.x, -5.4, 5.4
-  );
-
-  rig.position.z = THREE.MathUtils.clamp(
-    rig.position.z, -6.2, 3.5
-  );
-}
-
-// VR
-
-$("enter").onclick = async () => {
-  try {
-    if (!navigator.xr) {
-      throw new Error(
-        "WebXR indisponível neste navegador."
-      );
-    }
-
-    const supported =
-      await navigator.xr.isSessionSupported(
-        "immersive-vr"
-      );
-
-    if (!supported) {
-      throw new Error(
-        "Modo VR não suportado."
-      );
-    }
-
-    const session =
-      await navigator.xr.requestSession(
-        "immersive-vr",
-        {
-          optionalFeatures: [
-            "local-floor",
-            "hand-tracking"
-          ]
-        }
-      );
-
-    await renderer.xr.setSession(session);
-
-    $("status").textContent =
-      "Realidade virtual iniciada.";
-
-    $("enter").textContent = "SAIR DA VR";
-
-    session.addEventListener("end", () => {
-      $("enter").textContent = "ENTRAR EM VR";
-      $("status").textContent =
-        "Sessão de realidade virtual encerrada.";
-    });
-
-  } catch (error) {
-    $("status").textContent =
-      "Erro VR: " + error.message;
-  }
-};
-
-// SELEÇÃO COM MOUSE NO COMPUTADOR
-
-const mouse = new THREE.Vector2();
-
-renderer.domElement.addEventListener(
-  "click",
-  event => {
-    if (renderer.xr.isPresenting) return;
-
-    mouse.x =
-      (event.clientX / innerWidth) * 2 - 1;
-
-    mouse.y =
-      -(event.clientY / innerHeight) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
-
-    const hits = raycaster.intersectObjects(
-      interactive, false
-    );
-
-    if (hits.length) {
-      const action = hits[0].object.userData.action;
-
-      if (typeof action === "function") {
-        action();
-      }
-    }
-  }
+function label(text,x,y,z,width=4.8,height=.28,action=null,kind="normal"){
+const canvas=document.createElement("canvas");
+canvas.width=2048;
+canvas.height=256;
+const ctx=canvas.getContext("2d");
+
+ctx.fillStyle=
+kind==="correct"?"#16684d":
+kind==="wrong"?"#893440":
+action?"#176ca4":"#123c60";
+
+ctx.fillRect(0,0,2048,256);
+ctx.strokeStyle=action?"#a4efff":"#4289bb";
+ctx.lineWidth=7;
+ctx.strokeRect(5,5,2038,246);
+ctx.fillStyle="#fff";
+ctx.textAlign="center";
+ctx.textBaseline="middle";
+
+let size=94;
+do{
+ctx.font=`bold ${size}px Arial`;
+if(ctx.measureText(String(text)).width<1930)break;
+size-=3;
+}while(size>30);
+
+ctx.fillText(String(text),1024,128);
+
+const texture=new THREE.CanvasTexture(canvas);
+texture.colorSpace=THREE.SRGBColorSpace;
+texture.anisotropy=Math.min(
+8,renderer.capabilities.getMaxAnisotropy()
 );
 
-// REDIMENSIONAMENTO
+const mesh=new THREE.Mesh(
+new THREE.PlaneGeometry(width,height),
+new THREE.MeshBasicMaterial({
+map:texture,
+side:THREE.DoubleSide
+})
+);
+mesh.position.set(x,y,z);
+scene.add(mesh);
+dynamic.push(mesh);
 
-window.addEventListener("resize", () => {
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
+if(action){
+mesh.userData.action=action;
+interactive.push(mesh);
+}
+return mesh;
+}
+
+function clearPanels(){
+for(const mesh of dynamic){
+scene.remove(mesh);
+mesh.geometry.dispose();
+mesh.material.map.dispose();
+mesh.material.dispose();
+}
+dynamic.length=0;
+interactive.length=0;
+interactive.push(...teleportMarkers);
+}
+
+function wrap(text,max=44){
+const lines=[];
+let line="";
+for(const word of String(text).split(/\s+/)){
+const candidate=line?line+" "+word:word;
+if(candidate.length>max&&line){
+lines.push(line);
+line=word;
+}else line=candidate;
+}
+if(line)lines.push(line);
+return lines;
+}
+
+function center(text,y,width=5.15,height=.27,action=null,kind="normal"){
+return label(text,0,y,-3.52,width,height,action,kind);
+}
+
+const subjects=[
+"Língua Portuguesa",
+"Informática",
+"Direito Constitucional",
+"Constituição de Santa Catarina",
+"Direito Penal Comum",
+"Direito Processual Penal Comum",
+"Direito Penal Militar",
+"Legislação Especial",
+"Legislação de Trânsito",
+"Legislação Institucional"
+];
+
+for(const subject of subjects){
+const option=document.createElement("option");
+option.value=subject;
+option.textContent=subject;
+$("subject").appendChild(option);
+}
+
+let questions=[];
+let pool=[];
+let current=0;
+let answered=false;
+let examCorrect=0;
+let examDone=0;
+let examEnded=false;
+let wrongQuestions=new Set();
+
+let stats={total:0,correct:0,subjects:{}};
+
+try{
+const saved=JSON.parse(localStorage.getItem("pmsc_2026_v5"));
+if(saved){
+stats=saved.stats||stats;
+wrongQuestions=new Set(saved.wrong||[]);
+}
+}catch(e){}
+
+function saveProgress(){
+try{
+localStorage.setItem("pmsc_2026_v5",JSON.stringify({
+stats,
+wrong:[...wrongQuestions]
+}));
+}catch(e){}
+updateStats();
+}
+
+function updateStats(){
+const percent=stats.total?
+Math.round(stats.correct*100/stats.total):0;
+
+let html=`
+Respondidas: ${stats.total}<br>
+Acertos: ${stats.correct}<br>
+Aproveitamento: ${percent}%<br>
+Revisar: ${wrongQuestions.size}
+`;
+
+for(const [name,value] of Object.entries(stats.subjects)){
+const safe=name.replaceAll("&","&amp;")
+.replaceAll("<","&lt;").replaceAll(">","&gt;");
+html+=`<br>${safe}: ${value.correct}/${value.total}`;
+}
+$("stats").innerHTML=html;
+}
+
+function environmentPanel(){
+label("ESCOLHER AMBIENTE",-4.25,3.12,-3.95,2.25,.27);
+
+environments.forEach((item,index)=>{
+const [id,name]=item;
+label(
+name,-4.25,2.78-index*.25,-3.94,2.25,.23,
+()=>changeEnvironment(id),
+currentEnvironment===id?"correct":"normal"
+);
 });
 
-// INICIALIZAÇÃO
+label("ALEATORIO",-4.25,.25,-3.94,2.25,.24,
+()=>changeEnvironment("random"));
 
-updateSubjects();
+label("DIA / NOITE",-4.25,-.08,-3.94,2.25,.24,()=>{
+$("lighting").value=$("lighting").value==="day"?"night":"day";
+$("lighting").dispatchEvent(new Event("change"));
+});
+}
+
+function render(message=""){
+clearPanels();
+center("PMSC 2026 | ACADEMIA VIRTUAL",3.45,5.3,.27);
+environmentPanel();
+
+if(!pool.length){
+center("CARREGUE QUESTOES PARA INICIAR",2.4);
+center("USE O MENU PARA IMPORTAR JSON",1.95);
+return;
+}
+
+if(examEnded){
+center("SIMULADO FINALIZADO",2.6);
+center(`ACERTOS: ${examCorrect} DE ${examDone}`,2.1);
+center("REINICIAR SIMULADO",1.55,3.8,.35,start);
+return;
+}
+
+const q=pool[current];
+center(q.subject.toUpperCase(),3.08,5.15,.24);
+
+const questionLines=wrap(q.question,44);
+questionLines.slice(0,4).forEach((text,index)=>{
+center(text,2.79-index*.24,5.2,.22);
+});
+
+q.options.forEach((option,index)=>{
+const lines=wrap(`${"ABCDE"[index]}) ${option}`,46);
+const y=1.7-index*.32;
+
+let kind="normal";
+if(answered){
+if(index===q.correct)kind="correct";
+else if(index===q.selected)kind="wrong";
+}
+
+center(lines[0],y,5.15,.28,()=>answer(index),kind);
+
+if(lines[1]){
+center(lines[1],y-.115,5.15,.105,()=>answer(index));
+}
+});
+
+center(message||`QUESTAO ${current+1} DE ${pool.length}`,
+-.04,5.1,.24);
+
+center(
+current===pool.length-1?"FINALIZAR / REINICIAR":"PROXIMA QUESTAO",
+-.38,3.8,.29,next
+);
+
+label("DESEMPENHO",4.25,2.75,-3.94,2.25,.27);
+label(`${stats.correct} / ${stats.total} ACERTOS`,
+4.25,2.4,-3.94,2.25,.28);
+label("DISCIPLINA",4.25,1.98,-3.94,2.25,.25);
+label(q.subject.slice(0,27),4.25,1.65,-3.94,2.25,.28);
+
+if(answered&&q.explanation){
+wrap(q.explanation,27).slice(0,4).forEach((text,index)=>{
+label(text,4.25,1.2-index*.25,-3.94,2.25,.22);
+});
+}
+}
+
+function answer(index){
+if(answered||examEnded||!pool.length)return;
+
+const q=pool[current];
+answered=true;
+q.selected=index;
+const right=index===q.correct;
+
+examDone++;
+if(right)examCorrect++;
+
+stats.total++;
+if(right)stats.correct++;
+
+if(!stats.subjects[q.subject]){
+stats.subjects[q.subject]={total:0,correct:0};
+}
+
+const s=stats.subjects[q.subject];
+s.total++;
+if(right)s.correct++;
+
+if(right)wrongQuestions.delete(q.id);
+else wrongQuestions.add(q.id);
+
+saveProgress();
+render(right?"RESPOSTA CORRETA!":
+`GABARITO: ${"ABCDE"[q.correct]}`);
+}
+
+function next(){
+if(!pool.length)return;
+
+if($("mode").value==="exam"&&current===pool.length-1){
+examEnded=true;
+render();
+return;
+}
+
+current=(current+1)%pool.length;
+answered=false;
+render();
+}
+
+function start(){
+const mode=$("mode").value;
+const subject=$("subject").value;
+
+pool=questions.filter(q=>{
+const matchesSubject=subject==="Todas"||q.subject===subject;
+const matchesReview=mode!=="review"||wrongQuestions.has(q.id);
+return matchesSubject&&matchesReview;
+});
+
+if(mode==="exam"){
+pool=pool.slice();
+for(let i=pool.length-1;i>0;i--){
+const j=Math.floor(Math.random()*(i+1));
+[pool[i],pool[j]]=[pool[j],pool[i]];
+}
+}
+
+current=0;
+answered=false;
+examCorrect=0;
+examDone=0;
+examEnded=false;
+render();
+
+$("status").textContent=pool.length?
+`${pool.length} questões disponíveis.`:
+"Nenhuma questão neste filtro.";
+}
+
+$("start").onclick=start;
+$("mode").onchange=start;
+$("subject").onchange=start;
+
+function normalize(q){
+const question=q.enunciado??q.pergunta??q.questao??q.question;
+const raw=q.alternativas??q.opcoes??q.options;
+if(!question||!raw)return null;
+
+const keys=Array.isArray(raw)?null:Object.keys(raw);
+const options=Array.isArray(raw)?raw:keys.map(k=>raw[k]);
+
+if(options.length<2||options.length>5)return null;
+
+const answer=q.correta??q.resposta??q.gabarito??q.correct;
+let correct=-1;
+
+if(typeof answer==="number"){
+correct=answer;
+}else if(typeof answer==="string"){
+const value=answer.trim();
+
+if(/^[A-E]$/i.test(value)){
+correct=value.toUpperCase().charCodeAt(0)-65;
+}else if(keys&&keys.includes(value)){
+correct=keys.indexOf(value);
+}else if(/^\d+$/.test(value)){
+correct=Number(value);
+}else{
+correct=options.map(String).indexOf(value);
+}
+}
+
+if(!Number.isInteger(correct)||correct<0||correct>=options.length){
+return null;
+}
+
+const subject=String(q.disciplina??q.materia??q.subject??"Geral");
+
+return{
+id:String(q.id??`${subject}|${question}`),
+question:String(question),
+options:options.map(String),
+correct,
+subject,
+explanation:String(
+q.explicacao??q.comentario??q.explanation??""
+)
+};
+}
+
+$("file").onchange=async event=>{
+try{
+let count=0;
+
+for(const file of event.target.files){
+const data=JSON.parse(await file.text());
+const raw=Array.isArray(data)?data:data.questoes??data.questions;
+
+if(!Array.isArray(raw)){
+throw new Error(`Formato inválido: ${file.name}`);
+}
+
+const valid=raw.map(normalize).filter(Boolean);
+questions.push(...valid);
+count+=valid.length;
+}
+
+const select=$("subject");
+
+for(const subject of new Set(questions.map(q=>q.subject))){
+const exists=[...select.options].some(o=>o.value===subject);
+if(!exists){
+const option=document.createElement("option");
+option.value=subject;
+option.textContent=subject;
+select.appendChild(option);
+}
+}
+
+start();
+$("status").textContent=`${count} questões importadas.`;
+}catch(error){
+$("status").textContent="Erro JSON: "+error.message;
+}
+};
+
+$("demo").onclick=()=>{
+questions=[
+{
+question:"Qual Constituição está atualmente vigente no Brasil?",
+options:[
+"Constituição de 1967",
+"Constituição de 1988",
+"Constituição de 1946",
+"Constituição de 1937"
+],
+correct:1,
+subject:"Direito Constitucional",
+explanation:"A Constituição Federal vigente foi promulgada em 1988."
+},
+{
+question:"Qual princípio exige atuação administrativa conforme o ordenamento jurídico?",
+options:[
+"Publicidade",
+"Legalidade",
+"Impessoalidade",
+"Eficiência"
+],
+correct:1,
+subject:"Direito Constitucional",
+explanation:"O princípio da legalidade orienta a Administração Pública."
+},
+{
+question:"Qual artigo do Código Penal trata do furto?",
+options:[
+"Artigo 121",
+"Artigo 155",
+"Artigo 157",
+"Artigo 171"
+],
+correct:1,
+subject:"Direito Penal Comum",
+explanation:"O furto está previsto no artigo 155 do Código Penal."
+},
+{
+question:"Qual sinalização indica parada obrigatória?",
+options:[
+"Placa PARE",
+"Placa de estacionamento",
+"Placa de velocidade máxima",
+"Placa de pedestres"
+],
+correct:0,
+subject:"Legislação de Trânsito",
+explanation:"A placa R-1 indica parada obrigatória."
+}
+].map(normalize).filter(Boolean);
+
+start();
+$("status").textContent="Demonstração carregada.";
+};
+
+$("reset").onclick=()=>{
+if(!confirm("Zerar estatísticas e revisão?"))return;
+stats={total:0,correct:0,subjects:{}};
+wrongQuestions.clear();
+saveProgress();
+start();
+};
+
+const markerPositions=[
+[0,-1.5],
+[-2.8,-2.5],
+[2.8,-2.5],
+[0,-4.8]
+];
+
+function teleport(x,z){
+const head=new THREE.Vector3();
+
+if(renderer.xr.isPresenting){
+renderer.xr.getCamera().getWorldPosition(head);
+}else{
+camera.getWorldPosition(head);
+}
+
+rig.position.x+=x-head.x;
+rig.position.z+=z-head.z;
+$("status").textContent="Teletransporte realizado.";
+}
+
+for(const [x,z] of markerPositions){
+const marker=new THREE.Mesh(
+new THREE.CylinderGeometry(.33,.33,.025,40),
+new THREE.MeshBasicMaterial({
+color:0x20c8fa,
+transparent:true,
+opacity:.75
+})
+);
+
+marker.position.set(x,.015,z);
+marker.userData.action=()=>teleport(x,z);
+scene.add(marker);
+teleportMarkers.push(marker);
+interactive.push(marker);
+}
+
+function selectObject(source){
+source.updateWorldMatrix(true,false);
+rotation.extractRotation(source.matrixWorld);
+
+raycaster.ray.origin.setFromMatrixPosition(source.matrixWorld);
+raycaster.ray.direction.set(0,0,-1)
+.applyMatrix4(rotation).normalize();
+
+const hits=raycaster.intersectObjects(interactive,false);
+if(!hits.length||hits[0].distance>12)return;
+
+const action=hits[0].object.userData.action;
+if(typeof action==="function")action();
+}
+
+const controllerFactory=new XRControllerModelFactory();
+const handFactory=new XRHandModelFactory();
+
+for(let i=0;i<2;i++){
+const controller=renderer.xr.getController(i);
+
+controller.addEventListener("selectstart",()=>{
+selectObject(controller);
+});
+
+rig.add(controller);
+
+const pointer=new THREE.Line(
+new THREE.BufferGeometry().setFromPoints([
+new THREE.Vector3(0,0,0),
+new THREE.Vector3(0,0,-6)
+]),
+new THREE.LineBasicMaterial({color:0x4cdeff})
+);
+
+controller.add(pointer);
+
+const grip=renderer.xr.getControllerGrip(i);
+grip.add(controllerFactory.createControllerModel(grip));
+rig.add(grip);
+
+const hand=renderer.xr.getHand(i);
+hand.add(handFactory.createHandModel(hand,"mesh"));
+
+hand.addEventListener("selectstart",()=>{
+selectObject(hand);
+});
+
+rig.add(hand);
+}
+
+$("enter").onclick=async()=>{
+try{
+if(renderer.xr.isPresenting){
+await renderer.xr.getSession().end();
+return;
+}
+
+if(!navigator.xr){
+throw new Error("WebXR não disponível.");
+}
+
+const supported=await navigator.xr.isSessionSupported("immersive-vr");
+
+if(!supported){
+throw new Error("Realidade virtual não suportada.");
+}
+
+const session=await navigator.xr.requestSession("immersive-vr",{
+optionalFeatures:["local-floor","hand-tracking"]
+});
+
+await renderer.xr.setSession(session);
+
+$("enter").textContent="SAIR DO VR";
+
+session.addEventListener("end",()=>{
+$("enter").textContent="ENTRAR EM VR";
+});
+
+}catch(error){
+$("status").textContent="Erro VR: "+error.message;
+}
+};
+
+const clock=new THREE.Clock();
+const direction=new THREE.Vector3();
+const rightVector=new THREE.Vector3();
+
+renderer.setAnimationLoop(()=>{
+const dt=Math.min(clock.getDelta(),.05);
+
+if(renderer.xr.isPresenting){
+const session=renderer.xr.getSession();
+
+for(const source of session.inputSources){
+if(!source.gamepad||source.handedness!=="left")continue;
+
+const axes=source.gamepad.axes;
+const x=axes.length>=4?axes[2]:(axes[0]||0);
+const z=axes.length>=4?axes[3]:(axes[1]||0);
+
+if(Math.abs(x)<.18&&Math.abs(z)<.18)continue;
+
+renderer.xr.getCamera().getWorldDirection(direction);
+direction.y=0;
+direction.normalize();
+
+rightVector.set(-direction.z,0,direction.x);
+
+const move=direction.clone()
+.multiplyScalar(-z)
+.addScaledVector(rightVector,x)
+.multiplyScalar(dt*1.6);
+
+rig.position.x=THREE.MathUtils.clamp(
+rig.position.x+move.x,-5.1,5.1
+);
+
+rig.position.z=THREE.MathUtils.clamp(
+rig.position.z+move.z,-5.5,2.5
+);
+}
+}
+
+renderer.render(scene,camera);
+});
+
+window.addEventListener("resize",()=>{
+camera.aspect=innerWidth/innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(innerWidth,innerHeight);
+});
+
+let savedEnvironment="academy";
+
+try{
+savedEnvironment=localStorage.getItem("pmsc_environment")||"academy";
+
+const savedLighting=localStorage.getItem("pmsc_lighting");
+if(savedLighting==="day"||savedLighting==="night"){
+$("lighting").value=savedLighting;
+}
+}catch(e){}
+
+if(!environments.some(item=>item[0]===savedEnvironment)){
+savedEnvironment="academy";
+}
+
+changeEnvironment(savedEnvironment);
 updateStats();
 render();
 
-$("status").textContent =
-  "Academia preparada. Importe suas questões JSON ou carregue a demonstração.";
-
-renderer.setAnimationLoop(() => {
-  const delta = clock.getDelta();
-
-  updateMovement(delta);
-
-  renderer.render(scene, camera);
-});
+$("status").textContent=
+"Academia pronta. Escolha o ambiente e carregue as questões.";
 
 </script>
 </body>
