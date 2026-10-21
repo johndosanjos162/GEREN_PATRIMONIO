@@ -1,4 +1,3 @@
-
 import streamlit as st
 import json
 import random
@@ -24,46 +23,75 @@ DISTRIBUICAO = {
 @st.cache_data
 def load_banco():
     base = pathlib.Path(__file__).parent
-    for name in ["json.json", "json_corrigido.json"]:
-        p = base / name
-        if p.exists():
+    try:
+        arquivos = [f.name for f in base.iterdir() if f.is_file()]
+    except:
+        arquivos = ["erro ao listar"]
+    
+    # Procura todos .json na raiz
+    candidatos = []
+    try:
+        for f in base.iterdir():
+            if f.is_file() and f.suffix.lower() == ".json":
+                candidatos.append(f)
+    except:
+        pass
+    
+    # Tenta cwd também
+    try:
+        cwd = pathlib.Path.cwd()
+        for f in cwd.iterdir():
+            if f.is_file() and f.suffix.lower() == ".json" and f not in candidatos:
+                candidatos.append(f)
+    except:
+        pass
+
+    if not candidatos:
+        st.error(f"❌ Nenhum .json encontrado. Arquivos na pasta {base}: {arquivos}")
+        return None, None
+
+    for p in candidatos:
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                total = sum(len(v) for v in data.values() if isinstance(v, list))
+                if total > 0:
+                    return data, f"{p.name} ({total} questões)"
+            elif isinstance(data, list):
+                d = defaultdict(list)
+                for q in data:
+                    d[q.get("materia","Geral")].append(q)
+                return dict(d), f"{p.name} ({len(data)} questões)"
+        except Exception as e:
+            st.warning(f"⚠️ Erro ao ler {p.name}: {e} - tentando correção automática...")
             try:
-                with open(p, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                if isinstance(data, dict):
-                    return data, str(p)
-                elif isinstance(data, list):
-                    d = defaultdict(list)
-                    for q in data:
-                        d[q.get("materia","Geral")].append(q)
-                    return dict(d), str(p)
-            except Exception as e:
-                st.error(f"Erro JSON {p}: {e}")
-                # tenta corrigir via regex
-                try:
-                    import re
-                    text = p.read_text(encoding="utf-8")
-                    pat = re.compile(r'\{\s*"pergunta"\s*:\s*"((?:\\"|[^"])*)"\s*,\s*"alternativas"\s*:\s*\[(.*?)\]\s*,\s*"correta"\s*:\s*"([A-E])"\s*\}', re.DOTALL)
-                    materias = []
-                    for m in re.finditer(r'"(Legislação Institucional|Direito Constitucional|Língua Portuguesa|Legislação Especial|Legislação de Trânsito|Direito Penal Comum|Direito Processual Penal Comum|Direito Penal Militar|Informática)"\s*:\s*\[', text):
-                        materias.append((m.start(), m.group(1)))
-                    materias.sort()
-                    questions = []
-                    for mm in pat.finditer(text):
-                        alt_text = mm.group(2)
-                        alts = re.findall(r'"((?:\\"|[^"])*)"', alt_text)
-                        questions.append((mm.start(), {"pergunta": mm.group(1).replace('\\"', '"'), "alternativas": [a.replace('\\"', '"') for a in alts], "correta": mm.group(3)}))
-                    final = defaultdict(list)
-                    questions.sort()
-                    idx=0
-                    for qpos,qobj in questions:
-                        while idx+1 < len(materias) and materias[idx+1][0] < qpos:
-                            idx+=1
-                        if idx < len(materias):
-                            final[materias[idx][1]].append(qobj)
-                    return dict(final), f"{p} (corrigido via regex)"
-                except Exception as e2:
-                    st.error(f"Falha correção: {e2}")
+                import re
+                text = p.read_text(encoding="utf-8")
+                pat = re.compile(r'\{\s*"pergunta"\s*:\s*"((?:\\"|[^"])*)"\s*,\s*"alternativas"\s*:\s*\[(.*?)\]\s*,\s*"correta"\s*:\s*"([A-E])"\s*\}', re.DOTALL)
+                materias = []
+                for m in re.finditer(r'"(Legislação Institucional|Direito Constitucional|Língua Portuguesa|Legislação Especial|Legislação de Trânsito|Direito Penal Comum|Direito Processual Penal Comum|Direito Penal Militar|Informática)"\s*:\s*\[', text):
+                    materias.append((m.start(), m.group(1)))
+                materias.sort()
+                questions = []
+                for mm in pat.finditer(text):
+                    alt_text = mm.group(2)
+                    alts = re.findall(r'"((?:\\"|[^"])*)"', alt_text)
+                    questions.append((mm.start(), {"pergunta": mm.group(1).replace('\\"', '"'), "alternativas": [a.replace('\\"', '"') for a in alts], "correta": mm.group(3)}))
+                final = defaultdict(list)
+                questions.sort()
+                idx=0
+                for qpos,qobj in questions:
+                    while idx+1 < len(materias) and materias[idx+1][0] < qpos:
+                        idx+=1
+                    if idx < len(materias):
+                        final[materias[idx][1]].append(qobj)
+                if final:
+                    return dict(final), f"{p.name} (corrigido - {sum(len(v) for v in final.values())} q)"
+            except Exception as e2:
+                st.error(f"Falha correção {p.name}: {e2}")
+                continue
+    st.error(f"❌ Nenhum JSON válido. Encontrados: {[c.name for c in candidatos]} | Arquivos na pasta: {arquivos}")
     return None, None
 
 def montar_simulado(banco):
@@ -89,6 +117,12 @@ banco, caminho = load_banco()
 st.title("🎯 PMSC 2026 – Simulador AOCP")
 if not banco:
     st.error("❌ json.json não encontrado na raiz. Coloque o json_corrigido.json como json.json no GitHub.")
+    # Mostra arquivos para debug
+    base = pathlib.Path(__file__).parent
+    try:
+        st.write("Arquivos na pasta:", [f.name for f in base.iterdir()])
+    except Exception as e:
+        st.write(f"Erro listar: {e}")
     st.stop()
 st.caption(f"✅ {caminho} | {sum(len(v) for v in banco.values())} questões | Edital AOCP 60q")
 
@@ -126,14 +160,15 @@ def render_3d_leve(questoes, modo="ARENA"):
         return
     amostra = questoes[:15]
     safe = [{"pergunta": q["pergunta"][:150].replace(chr(34),"'"), "alternativas": [a[:50].replace(chr(34),"'") for a in q["alternativas"][:5]], "correta": q["correta"], "materia": q.get("materia","Geral")[:20]} for q in amostra]
-    q_json = json.dumps(safe, ensure_ascii=False).replace("</", "<\/")
+    q_json = json.dumps(safe, ensure_ascii=False).replace("</", "<\\/")
+
     html = f'''
     <html><head><script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script><script src="https://unpkg.com/super-hands@3.0.5/dist/super-hands.min.js"></script>
     <style>body{{margin:0;background:#070d1e;}}#hud{{position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.8);color:#00e5ff;padding:10px;border-radius:8px;font-size:12px;}}#vr{{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);z-index:9999;background:#00d1ff;color:white;border:none;padding:12px 28px;border-radius:99px;font-weight:900;cursor:pointer;}}</style>
     </head><body><div id="hud">🥽 {modo} - {len(safe)} blocos<br>👊 Grip/Pinch = mover<br>👉 Trigger = responder</div><button id="vr">🥽 ENTRAR VR</button>
     <a-scene background="color:#070d1e" webxr="optionalFeatures: hand-tracking, local-floor" embedded style="height:650px;width:100%;"><a-entity light="type:ambient;intensity:0.8"></a-entity><a-plane rotation="-90 0 0" width="40" height="40" color="#0d1733"></a-plane>
     <a-entity id="rig" position="0 0 5"><a-entity camera look-controls wasd-controls position="0 1.6 0"><a-cursor raycaster="objects:.clickable,.grabbable" color="#00d1ff"></a-cursor></a-entity><a-entity hand-controls="hand:left" super-hands laser-controls="hand:left" raycaster="objects:.clickable,.grabbable;far:12"></a-entity><a-entity hand-controls="hand:right" super-hands laser-controls="hand:right" raycaster="objects:.clickable,.grabbable;far:12"></a-entity></a-entity><a-entity id="world"></a-entity></a-scene>
-    <script>const QS={q_json};function mk(q,i){{const c=5,s=2.3,x=(i%c)*s-((c-1)*s/2),z=Math.floor(i/c)*-2.5,y=1.2+Math.random()*0.5;const r=document.createElement('a-entity');r.setAttribute('position',`${{x}} ${{y}} ${{z}}`);r.setAttribute('class','grabbable');r.setAttribute('grabbable','');const b=document.createElement('a-box');b.setAttribute('width','2');b.setAttribute('height','1.5');b.setAttribute('depth','0.15');b.setAttribute('color','#13244a');b.setAttribute('class','grabbable');const t=document.createElement('a-text');t.setAttribute('value',`${{i+1}}. ${{q.materia}}\n${{q.pergunta.slice(0,80)}}`);t.setAttribute('color','white');t.setAttribute('width','1.8');t.setAttribute('align','center');t.setAttribute('position','0 0.35 0.1');t.setAttribute('wrap-count','28');r.appendChild(b);r.appendChild(t);q.alternativas.forEach((a,idx)=>{{const row=document.createElement('a-entity');row.setAttribute('position',`0 ${{-0.1-idx*0.18}} 0.1`);row.setAttribute('class','clickable');row.setAttribute('data-i',i);const bg=document.createElement('a-plane');bg.setAttribute('width','1.7');bg.setAttribute('height','0.14');bg.setAttribute('color','#0a1933');bg.setAttribute('class','clickable');const tx=document.createElement('a-text');tx.setAttribute('value',a);tx.setAttribute('color','#cfe0ff');tx.setAttribute('width','1.6');tx.setAttribute('position','-0.8 0 0.01');bg.appendChild(tx);row.appendChild(bg);row.addEventListener('click',()=>{{document.querySelectorAll(`[data-i="${{i}}"] a-plane`).forEach(p=>p.setAttribute('color','#0a1933'));bg.setAttribute('color',a.trim()[0].toUpperCase()===q.correta?'#00c853':'#d50000');}});r.appendChild(row);}});return r;}}document.addEventListener('DOMContentLoaded',()=>{{const w=document.getElementById('world');QS.forEach((q,i)=>w.appendChild(mk(q,i)));}});document.getElementById('vr').onclick=()=>document.querySelector('a-scene').enterVR();</script></body></html>
+    <script>const QS={q_json};function mk(q,i){{const c=5,s=2.3,x=(i%c)*s-((c-1)*s/2),z=Math.floor(i/c)*-2.5,y=1.2+Math.random()*0.5;const r=document.createElement('a-entity');r.setAttribute('position',`${{x}} ${{y}} ${{z}}`);r.setAttribute('class','grabbable');r.setAttribute('grabbable','');const b=document.createElement('a-box');b.setAttribute('width','2');b.setAttribute('height','1.5');b.setAttribute('depth','0.15');b.setAttribute('color','#13244a');b.setAttribute('class','grabbable');const t=document.createElement('a-text');t.setAttribute('value',`${{i+1}}. ${{q.materia}}\\n${{q.pergunta.slice(0,80)}}`);t.setAttribute('color','white');t.setAttribute('width','1.8');t.setAttribute('align','center');t.setAttribute('position','0 0.35 0.1');t.setAttribute('wrap-count','28');r.appendChild(b);r.appendChild(t);q.alternativas.forEach((a,idx)=>{{const row=document.createElement('a-entity');row.setAttribute('position',`0 ${{-0.1-idx*0.18}} 0.1`);row.setAttribute('class','clickable');row.setAttribute('data-i',i);const bg=document.createElement('a-plane');bg.setAttribute('width','1.7');bg.setAttribute('height','0.14');bg.setAttribute('color','#0a1933');bg.setAttribute('class','clickable');const tx=document.createElement('a-text');tx.setAttribute('value',a);tx.setAttribute('color','#cfe0ff');tx.setAttribute('width','1.6');tx.setAttribute('position','-0.8 0 0.01');bg.appendChild(tx);row.appendChild(bg);row.addEventListener('click',()=>{{document.querySelectorAll(`[data-i="${{i}}"] a-plane`).forEach(p=>p.setAttribute('color','#0a1933'));bg.setAttribute('color',a.trim()[0].toUpperCase()===q.correta?'#00c853':'#d50000');}});r.appendChild(row);}});return r;}}document.addEventListener('DOMContentLoaded',()=>{{const w=document.getElementById('world');QS.forEach((q,i)=>w.appendChild(mk(q,i)));}});document.getElementById('vr').onclick=()=>document.querySelector('a-scene').enterVR();</script></body></html>
     '''
     st.components.v1.html(html, height=700, scrolling=False)
     if st.button("❌ Fechar 3D", key=f"close3d_{modo}"):
