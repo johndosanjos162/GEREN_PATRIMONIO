@@ -5,6 +5,7 @@ import random
 import time
 import pathlib
 from datetime import datetime
+from collections import defaultdict
 
 st.set_page_config(
     page_title="PMSC 2026 – Simulador Imersivo AOCP",
@@ -13,9 +14,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ==================================================================
-# DISTRIBUIÇÃO OFICIAL EDITAL PMSC 2026 - AOCP (60 questões)
-# ==================================================================
 DISTRIBUICAO = {
     "Legislação Institucional": 10,
     "Direito Constitucional": 8,
@@ -29,514 +27,345 @@ DISTRIBUICAO = {
 }
 TOTAL = 60
 
-# ==================================================================
-# CARREGAMENTO DO JSON
-# ==================================================================
+# ========== CARREGAMENTO AUTOMÁTICO DO JSON DA RAIZ (SEM UPLOAD) ==========
 @st.cache_data
-def load_questoes_from_file(path="json_corrigido.json"):
-    p = pathlib.Path(path)
-    if p.exists():
-        with open(p, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        # Normaliza: pode ser dict de listas ou lista
-        if isinstance(data, dict):
-            return data
-        elif isinstance(data, list):
-            # agrupa por materia se tiver campo
-            from collections import defaultdict
-            d = defaultdict(list)
-            for q in data:
-                d[q.get("materia", "Geral")].append(q)
-            return dict(d)
-    return None
+def load_banco_automatico():
+    # Pega a pasta onde o App.py está (raiz do repo no Streamlit Cloud)
+    base_dir = pathlib.Path(__file__).parent
+    candidatos = [
+        base_dir / "json.json",
+        base_dir / "json_corrigido.json",
+        base_dir / "data.json",
+        base_dir / "questoes.json",
+        pathlib.Path("json.json"),
+        pathlib.Path("json_corrigido.json"),
+    ]
+    for p in candidatos:
+        if p.exists():
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                # Normaliza
+                if isinstance(data, dict):
+                    # já está no formato materia: [questoes]
+                    return data, str(p)
+                elif isinstance(data, list):
+                    d = defaultdict(list)
+                    for q in data:
+                        mat = q.get("materia", q.get("disciplina", "Geral"))
+                        d[mat].append(q)
+                    return dict(d), str(p)
+            except Exception as e:
+                st.error(f"Erro ao ler {p}: {e}")
+    return None, None
 
-def load_questoes():
-    # tenta json_corrigido.json, json.json, e upload
-    for cand in ["json_corrigido.json", "json.json", "/mnt/data/json_corrigido.json", "/mnt/data/json.json"]:
-        data = load_questoes_from_file(cand)
-        if data:
-            return data
-    return None
+def render_arena_3d(questoes, modo="ARENA LIVRE", height=850):
+    if not questoes:
+        st.warning("Nenhuma questão para renderizar.")
+        return
+    amostra = questoes[:40]
+    safe_q = []
+    for q in amostra:
+        safe_q.append({
+            "pergunta": q.get("pergunta","")[:280],
+            "alternativas": q.get("alternativas", [])[:5],
+            "correta": q.get("correta","B").upper(),
+            "materia": q.get("materia","Geral")[:30]
+        })
+    questoes_json = json.dumps(safe_q, ensure_ascii=False).replace("</", "<\\/")
 
-# ==================================================================
-# RENDER 3D - WEBXR PARA META QUEST 3S
-# ==================================================================
-def render_3d_quest(questoes, modo="simulado"):
-    # Limita para performance no Quest - max 60 blocos
-    questoes_json = json.dumps(questoes[:60], ensure_ascii=False)
-    # HTML imersivo com A-Frame 1.5 + super-hands + grabbable
     html = f"""
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
-<script src="https://unpkg.com/super-hands@3.1.0/dist/super-hands.min.js"></script>
-<script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
+<script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+<script src="https://unpkg.com/super-hands@3.0.5/dist/super-hands.min.js"></script>
 <style>
-  body {{ margin:0; overflow:hidden; font-family: sans-serif; }}
-  #hud {{ position: absolute; top:10px; left:10px; color:white; background: rgba(0,0,0,0.6); padding:10px; border-radius:8px; z-index:999; font-size:14px; max-width:320px; }}
-  #enter-vr {{ position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:999; padding:14px 28px; background:#00d1ff; border:none; border-radius:12px; font-weight:bold; cursor:pointer; }}
+html,body{{margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#070d1e; font-family: sans-serif;}}
+#hud {{
+  position: fixed; top:10px; left:10px; z-index:9999;
+  background: rgba(0,0,0,0.85); color:#00e5ff; border:1px solid #00e5ff;
+  padding:12px 16px; border-radius:12px; font-size:13px; line-height:1.4; max-width:340px;
+}}
+#vrBtn {{
+  position: fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:9999;
+  background: linear-gradient(90deg,#00d1ff,#0066ff); color:white; border:none;
+  padding:16px 36px; border-radius:999px; font-weight:900; font-size:16px; letter-spacing:1px;
+  box-shadow:0 0 20px #00d1ff88; cursor:pointer;
+}}
 </style>
 </head>
 <body>
 <div id="hud">
-<b>🥽 MODO QUEST 3S</b><br>
-👊 <b>Pinch/Grab:</b> mover blocos<br>
-👉 <b>Laser / Toque:</b> marcar alternativa<br>
-🎯 {len(questoes)} blocos | {modo}<br>
-<span id="progress">0/{len(questoes)} respondidas</span><br>
-<small>Entre em VR pelo botão abaixo</small>
+<div style="font-size:16px; font-weight:900; color:white; margin-bottom:6px;">🥽 META QUEST 3S - {modo}</div>
+<div>🎯 <b>{len(safe_q)} blocos 3D</b></div>
+<div>👊 <b>AGARRAR:</b> Grip / Pinch</div>
+<div>👉 <b>RESPONDER:</b> Trigger / Laser</div>
+<div id="status" style="margin-top:8px; color:#00ff88;">0/{len(safe_q)} respondidas</div>
 </div>
-<button id="enter-vr">ENTRAR EM VR - META QUEST 3S</button>
-
+<button id="vrBtn">🥽 ENTRAR EM VR - QUEST 3S</button>
 <a-scene
-  background="color: #0a1020"
-  renderer="antialias: true; colorManagement: true"
-  webxr="optionalFeatures: hand-tracking, hit-test, local-floor, bounded-floor"
-  xr-mode-ui="enabled: true"
-  >
-  <a-assets>
-    <a-mixin id="block-mat" material="color: #1a2a4a; metalness: 0.2; roughness: 0.6"></a-mixin>
-  </a-assets>
-
-  <!-- Luzes -->
-  <a-entity light="type: ambient; intensity: 0.6"></a-entity>
-  <a-entity light="type: directional; intensity: 0.8" position="2 4 2"></a-entity>
-  <a-entity light="type: point; intensity: 0.5; distance: 20" position="0 3 0" color="#00d1ff"></a-entity>
-
-  <!-- Chão infinito -->
-  <a-plane position="0 0 0" rotation="-90 0 0" width="40" height="40" color="#0f1a30" material="roughness: 0.8"></a-plane>
-  <a-grid position="0 0.01 0" width="40" height="40" color="#1a3a6a"></a-grid>
-
-  <!-- Rig com mãos e controles -->
-  <a-entity id="rig" position="0 0 4">
-    <a-entity id="camera" camera look-controls wasd-controls position="0 1.6 0">
-      <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable"></a-entity>
+  background="color: #070d1e"
+  renderer="antialias:true; colorManagement:true"
+  webxr="optionalFeatures: hand-tracking, local-floor, bounded-floor, hit-test"
+  vr-mode-ui="enabled:true"
+  embedded
+  style="width:100%; height:100%;"
+>
+  <a-entity light="type:ambient; intensity:0.7"></a-entity>
+  <a-entity light="type:directional; intensity:1.0" position="2 6 3"></a-entity>
+  <a-entity light="type:point; intensity:0.6; distance:30; color:#00d1ff" position="0 4 0"></a-entity>
+  <a-plane rotation="-90 0 0" width="60" height="60" color="#0d1733"></a-plane>
+  <a-entity id="grid" position="0 0.02 0"></a-entity>
+  <a-entity id="rig" position="0 0 6">
+    <a-entity id="cam" camera look-controls wasd-controls="acceleration:25" position="0 1.65 0">
+      <a-cursor raycaster="objects: .clickable, .grabbable" color="#00d1ff"></a-cursor>
     </a-entity>
-    
-    <!-- Controle esquerdo - grab -->
-    <a-entity id="left-hand" hand-controls="hand: left; handModelStyle: lowPoly; color: #00d1ff"
-              super-hands="grabStartButtons: gripdown, pinchstart; grabEndButtons: gripup, pinchend"
-              sphere-collider="objects: .grabbable"
-              laser-controls="hand: left" raycaster="objects: .clickable, .grabbable; far: 10"
-              line="color: #00d1ff"></a-entity>
-    <!-- Controle direito - laser para marcar -->
-    <a-entity id="right-hand" hand-controls="hand: right; handModelStyle: lowPoly; color: #ff6a00"
-              super-hands="grabStartButtons: gripdown, pinchstart; grabEndButtons: gripup, pinchend"
-              sphere-collider="objects: .grabbable"
-              laser-controls="hand: right" raycaster="objects: .clickable, .grabbable; far: 10"
-              line="color: #ff6a00"></a-entity>
+    <a-entity hand-controls="hand:left; handModelStyle: lowPoly; color:#00d1ff"
+      super-hands laser-controls="hand:left" raycaster="objects: .clickable, .grabbable; far:15" line="color:#00d1ff"></a-entity>
+    <a-entity hand-controls="hand:right; handModelStyle: lowPoly; color:#ff8a00"
+      super-hands laser-controls="hand:right" raycaster="objects: .clickable, .grabbable; far:15" line="color:#ff8a00"></a-entity>
   </a-entity>
-
-  <!-- Container de blocos -->
-  <a-entity id="blocos-container"></a-entity>
-
+  <a-entity id="world"></a-entity>
+  <a-entity position="0 2.8 -4">
+    <a-plane width="5" height="0.9" color="black" opacity="0.75"></a-plane>
+    <a-text value="PMSC 2026 - EDITAL AOCP - SOLDADO\\nArena Imersiva Quest 3S" align="center" color="#00d1ff" width="4.8" position="0 0 0.02"></a-text>
+  </a-entity>
 </a-scene>
-
 <script>
-const questoes = {questoes_json};
-let respostas = {{}};
-let respondidas = 0;
-
-function updateHUD(){{
-  document.getElementById('progress').innerText = `${{respondidas}}/${{questoes.length}} respondidas`;
+const QUESTIONS = {questoes_json};
+let answers = {{}};
+function updateStatus(){{
+  const n = Object.keys(answers).length;
+  document.getElementById('status').textContent = `${{n}}/${{QUESTIONS.length}} respondidas`;
 }}
-
-function criarBloco(q, index){{
-  const cols = 5;
-  const spacing = 2.2;
-  const x = (index % cols) * spacing - ((cols-1)*spacing/2);
-  const z = Math.floor(index / cols) * -2.5;
-  const y = 1.2 + Math.random()*0.6;
-
-  const id = `bloco-${{index}}`;
-  const container = document.createElement('a-entity');
-  container.setAttribute('id', id);
-  container.setAttribute('position', `${{x}} ${{y}} ${{z}}`);
-  container.setAttribute('class', 'grabbable');
-  container.setAttribute('grabbable', '');
-  container.setAttribute('stretchable', '');
-  container.setAttribute('draggable', '');
-  container.setAttribute('droppable', '');
-
-  // Caixa principal
+function makeBlock(q, i){{
+  const cols = 5; const spacing = 2.4;
+  const x = (i % cols)*spacing - ((cols-1)*spacing/2);
+  const z = Math.floor(i/cols)* -2.8;
+  const y = 1.3 + (Math.random()*0.7);
+  const root = document.createElement('a-entity');
+  root.setAttribute('position', `${{x}} ${{y}} ${{z}}`);
+  root.setAttribute('class','grabbable'); root.setAttribute('grabbable',''); root.setAttribute('draggable','');
   const box = document.createElement('a-box');
-  box.setAttribute('width', '1.9');
-  box.setAttribute('height', '1.4');
-  box.setAttribute('depth', '0.15');
-  box.setAttribute('color', '#162a50');
-  box.setAttribute('material', 'metalness:0.1; roughness:0.7');
-  box.setAttribute('class', 'grabbable');
-  box.setAttribute('event-set__hover', '_event: mouseenter; material.color: #1e3a6a');
-  box.setAttribute('event-set__leave', '_event: mouseleave; material.color: #162a50');
-
-  // Texto pergunta
-  const perguntaCurta = q.pergunta.length > 140 ? q.pergunta.substring(0,137)+'...' : q.pergunta;
-  const texto = document.createElement('a-text');
-  texto.setAttribute('value', `${{index+1}}. [${{q.materia || q.materia || 'Geral'}}]\\n${{perguntaCurta}}`);
-  texto.setAttribute('position', '0 0.35 0.08');
-  texto.setAttribute('align', 'center');
-  texto.setAttribute('width', '1.7');
-  texto.setAttribute('color', '#ffffff');
-  texto.setAttribute('wrap-count', '30');
-
-  container.appendChild(box);
-  container.appendChild(texto);
-
-  // Alternativas como botões 3D
-  q.alternativas.forEach((alt, aIdx) => {{
-    const letra = alt.charAt(0);
-    const btn = document.createElement('a-entity');
-    btn.setAttribute('position', `-0.6 ${{0.05 - aIdx*0.18}} 0.1`);
-    btn.setAttribute('class', 'clickable');
-    btn.setAttribute('data-bloco', index);
-    btn.setAttribute('data-letra', letra);
-
-    const plane = document.createElement('a-plane');
-    plane.setAttribute('width', '1.6');
-    plane.setAttribute('height', '0.15');
-    plane.setAttribute('color', '#0f1f3f');
-    plane.setAttribute('class', 'clickable');
-
-    const label = document.createElement('a-text');
-    label.setAttribute('value', alt.length > 48 ? alt.substring(0,45)+'...' : alt);
-    label.setAttribute('align', 'left');
-    label.setAttribute('position', '-0.75 0 0.01');
-    label.setAttribute('width', '1.5');
-    label.setAttribute('color', '#cde0ff');
-    label.setAttribute('wrap-count', '28');
-
-    plane.appendChild(label);
-    btn.appendChild(plane);
-
-    // Clique
-    btn.addEventListener('click', (e) => {{
-      const blocoIdx = parseInt(btn.getAttribute('data-bloco'));
-      const letra = btn.getAttribute('data-letra');
-      respostas[blocoIdx] = letra;
-      // Feedback visual
-      const allBtns = document.querySelectorAll(`[data-bloco='${{blocoIdx}}'] a-plane`);
-      allBtns.forEach(b => b.setAttribute('color', '#0f1f3f'));
-      plane.setAttribute('color', '#00ff88');
-      
-      // Marca respondida
-      const isNew = !(blocoIdx in respostas) || true;
-      // Conta
-      respondidas = Object.keys(respostas).length;
-      updateHUD();
-      
-      // Haptics no Quest
-      const rightHand = document.getElementById('right-hand');
-      if (rightHand && rightHand.components.haptics) {{
-        rightHand.components.haptics.pulse(0.5, 100);
-      }}
+  box.setAttribute('width','2.15'); box.setAttribute('height','1.85'); box.setAttribute('depth','0.18');
+  box.setAttribute('color','#13244a'); box.setAttribute('class','grabbable');
+  const title = document.createElement('a-text');
+  title.setAttribute('value', `${{i+1}}. ${{q.materia}}`); title.setAttribute('color','#00e5ff');
+  title.setAttribute('width','2'); title.setAttribute('align','center'); title.setAttribute('position','0 0.68 0.11');
+  const qtext = document.createElement('a-text');
+  const shortQ = q.pergunta.length>150 ? q.pergunta.slice(0,147)+'...' : q.pergunta;
+  qtext.setAttribute('value', shortQ); qtext.setAttribute('color','white'); qtext.setAttribute('width','1.95');
+  qtext.setAttribute('align','center'); qtext.setAttribute('position','0 0.32 0.11'); qtext.setAttribute('wrap-count','34');
+  root.appendChild(box); root.appendChild(title); root.appendChild(qtext);
+  q.alternativas.forEach((alt, idx)=>{{
+    const letra = alt.trim().charAt(0).toUpperCase();
+    const row = document.createElement('a-entity');
+    row.setAttribute('position', `-0.05 ${{ -0.08 - idx*0.22 }} 0.12`);
+    row.setAttribute('class','clickable'); row.setAttribute('data-i', i); row.setAttribute('data-l', letra);
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width','1.9'); bg.setAttribute('height','0.19'); bg.setAttribute('color','#0a1933'); bg.setAttribute('class','clickable');
+    const txt = document.createElement('a-text');
+    const shortAlt = alt.length>54 ? alt.slice(0,51)+'...' : alt;
+    txt.setAttribute('value', shortAlt); txt.setAttribute('color','#cfe0ff'); txt.setAttribute('width','1.8');
+    txt.setAttribute('position','-0.9 0 0.01');
+    bg.appendChild(txt); row.appendChild(bg);
+    row.addEventListener('click', ()=>{{
+      answers[i]=letra;
+      document.querySelectorAll(`[data-i="${{i}}"] a-plane`).forEach(p=> p.setAttribute('color','#0a1933'));
+      bg.setAttribute('color', letra===q.correta ? '#00c853' : '#d50000');
+      updateStatus();
     }});
-    
-    container.appendChild(btn);
+    root.appendChild(row);
   }});
-
-  return container;
+  return root;
 }}
-
-document.addEventListener('DOMContentLoaded', () => {{
-  const container = document.getElementById('blocos-container');
-  questoes.forEach((q,i) => {{
-    const bloco = criarBloco(q,i);
-    container.appendChild(bloco);
-  }});
-  
-  document.getElementById('enter-vr').addEventListener('click', () => {{
-    const scene = document.querySelector('a-scene');
-    if (scene.is('vr-mode')) {{
-      scene.exitVR();
-    }} else {{
-      scene.enterVR();
-    }}
-  }});
-  
-  // Comunicação com Streamlit via localStorage (opcional)
-  setInterval(() => {{
-    localStorage.setItem('pmsc_respostas_vr', JSON.stringify(respostas));
-  }}, 1000);
-}});
-
-// Suporte a arrastar blocos no espaço
-AFRAME.registerComponent('draggable', {{
-  init: function() {{
-    this.el.addEventListener('grab-start', (e) => {{
-      this.el.setAttribute('material', 'color', '#2a5a9a');
-    }});
-    this.el.addEventListener('grab-end', (e) => {{
-      this.el.setAttribute('material', 'color', '#162a50');
-    }});
+document.addEventListener('DOMContentLoaded', ()=>{{
+  const world = document.getElementById('world');
+  QUESTIONS.forEach((q,i)=> world.appendChild(makeBlock(q,i)));
+  const grid = document.getElementById('grid');
+  for(let i=-30;i<=30;i+=2){{
+    const l1 = document.createElement('a-box');
+    l1.setAttribute('width','60'); l1.setAttribute('height','0.02'); l1.setAttribute('depth','0.02');
+    l1.setAttribute('position', `0 0 ${{i}}`); l1.setAttribute('color','#12204a'); l1.setAttribute('opacity','0.4');
+    grid.appendChild(l1);
   }}
+}});
+document.getElementById('vrBtn').addEventListener('click', ()=>{{
+  document.querySelector('a-scene').enterVR();
 }});
 </script>
 </body>
 </html>
 """
-    components.html(html, height=780, scrolling=False)
+    components.html(html, height=height, scrolling=False)
 
-# ==================================================================
-# LÓGICA DE SIMULADO
-# ==================================================================
 def montar_simulado(banco, distribuicao):
-    import random
-    simulado = []
-    for materia, qtd in distribuicao.items():
-        # busca case-insensitive
-        pool = []
+    simulado=[]
+    for materia,qtd in distribuicao.items():
+        pool=[]
         for k,v in banco.items():
-            if k.lower().strip() == materia.lower().strip():
-                pool = v
+            if k.lower().strip()==materia.lower().strip():
+                pool=v
                 break
-            if materia.lower() in k.lower() or k.lower() in materia.lower():
-                if not pool:
-                    pool = v
         if not pool:
-            continue
-        amostra = random.sample(pool, min(qtd, len(pool)))
-        for q in amostra:
-            q_copy = q.copy()
-            q_copy["materia"] = materia
-            simulado.append(q_copy)
+            for k,v in banco.items():
+                if materia.lower() in k.lower() or k.lower() in materia.lower():
+                    pool=v
+                    break
+        if pool:
+            amostra = random.sample(pool, min(qtd, len(pool)))
+            for q in amostra:
+                qc = q.copy()
+                qc["materia"]=materia
+                simulado.append(qc)
     random.shuffle(simulado)
     return simulado
 
-# ==================================================================
-# INIT STATE
-# ==================================================================
-if "simulado" not in st.session_state:
-    st.session_state.simulado = None
-if "historico" not in st.session_state:
-    st.session_state.historico = []
-if "treino" not in st.session_state:
-    st.session_state.treino = []
-if "questoes_json" not in st.session_state:
-    st.session_state.questoes_json = load_questoes()
+# ========== STATE ==========
+if "simulado" not in st.session_state: st.session_state.simulado=None
+if "historico" not in st.session_state: st.session_state.historico=[]
+if "treino" not in st.session_state: st.session_state.treino=[]
 
-# ==================================================================
-# SIDEBAR
-# ==================================================================
-with st.sidebar:
-    st.title("🎯 PMSC 2026 - AOCP")
-    st.caption("Soldado - Simulador Oficial")
-    
-    # Upload JSON
-    st.subheader("📂 Banco de Questões")
-    uploaded = st.file_uploader("Carregue seu json.json", type=["json"])
-    if uploaded:
-        try:
-            data = json.load(uploaded)
-            if isinstance(data, list):
-                from collections import defaultdict
-                d = defaultdict(list)
-                for q in data:
-                    d[q.get("materia","Geral")].append(q)
-                data = dict(d)
-            st.session_state.questoes_json = data
-            st.success(f"✅ {sum(len(v) for v in data.values())} questões carregadas!")
-        except Exception as e:
-            st.error(f"Erro no JSON: {e}")
-    
-    banco = st.session_state.questoes_json
-    if banco:
-        st.info(f"📚 Banco atual: **{sum(len(v) for v in banco.values())}** questões em **{len(banco)}** matérias")
-        with st.expander("Ver matérias"):
-            for k,v in banco.items():
-                st.caption(f"{k}: {len(v)}")
-
-    st.divider()
-    st.subheader("🧠 Modos de Estudo")
-    
-    # TREINO
-    if banco:
-        materia_sel = st.selectbox("Treinar matéria", options=list(banco.keys()))
-        qtd_treino = st.slider("Qtd questões", 5, 20, 10)
-        if st.button("▶️ Gerar Treino 3D", use_container_width=True):
-            pool = banco.get(materia_sel, [])
-            amostra = random.sample(pool, min(qtd_treino, len(pool)))
-            for q in amostra:
-                q["materia"] = materia_sel
-            st.session_state.treino = amostra
-            st.session_state.simulado = None
-            st.rerun()
-    
-    st.divider()
-    st.subheader("🏆 Simulado Oficial")
-    st.caption(f"{TOTAL} questões | 4h | 50% para aprovação")
-    if banco:
-        if st.button("🚀 Iniciar Simulado Oficial PMSC 2026", type="primary", use_container_width=True):
-            sim_q = montar_simulado(banco, DISTRIBUICAO)
-            if len(sim_q) < TOTAL:
-                st.warning(f"Só foi possível montar {len(sim_q)} questões. Verifique se o banco tem questões suficientes por matéria.")
-            st.session_state.simulado = {
-                "questoes": sim_q,
-                "inicio": time.time(),
-                "respostas": {},
-                "finalizado": False,
-            }
-            st.session_state.treino = []
-            st.rerun()
-        if st.session_state.simulado and not st.session_state.simulado["finalizado"]:
-            if st.button("❌ Cancelar Simulado", use_container_width=True):
-                st.session_state.simulado = None
-                st.rerun()
-
-    st.divider()
-    st.subheader("🥽 Meta Quest 3S")
-    st.markdown("""
-    **Como usar no Quest 3S:**
-    1. Abra este app no **Meta Browser**
-    2. Clique em **ENTRAR EM VR**
-    3. **Pinch** (juntar dedos) para **mover blocos**
-    4. **Laser** do controle para **marcar A-E**
-    5. Blocos ficam flutuando em sala 40m²
-    6. Suporte a **hand-tracking** nativo
-    """)
-    st.caption("WebXR + super-hands + grabbable - otimizado para Quest 3S")
-
-# ==================================================================
-# MAIN
-# ==================================================================
-st.title("🎯 PMSC 2026 – Simulador Imersivo AOCP")
-st.caption("60 questões | Estilo AOCP | 3D + WebXR | Meta Quest 3S Ready")
-
-banco = st.session_state.questoes_json
-if not banco:
-    st.warning("⚠️ Nenhum banco carregado. Faça upload do seu `json.json` na barra lateral.")
-    st.info("Use o arquivo `json_corrigido.json` que corrigi anteriormente (646 questões).")
+# Carrega automaticamente da raiz - SEM UPLOAD
+banco, caminho = load_banco_automatico()
+if banco is None:
+    st.error("❌ Não encontrei o `json.json` na raiz do GitHub. Verifique se o arquivo está junto com o App.py no repositório.")
+    st.info("Arquivos na pasta atual: " + ", ".join([str(p.name) for p in pathlib.Path(__file__).parent.iterdir()]))
     st.stop()
 
-if st.session_state.simulado:
-    sim = st.session_state.simulado
-    questoes = sim["questoes"]
-    if not sim["finalizado"]:
-        restante = max(0, 4*3600 - int(time.time() - sim["inicio"]))
-        h,m,s = restante//3600, (restante%3600)//60, restante%60
-        col1, col2, col3 = st.columns([2,1,1])
-        col1.warning(f"⏱️ Tempo restante: {h:02d}:{m:02d}:{s:02d}")
-        col2.metric("Questões", len(questoes))
-        col3.metric("Respondidas", len(sim["respostas"]))
-        
-        st.subheader("🌐 Arena 3D Imersiva - Meta Quest 3S")
-        st.caption("Mova os blocos no espaço. No Quest 3S, use as mãos para agarrar. No desktop, use mouse.")
-        render_3d_quest(questoes, modo="SIMULADO OFICIAL")
-        
-        st.divider()
-        st.subheader("✍️ Marcação Oficial (espelho do VR)")
-        with st.form("form_sim"):
-            respostas = {}
-            for i,q in enumerate(questoes):
-                st.markdown(f"**{i+1}. [{q.get('materia','')}]** {q['pergunta']}")
-                escolha = st.radio(f"q_{i}", options=q["alternativas"], index=None, key=f"sim_q_{i}", label_visibility="collapsed")
-                if escolha:
-                    respostas[i] = escolha[0].upper()
-                st.divider()
-            c1,c2 = st.columns(2)
-            salvar = c1.form_submit_button("💾 Salvar Progresso", use_container_width=True)
-            finalizar = c2.form_submit_button("✅ Finalizar Prova", type="primary", use_container_width=True)
-            if salvar:
-                sim["respostas"] = respostas
-                st.success("Progresso salvo!")
-                st.rerun()
-            if finalizar:
-                acertos=0
-                detalhes=[]
-                for i,q in enumerate(questoes):
-                    r = respostas.get(i,"")
-                    correta = q["correta"].upper()
-                    ok = r == correta
-                    if ok: acertos+=1
-                    detalhes.append({"pergunta": q["pergunta"], "materia": q.get("materia",""), "resposta": r, "correta": correta, "acertou": ok})
-                nota = (acertos/len(questoes))*100 if questoes else 0
-                st.session_state.historico.append({
-                    "data": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "acertos": acertos, "total": len(questoes),
-                    "nota": round(nota,2), "aprovado": nota>=50,
-                    "detalhes": detalhes, "tempo": time.time()-sim["inicio"]
-                })
-                sim["finalizado"]=True
-                st.rerun()
-    else:
-        ultimo = st.session_state.historico[-1] if st.session_state.historico else None
-        if ultimo:
-            st.balloons()
-            st.subheader("📊 Resultado Oficial - Banca AOCP")
-            c1,c2,c3,c4 = st.columns(4)
-            c1.metric("Nota", f"{ultimo['nota']}%")
-            c2.metric("Acertos", f"{ultimo['acertos']}/{ultimo['total']}")
-            c3.metric("Status", "✅ APROVADO" if ultimo["aprovado"] else "❌ REPROVADO")
-            c4.metric("Tempo", f"{int(ultimo['tempo']//60)} min")
-            
-            # Por matéria
-            from collections import Counter
-            acertos_mat = Counter()
-            total_mat = Counter()
-            for d in ultimo["detalhes"]:
-                total_mat[d["materia"]]+=1
-                if d["acertou"]:
-                    acertos_mat[d["materia"]]+=1
-            st.subheader("📚 Desempenho por Matéria (Edital AOCP)")
-            for mat in DISTRIBUICAO.keys():
-                if total_mat[mat]>0:
-                    st.progress(acertos_mat[mat]/total_mat[mat], text=f"{mat}: {acertos_mat[mat]}/{total_mat[mat]}")
-            
-            with st.expander("Gabarito detalhado"):
-                for i,d in enumerate(ultimo["detalhes"]):
-                    icon="✅" if d["acertou"] else "❌"
-                    st.markdown(f"{icon} **{i+1}. [{d['materia']}]** {d['pergunta']}")
-                    st.caption(f"Sua: {d['resposta'] or '—'} | Gabarito: {d['correta']}")
-                    st.divider()
-        if st.button("🔄 Novo Simulado", type="primary"):
+# ========== SIDEBAR ==========
+with st.sidebar:
+    st.title("🎯 PMSC 2026 AOCP")
+    st.caption(f"📂 Carregado: {caminho}")
+    st.success(f"📚 **{sum(len(v) for v in banco.values())}** questões em **{len(banco)}** matérias")
+    with st.expander("Ver matérias"):
+        for k,v in banco.items():
+            st.caption(f"{k}: {len(v)}")
+    
+    st.divider()
+    st.subheader("🧠 Treino Rápido")
+    mat = st.selectbox("Matéria", list(banco.keys()))
+    qtd = st.slider("Qtd", 5, 20, 10, key="treino_qtd")
+    if st.button("▶️ Gerar Treino 3D", use_container_width=True):
+        pool=banco.get(mat,[])
+        amostra=random.sample(pool, min(qtd,len(pool)))
+        for q in amostra: q["materia"]=mat
+        st.session_state.treino=amostra
+        st.session_state.simulado=None
+        st.rerun()
+    
+    st.divider()
+    st.subheader("🏆 Simulado Oficial 60q")
+    if st.button("🚀 Iniciar Simulado Oficial", type="primary", use_container_width=True):
+        sim = montar_simulado(banco, DISTRIBUICAO)
+        st.session_state.simulado={"questoes":sim, "inicio":time.time(), "respostas":{}, "finalizado":False}
+        st.session_state.treino=[]
+        st.rerun()
+    if st.session_state.simulado and not st.session_state.simulado["finalizado"]:
+        if st.button("❌ Cancelar Simulado", use_container_width=True):
             st.session_state.simulado=None
             st.rerun()
 
-elif st.session_state.treino:
-    st.subheader(f"🌐 Treino 3D - {st.session_state.treino[0].get('materia','')}")
-    render_3d_quest(st.session_state.treino, modo="TREINO")
     st.divider()
-    for i,q in enumerate(st.session_state.treino):
-        with st.expander(f"Questão {i+1} - {q.get('materia','')}"):
-            st.markdown(q["pergunta"])
-            for alt in q["alternativas"]:
-                st.markdown(f"- {alt}")
-            st.success(f"Gabarito: **{q['correta']}**")
-    if st.button("Encerrar Treino"):
-        st.session_state.treino=[]
-        st.rerun()
+    st.markdown("### 🥽 Quest 3S")
+    st.markdown("Grip/Pinch = mover\nTrigger = marcar")
 
-else:
-    st.info("👈 Na barra lateral: gere **Treino 3D** ou **Simulado Oficial PMSC 2026**")
-    st.markdown(f"""
-    ### 📋 Simulador conforme Edital PMSC 2026 - AOCP
-    - **Banca:** Instituto AOCP
-    - **Prova:** 60 questões objetivas (A-E) + Redação
-    - **Duração:** 4 horas
-    - **Aprovação:** 50% da prova
-    - **Banco:** seu `json.json` com **{sum(len(v) for v in banco.values())} questões**
-    - **Imersivo:** WebXR, hand-tracking, blocos arrastáveis no Meta Quest 3S
-    - **Compatível:** Quest Browser, Quest 3 / 3S / 2 / Pro
+# ========== MAIN ==========
+st.title("🎯 PMSC 2026 – Simulador Imersivo AOCP")
+st.caption(f"Edital AOCP | Banco carregado automaticamente: {caminho} | {sum(len(v) for v in banco.values())} questões | WebXR Quest 3S")
 
-    #### 📊 Distribuição Oficial
-    {chr(10).join([f"- **{m}:** {q} questões" for m,q in DISTRIBUICAO.items()])}
+tab1, tab2, tab3 = st.tabs(["🌐 ARENA QUEST 3S (LIVRE)", "🏆 SIMULADO", "📖 TREINO"])
 
-    #### 🥽 Como usar no Meta Quest 3S
-    1. Conecte o Quest 3S na mesma rede
-    2. Abra o link do Streamlit no **Meta Browser**
-    3. Clique em **ENTRAR EM VR**
-    4. Use **pinch** para mover blocos, **laser** para responder
-    5. Ambiente com chão infinito e 40m² de área útil
+with tab1:
+    st.subheader("🌐 Arena Imersiva Livre - Meta Quest 3S")
+    st.caption("Blocos 3D carregados automaticamente do json.json da raiz. No Quest 3S clique em ENTRAR EM VR.")
+    todas=[]
+    for v in banco.values(): todas.extend(v)
+    random.shuffle(todas)
+    render_arena_3d(todas[:25], modo="ARENA LIVRE", height=900)
 
-    #### 🚀 Deploy
-    ```bash
-    pip install -r requirements.txt
-    streamlit run app.py
-    ```
-    """)
+with tab2:
+    if st.session_state.simulado:
+        sim=st.session_state.simulado
+        questoes=sim["questoes"]
+        if not sim["finalizado"]:
+            restante=max(0,4*3600 - int(time.time()-sim["inicio"]))
+            h,m,s=restante//3600, (restante%3600)//60, restante%60
+            c1,c2,c3=st.columns([2,1,1])
+            c1.warning(f"⏱️ {h:02d}:{m:02d}:{s:02d} restantes")
+            c2.metric("Questões", len(questoes))
+            c3.metric("Respondidas", len(sim["respostas"]))
+            st.subheader("🌐 Arena Oficial 60q - Quest 3S")
+            render_arena_3d(questoes, modo="SIMULADO OFICIAL 60Q", height=900)
+            st.divider()
+            st.subheader("✍️ Cartão Resposta")
+            with st.form("form_sim"):
+                respostas={}
+                for i,q in enumerate(questoes):
+                    st.markdown(f"**{i+1}. [{q.get('materia','')}]** {q['pergunta']}")
+                    esc=st.radio(f"q_{i}", options=q["alternativas"], index=None, key=f"sim_{i}", label_visibility="collapsed")
+                    if esc: respostas[i]=esc[0].upper()
+                    st.divider()
+                c1,c2=st.columns(2)
+                salvar=c1.form_submit_button("💾 Salvar", use_container_width=True)
+                final=c2.form_submit_button("✅ Finalizar Prova", type="primary", use_container_width=True)
+                if salvar:
+                    sim["respostas"]=respostas
+                    st.success("Salvo!")
+                    st.rerun()
+                if final:
+                    acertos=0; detalhes=[]
+                    for i,q in enumerate(questoes):
+                        r=respostas.get(i,""); correta=q["correta"].upper(); ok=r==correta
+                        if ok: acertos+=1
+                        detalhes.append({"pergunta":q["pergunta"],"materia":q.get("materia",""),"resposta":r,"correta":correta,"acertou":ok})
+                    nota=(acertos/len(questoes))*100 if questoes else 0
+                    st.session_state.historico.append({"data":datetime.now().strftime("%Y-%m-%d %H:%M"),"acertos":acertos,"total":len(questoes),"nota":round(nota,2),"aprovado":nota>=50,"detalhes":detalhes,"tempo":time.time()-sim["inicio"]})
+                    sim["finalizado"]=True
+                    st.rerun()
+        else:
+            ultimo=st.session_state.historico[-1] if st.session_state.historico else None
+            if ultimo:
+                st.balloons()
+                c1,c2,c3,c4=st.columns(4)
+                c1.metric("Nota", f"{ultimo['nota']}%")
+                c2.metric("Acertos", f"{ultimo['acertos']}/{ultimo['total']}")
+                c3.metric("Status", "✅ APROVADO" if ultimo["aprovado"] else "❌ REPROVADO")
+                c4.metric("Tempo", f"{int(ultimo['tempo']//60)} min")
+                from collections import Counter
+                ac_mat=Counter(); tot_mat=Counter()
+                for d in ultimo["detalhes"]:
+                    tot_mat[d["materia"]]+=1
+                    if d["acertou"]: ac_mat[d["materia"]]+=1
+                for mat in DISTRIBUICAO:
+                    if tot_mat[mat]: st.progress(ac_mat[mat]/tot_mat[mat], text=f"{mat}: {ac_mat[mat]}/{tot_mat[mat]}")
+                with st.expander("Gabarito"):
+                    for i,d in enumerate(ultimo["detalhes"]):
+                        icon="✅" if d["acertou"] else "❌"
+                        st.markdown(f"{icon} **{i+1}. [{d['materia']}]** {d['pergunta']}")
+                        st.caption(f"Sua: {d['resposta'] or '—'} | Gab: {d['correta']}")
+            if st.button("🔄 Novo Simulado", type="primary"):
+                st.session_state.simulado=None
+                st.rerun()
+    else:
+        st.info("👈 Inicie o Simulado Oficial na barra lateral. A arena 3D com 60 blocos aparecerá aqui.")
+
+with tab3:
+    if st.session_state.treino:
+        st.subheader(f"📖 Treino - {st.session_state.treino[0].get('materia','')}")
+        render_arena_3d(st.session_state.treino, modo=f"TREINO {st.session_state.treino[0].get('materia','')}", height=900)
+        for i,q in enumerate(st.session_state.treino):
+            with st.expander(f"{i+1}. {q['pergunta'][:80]}..."):
+                for alt in q["alternativas"]: st.markdown(f"- {alt}")
+                st.success(f"Gabarito: {q['correta']}")
+        if st.button("Encerrar Treino"):
+            st.session_state.treino=[]
+            st.rerun()
+    else:
+        st.info("Gere um treino na barra lateral.")
 
 if st.session_state.historico:
     with st.sidebar:
