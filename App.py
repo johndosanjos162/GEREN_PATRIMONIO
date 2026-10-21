@@ -1,3 +1,4 @@
+
 import streamlit as st
 import json
 import random
@@ -6,7 +7,7 @@ import pathlib
 from collections import defaultdict
 from datetime import datetime
 
-st.set_page_config(page_title="PMSC 2026 AOCP", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="PMSC 2026 AOCP - Quest 3S Full VR", page_icon="🎯", layout="wide")
 
 DISTRIBUICAO = {
     "Legislação Institucional": 10,
@@ -23,75 +24,24 @@ DISTRIBUICAO = {
 @st.cache_data
 def load_banco():
     base = pathlib.Path(__file__).parent
-    try:
-        arquivos = [f.name for f in base.iterdir() if f.is_file()]
-    except:
-        arquivos = ["erro ao listar"]
-    
-    # Procura todos .json na raiz
-    candidatos = []
-    try:
-        for f in base.iterdir():
-            if f.is_file() and f.suffix.lower() == ".json":
-                candidatos.append(f)
-    except:
-        pass
-    
-    # Tenta cwd também
-    try:
-        cwd = pathlib.Path.cwd()
-        for f in cwd.iterdir():
-            if f.is_file() and f.suffix.lower() == ".json" and f not in candidatos:
-                candidatos.append(f)
-    except:
-        pass
-
+    candidatos = [f for f in base.iterdir() if f.is_file() and f.suffix.lower()==".json"]
     if not candidatos:
-        st.error(f"❌ Nenhum .json encontrado. Arquivos na pasta {base}: {arquivos}")
         return None, None
-
     for p in candidatos:
         try:
-            with open(p, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            with open(p,"r",encoding="utf-8") as f:
+                data=json.load(f)
             if isinstance(data, dict):
-                total = sum(len(v) for v in data.values() if isinstance(v, list))
-                if total > 0:
-                    return data, f"{p.name} ({total} questões)"
-            elif isinstance(data, list):
-                d = defaultdict(list)
+                total=sum(len(v) for v in data.values() if isinstance(v,list))
+                if total>0:
+                    return data, f"{p.name} ({total}q)"
+            elif isinstance(data,list):
+                d=defaultdict(list)
                 for q in data:
                     d[q.get("materia","Geral")].append(q)
-                return dict(d), f"{p.name} ({len(data)} questões)"
-        except Exception as e:
-            st.warning(f"⚠️ Erro ao ler {p.name}: {e} - tentando correção automática...")
-            try:
-                import re
-                text = p.read_text(encoding="utf-8")
-                pat = re.compile(r'\{\s*"pergunta"\s*:\s*"((?:\\"|[^"])*)"\s*,\s*"alternativas"\s*:\s*\[(.*?)\]\s*,\s*"correta"\s*:\s*"([A-E])"\s*\}', re.DOTALL)
-                materias = []
-                for m in re.finditer(r'"(Legislação Institucional|Direito Constitucional|Língua Portuguesa|Legislação Especial|Legislação de Trânsito|Direito Penal Comum|Direito Processual Penal Comum|Direito Penal Militar|Informática)"\s*:\s*\[', text):
-                    materias.append((m.start(), m.group(1)))
-                materias.sort()
-                questions = []
-                for mm in pat.finditer(text):
-                    alt_text = mm.group(2)
-                    alts = re.findall(r'"((?:\\"|[^"])*)"', alt_text)
-                    questions.append((mm.start(), {"pergunta": mm.group(1).replace('\\"', '"'), "alternativas": [a.replace('\\"', '"') for a in alts], "correta": mm.group(3)}))
-                final = defaultdict(list)
-                questions.sort()
-                idx=0
-                for qpos,qobj in questions:
-                    while idx+1 < len(materias) and materias[idx+1][0] < qpos:
-                        idx+=1
-                    if idx < len(materias):
-                        final[materias[idx][1]].append(qobj)
-                if final:
-                    return dict(final), f"{p.name} (corrigido - {sum(len(v) for v in final.values())} q)"
-            except Exception as e2:
-                st.error(f"Falha correção {p.name}: {e2}")
-                continue
-    st.error(f"❌ Nenhum JSON válido. Encontrados: {[c.name for c in candidatos]} | Arquivos na pasta: {arquivos}")
+                return dict(d), f"{p.name} ({len(data)}q)"
+        except:
+            continue
     return None, None
 
 def montar_simulado(banco):
@@ -101,10 +51,9 @@ def montar_simulado(banco):
         if not pool:
             for k,v in banco.items():
                 if mat.lower() in k.lower() or k.lower() in mat.lower():
-                    pool=v
-                    break
+                    pool=v;break
         if pool:
-            sim.extend([{**q, "materia": mat} for q in random.sample(pool, min(qtd, len(pool)))])
+            sim.extend([{**q,"materia":mat} for q in random.sample(pool,min(qtd,len(pool)))])
     random.shuffle(sim)
     return sim
 
@@ -113,34 +62,26 @@ if "treino" not in st.session_state: st.session_state.treino=[]
 if "hist" not in st.session_state: st.session_state.hist=[]
 
 banco, caminho = load_banco()
-
-st.title("🎯 PMSC 2026 – Simulador AOCP")
+st.title("🎯 PMSC 2026 – Simulador AOCP | Quest 3S Full Body")
 if not banco:
-    st.error("❌ json.json não encontrado na raiz. Coloque o json_corrigido.json como json.json no GitHub.")
-    # Mostra arquivos para debug
-    base = pathlib.Path(__file__).parent
-    try:
-        st.write("Arquivos na pasta:", [f.name for f in base.iterdir()])
-    except Exception as e:
-        st.write(f"Erro listar: {e}")
+    st.error("json.json não encontrado. Coloque o json.json na raiz.")
     st.stop()
-st.caption(f"✅ {caminho} | {sum(len(v) for v in banco.values())} questões | Edital AOCP 60q")
+st.caption(f"✅ {caminho} | {sum(len(v) for v in banco.values())}q | Full VR Interativo")
 
 with st.sidebar:
-    st.success(f"📚 {sum(len(v) for v in banco.values())} questões")
-    for k,v in banco.items():
-        st.caption(f"{k}: {len(v)}")
+    st.success(f"📚 {sum(len(v) for v in banco.values())}q")
+    for k,v in banco.items(): st.caption(f"{k}: {len(v)}")
     st.divider()
-    mat = st.selectbox("Matéria treino", list(banco.keys()))
-    qtd = st.slider("Qtd", 5, 20, 10)
-    if st.button("▶️ Gerar Treino", use_container_width=True):
+    mat=st.selectbox("Treino", list(banco.keys()))
+    qtd=st.slider("Qtd",5,20,10)
+    if st.button("▶️ Treino", use_container_width=True):
         pool=banco.get(mat,[])
-        st.session_state.treino=[{**q, "materia": mat} for q in random.sample(pool, min(qtd, len(pool)))]
+        st.session_state.treino=[{**q, "materia":mat} for q in random.sample(pool,min(qtd,len(pool)))]
         st.session_state.simulado=None
         st.rerun()
     st.divider()
-    if st.button("🚀 Simulado Oficial 60q", type="primary", use_container_width=True):
-        st.session_state.simulado={"questoes": montar_simulado(banco), "inicio": time.time(), "respostas":{}, "finalizado": False}
+    if st.button("🚀 Simulado 60q", type="primary", use_container_width=True):
+        st.session_state.simulado={"questoes":montar_simulado(banco),"inicio":time.time(),"respostas":{}, "finalizado":False}
         st.session_state.treino=[]
         st.rerun()
     if st.session_state.simulado and not st.session_state.simulado["finalizado"]:
@@ -148,40 +89,241 @@ with st.sidebar:
             st.session_state.simulado=None
             st.rerun()
 
-def render_3d_leve(questoes, modo="ARENA"):
+def render_full_vr(questoes, modo="ARENA LIVRE", height=900):
     if not questoes:
         return
-    key = f"show3d_{modo}"
+    key=f"show_full_{modo}"
     if not st.session_state.get(key, False):
-        if st.button(f"🥽 CARREGAR ARENA 3D {modo} - Quest 3S ({len(questoes[:15])} blocos)", key=f"btn3d_{modo}", type="primary"):
-            st.session_state[key] = True
+        if st.button(f"🥽 ABRIR MODO VR COMPLETO {modo} - Quest 3S ({len(questoes[:20])} blocos interativos)", key=f"btn_{modo}", type="primary", use_container_width=True):
+            st.session_state[key]=True
             st.rerun()
-        st.info("Clique acima para carregar a arena imersiva. Isso evita travamento inicial.")
+        st.markdown("""
+        **Como funciona no Quest 3S:**
+        - **Grip / Pinch (mão fechada)**: agarrar e mover blocos no espaço 3D
+        - **Trigger / Pinch**: clicar nas alternativas A-E (laser)
+        - **Thumbstick**: teleporte + andar suave
+        - **Dentro do VR** terá painel para SAIR, RECALIBRAR corpo e RESETAR arena
+        """)
         return
-    amostra = questoes[:15]
-    safe = [{"pergunta": q["pergunta"][:150].replace(chr(34),"'"), "alternativas": [a[:50].replace(chr(34),"'") for a in q["alternativas"][:5]], "correta": q["correta"], "materia": q.get("materia","Geral")[:20]} for q in amostra]
-    q_json = json.dumps(safe, ensure_ascii=False).replace("</", "<\\/")
 
-    html = f'''
-    <html><head><script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script><script src="https://unpkg.com/super-hands@3.0.5/dist/super-hands.min.js"></script>
-    <style>body{{margin:0;background:#070d1e;}}#hud{{position:fixed;top:10px;left:10px;z-index:9999;background:rgba(0,0,0,0.8);color:#00e5ff;padding:10px;border-radius:8px;font-size:12px;}}#vr{{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);z-index:9999;background:#00d1ff;color:white;border:none;padding:12px 28px;border-radius:99px;font-weight:900;cursor:pointer;}}</style>
-    </head><body><div id="hud">🥽 {modo} - {len(safe)} blocos<br>👊 Grip/Pinch = mover<br>👉 Trigger = responder</div><button id="vr">🥽 ENTRAR VR</button>
-    <a-scene background="color:#070d1e" webxr="optionalFeatures: hand-tracking, local-floor" embedded style="height:650px;width:100%;"><a-entity light="type:ambient;intensity:0.8"></a-entity><a-plane rotation="-90 0 0" width="40" height="40" color="#0d1733"></a-plane>
-    <a-entity id="rig" position="0 0 5"><a-entity camera look-controls wasd-controls position="0 1.6 0"><a-cursor raycaster="objects:.clickable,.grabbable" color="#00d1ff"></a-cursor></a-entity><a-entity hand-controls="hand:left" super-hands laser-controls="hand:left" raycaster="objects:.clickable,.grabbable;far:12"></a-entity><a-entity hand-controls="hand:right" super-hands laser-controls="hand:right" raycaster="objects:.clickable,.grabbable;far:12"></a-entity></a-entity><a-entity id="world"></a-entity></a-scene>
-    <script>const QS={q_json};function mk(q,i){{const c=5,s=2.3,x=(i%c)*s-((c-1)*s/2),z=Math.floor(i/c)*-2.5,y=1.2+Math.random()*0.5;const r=document.createElement('a-entity');r.setAttribute('position',`${{x}} ${{y}} ${{z}}`);r.setAttribute('class','grabbable');r.setAttribute('grabbable','');const b=document.createElement('a-box');b.setAttribute('width','2');b.setAttribute('height','1.5');b.setAttribute('depth','0.15');b.setAttribute('color','#13244a');b.setAttribute('class','grabbable');const t=document.createElement('a-text');t.setAttribute('value',`${{i+1}}. ${{q.materia}}\\n${{q.pergunta.slice(0,80)}}`);t.setAttribute('color','white');t.setAttribute('width','1.8');t.setAttribute('align','center');t.setAttribute('position','0 0.35 0.1');t.setAttribute('wrap-count','28');r.appendChild(b);r.appendChild(t);q.alternativas.forEach((a,idx)=>{{const row=document.createElement('a-entity');row.setAttribute('position',`0 ${{-0.1-idx*0.18}} 0.1`);row.setAttribute('class','clickable');row.setAttribute('data-i',i);const bg=document.createElement('a-plane');bg.setAttribute('width','1.7');bg.setAttribute('height','0.14');bg.setAttribute('color','#0a1933');bg.setAttribute('class','clickable');const tx=document.createElement('a-text');tx.setAttribute('value',a);tx.setAttribute('color','#cfe0ff');tx.setAttribute('width','1.6');tx.setAttribute('position','-0.8 0 0.01');bg.appendChild(tx);row.appendChild(bg);row.addEventListener('click',()=>{{document.querySelectorAll(`[data-i="${{i}}"] a-plane`).forEach(p=>p.setAttribute('color','#0a1933'));bg.setAttribute('color',a.trim()[0].toUpperCase()===q.correta?'#00c853':'#d50000');}});r.appendChild(row);}});return r;}}document.addEventListener('DOMContentLoaded',()=>{{const w=document.getElementById('world');QS.forEach((q,i)=>w.appendChild(mk(q,i)));}});document.getElementById('vr').onclick=()=>document.querySelector('a-scene').enterVR();</script></body></html>
-    '''
-    st.components.v1.html(html, height=700, scrolling=False)
-    if st.button("❌ Fechar 3D", key=f"close3d_{modo}"):
+    amostra = questoes[:20]
+    safe=[]
+    for q in amostra:
+        safe.append({
+            "pergunta": q["pergunta"][:220].replace('"',"'").replace("\n"," "),
+            "alternativas": [a[:70].replace('"',"'") for a in q["alternativas"][:5]],
+            "correta": q["correta"].upper(),
+            "materia": q.get("materia","Geral")[:25]
+        })
+    q_json = json.dumps(safe, ensure_ascii=False).replace("</","<\/")
+
+    html = f"""
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
+<script src="https://unpkg.com/super-hands@3.0.5/dist/super-hands.min.js"></script>
+<script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
+<style>
+html,body{{margin:0;padding:0;width:100%;height:{height}px;overflow:hidden;background:#050a14;font-family:system-ui;}}
+#overlay{{position:fixed;top:8px;left:8px;z-index:99999;background:rgba(0,0,0,0.85);color:#00e5ff;border:1px solid #00e5ff;padding:10px 14px;border-radius:10px;font-size:12px;line-height:1.4;max-width:360px;}}
+#overlay b{{color:white;}}
+#enter{{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:99999;background:linear-gradient(90deg,#00d1ff,#7000ff);color:white;border:none;padding:14px 30px;border-radius:999px;font-weight:900;font-size:15px;letter-spacing:0.5px;box-shadow:0 0 25px #00d1ff88;cursor:pointer;}}
+</style>
+</head>
+<body>
+<div id="overlay">
+<div style="font-weight:900;color:white;font-size:14px;margin-bottom:6px;">🥽 QUEST 3S FULL VR - {modo}</div>
+<b>✅ Interação Total Ativa</b><br>
+👊 <b>GRAB:</b> Grip / Pinch para mover blocos<br>
+👉 <b>ANSWER:</b> Trigger / Pinch no laser A-E<br>
+🕹️ <b>MOVER:</b> Thumbstick L = andar / Thumbstick R = girar<br>
+📍 <b>TELEPORTE:</b> Thumbstick L click<br>
+🧍 <b>CALIBRAR:</b> Painel no VR<br>
+🚪 <b>SAIR:</b> Botão vermelho SAIR VR dentro do mundo<br>
+<div id="hud" style="margin-top:8px;color:#00ff88;font-weight:700;">0/{len(safe)} respondidas</div>
+</div>
+<button id="enter">🥽 ENTRAR EM VR COMPLETO - QUEST 3S</button>
+
+<a-scene
+  background="color: #050a14"
+  renderer="antialias:true; colorManagement:true; sortObjects:true; physicallyCorrectLights:true"
+  webxr="optionalFeatures: hand-tracking, local-floor, bounded-floor, hit-test, body-tracking"
+  vr-mode-ui="enabled:true"
+  embedded
+  style="width:100%;height:{height}px;"
+>
+
+<a-assets>
+  <a-mixin id="grab-mix" hoverable grabbable stretchable draggable droppable></a-mixin>
+</a-assets>
+
+<a-entity light="type:ambient; intensity:0.8"></a-entity>
+<a-entity light="type:directional; intensity:1.2; castShadow:true" position="3 6 4"></a-entity>
+<a-entity light="type:point; intensity:0.7; distance:40; color:#00d1ff" position="0 5 0"></a-entity>
+
+<a-plane rotation="-90 0 0" width="80" height="80" color="#0a1430" roughness="0.9"></a-plane>
+<a-entity id="grid"></a-entity>
+
+<a-entity position="0 2.8 -6">
+  <a-plane width="8" height="2" color="#000000" opacity="0.8"></a-plane>
+  <a-text value="PMSC 2026 - EDITAL AOCP - SOLDADO\nMODO VR COMPLETO - MOVA OS BLOCOS COM AS MÃOS" align="center" color="#00e5ff" width="7.5" position="0 0 0.02"></a-text>
+</a-entity>
+
+<a-entity id="rig" position="0 0 7" movement-controls="fly:true; speed:0.25">
+  <a-entity id="head" camera look-controls="pointerLockEnabled:false" wasd-controls="acceleration:20" position="0 1.65 0">
+    <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable, .ui" visible="false"></a-entity>
+    <a-entity id="hudVR" position="0 -0.6 -1.2">
+      <a-plane width="1.1" height="0.35" color="black" opacity="0.75"></a-plane>
+      <a-text id="hudVRText" value="0/20 respondidas" color="#00ff88" width="2" align="center" position="0 0 0.01"></a-text>
+    </a-entity>
+  </a-entity>
+
+  <a-entity id="leftHand"
+    hand-controls="hand: left; handModelStyle: lowPoly; color:#00d1ff"
+    hand-tracking-controls="hand: left"
+    super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstart, triggerdown; grabEndButtons: gripup, pinchend, triggerup"
+    laser-controls="hand: left"
+    raycaster="objects: .clickable, .grabbable, .ui; far: 15"
+    line="color:#00d1ff; opacity:0.9"
+    sphere-collider="objects: .grabbable; radius:0.08"
+    teleport-controls="cameraRig: #rig; teleportOrigin: #head; button: thumbstick"
+  ></a-entity>
+
+  <a-entity id="rightHand"
+    hand-controls="hand: right; handModelStyle: lowPoly; color:#ff8a00"
+    hand-tracking-controls="hand: right"
+    super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstart, triggerdown; grabEndButtons: gripup, pinchend, triggerup"
+    laser-controls="hand: right"
+    raycaster="objects: .clickable, .grabbable, .ui; far: 15"
+    line="color:#ff8a00; opacity:0.9"
+    sphere-collider="objects: .grabbable; radius:0.08"
+    teleport-controls="cameraRig: #rig; teleportOrigin: #head; button: thumbstick"
+  ></a-entity>
+
+</a-entity>
+
+<a-entity id="calibrationPanel" position="0 1.6 -1.2">
+  <a-plane width="1.8" height="1.4" color="#0a0a0a" opacity="0.9"></a-plane>
+  <a-text value="CALIBRAGEM QUEST 3S" color="#00e5ff" width="2.5" align="center" position="0 0.55 0.02"></a-text>
+  <a-entity id="btnReset" class="ui clickable" position="-0.45 0.25 0.02" geometry="primitive: plane; width:0.7; height:0.22" material="color:#1a3a6a"><a-text value="RESET POSICAO" color="white" width="1.5" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity id="btnHeightUp" class="ui clickable" position="0.45 0.25 0.02" geometry="primitive: plane; width:0.7; height:0.22" material="color:#1a3a6a"><a-text value="ALTURA +" color="white" width="1.5" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity id="btnResetArena" class="ui clickable" position="-0.45 -0.05 0.02" geometry="primitive: plane; width:0.7; height:0.22" material="color:#1a3a6a"><a-text value="RESET ARENA" color="white" width="1.5" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity id="btnHeightDown" class="ui clickable" position="0.45 -0.05 0.02" geometry="primitive: plane; width:0.7; height:0.22" material="color:#1a3a6a"><a-text value="ALTURA -" color="white" width="1.5" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity id="btnExitVR" class="ui clickable" position="0 -0.45 0.02" geometry="primitive: plane; width:1.5; height:0.28" material="color:#a00000"><a-text value="SAIR DO VR" color="white" width="2" align="center" position="0 0 0.01"></a-text></a-entity>
+</a-entity>
+
+<a-entity id="world"></a-entity>
+</a-scene>
+
+<script>
+const QUESTIONS = {q_json};
+let answers = {{}};
+let currentHeight = 1.65;
+function updateHUD(){{
+  const n = Object.keys(answers).length;
+  const txt = `${{n}}/${{QUESTIONS.length}} respondidas`;
+  const el = document.getElementById('hud');
+  if(el) el.textContent = txt;
+  const vrHud = document.getElementById('hudVRText');
+  if(vrHud) vrHud.setAttribute('value', txt);
+}}
+function createQuestionBlock(q, i){{
+  const cols=5, spacing=2.6;
+  const x=(i%cols)*spacing - ((cols-1)*spacing/2);
+  const z=Math.floor(i/cols)*-3.0;
+  const y=1.4 + Math.random()*0.6;
+  const rotY=(Math.random()-0.5)*25;
+  const root=document.createElement('a-entity');
+  root.setAttribute('id', `block-${{i}}`);
+  root.setAttribute('position', `${{x}} ${{y}} ${{z}}`);
+  root.setAttribute('rotation', `0 ${{rotY}} 0`);
+  root.setAttribute('class','grabbable');
+  root.setAttribute('mixin','grab-mix');
+  root.setAttribute('hoverable',''); root.setAttribute('grabbable',''); root.setAttribute('stretchable',''); root.setAttribute('draggable',''); root.setAttribute('droppable','');
+  const box=document.createElement('a-box');
+  box.setAttribute('width','2.2'); box.setAttribute('height','2.0'); box.setAttribute('depth','0.18');
+  box.setAttribute('color','#13244a'); box.setAttribute('class','grabbable');
+  const title=document.createElement('a-text');
+  title.setAttribute('value', `${{i+1}}. ${{q.materia}}`);
+  title.setAttribute('color','#00e5ff'); title.setAttribute('width','2.1'); title.setAttribute('align','center');
+  title.setAttribute('position','0 0.75 0.11'); title.setAttribute('wrap-count','32');
+  const qtext=document.createElement('a-text');
+  const shortQ = q.pergunta.length>160 ? q.pergunta.slice(0,157)+'...' : q.pergunta;
+  qtext.setAttribute('value', shortQ);
+  qtext.setAttribute('color','white'); qtext.setAttribute('width','2.0'); qtext.setAttribute('align','center');
+  qtext.setAttribute('position','0 0.38 0.11'); qtext.setAttribute('wrap-count','35');
+  root.appendChild(box); root.appendChild(title); root.appendChild(qtext);
+  q.alternativas.forEach((alt, idx)=>{{
+    const letra = alt.trim().charAt(0).toUpperCase();
+    const row=document.createElement('a-entity');
+    row.setAttribute('position', `0 ${{ -0.12 - idx*0.24 }} 0.12`);
+    row.setAttribute('class','clickable'); row.setAttribute('data-i', i);
+    const bg=document.createElement('a-plane');
+    bg.setAttribute('width','1.95'); bg.setAttribute('height','0.20');
+    bg.setAttribute('color','#0a1933'); bg.setAttribute('class','clickable');
+    const txt=document.createElement('a-text');
+    const shortAlt = alt.length>60 ? alt.slice(0,57)+'...' : alt;
+    txt.setAttribute('value', shortAlt);
+    txt.setAttribute('color','#cfe0ff'); txt.setAttribute('width','1.85');
+    txt.setAttribute('position','-0.92 0 0.01');
+    bg.appendChild(txt); row.appendChild(bg);
+    row.addEventListener('click', ()=>{{
+      answers[i]=letra;
+      document.querySelectorAll(`[data-i="${{i}}"] a-plane`).forEach(p=> p.setAttribute('color','#0a1933'));
+      bg.setAttribute('color', letra===q.correta ? '#00c853' : '#d50000');
+      if(navigator.vibrate) navigator.vibrate(letra===q.correta ? 50 : 100);
+      root.setAttribute('animation','property: scale; from:1 1 1; to:1.08 1.08 1.08; dur:150; dir:alternate; loop:2');
+      updateHUD();
+    }});
+    root.appendChild(row);
+  }});
+  return root;
+}}
+function initWorld(){{
+  const world=document.getElementById('world');
+  world.innerHTML='';
+  QUESTIONS.forEach((q,i)=> world.appendChild(createQuestionBlock(q,i)));
+  const grid=document.getElementById('grid');
+  if(grid){{
+    grid.innerHTML='';
+    for(let i=-40;i<=40;i+=2){{
+      const l1=document.createElement('a-box');
+      l1.setAttribute('width','80'); l1.setAttribute('height','0.015'); l1.setAttribute('depth','0.015');
+      l1.setAttribute('position',`0 0 ${{i}}`); l1.setAttribute('color','#12204a'); l1.setAttribute('opacity','0.35');
+      grid.appendChild(l1);
+    }}
+  }}
+}}
+function setupCalibration(){{
+  const rig=document.getElementById('rig');
+  const head=document.getElementById('head');
+  document.getElementById('btnReset').addEventListener('click', ()=>{{ rig.setAttribute('position','0 0 7'); head.setAttribute('position','0 1.65 0'); currentHeight=1.65; }});
+  document.getElementById('btnHeightUp').addEventListener('click', ()=>{{ currentHeight+=0.1; head.setAttribute('position',`0 ${{currentHeight}} 0`); }});
+  document.getElementById('btnHeightDown').addEventListener('click', ()=>{{ currentHeight=Math.max(0.5, currentHeight-0.1); head.setAttribute('position',`0 ${{currentHeight}} 0`); }});
+  document.getElementById('btnResetArena').addEventListener('click', ()=>{{ initWorld(); answers={{}}; updateHUD(); }});
+  document.getElementById('btnExitVR').addEventListener('click', ()=>{{ const scene=document.querySelector('a-scene'); if(scene.is('vr-mode')) scene.exitVR(); }});
+}}
+document.addEventListener('DOMContentLoaded', ()=>{{ initWorld(); setupCalibration(); }});
+document.getElementById('enter').addEventListener('click', ()=>{{ document.querySelector('a-scene').enterVR(); }});
+</script>
+</body>
+</html>
+    """
+    st.components.v1.html(html, height=height, scrolling=False)
+    if st.button(f"❌ Fechar VR {modo}", key=f"close_full_{modo}"):
         st.session_state[key]=False
         st.rerun()
 
-tab1, tab2, tab3 = st.tabs(["🌐 ARENA", "🏆 SIMULADO", "📖 TREINO"])
+tab1, tab2, tab3 = st.tabs(["🥽 ARENA FULL VR", "🏆 SIMULADO FULL VR", "📖 TREINO FULL VR"])
 with tab1:
     todas=[]
     for v in banco.values(): todas.extend(v)
     random.shuffle(todas)
-    st.subheader("🌐 Arena Quest 3S - Leve")
-    render_3d_leve(todas, modo="LIVRE")
+    st.subheader("🥽 Arena Full VR - Interação Total Quest 3S")
+    render_full_vr(todas, modo="ARENA LIVRE - FULL BODY", height=950)
 with tab2:
     if st.session_state.simulado:
         sim=st.session_state.simulado
@@ -189,8 +331,8 @@ with tab2:
         if not sim["finalizado"]:
             rest=max(0,4*3600-int(time.time()-sim["inicio"]))
             h,m,s=rest//3600,(rest%3600)//60,rest%60
-            st.warning(f"⏱️ {h:02d}:{m:02d}:{s:02d} | {len(qs)} questões")
-            render_3d_leve(qs, modo="SIMULADO")
+            st.warning(f"⏱️ {h:02d}:{m:02d}:{s:02d} | {len(qs)} questões | FULL VR")
+            render_full_vr(qs, modo="SIMULADO OFICIAL FULL VR", height=950)
             st.divider()
             with st.form("form_sim"):
                 resp={}
@@ -202,7 +344,6 @@ with tab2:
                 c1,c2=st.columns(2)
                 if c1.form_submit_button("💾 Salvar"): 
                     sim["respostas"]=resp
-                    st.success("Salvo!")
                     st.rerun()
                 if c2.form_submit_button("✅ Finalizar", type="primary"):
                     ac=0; dets=[]
@@ -234,7 +375,7 @@ with tab2:
 with tab3:
     if st.session_state.treino:
         st.subheader(f"Treino {st.session_state.treino[0].get('materia','')}")
-        render_3d_leve(st.session_state.treino, modo="TREINO")
+        render_full_vr(st.session_state.treino, modo="TREINO FULL VR", height=950)
         for i,q in enumerate(st.session_state.treino):
             with st.expander(f"{i+1}. {q['pergunta'][:70]}..."):
                 for a in q["alternativas"]: st.markdown(f"- {a}")
