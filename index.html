@@ -23,6 +23,8 @@ padding:10px;border-radius:8px;margin:5px 0;cursor:pointer
 }
 select{width:100%}
 button:hover{background:#247bc0}
+button#refresh{background:#0d6b4f;border-color:#2fbf8f}
+button#refresh:hover{background:#108a63}
 #status{font-size:14px;color:#c4e9ff}
 #stats{line-height:1.6;font-size:14px}
 #enter{
@@ -82,6 +84,7 @@ small{color:#b9d0e5;line-height:1.5}
 
 <button id="demo">Carregar demonstração</button>
 <button id="start">Iniciar / Reiniciar</button>
+<button id="refresh">🔄 Atualizar banco de questões</button>
 
 <h3>Importar questões JSON</h3>
 <input id="file" type="file" accept=".json,application/json" multiple>
@@ -111,22 +114,175 @@ import {XRHandModelFactory} from "three/addons/webxr/XRHandModelFactory.js";
 
 const $=id=>document.getElementById(id);
 
+// ═══════════════════════════════════════════════════════════════════
+// AUTO-LOAD DO JSON (novo)
+// ═══════════════════════════════════════════════════════════════════
+const JSON_CANDIDATES = ["questoes.json", "json.json", "questions.json"];
+const JSON_CACHE_KEY = "pmsc_json_cache_v1";
+
+function stripPrefix(s){
+return String(s).replace(/^[A-Ea-e]\s*[\)\.\-\:]\s*/, "").trim();
+}
+
+function autoStripPrefixes(options){
+// Só remove prefixos se TODAS as opções tiverem o padrão A), B), C), D), E)
+const pattern = /^([A-Ea-e])\s*[\)\.\-\:]\s*/;
+const expected = "ABCDE";
+for (let i = 0; i < options.length; i++) {
+const m = String(options[i]).match(pattern);
+if (!m || m[1].toUpperCase() !== expected[i]) {
+return options; // não tem prefixo uniforme, deixa como está
+}
+}
+return options.map(o => String(o).replace(pattern, "").trim());
+}
+
+function flattenQuestions(data){
+if (Array.isArray(data)) return data;
+if (data && typeof data === "object") {
+if (Array.isArray(data.questoes)) return data.questoes;
+if (Array.isArray(data.questions)) return data.questions;
+// Formato agrupado por matéria: {"Leg. Institucional": [...], ...}
+const flat = [];
+for (const [subject, list] of Object.entries(data)) {
+if (Array.isArray(list)) {
+for (const q of list) {
+flat.push({
+...q,
+subject: q.subject || q.materia || q.disciplina || subject
+});
+}
+}
+}
+return flat;
+}
+return [];
+}
+
+async function loadQuestionsFromURL(url){
+try {
+const response = await fetch(url, { cache: "no-cache" });
+if (!response.ok) throw new Error(`HTTP ${response.status}`);
+const data = await response.json();
+try {
+localStorage.setItem(JSON_CACHE_KEY, JSON.stringify(data));
+} catch(e){}
+const flat = flattenQuestions(data);
+return flat.map(normalize).filter(Boolean);
+} catch (e) {
+// Fallback para cache offline
+try {
+const cached = localStorage.getItem(JSON_CACHE_KEY);
+if (cached) {
+const data = JSON.parse(cached);
+const flat = flattenQuestions(data);
+const valid = flat.map(normalize).filter(Boolean);
+if (valid.length > 0) {
+$("status").textContent = "⚠️ Offline: usando cache local";
+return valid;
+}
+}
+} catch(ce){}
+throw e;
+}
+}
+
+function mergeQuestions(newQuestions){
+const existing = new Set(questions.map(q => q.id));
+let added = 0;
+for (const q of newQuestions) {
+if (!existing.has(q.id)) {
+questions.push(q);
+existing.add(q.id);
+added++;
+}
+}
+return added;
+}
+
+function updateSubjectDropdown(){
+const select = $("subject");
+const current = select.value;
+while (select.options.length > 1) select.remove(1);
+for (const subject of new Set(questions.map(q => q.subject))) {
+const option = document.createElement("option");
+option.value = subject;
+option.textContent = subject;
+select.appendChild(option);
+}
+if ([...select.options].some(o => o.value === current)) {
+select.value = current;
+}
+}
+
+async function autoLoadQuestions(){
+const params = new URLSearchParams(location.search);
+const override = params.get("json");
+const candidates = override ? [override, ...JSON_CANDIDATES] : [...JSON_CANDIDATES];
+
+for (const file of candidates) {
+try {
+$("status").textContent = `Buscando ${file}...`;
+const valid = await loadQuestionsFromURL(file);
+if (valid.length === 0) {
+$("status").textContent = `${file} sem questões válidas.`;
+continue;
+}
+mergeQuestions(valid);
+updateSubjectDropdown();
+start();
+$("status").textContent = `✅ ${valid.length} questões carregadas de ${file}.`;
+window._loadedFile = file;
+return;
+} catch (e) {
+// tenta o próximo
+}
+}
+$("status").textContent = "⚠️ Nenhum JSON encontrado. Use Importar JSON.";
+}
+
+async function refreshQuestions(){
+const file = window._loadedFile || JSON_CANDIDATES[0];
+const btn = $("refresh");
+btn.disabled = true;
+const original = btn.textContent;
+btn.textContent = "⏳ Atualizando...";
+try {
+$("status").textContent = `Atualizando ${file}...`;
+const fresh = await loadQuestionsFromURL(file);
+if (fresh.length === 0) {
+$("status").textContent = "❌ Nenhuma questão válida no arquivo.";
+return;
+}
+// Substitui todo o banco (fonte da verdade = URL)
+questions = fresh;
+window._loadedFile = file;
+updateSubjectDropdown();
+start();
+$("status").textContent = `✅ Banco atualizado: ${fresh.length} questões de ${file}.`;
+} catch (e) {
+$("status").textContent = "❌ Erro ao atualizar: " + e.message;
+} finally {
+btn.disabled = false;
+btn.textContent = original;
+}
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// (resto do código original — preservado integralmente)
+// ═══════════════════════════════════════════════════════════════════
+
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x06111e);
 
-const camera=new THREE.PerspectiveCamera(
-70,innerWidth/innerHeight,.05,150
-);
+const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.05,150);
 camera.position.set(0,1.65,0);
 
 const rig=new THREE.Group();
 rig.add(camera);
 scene.add(rig);
 
-const renderer=new THREE.WebGLRenderer({
-antialias:true,
-powerPreference:"high-performance"
-});
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
 renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.xr.enabled=true;
@@ -150,30 +306,21 @@ const raycaster=new THREE.Raycaster();
 const rotation=new THREE.Matrix4();
 
 function createBox(w,h,d,color,x,y,z){
-const m=new THREE.Mesh(
-new THREE.BoxGeometry(w,h,d),
-new THREE.MeshStandardMaterial({color,roughness:.75})
-);
+const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.75}));
 m.position.set(x,y,z);
 environmentGroup.add(m);
 return m;
 }
 
 function createSphere(r,color,x,y,z){
-const m=new THREE.Mesh(
-new THREE.SphereGeometry(r,16,12),
-new THREE.MeshStandardMaterial({color})
-);
+const m=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),new THREE.MeshStandardMaterial({color}));
 m.position.set(x,y,z);
 environmentGroup.add(m);
 return m;
 }
 
 function createCylinder(top,bottom,height,color,x,y,z){
-const m=new THREE.Mesh(
-new THREE.CylinderGeometry(top,bottom,height,12),
-new THREE.MeshStandardMaterial({color})
-);
+const m=new THREE.Mesh(new THREE.CylinderGeometry(top,bottom,height,12),new THREE.MeshStandardMaterial({color}));
 m.position.set(x,y,z);
 environmentGroup.add(m);
 return m;
@@ -183,9 +330,8 @@ function disposeEnvironment(){
 environmentGroup.traverse(o=>{
 if(!o.isMesh)return;
 o.geometry.dispose();
-if(Array.isArray(o.material)){
-o.material.forEach(m=>m.dispose());
-}else o.material.dispose();
+if(Array.isArray(o.material)){o.material.forEach(m=>m.dispose());}
+else o.material.dispose();
 });
 environmentGroup.clear();
 }
@@ -199,10 +345,7 @@ createBox(.12,5,14,wall,7,2.5,-2);
 
 function desk(x,z,color=0x795548){
 createBox(1.7,.12,.8,color,x,.8,z);
-for(const dx of [-.7,.7]){
-for(const dz of [-.3,.3]){
-createBox(.08,.75,.08,0x444444,x+dx,.38,z+dz);
-}}
+for(const dx of [-.7,.7]){for(const dz of [-.3,.3]){createBox(.08,.75,.08,0x444444,x+dx,.38,z+dz);}}
 }
 
 function sofa(x,z){
@@ -224,8 +367,7 @@ for(let row=0;row<4;row++){
 createBox(1.5,.08,.5,0x3f2c20,x,.45+row*.55,z);
 for(let col=0;col<6;col++){
 const colors=[0x226699,0xa33939,0x28845a,0xc49b42];
-createBox(.17,.35,.24,colors[(row+col)%4],
-x-.58+col*.22,.66+row*.55,z);
+createBox(.17,.35,.24,colors[(row+col)%4],x-.58+col*.22,.66+row*.55,z);
 }}
 }
 
@@ -236,106 +378,66 @@ createBox(.09,2.4,.1,0xd8e2ec,0,2.2,-7.7);
 }
 
 const environments=[
-["academy","Academia PMSC"],
-["living","Sala de estar"],
-["beach","Praia"],
-["library","Biblioteca"],
-["future","Escritório futurista"],
-["nature","Natureza"],
-["penthouse","Cobertura de luxo"],
-["space","Estação espacial"],
-["minimal","Sala minimalista"]
+["academy","Academia PMSC"],["living","Sala de estar"],["beach","Praia"],
+["library","Biblioteca"],["future","Escritório futurista"],["nature","Natureza"],
+["penthouse","Cobertura de luxo"],["space","Estação espacial"],["minimal","Sala minimalista"]
 ];
 
 let currentEnvironment="academy";
 
 function buildEnvironment(type){
 disposeEnvironment();
-
 switch(type){
-
 case "academy":
 scene.background=new THREE.Color(0x06111e);
 room(0x183047,0x10283f);
 createBox(5,.12,.3,0x2b9dd8,0,3.7,-7.7);
-desk(-3.8,-4.5,0x243c56);
-desk(3.8,-4.5,0x243c56);
+desk(-3.8,-4.5,0x243c56);desk(3.8,-4.5,0x243c56);
 break;
-
 case "living":
 scene.background=new THREE.Color(0xb4c7d8);
 room(0xb8a28a,0xd7d4ce);
-sofa(-3.8,-4);
-desk(3.8,-4,0x94765d);
-windowView(0x8bbad7);
+sofa(-3.8,-4);desk(3.8,-4,0x94765d);windowView(0x8bbad7);
 break;
-
 case "beach":
 scene.background=new THREE.Color(0x86d5ff);
 createBox(60,.12,60,0xe8d39b,0,-.1,-10);
 createBox(60,.03,25,0x168fc4,0,-.02,-24);
 createSphere(1.1,0xffe9a0,-15,12,-35);
-for(const x of [-5,5]){
-createCylinder(.1,.18,3,0x926a41,x,1.5,-5);
-createSphere(1.2,0x278a53,x,3.1,-5);
-}
+for(const x of [-5,5]){createCylinder(.1,.18,3,0x926a41,x,1.5,-5);createSphere(1.2,0x278a53,x,3.1,-5);}
 desk(3.5,-3,0xc6a16e);
 break;
-
 case "library":
 scene.background=new THREE.Color(0x2b251f);
 room(0x5b4332,0x3b3027);
-bookshelf(-5,-5);
-bookshelf(-3,-5);
-bookshelf(3,-5);
-bookshelf(5,-5);
-desk(-3.5,-2);
-desk(3.5,-2);
+bookshelf(-5,-5);bookshelf(-3,-5);bookshelf(3,-5);bookshelf(5,-5);
+desk(-3.5,-2);desk(3.5,-2);
 break;
-
 case "future":
 scene.background=new THREE.Color(0x050d1c);
 room(0x111b35,0x0b1630);
-for(const x of [-5,-3,3,5]){
-createBox(.08,3.2,.08,0x00cfff,x,1.7,-7.7);
-}
-desk(-3.8,-4,0x1a4366);
-desk(3.8,-4,0x1a4366);
+for(const x of [-5,-3,3,5]){createBox(.08,3.2,.08,0x00cfff,x,1.7,-7.7);}
+desk(-3.8,-4,0x1a4366);desk(3.8,-4,0x1a4366);
 break;
-
 case "nature":
 scene.background=new THREE.Color(0x9dd8ef);
 createBox(80,.12,80,0x4c9b53,0,-.1,-10);
-for(const [x,z] of [
-[-6,-6],[6,-6],[-6,1],[6,1],[-3,-7],[3,-7]
-])tree(x,z);
+for(const [x,z] of [[-6,-6],[6,-6],[-6,1],[6,1],[-3,-7],[3,-7]])tree(x,z);
 desk(3.8,-4,0x8b6848);
 break;
-
 case "penthouse":
 scene.background=new THREE.Color(0x6e9ac1);
 room(0xd2c9bd,0xe6e0d9);
-windowView(0x6291b5);
-sofa(-3.8,-4);
-desk(3.8,-4,0x303b48);
-for(const x of [-5,5]){
-createCylinder(.05,.05,2.5,0xc6b17b,x,1.25,-5);
-}
+windowView(0x6291b5);sofa(-3.8,-4);desk(3.8,-4,0x303b48);
+for(const x of [-5,5]){createCylinder(.05,.05,2.5,0xc6b17b,x,1.25,-5);}
 break;
-
 case "space":
 scene.background=new THREE.Color(0x01040e);
 room(0x293344,0x1a2436);
 createSphere(2.3,0x237fc3,0,4,-30);
-for(let i=0;i<30;i++){
-createSphere(.04,0xffffff,
-Math.sin(i*2.7)*35,
-4+(i%7)*2,
--15-(i%5)*8);
-}
+for(let i=0;i<30;i++){createSphere(.04,0xffffff,Math.sin(i*2.7)*35,4+(i%7)*2,-15-(i%5)*8);}
 desk(3.8,-4,0x334b66);
 break;
-
 case "minimal":
 scene.background=new THREE.Color(0xdde5ec);
 room(0xe0e0e0,0xf0f0f0);
@@ -343,11 +445,9 @@ desk(3.8,-4,0xaaaaaa);
 createBox(1.8,.2,1.8,0xbcbcbc,-4,.1,-4);
 break;
 }
-
 createBox(5.8,4.1,.12,0x0a213b,0,1.9,-3.65);
 createBox(2.5,3.2,.12,0x102d49,-4.25,1.8,-4.05);
 createBox(2.5,3.2,.12,0x102d49,4.25,1.8,-4.05);
-
 applyLighting();
 }
 
@@ -355,10 +455,7 @@ function applyLighting(){
 const night=$("lighting").value==="night";
 ambient.intensity=night?1.1:2.4;
 sunlight.intensity=night?.5:2;
-if(currentEnvironment==="space"){
-ambient.intensity=1.4;
-sunlight.intensity=.8;
-}
+if(currentEnvironment==="space"){ambient.intensity=1.4;sunlight.intensity=.8;}
 }
 
 function changeEnvironment(type){
@@ -368,97 +465,53 @@ type=available[Math.floor(Math.random()*available.length)];
 }
 currentEnvironment=type;
 buildEnvironment(type);
-try{
-localStorage.setItem("pmsc_environment",type);
-}catch(e){}
+try{localStorage.setItem("pmsc_environment",type);}catch(e){}
 $("environment").value=type;
-$("status").textContent="Ambiente: "+
-(environments.find(e=>e[0]===type)?.[1]||type);
+$("status").textContent="Ambiente: "+(environments.find(e=>e[0]===type)?.[1]||type);
 render();
 }
 
 $("environment").onchange=e=>changeEnvironment(e.target.value);
-
-$("lighting").onchange=()=>{
-applyLighting();
-try{
-localStorage.setItem("pmsc_lighting",$("lighting").value);
-}catch(e){}
-};
+$("lighting").onchange=()=>{applyLighting();try{localStorage.setItem("pmsc_lighting",$("lighting").value);}catch(e){}};
 
 function label(text,x,y,z,width=4.8,height=.28,action=null,kind="normal"){
 const canvas=document.createElement("canvas");
-canvas.width=2048;
-canvas.height=256;
+canvas.width=2048;canvas.height=256;
 const ctx=canvas.getContext("2d");
-
-ctx.fillStyle=
-kind==="correct"?"#16684d":
-kind==="wrong"?"#893440":
-action?"#176ca4":"#123c60";
-
+ctx.fillStyle=kind==="correct"?"#16684d":kind==="wrong"?"#893440":action?"#176ca4":"#123c60";
 ctx.fillRect(0,0,2048,256);
 ctx.strokeStyle=action?"#a4efff":"#4289bb";
-ctx.lineWidth=7;
-ctx.strokeRect(5,5,2038,246);
-ctx.fillStyle="#fff";
-ctx.textAlign="center";
-ctx.textBaseline="middle";
-
+ctx.lineWidth=7;ctx.strokeRect(5,5,2038,246);
+ctx.fillStyle="#fff";ctx.textAlign="center";ctx.textBaseline="middle";
 let size=94;
-do{
-ctx.font=`bold ${size}px Arial`;
-if(ctx.measureText(String(text)).width<1930)break;
-size-=3;
-}while(size>30);
-
+do{ctx.font=`bold ${size}px Arial`;if(ctx.measureText(String(text)).width<1930)break;size-=3;}while(size>30);
 ctx.fillText(String(text),1024,128);
-
 const texture=new THREE.CanvasTexture(canvas);
 texture.colorSpace=THREE.SRGBColorSpace;
-texture.anisotropy=Math.min(
-8,renderer.capabilities.getMaxAnisotropy()
-);
-
+texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
 const mesh=new THREE.Mesh(
 new THREE.PlaneGeometry(width,height),
-new THREE.MeshBasicMaterial({
-map:texture,
-side:THREE.DoubleSide
-})
+new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide})
 );
 mesh.position.set(x,y,z);
 scene.add(mesh);
 dynamic.push(mesh);
-
-if(action){
-mesh.userData.action=action;
-interactive.push(mesh);
-}
+if(action){mesh.userData.action=action;interactive.push(mesh);}
 return mesh;
 }
 
 function clearPanels(){
 for(const mesh of dynamic){
-scene.remove(mesh);
-mesh.geometry.dispose();
-mesh.material.map.dispose();
-mesh.material.dispose();
+scene.remove(mesh);mesh.geometry.dispose();mesh.material.map.dispose();mesh.material.dispose();
 }
-dynamic.length=0;
-interactive.length=0;
-interactive.push(...teleportMarkers);
+dynamic.length=0;interactive.length=0;interactive.push(...teleportMarkers);
 }
 
 function wrap(text,max=44){
-const lines=[];
-let line="";
+const lines=[];let line="";
 for(const word of String(text).split(/\s+/)){
 const candidate=line?line+" "+word:word;
-if(candidate.length>max&&line){
-lines.push(line);
-line=word;
-}else line=candidate;
+if(candidate.length>max&&line){lines.push(line);line=word;}else line=candidate;
 }
 if(line)lines.push(line);
 return lines;
@@ -469,22 +522,15 @@ return label(text,0,y,-3.52,width,height,action,kind);
 }
 
 const subjects=[
-"Língua Portuguesa",
-"Informática",
-"Direito Constitucional",
-"Constituição de Santa Catarina",
-"Direito Penal Comum",
-"Direito Processual Penal Comum",
-"Direito Penal Militar",
-"Legislação Especial",
-"Legislação de Trânsito",
-"Legislação Institucional"
+"Língua Portuguesa","Informática","Direito Constitucional",
+"Constituição de Santa Catarina","Direito Penal Comum",
+"Direito Processual Penal Comum","Direito Penal Militar",
+"Legislação Especial","Legislação de Trânsito","Legislação Institucional"
 ];
 
 for(const subject of subjects){
 const option=document.createElement("option");
-option.value=subject;
-option.textContent=subject;
+option.value=subject;option.textContent=subject;
 $("subject").appendChild(option);
 }
 
@@ -501,36 +547,19 @@ let stats={total:0,correct:0,subjects:{}};
 
 try{
 const saved=JSON.parse(localStorage.getItem("pmsc_2026_v5"));
-if(saved){
-stats=saved.stats||stats;
-wrongQuestions=new Set(saved.wrong||[]);
-}
+if(saved){stats=saved.stats||stats;wrongQuestions=new Set(saved.wrong||[]);}
 }catch(e){}
 
 function saveProgress(){
-try{
-localStorage.setItem("pmsc_2026_v5",JSON.stringify({
-stats,
-wrong:[...wrongQuestions]
-}));
-}catch(e){}
+try{localStorage.setItem("pmsc_2026_v5",JSON.stringify({stats,wrong:[...wrongQuestions]}));}catch(e){}
 updateStats();
 }
 
 function updateStats(){
-const percent=stats.total?
-Math.round(stats.correct*100/stats.total):0;
-
-let html=`
-Respondidas: ${stats.total}<br>
-Acertos: ${stats.correct}<br>
-Aproveitamento: ${percent}%<br>
-Revisar: ${wrongQuestions.size}
-`;
-
+const percent=stats.total?Math.round(stats.correct*100/stats.total):0;
+let html=`Respondidas: ${stats.total}<br>Acertos: ${stats.correct}<br>Aproveitamento: ${percent}%<br>Revisar: ${wrongQuestions.size}`;
 for(const [name,value] of Object.entries(stats.subjects)){
-const safe=name.replaceAll("&","&amp;")
-.replaceAll("<","&lt;").replaceAll(">","&gt;");
+const safe=name.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 html+=`<br>${safe}: ${value.correct}/${value.total}`;
 }
 $("stats").innerHTML=html;
@@ -538,19 +567,12 @@ $("stats").innerHTML=html;
 
 function environmentPanel(){
 label("ESCOLHER AMBIENTE",-4.25,3.12,-3.95,2.25,.27);
-
 environments.forEach((item,index)=>{
 const [id,name]=item;
-label(
-name,-4.25,2.78-index*.25,-3.94,2.25,.23,
-()=>changeEnvironment(id),
-currentEnvironment===id?"correct":"normal"
-);
+label(name,-4.25,2.78-index*.25,-3.94,2.25,.23,
+()=>changeEnvironment(id),currentEnvironment===id?"correct":"normal");
 });
-
-label("ALEATORIO",-4.25,.25,-3.94,2.25,.24,
-()=>changeEnvironment("random"));
-
+label("ALEATORIO",-4.25,.25,-3.94,2.25,.24,()=>changeEnvironment("random"));
 label("DIA / NOITE",-4.25,-.08,-3.94,2.25,.24,()=>{
 $("lighting").value=$("lighting").value==="day"?"night":"day";
 $("lighting").dispatchEvent(new Event("change"));
@@ -561,59 +583,35 @@ function render(message=""){
 clearPanels();
 center("PMSC 2026 | ACADEMIA VIRTUAL",3.45,5.3,.27);
 environmentPanel();
-
 if(!pool.length){
 center("CARREGUE QUESTOES PARA INICIAR",2.4);
 center("USE O MENU PARA IMPORTAR JSON",1.95);
 return;
 }
-
 if(examEnded){
 center("SIMULADO FINALIZADO",2.6);
 center(`ACERTOS: ${examCorrect} DE ${examDone}`,2.1);
 center("REINICIAR SIMULADO",1.55,3.8,.35,start);
 return;
 }
-
 const q=pool[current];
 center(q.subject.toUpperCase(),3.08,5.15,.24);
-
 const questionLines=wrap(q.question,44);
-questionLines.slice(0,4).forEach((text,index)=>{
-center(text,2.79-index*.24,5.2,.22);
-});
-
+questionLines.slice(0,4).forEach((text,index)=>{center(text,2.79-index*.24,5.2,.22);});
 q.options.forEach((option,index)=>{
 const lines=wrap(`${"ABCDE"[index]}) ${option}`,46);
 const y=1.7-index*.32;
-
 let kind="normal";
-if(answered){
-if(index===q.correct)kind="correct";
-else if(index===q.selected)kind="wrong";
-}
-
+if(answered){if(index===q.correct)kind="correct";else if(index===q.selected)kind="wrong";}
 center(lines[0],y,5.15,.28,()=>answer(index),kind);
-
-if(lines[1]){
-center(lines[1],y-.115,5.15,.105,()=>answer(index));
-}
+if(lines[1]){center(lines[1],y-.115,5.15,.105,()=>answer(index));}
 });
-
-center(message||`QUESTAO ${current+1} DE ${pool.length}`,
--.04,5.1,.24);
-
-center(
-current===pool.length-1?"FINALIZAR / REINICIAR":"PROXIMA QUESTAO",
--.38,3.8,.29,next
-);
-
+center(message||`QUESTAO ${current+1} DE ${pool.length}`,-.04,5.1,.24);
+center(current===pool.length-1?"FINALIZAR / REINICIAR":"PROXIMA QUESTAO",-.38,3.8,.29,next);
 label("DESEMPENHO",4.25,2.75,-3.94,2.25,.27);
-label(`${stats.correct} / ${stats.total} ACERTOS`,
-4.25,2.4,-3.94,2.25,.28);
+label(`${stats.correct} / ${stats.total} ACERTOS`,4.25,2.4,-3.94,2.25,.28);
 label("DISCIPLINA",4.25,1.98,-3.94,2.25,.25);
 label(q.subject.slice(0,27),4.25,1.65,-3.94,2.25,.28);
-
 if(answered&&q.explanation){
 wrap(q.explanation,27).slice(0,4).forEach((text,index)=>{
 label(text,4.25,1.2-index*.25,-3.94,2.25,.22);
@@ -623,76 +621,40 @@ label(text,4.25,1.2-index*.25,-3.94,2.25,.22);
 
 function answer(index){
 if(answered||examEnded||!pool.length)return;
-
 const q=pool[current];
-answered=true;
-q.selected=index;
+answered=true;q.selected=index;
 const right=index===q.correct;
-
-examDone++;
-if(right)examCorrect++;
-
-stats.total++;
-if(right)stats.correct++;
-
-if(!stats.subjects[q.subject]){
-stats.subjects[q.subject]={total:0,correct:0};
-}
-
+examDone++;if(right)examCorrect++;
+stats.total++;if(right)stats.correct++;
+if(!stats.subjects[q.subject]){stats.subjects[q.subject]={total:0,correct:0};}
 const s=stats.subjects[q.subject];
-s.total++;
-if(right)s.correct++;
-
-if(right)wrongQuestions.delete(q.id);
-else wrongQuestions.add(q.id);
-
+s.total++;if(right)s.correct++;
+if(right)wrongQuestions.delete(q.id);else wrongQuestions.add(q.id);
 saveProgress();
-render(right?"RESPOSTA CORRETA!":
-`GABARITO: ${"ABCDE"[q.correct]}`);
+render(right?"RESPOSTA CORRETA!":`GABARITO: ${"ABCDE"[q.correct]}`);
 }
 
 function next(){
 if(!pool.length)return;
-
-if($("mode").value==="exam"&&current===pool.length-1){
-examEnded=true;
-render();
-return;
-}
-
-current=(current+1)%pool.length;
-answered=false;
-render();
+if($("mode").value==="exam"&&current===pool.length-1){examEnded=true;render();return;}
+current=(current+1)%pool.length;answered=false;render();
 }
 
 function start(){
 const mode=$("mode").value;
 const subject=$("subject").value;
-
 pool=questions.filter(q=>{
 const matchesSubject=subject==="Todas"||q.subject===subject;
 const matchesReview=mode!=="review"||wrongQuestions.has(q.id);
 return matchesSubject&&matchesReview;
 });
-
 if(mode==="exam"){
 pool=pool.slice();
-for(let i=pool.length-1;i>0;i--){
-const j=Math.floor(Math.random()*(i+1));
-[pool[i],pool[j]]=[pool[j],pool[i]];
+for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
 }
-}
-
-current=0;
-answered=false;
-examCorrect=0;
-examDone=0;
-examEnded=false;
+current=0;answered=false;examCorrect=0;examDone=0;examEnded=false;
 render();
-
-$("status").textContent=pool.length?
-`${pool.length} questões disponíveis.`:
-"Nenhuma questão neste filtro.";
+$("status").textContent=pool.length?`${pool.length} questões disponíveis.`:"Nenhuma questão neste filtro.";
 }
 
 $("start").onclick=start;
@@ -709,6 +671,9 @@ const options=Array.isArray(raw)?raw:keys.map(k=>raw[k]);
 
 if(options.length<2||options.length>5)return null;
 
+// ✅ Correção do bug "A) A) Servidores..."
+const cleanOptions=autoStripPrefixes(options);
+
 const answer=q.correta??q.resposta??q.gabarito??q.correct;
 let correct=-1;
 
@@ -716,7 +681,6 @@ if(typeof answer==="number"){
 correct=answer;
 }else if(typeof answer==="string"){
 const value=answer.trim();
-
 if(/^[A-E]$/i.test(value)){
 correct=value.toUpperCase().charCodeAt(0)-65;
 }else if(keys&&keys.includes(value)){
@@ -724,57 +688,38 @@ correct=keys.indexOf(value);
 }else if(/^\d+$/.test(value)){
 correct=Number(value);
 }else{
-correct=options.map(String).indexOf(value);
+// Tenta bater com opções limpas, com prefixo, ou após remover prefixo
+correct=cleanOptions.map(String).indexOf(value);
+if(correct===-1)correct=options.map(String).indexOf(value);
+if(correct===-1)correct=cleanOptions.map(String).indexOf(stripPrefix(value));
 }
 }
 
-if(!Number.isInteger(correct)||correct<0||correct>=options.length){
-return null;
-}
+if(!Number.isInteger(correct)||correct<0||correct>=cleanOptions.length)return null;
 
 const subject=String(q.disciplina??q.materia??q.subject??"Geral");
 
 return{
 id:String(q.id??`${subject}|${question}`),
 question:String(question),
-options:options.map(String),
+options:cleanOptions.map(String),
 correct,
 subject,
-explanation:String(
-q.explicacao??q.comentario??q.explanation??""
-)
+explanation:String(q.explicacao??q.comentario??q.explanation??"")
 };
 }
 
 $("file").onchange=async event=>{
 try{
 let count=0;
-
 for(const file of event.target.files){
 const data=JSON.parse(await file.text());
-const raw=Array.isArray(data)?data:data.questoes??data.questions;
-
-if(!Array.isArray(raw)){
-throw new Error(`Formato inválido: ${file.name}`);
-}
-
-const valid=raw.map(normalize).filter(Boolean);
-questions.push(...valid);
+const flat=flattenQuestions(data);
+const valid=flat.map(normalize).filter(Boolean);
+mergeQuestions(valid);
 count+=valid.length;
 }
-
-const select=$("subject");
-
-for(const subject of new Set(questions.map(q=>q.subject))){
-const exists=[...select.options].some(o=>o.value===subject);
-if(!exists){
-const option=document.createElement("option");
-option.value=subject;
-option.textContent=subject;
-select.appendChild(option);
-}
-}
-
+updateSubjectDropdown();
 start();
 $("status").textContent=`${count} questões importadas.`;
 }catch(error){
@@ -784,59 +729,17 @@ $("status").textContent="Erro JSON: "+error.message;
 
 $("demo").onclick=()=>{
 questions=[
-{
-question:"Qual Constituição está atualmente vigente no Brasil?",
-options:[
-"Constituição de 1967",
-"Constituição de 1988",
-"Constituição de 1946",
-"Constituição de 1937"
-],
-correct:1,
-subject:"Direito Constitucional",
-explanation:"A Constituição Federal vigente foi promulgada em 1988."
-},
-{
-question:"Qual princípio exige atuação administrativa conforme o ordenamento jurídico?",
-options:[
-"Publicidade",
-"Legalidade",
-"Impessoalidade",
-"Eficiência"
-],
-correct:1,
-subject:"Direito Constitucional",
-explanation:"O princípio da legalidade orienta a Administração Pública."
-},
-{
-question:"Qual artigo do Código Penal trata do furto?",
-options:[
-"Artigo 121",
-"Artigo 155",
-"Artigo 157",
-"Artigo 171"
-],
-correct:1,
-subject:"Direito Penal Comum",
-explanation:"O furto está previsto no artigo 155 do Código Penal."
-},
-{
-question:"Qual sinalização indica parada obrigatória?",
-options:[
-"Placa PARE",
-"Placa de estacionamento",
-"Placa de velocidade máxima",
-"Placa de pedestres"
-],
-correct:0,
-subject:"Legislação de Trânsito",
-explanation:"A placa R-1 indica parada obrigatória."
-}
+{question:"Qual Constituição está atualmente vigente no Brasil?",options:["Constituição de 1967","Constituição de 1988","Constituição de 1946","Constituição de 1937"],correct:1,subject:"Direito Constitucional",explanation:"A Constituição Federal vigente foi promulgada em 1988."},
+{question:"Qual princípio exige atuação administrativa conforme o ordenamento jurídico?",options:["Publicidade","Legalidade","Impessoalidade","Eficiência"],correct:1,subject:"Direito Constitucional",explanation:"O princípio da legalidade orienta a Administração Pública."},
+{question:"Qual artigo do Código Penal trata do furto?",options:["Artigo 121","Artigo 155","Artigo 157","Artigo 171"],correct:1,subject:"Direito Penal Comum",explanation:"O furto está previsto no artigo 155 do Código Penal."},
+{question:"Qual sinalização indica parada obrigatória?",options:["Placa PARE","Placa de estacionamento","Placa de velocidade máxima","Placa de pedestres"],correct:0,subject:"Legislação de Trânsito",explanation:"A placa R-1 indica parada obrigatória."}
 ].map(normalize).filter(Boolean);
-
+updateSubjectDropdown();
 start();
 $("status").textContent="Demonstração carregada.";
 };
+
+$("refresh").onclick=refreshQuestions;
 
 $("reset").onclick=()=>{
 if(!confirm("Zerar estatísticas e revisão?"))return;
@@ -846,55 +749,33 @@ saveProgress();
 start();
 };
 
-const markerPositions=[
-[0,-1.5],
-[-2.8,-2.5],
-[2.8,-2.5],
-[0,-4.8]
-];
+const markerPositions=[[0,-1.5],[-2.8,-2.5],[2.8,-2.5],[0,-4.8]];
 
 function teleport(x,z){
 const head=new THREE.Vector3();
-
-if(renderer.xr.isPresenting){
-renderer.xr.getCamera().getWorldPosition(head);
-}else{
-camera.getWorldPosition(head);
-}
-
-rig.position.x+=x-head.x;
-rig.position.z+=z-head.z;
+if(renderer.xr.isPresenting){renderer.xr.getCamera().getWorldPosition(head);}
+else{camera.getWorldPosition(head);}
+rig.position.x+=x-head.x;rig.position.z+=z-head.z;
 $("status").textContent="Teletransporte realizado.";
 }
 
 for(const [x,z] of markerPositions){
 const marker=new THREE.Mesh(
 new THREE.CylinderGeometry(.33,.33,.025,40),
-new THREE.MeshBasicMaterial({
-color:0x20c8fa,
-transparent:true,
-opacity:.75
-})
+new THREE.MeshBasicMaterial({color:0x20c8fa,transparent:true,opacity:.75})
 );
-
 marker.position.set(x,.015,z);
 marker.userData.action=()=>teleport(x,z);
-scene.add(marker);
-teleportMarkers.push(marker);
-interactive.push(marker);
+scene.add(marker);teleportMarkers.push(marker);interactive.push(marker);
 }
 
 function selectObject(source){
 source.updateWorldMatrix(true,false);
 rotation.extractRotation(source.matrixWorld);
-
 raycaster.ray.origin.setFromMatrixPosition(source.matrixWorld);
-raycaster.ray.direction.set(0,0,-1)
-.applyMatrix4(rotation).normalize();
-
+raycaster.ray.direction.set(0,0,-1).applyMatrix4(rotation).normalize();
 const hits=raycaster.intersectObjects(interactive,false);
 if(!hits.length||hits[0].distance>12)return;
-
 const action=hits[0].object.userData.action;
 if(typeof action==="function")action();
 }
@@ -904,66 +785,32 @@ const handFactory=new XRHandModelFactory();
 
 for(let i=0;i<2;i++){
 const controller=renderer.xr.getController(i);
-
-controller.addEventListener("selectstart",()=>{
-selectObject(controller);
-});
-
+controller.addEventListener("selectstart",()=>{selectObject(controller);});
 rig.add(controller);
-
 const pointer=new THREE.Line(
-new THREE.BufferGeometry().setFromPoints([
-new THREE.Vector3(0,0,0),
-new THREE.Vector3(0,0,-6)
-]),
+new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,-6)]),
 new THREE.LineBasicMaterial({color:0x4cdeff})
 );
-
 controller.add(pointer);
-
 const grip=renderer.xr.getControllerGrip(i);
 grip.add(controllerFactory.createControllerModel(grip));
 rig.add(grip);
-
 const hand=renderer.xr.getHand(i);
 hand.add(handFactory.createHandModel(hand,"mesh"));
-
-hand.addEventListener("selectstart",()=>{
-selectObject(hand);
-});
-
+hand.addEventListener("selectstart",()=>{selectObject(hand);});
 rig.add(hand);
 }
 
 $("enter").onclick=async()=>{
 try{
-if(renderer.xr.isPresenting){
-await renderer.xr.getSession().end();
-return;
-}
-
-if(!navigator.xr){
-throw new Error("WebXR não disponível.");
-}
-
+if(renderer.xr.isPresenting){await renderer.xr.getSession().end();return;}
+if(!navigator.xr){throw new Error("WebXR não disponível.");}
 const supported=await navigator.xr.isSessionSupported("immersive-vr");
-
-if(!supported){
-throw new Error("Realidade virtual não suportada.");
-}
-
-const session=await navigator.xr.requestSession("immersive-vr",{
-optionalFeatures:["local-floor","hand-tracking"]
-});
-
+if(!supported){throw new Error("Realidade virtual não suportada.");}
+const session=await navigator.xr.requestSession("immersive-vr",{optionalFeatures:["local-floor","hand-tracking"]});
 await renderer.xr.setSession(session);
-
 $("enter").textContent="SAIR DO VR";
-
-session.addEventListener("end",()=>{
-$("enter").textContent="ENTRAR EM VR";
-});
-
+session.addEventListener("end",()=>{$("enter").textContent="ENTRAR EM VR";});
 }catch(error){
 $("status").textContent="Erro VR: "+error.message;
 }
@@ -975,40 +822,21 @@ const rightVector=new THREE.Vector3();
 
 renderer.setAnimationLoop(()=>{
 const dt=Math.min(clock.getDelta(),.05);
-
 if(renderer.xr.isPresenting){
 const session=renderer.xr.getSession();
-
 for(const source of session.inputSources){
 if(!source.gamepad||source.handedness!=="left")continue;
-
 const axes=source.gamepad.axes;
 const x=axes.length>=4?axes[2]:(axes[0]||0);
 const z=axes.length>=4?axes[3]:(axes[1]||0);
-
 if(Math.abs(x)<.18&&Math.abs(z)<.18)continue;
-
-renderer.xr.getCamera().getWorldDirection(direction);
-direction.y=0;
-direction.normalize();
-
+renderer.xr.getCamera().getWorldDirection(direction);direction.y=0;direction.normalize();
 rightVector.set(-direction.z,0,direction.x);
-
-const move=direction.clone()
-.multiplyScalar(-z)
-.addScaledVector(rightVector,x)
-.multiplyScalar(dt*1.6);
-
-rig.position.x=THREE.MathUtils.clamp(
-rig.position.x+move.x,-5.1,5.1
-);
-
-rig.position.z=THREE.MathUtils.clamp(
-rig.position.z+move.z,-5.5,2.5
-);
+const move=direction.clone().multiplyScalar(-z).addScaledVector(rightVector,x).multiplyScalar(dt*1.6);
+rig.position.x=THREE.MathUtils.clamp(rig.position.x+move.x,-5.1,5.1);
+rig.position.z=THREE.MathUtils.clamp(rig.position.z+move.z,-5.5,2.5);
 }
 }
-
 renderer.render(scene,camera);
 });
 
@@ -1019,26 +847,22 @@ renderer.setSize(innerWidth,innerHeight);
 });
 
 let savedEnvironment="academy";
-
 try{
 savedEnvironment=localStorage.getItem("pmsc_environment")||"academy";
-
 const savedLighting=localStorage.getItem("pmsc_lighting");
-if(savedLighting==="day"||savedLighting==="night"){
-$("lighting").value=savedLighting;
-}
+if(savedLighting==="day"||savedLighting==="night"){$("lighting").value=savedLighting;}
 }catch(e){}
-
-if(!environments.some(item=>item[0]===savedEnvironment)){
-savedEnvironment="academy";
-}
+if(!environments.some(item=>item[0]===savedEnvironment)){savedEnvironment="academy";}
 
 changeEnvironment(savedEnvironment);
 updateStats();
 render();
 
-$("status").textContent=
-"Academia pronta. Escolha o ambiente e carregue as questões.";
+// ═══════════════════════════════════════════════════════════════════
+// AUTO-LOAD (executa depois do render inicial)
+// ═══════════════════════════════════════════════════════════════════
+$("status").textContent = "Buscando questões na raiz do repositório...";
+autoLoadQuestions();
 
 </script>
 </body>
