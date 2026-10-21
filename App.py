@@ -257,7 +257,8 @@ with aba_livre:
             <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
             <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
             <style>
-              body { margin: 0; background: #000; font-family: sans-serif; }
+              html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+              a-scene { width: 100%; height: 100%; }
               #hud-overlay {
                 position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
                 background: rgba(0, 20, 40, 0.9); color: #00d1ff; padding: 12px 24px;
@@ -454,6 +455,7 @@ with aba_livre:
 
               function construirBlocos(modoLayout = 'grid') {
                 const container = document.getElementById('questoes-container');
+                if (!container) return;
                 container.innerHTML = "";
                 
                 questoesData.forEach((q, index) => {
@@ -653,8 +655,16 @@ with aba_livre:
                 }
               }, 500);
 
-              window.addEventListener('DOMContentLoaded', () => {
+              // Inicialização robusta para data URIs (evita falha se DOMContentLoaded já disparou)
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                  construirBlocos('grid');
+                });
+              } else {
                 construirBlocos('grid');
+              }
+
+              window.addEventListener('load', () => {
                 const saved = localStorage.getItem('pmsc_vr_layout');
                 if (saved) {
                   carregarLayout();
@@ -668,7 +678,6 @@ with aba_livre:
         html_vr = html_template.replace("__Q_JSON__", q_json_str)
         html_vr = html_vr.replace("__MODO__", st.session_state["modo_atual"])
         
-        # Correção aplicada: Removido o argumento 'scrolling=False' que gerava o TypeError
         encoded_html = urllib.parse.quote(html_vr)
         st.iframe(f"data:text/html;charset=utf-8,{encoded_html}", height=720)
 
