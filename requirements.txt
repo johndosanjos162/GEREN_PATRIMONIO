@@ -1,14 +1,3 @@
-# ============================================================
-# Dependências do Aplicativo — Versão 100% Local (Ollama)
-# Python 3.9+ recomendado
-# ============================================================
-
-# Framework web
-streamlit>=1.36.0
-
-# Cliente oficial do Ollama (comunicação com o servidor local)
-ollama>=0.3.0
-
-# Bibliotecas padrão do Python (não precisam ser instaladas):
-# - re   (expressões regulares)
-# - os   (variáveis de ambiente)
+streamlit
+pandas
+OpenAI
