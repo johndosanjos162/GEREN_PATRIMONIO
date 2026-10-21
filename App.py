@@ -179,19 +179,21 @@ def render_vr(questoes, modo="ARENA", height=950):
 <script src="https://unpkg.com/super-hands@3.0.5/dist/super-hands.min.js"></script>
 <script>
 // ============================================================
-// vr-hand v5 — grab (bloco inteiro) + click (alternativa exata)
-// Usa laser-controls por baixo → rastreamento correto do controle
+// vr-hand v6 — FORCE GRAB à distância
+// Grip pega o bloco de QUALQUER distância e o traz para perto
+// Thumbstick Y ajusta distância, X rotaciona
 // ============================================================
 AFRAME.registerComponent('vr-hand', {
   init: function() {
     const hand = this.el;
     const raycaster = new THREE.Raycaster();
-    raycaster.far = 100;                         // ← alcance 100m
+    raycaster.far = 100;
 
     let grabbed = null;
-    let grabDist = 0;
-    let currentGrab = null;                      // bloco (para Grip)
-    let currentClick = null;                     // alternativa (para Trigger)
+    let grabDist = 1.5;              // ← sempre 1.5m da mão ao pegar
+    let currentGrab = null;
+    let currentClick = null;
+    let pullAnim = null;
 
     const acharBloco = function(el) {
       let cur = el;
@@ -211,22 +213,24 @@ AFRAME.registerComponent('vr-hand', {
       return null;
     };
 
+    const getDir = function() {
+      const q = new THREE.Quaternion();
+      hand.object3D.getWorldQuaternion(q);
+      return new THREE.Vector3(0, 0, -1).applyQuaternion(q).normalize();
+    };
+
+    const getPos = function() {
+      const p = new THREE.Vector3();
+      hand.object3D.getWorldPosition(p);
+      return p;
+    };
+
     const atualizarAlvo = function() {
       if (grabbed) return;
 
-      // Origem = ponta do controle (laser-controls já posiciona isso)
-      const origin = new THREE.Vector3();
-      hand.object3D.getWorldPosition(origin);
-
-      // Direção = -Z do controle (para onde ele aponta)
-      const q = new THREE.Quaternion();
-      hand.object3D.getWorldQuaternion(q);
-      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(q).normalize();
-
-      raycaster.set(origin, dir);
+      raycaster.set(getPos(), getDir());
       raycaster.far = 100;
 
-      // Coleta TODOS os objetos grabbable/clickable da cena
       const objetos = [];
       hand.sceneEl.object3D.traverse((o) => {
         if (o.el && o.el.classList) {
@@ -246,23 +250,18 @@ AFRAME.registerComponent('vr-hand', {
         const elHit = hit.object.el;
         if (elHit) {
           const bloco = acharBloco(elHit);
-          if (bloco) {
-            currentGrab = { el: bloco, distance: hit.distance };
-          }
+          if (bloco) currentGrab = { el: bloco, distance: hit.distance };
           const clickEl = acharClickable(elHit);
-          if (clickEl) {
-            currentClick = clickEl;
-          }
+          if (clickEl) currentClick = clickEl;
         }
       }
 
-      // HUD de debug
       const dbg = document.getElementById('debugAlvo');
       if (dbg) {
         if (currentClick) {
           const letra = currentClick.getAttribute('data-letra') || '?';
-          const dist = currentGrab ? currentGrab.distance : 0;
-          dbg.setAttribute('value', '🎯 CLICK [' + letra + '] ' + dist.toFixed(1) + 'm');
+          const d = currentGrab ? currentGrab.distance : 0;
+          dbg.setAttribute('value', '🎯 CLICK [' + letra + '] ' + d.toFixed(1) + 'm');
         } else if (currentGrab) {
           dbg.setAttribute('value', '🎯 ' + currentGrab.el.id + ' ' +
             currentGrab.distance.toFixed(1) + 'm');
@@ -275,22 +274,43 @@ AFRAME.registerComponent('vr-hand', {
     const startGrab = function() {
       if (grabbed || !currentGrab) return;
       grabbed = currentGrab.el;
-      grabDist = currentGrab.distance;
+
+      // ⭐ FIX PRINCIPAL: SEMPRE traz o bloco para 1.5m da mão
+      // (mesmo se estiver a 20m de distância)
+      grabDist = 1.5;
+
       grabbed.setAttribute('material', 'emissive', '#ffaa00');
       grabbed.setAttribute('material', 'emissiveIntensity', '1');
-      showToast('✋ ' + grabbed.id + ' (' + grabDist.toFixed(1) + 'm)', 900);
-      if (navigator.vibrate) navigator.vibrate(30);
+
+      // Animação: bloco voa até a mão
+      const target = getPos().clone().add(getDir().multiplyScalar(grabDist));
+      const parent = grabbed.object3D.parent;
+      if (parent) {
+        const local = parent.worldToLocal(target.clone());
+        grabbed.setAttribute('animation__pull',
+          'property: position; to: ' + local.x + ' ' + local.y + ' ' + local.z +
+          '; dur: 250; easing: easeOutQuad');
+        pullAnim = setTimeout(() => {
+          grabbed.removeAttribute('animation__pull');
+          grabbed.object3D.position.copy(local);
+          pullAnim = null;
+        }, 280);
+      }
+
+      showToast('✋ ' + grabbed.id + ' — puxado para perto', 900);
+      if (navigator.vibrate) navigator.vibrate(40);
     };
 
     const endGrab = function() {
       if (!grabbed) return;
+      if (pullAnim) { clearTimeout(pullAnim); pullAnim = null; }
+      grabbed.removeAttribute('animation__pull');
       grabbed.setAttribute('material', 'emissive', '#000000');
       grabbed.setAttribute('material', 'emissiveIntensity', '0');
       savePos(grabbed.id);
       showToast('📍 ' + grabbed.id + ' posicionado', 900);
       if (navigator.vibrate) navigator.vibrate(20);
       grabbed = null;
-      grabDist = 0;
     };
 
     const doClick = function() {
@@ -299,19 +319,15 @@ AFRAME.registerComponent('vr-hand', {
         if (navigator.vibrate) navigator.vibrate(60);
         return;
       }
-      // Fallback: se apontou para o bloco mas não para alternativa
       showToast('⚠️ Aponte para uma alternativa A–E', 800);
     };
 
     this.tick = function() {
       atualizarAlvo();
-      if (grabbed) {
-        const origin = new THREE.Vector3();
-        hand.object3D.getWorldPosition(origin);
-        const q = new THREE.Quaternion();
-        hand.object3D.getWorldQuaternion(q);
-        const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(q).normalize();
-        const target = origin.clone().add(dir.clone().multiplyScalar(grabDist));
+      if (grabbed && !pullAnim) {
+        // Bloco segue a mão na distância grabDist
+        const origin = getPos();
+        const target = origin.clone().add(getDir().multiplyScalar(grabDist));
         const parent = grabbed.object3D.parent;
         if (parent) {
           const local = parent.worldToLocal(target.clone());
@@ -325,11 +341,24 @@ AFRAME.registerComponent('vr-hand', {
     hand.addEventListener('pinchstarted', startGrab);
     hand.addEventListener('pinchended', endGrab);
     hand.addEventListener('triggerdown', doClick);
+
+    // Thumbstick: Y = distância, X = rotação
     hand.addEventListener('thumbstickmoved', (evt) => {
       if (!grabbed) return;
       const x = evt.detail.x, y = evt.detail.y;
-      if (Math.abs(x) > 0.15) grabbed.object3D.rotation.y += x * 0.03;
-      if (Math.abs(y) > 0.15) grabbed.object3D.rotation.x += y * 0.03;
+
+      // X: rotaciona Y
+      if (Math.abs(x) > 0.15) {
+        grabbed.object3D.rotation.y += x * 0.03;
+      }
+      // Y: aproxima / afasta (0.5m a 10m)
+      if (Math.abs(y) > 0.15) {
+        grabDist = Math.max(0.5, Math.min(10, grabDist - y * 0.05));
+        const dbg = document.getElementById('debugAlvo');
+        if (dbg) {
+          dbg.setAttribute('value', '📏 ' + grabDist.toFixed(1) + 'm');
+        }
+      }
     });
   }
 });
@@ -456,9 +485,6 @@ AFRAME.registerComponent('painel-sistema', {
   }
 });
 
-// ============================================================
-// Passthrough / Stars / Toast
-// ============================================================
 window.enablePassthrough = async function() {
   if (!navigator.xr) { showToast('❌ WebXR não suportado'); return; }
   try {
@@ -583,7 +609,6 @@ function createBlock(q, i) {
       bg.setAttribute('color', ok ? '#00c853' : '#d50000');
       updateHUD();
       showToast(ok ? '✅ Correto!' : '❌ Errado (correta: ' + q.correta + ')');
-      console.log('[CLICK]', 'block-' + i, 'letra', letra, 'correta', q.correta, 'ok', ok);
     });
 
     root.appendChild(row);
@@ -737,7 +762,8 @@ html, body {
 
 <div id="hud">
   <div style="font-weight:900;color:white;font-size:14px;">__MODO__ — Arena VR</div>
-  <b>Grip</b> = mover bloco · <b>Trigger</b> = responder alternativa<br>
+  <b>Grip</b> = puxar bloco para perto · <b>Trigger</b> = responder<br>
+  <b>Thumbstick ↑↓</b> = distância · <b>←→</b> = rotacionar<br>
   <div id="status" style="margin-top:6px;color:#00ff88;font-weight:700;">0/__LEN__ respondidas</div>
 </div>
 <button id="enter">🥽 ENTRAR NO VR</button>
@@ -760,33 +786,35 @@ html, body {
 
   <a-entity id="rig" position="0 0 8" movement-controls="fly: true; speed: 0.3">
     <a-entity id="head" camera look-controls wasd-controls="acceleration: 20" position="0 1.65 0">
-      <a-entity position="0 -0.75 -1.1">
-        <a-plane width="2.4" height="0.55" color="black" opacity="0.75"></a-plane>
+      <a-entity position="0 -0.8 -1.1">
+        <a-plane width="2.6" height="0.62" color="black" opacity="0.75"></a-plane>
         <a-text id="hudVRText" value="0/__LEN__" color="#00ff88" width="1.9"
-          align="center" position="0 0.15 0.01"></a-text>
+          align="center" position="0 0.22 0.01"></a-text>
         <a-text id="debugAlvo" value="🎯 (aguardando)" color="#ffaa00" width="1.9"
-          align="center" position="0 -0.05 0.01"></a-text>
+          align="center" position="0 0.02 0.01"></a-text>
+        <a-text value="Grip=puxar · Trigger=responder · Stick=ajustar" color="#aaccff"
+          width="1.9" align="center" position="0 -0.18 0.01"></a-text>
       </a-entity>
     </a-entity>
 
-    <!-- MÃO ESQUERDA — laser-controls restaurado -->
+    <!-- MÃO ESQUERDA — hand-controls + line manual de 50m -->
     <a-entity id="leftHand"
-      laser-controls="hand: left"
+      hand-controls="hand: left; handModelStyle: lowPoly; color: #00d1ff"
       hand-tracking-controls="hand: left"
       hand-live="hand: left"
       vr-hand
-      raycaster="objects: .grabbable, .clickable; far: 100"
-      line="color: #00d1ff; opacity: 0.9">
+      raycaster="objects: .grabbable, .clickable; far: 100; lineColor: #00d1ff"
+      line="color: #00d1ff; opacity: 0.85; start: 0 0 0; end: 0 0 -50">
     </a-entity>
 
     <!-- MÃO DIREITA -->
     <a-entity id="rightHand"
-      laser-controls="hand: right"
+      hand-controls="hand: right; handModelStyle: lowPoly; color: #ff8a00"
       hand-tracking-controls="hand: right"
       hand-live="hand: right"
       vr-hand
-      raycaster="objects: .grabbable, .clickable; far: 100"
-      line="color: #ff8a00; opacity: 0.9">
+      raycaster="objects: .grabbable, .clickable; far: 100; lineColor: #ff8a00"
+      line="color: #ff8a00; opacity: 0.85; start: 0 0 0; end: 0 0 -50">
     </a-entity>
   </a-entity>
 
@@ -833,7 +861,7 @@ html, body {
       position="-2.0 0.2 0.05" geometry="primitive: plane; width: 0.95; height: 0.26"
       material="color: #aa8800"><a-text value="CARREGAR" color="white" width="1.0" align="center"></a-text></a-entity>
 
-    <a-text value="Grip = mover bloco · Trigger = responder alternativa"
+    <a-text value="Grip=puxar bloco · Trigger=responder · Stick=distância/rotação"
       color="#ffaa00" width="4.8" align="center" position="0 -0.95 0.05"></a-text>
   </a-entity>
 
