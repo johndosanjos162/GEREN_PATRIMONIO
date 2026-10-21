@@ -2,868 +2,2917 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PMSC 2026 | Academia Virtual VR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#071321">
+
+<title>PMSC 2026 | Academia Virtual Imersiva</title>
 
 <style>
-*{box-sizing:border-box}
-body{margin:0;overflow:hidden;background:#07111e;color:white;font-family:Arial,sans-serif}
-#menu{
-position:fixed;top:12px;left:12px;z-index:10;
-width:min(390px,94vw);max-height:85vh;overflow:auto;
-padding:18px;background:rgba(7,25,46,.96);
-border:1px solid #49baff;border-radius:14px
+:root {
+  --bg: #071321;
+  --panel: rgba(8, 23, 43, .96);
+  --accent: #46c8ff;
+  --accent2: #8ee9ff;
+  --border: rgba(85, 200, 255, .4);
+  --text: #f0f8ff;
+  --muted: #a4bfd4;
+  --success: #32d9a0;
+  --danger: #ff7385;
 }
-h2{margin:0 0 12px;color:#8ad8ff}
-h3{margin:14px 0 6px;color:#c5eaff}
-button,select,input{font:inherit}
-button,select{
-background:#155b96;color:white;border:1px solid #5da9e2;
-padding:10px;border-radius:8px;margin:5px 0;cursor:pointer
+
+* {
+  box-sizing: border-box;
 }
-select{width:100%}
-button:hover{background:#247bc0}
-button#refresh{background:#0d6b4f;border-color:#2fbf8f}
-button#refresh:hover{background:#108a63}
-#status{font-size:14px;color:#c4e9ff}
-#stats{line-height:1.6;font-size:14px}
-#enter{
-position:fixed;right:16px;bottom:16px;z-index:20;
-background:#1478c5;padding:15px 22px
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
 }
-small{color:#b9d0e5;line-height:1.5}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+button,
+select {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #164b76;
+  color: white;
+  padding: 11px 13px;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2472a7;
+}
+
+button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+select {
+  width: 100%;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+input[type="file"] {
+  width: 100%;
+  font-size: 12px;
+}
+
+#menu {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 20;
+
+  width: min(410px, 94vw);
+  max-height: 88vh;
+  overflow-y: auto;
+
+  padding: 20px;
+
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+
+  box-shadow:
+    0 0 35px rgba(0, 150, 255, .13);
+}
+
+#menu::-webkit-scrollbar {
+  width: 7px;
+}
+
+#menu::-webkit-scrollbar-thumb {
+  background: #285b7e;
+  border-radius: 10px;
+}
+
+h1 {
+  font-size: 21px;
+  margin: 0 0 5px;
+  color: var(--accent2);
+}
+
+h2 {
+  font-size: 15px;
+  color: var(--accent2);
+  margin: 18px 0 9px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 15px;
+}
+
+.section {
+  padding: 13px 0;
+  border-top: 1px solid rgba(130, 190, 230, .15);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.row button {
+  flex: 1;
+}
+
+.primary {
+  background: #137eb9;
+  font-weight: bold;
+}
+
+.success {
+  background: #116f5e;
+}
+
+.danger {
+  background: #812d49;
+}
+
+#status {
+  padding: 12px;
+  border: 1px solid rgba(89, 190, 255, .23);
+  border-radius: 10px;
+  background: rgba(22, 78, 122, .3);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #c3edff;
+}
+
+#stats {
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.stat-card {
+  padding: 12px;
+  border: 1px solid rgba(110, 200, 255, .2);
+  border-radius: 10px;
+  background: rgba(30, 92, 136, .2);
+}
+
+.stat-card strong {
+  font-size: 21px;
+  display: block;
+  color: var(--accent2);
+}
+
+.stat-card span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.progress {
+  margin-top: 10px;
+  width: 100%;
+  height: 9px;
+  background: #142a42;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress > div {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #187fc9, #40efbf);
+  transition: width .2s;
+}
+
+#enter {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 25;
+
+  padding: 16px 23px;
+  background: #097abd;
+  font-weight: bold;
+  box-shadow: 0 0 20px rgba(0, 150, 255, .3);
+}
+
+#toggleMenu {
+  position: fixed;
+  left: 12px;
+  bottom: 16px;
+  z-index: 26;
+}
+
+#desktopControls {
+  position: fixed;
+  bottom: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+}
+
+#desktopControls button {
+  background: rgba(10, 41, 67, .9);
+  white-space: nowrap;
+}
+
+.small {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+@media(max-width: 650px) {
+  #menu {
+    padding: 14px;
+    max-height: 78vh;
+  }
+
+  #desktopControls {
+    display: none;
+  }
+
+  #enter {
+    padding: 13px;
+  }
+}
 </style>
 
 <script type="importmap">
 {
-"imports":{
-"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
-"three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
-}
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+  }
 }
 </script>
+
 </head>
 
 <body>
 
 <div id="menu">
-<h2>PMSC 2026 | Academia Virtual</h2>
-<p id="status">Preparando ambiente...</p>
 
-<h3>Escolher ambiente</h3>
-<select id="environment">
-<option value="academy">Academia PMSC</option>
-<option value="living">Sala de estar moderna</option>
-<option value="beach">Praia</option>
-<option value="library">Biblioteca</option>
-<option value="future">Escritório futurista</option>
-<option value="nature">Natureza</option>
-<option value="penthouse">Cobertura de luxo</option>
-<option value="space">Estação espacial</option>
-<option value="minimal">Sala minimalista</option>
-<option value="random">Ambiente aleatório</option>
-</select>
-
-<h3>Iluminação</h3>
-<select id="lighting">
-<option value="day">Dia</option>
-<option value="night">Noite</option>
-</select>
-
-<h3>Modo de estudo</h3>
-<select id="mode">
-<option value="study">Estudo por disciplina</option>
-<option value="exam">Simulado</option>
-<option value="review">Revisão dos erros</option>
-</select>
-
-<h3>Disciplina</h3>
-<select id="subject">
-<option value="Todas">Todas as disciplinas</option>
-</select>
-
-<button id="demo">Carregar demonstração</button>
-<button id="start">Iniciar / Reiniciar</button>
-<button id="refresh">🔄 Atualizar banco de questões</button>
-
-<h3>Importar questões JSON</h3>
-<input id="file" type="file" accept=".json,application/json" multiple>
-
-<h3>Desempenho</h3>
-<div id="stats"></div>
-<button id="reset">Zerar estatísticas</button>
-
-<hr>
-<small>
-Analógico esquerdo: caminhar.<br><br>
-Gatilho: selecionar.<br><br>
-Mãos: apontar e fazer pinça.<br><br>
-Marcadores luminosos: teletransporte.<br><br>
-Painel lateral no VR: trocar de ambiente.<br><br>
-O progresso fica salvo no navegador.
-</small>
+<h1>PM-SC 2026</h1>
+<div class="subtitle">
+  ACADEMIA VIRTUAL IMERSIVA • META QUEST 3S
 </div>
 
-<button id="enter">ENTRAR EM VR</button>
+<div id="status">
+  Inicializando academia...
+</div>
+
+<div class="section">
+  <h2>🌐 AMBIENTE VIRTUAL</h2>
+
+  <select id="environment">
+    <option value="academy">Academia PMSC</option>
+    <option value="living">Sala de estar moderna</option>
+    <option value="beach">Praia tropical</option>
+    <option value="library">Biblioteca</option>
+    <option value="future">Escritório futurista</option>
+    <option value="nature">Natureza</option>
+    <option value="penthouse">Cobertura de luxo</option>
+    <option value="space">Estação espacial</option>
+    <option value="minimal">Sala minimalista</option>
+    <option value="random">Ambiente aleatório</option>
+  </select>
+
+  <h2>ILUMINAÇÃO</h2>
+
+  <select id="lighting">
+    <option value="day">Dia</option>
+    <option value="night">Noite</option>
+  </select>
+
+  <h2>COR DOS PAINÉIS</h2>
+
+  <select id="theme">
+    <option value="blue">Azul holográfico</option>
+    <option value="green">Verde tecnológico</option>
+    <option value="purple">Roxo futurista</option>
+    <option value="white">Branco minimalista</option>
+  </select>
+
+  <h2>TAMANHO DA FONTE</h2>
+  <input id="fontSize" type="range" min="80" max="145" value="110">
+
+  <div class="small">
+    Ajuste a fonte para melhorar a leitura no visor.
+  </div>
+
+</div>
+
+<div class="section">
+
+  <h2>📚 MODO DE ESTUDO</h2>
+
+  <select id="mode">
+    <option value="study">Estudo por questões</option>
+    <option value="exam">Simulado</option>
+    <option value="review">Revisão dos erros</option>
+    <option value="flashcards">Flashcards</option>
+  </select>
+
+  <h2>DISCIPLINA</h2>
+
+  <select id="subject">
+    <option value="Todas">Todas as disciplinas</option>
+  </select>
+
+  <div class="row">
+    <button class="primary" id="start">
+      INICIAR
+    </button>
+
+    <button id="next">
+      PRÓXIMA
+    </button>
+  </div>
+
+  <div class="row">
+    <button id="flipCard">
+      VIRAR FLASHCARD
+    </button>
+  </div>
+
+</div>
+
+<div class="section">
+
+  <h2>🗂️ BANCO DE QUESTÕES</h2>
+
+  <div class="small">
+    Os arquivos JSON do GitHub são procurados
+    automaticamente na raiz do repositório.
+  </div>
+
+  <div class="row">
+    <button class="primary" id="refresh">
+      ATUALIZAR QUESTÕES
+    </button>
+  </div>
+
+  <h2>IMPORTAÇÃO ALTERNATIVA</h2>
+
+  <input
+    type="file"
+    id="file"
+    accept=".json,application/json"
+    multiple
+  >
+
+  <div class="row">
+    <button id="demo">
+      CARREGAR DEMONSTRAÇÃO
+    </button>
+  </div>
+
+  <div class="small" id="bankInfo">
+    Aguardando banco de questões.
+  </div>
+
+</div>
+
+<div class="section">
+
+  <h2>📊 DESEMPENHO</h2>
+
+  <div id="stats"></div>
+
+  <div class="progress">
+    <div id="progressFill"></div>
+  </div>
+
+  <div class="row">
+    <button id="reset" class="danger">
+      ZERAR ESTATÍSTICAS
+    </button>
+  </div>
+
+</div>
+
+<div class="section">
+
+  <h2>🎮 CONTROLES</h2>
+
+  <div class="small">
+    Analógico esquerdo: movimentação.
+    <br><br>
+    Gatilho: selecionar.
+    <br><br>
+    Rastreamento das mãos: apontar e pinçar.
+    <br><br>
+    Marcadores no chão: teletransporte.
+    <br><br>
+    Painel lateral: troca de ambiente.
+    <br><br>
+    O progresso é armazenado no navegador.
+  </div>
+
+</div>
+
+</div>
+
+<button id="toggleMenu">
+  ☰ MENU
+</button>
+
+<button id="enter">
+  ENTRAR EM VR
+</button>
+
+<div id="desktopControls">
+  <button id="desktopPrev">ANTERIOR</button>
+  <button id="desktopFlip">VIRAR CARTÃO</button>
+  <button id="desktopNext">PRÓXIMA</button>
+</div>
 
 <script type="module">
 
 import * as THREE from "three";
-import {XRControllerModelFactory} from "three/addons/webxr/XRControllerModelFactory.js";
-import {XRHandModelFactory} from "three/addons/webxr/XRHandModelFactory.js";
 
-const $=id=>document.getElementById(id);
+import {
+  XRControllerModelFactory
+} from "three/addons/webxr/XRControllerModelFactory.js";
 
-// ═══════════════════════════════════════════════════════════════════
-// AUTO-LOAD DO JSON (novo)
-// ═══════════════════════════════════════════════════════════════════
-const JSON_CANDIDATES = ["questoes.json", "json.json", "questions.json"];
-const JSON_CACHE_KEY = "pmsc_json_cache_v1";
+import {
+  XRHandModelFactory
+} from "three/addons/webxr/XRHandModelFactory.js";
 
-function stripPrefix(s){
-return String(s).replace(/^[A-Ea-e]\s*[\)\.\-\:]\s*/, "").trim();
-}
+// ==================================================
+// CONFIGURAÇÕES GERAIS
+// ==================================================
 
-function autoStripPrefixes(options){
-// Só remove prefixos se TODAS as opções tiverem o padrão A), B), C), D), E)
-const pattern = /^([A-Ea-e])\s*[\)\.\-\:]\s*/;
-const expected = "ABCDE";
-for (let i = 0; i < options.length; i++) {
-const m = String(options[i]).match(pattern);
-if (!m || m[1].toUpperCase() !== expected[i]) {
-return options; // não tem prefixo uniforme, deixa como está
-}
-}
-return options.map(o => String(o).replace(pattern, "").trim());
-}
+const $ = id => document.getElementById(id);
 
-function flattenQuestions(data){
-if (Array.isArray(data)) return data;
-if (data && typeof data === "object") {
-if (Array.isArray(data.questoes)) return data.questoes;
-if (Array.isArray(data.questions)) return data.questions;
-// Formato agrupado por matéria: {"Leg. Institucional": [...], ...}
-const flat = [];
-for (const [subject, list] of Object.entries(data)) {
-if (Array.isArray(list)) {
-for (const q of list) {
-flat.push({
-...q,
-subject: q.subject || q.materia || q.disciplina || subject
-});
-}
-}
-}
-return flat;
-}
-return [];
+const CONFIG = {
+  owner: "johndosanjos162",
+  repository: "PMSC",
+  branch: "",
+  speed: 1.6,
+  teleportDistance: 12
+};
+
+const STORAGE = {
+  progress: "pmsc_academy_progress_v7",
+  environment: "pmsc_academy_environment_v7",
+  lighting: "pmsc_academy_lighting_v7",
+  theme: "pmsc_academy_theme_v7",
+  font: "pmsc_academy_font_v7"
+};
+
+function status(message) {
+  $("status").textContent = message;
 }
 
-async function loadQuestionsFromURL(url){
-try {
-const response = await fetch(url, { cache: "no-cache" });
-if (!response.ok) throw new Error(`HTTP ${response.status}`);
-const data = await response.json();
-try {
-localStorage.setItem(JSON_CACHE_KEY, JSON.stringify(data));
-} catch(e){}
-const flat = flattenQuestions(data);
-return flat.map(normalize).filter(Boolean);
-} catch (e) {
-// Fallback para cache offline
-try {
-const cached = localStorage.getItem(JSON_CACHE_KEY);
-if (cached) {
-const data = JSON.parse(cached);
-const flat = flattenQuestions(data);
-const valid = flat.map(normalize).filter(Boolean);
-if (valid.length > 0) {
-$("status").textContent = "⚠️ Offline: usando cache local";
-return valid;
-}
-}
-} catch(ce){}
-throw e;
-}
+function getSaved(key, fallback) {
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
 }
 
-function mergeQuestions(newQuestions){
-const existing = new Set(questions.map(q => q.id));
-let added = 0;
-for (const q of newQuestions) {
-if (!existing.has(q.id)) {
-questions.push(q);
-existing.add(q.id);
-added++;
-}
-}
-return added;
+function store(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
 }
 
-function updateSubjectDropdown(){
-const select = $("subject");
-const current = select.value;
-while (select.options.length > 1) select.remove(1);
-for (const subject of new Set(questions.map(q => q.subject))) {
-const option = document.createElement("option");
-option.value = subject;
-option.textContent = subject;
-select.appendChild(option);
-}
-if ([...select.options].some(o => o.value === current)) {
-select.value = current;
-}
-}
+// ==================================================
+// THREE.JS - AMBIENTE
+// ==================================================
 
-async function autoLoadQuestions(){
-const params = new URLSearchParams(location.search);
-const override = params.get("json");
-const candidates = override ? [override, ...JSON_CANDIDATES] : [...JSON_CANDIDATES];
+const scene = new THREE.Scene();
 
-for (const file of candidates) {
-try {
-$("status").textContent = `Buscando ${file}...`;
-const valid = await loadQuestionsFromURL(file);
-if (valid.length === 0) {
-$("status").textContent = `${file} sem questões válidas.`;
-continue;
-}
-mergeQuestions(valid);
-updateSubjectDropdown();
-start();
-$("status").textContent = `✅ ${valid.length} questões carregadas de ${file}.`;
-window._loadedFile = file;
-return;
-} catch (e) {
-// tenta o próximo
-}
-}
-$("status").textContent = "⚠️ Nenhum JSON encontrado. Use Importar JSON.";
-}
+scene.background = new THREE.Color(0x071321);
 
-async function refreshQuestions(){
-const file = window._loadedFile || JSON_CANDIDATES[0];
-const btn = $("refresh");
-btn.disabled = true;
-const original = btn.textContent;
-btn.textContent = "⏳ Atualizando...";
-try {
-$("status").textContent = `Atualizando ${file}...`;
-const fresh = await loadQuestionsFromURL(file);
-if (fresh.length === 0) {
-$("status").textContent = "❌ Nenhuma questão válida no arquivo.";
-return;
-}
-// Substitui todo o banco (fonte da verdade = URL)
-questions = fresh;
-window._loadedFile = file;
-updateSubjectDropdown();
-start();
-$("status").textContent = `✅ Banco atualizado: ${fresh.length} questões de ${file}.`;
-} catch (e) {
-$("status").textContent = "❌ Erro ao atualizar: " + e.message;
-} finally {
-btn.disabled = false;
-btn.textContent = original;
-}
-}
+const camera = new THREE.PerspectiveCamera(
+  70,
+  innerWidth / innerHeight,
+  0.05,
+  250
+);
 
-// ═══════════════════════════════════════════════════════════════════
-// (resto do código original — preservado integralmente)
-// ═══════════════════════════════════════════════════════════════════
+camera.position.set(0, 1.65, 0);
 
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x06111e);
+const rig = new THREE.Group();
 
-const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.05,150);
-camera.position.set(0,1.65,0);
-
-const rig=new THREE.Group();
 rig.add(camera);
 scene.add(rig);
 
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
-renderer.setSize(innerWidth,innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.xr.enabled=true;
-renderer.xr.setFramebufferScaleFactor(1.2);
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  powerPreference: "high-performance"
+});
+
+renderer.setSize(innerWidth, innerHeight);
+
+renderer.setPixelRatio(
+  Math.min(devicePixelRatio, 2)
+);
+
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+renderer.toneMappingExposure = 1.2;
+
+renderer.xr.enabled = true;
+
+renderer.xr.setFramebufferScaleFactor(1.1);
+
 document.body.appendChild(renderer.domElement);
 
-const ambient=new THREE.HemisphereLight(0xffffff,0x304b6b,2.4);
+// ==================================================
+// ILUMINAÇÃO
+// ==================================================
+
+const ambient = new THREE.HemisphereLight(
+  0xffffff,
+  0x344765,
+  2.4
+);
+
 scene.add(ambient);
 
-const sunlight=new THREE.DirectionalLight(0xffffff,2);
-sunlight.position.set(3,8,4);
-scene.add(sunlight);
+const sun = new THREE.DirectionalLight(
+  0xffffff,
+  2
+);
 
-const environmentGroup=new THREE.Group();
-scene.add(environmentGroup);
+sun.position.set(3, 8, 5);
 
-const dynamic=[];
-const interactive=[];
-const teleportMarkers=[];
-const raycaster=new THREE.Raycaster();
-const rotation=new THREE.Matrix4();
+scene.add(sun);
 
-function createBox(w,h,d,color,x,y,z){
-const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.75}));
-m.position.set(x,y,z);
-environmentGroup.add(m);
-return m;
+// ==================================================
+// GRUPOS 3D
+// ==================================================
+
+const world = new THREE.Group();
+
+scene.add(world);
+
+const panels = [];
+
+const interactive = [];
+
+const teleportMarkers = [];
+
+const raycaster = new THREE.Raycaster();
+
+const rotationMatrix = new THREE.Matrix4();
+
+// ==================================================
+// CORES E MATERIAIS
+// ==================================================
+
+const THEMES = {
+  blue: {
+    background: "#092b46",
+    action: "#1268a0",
+    border: "#7ddfff"
+  },
+
+  green: {
+    background: "#083c32",
+    action: "#126d58",
+    border: "#73ffd3"
+  },
+
+  purple: {
+    background: "#30204c",
+    action: "#604094",
+    border: "#d6acff"
+  },
+
+  white: {
+    background: "#23394a",
+    action: "#426a83",
+    border: "#ffffff"
+  }
+};
+
+let selectedTheme = "blue";
+
+function material(color, extra = {}) {
+  return new THREE.MeshStandardMaterial({
+    color,
+    roughness: .72,
+    ...extra
+  });
 }
 
-function createSphere(r,color,x,y,z){
-const m=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),new THREE.MeshStandardMaterial({color}));
-m.position.set(x,y,z);
-environmentGroup.add(m);
-return m;
+// ==================================================
+// OBJETOS GEOMÉTRICOS
+// ==================================================
+
+function box(
+  w, h, d,
+  color,
+  x, y, z
+) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    material(color)
+  );
+
+  mesh.position.set(x, y, z);
+
+  world.add(mesh);
+
+  return mesh;
 }
 
-function createCylinder(top,bottom,height,color,x,y,z){
-const m=new THREE.Mesh(new THREE.CylinderGeometry(top,bottom,height,12),new THREE.MeshStandardMaterial({color}));
-m.position.set(x,y,z);
-environmentGroup.add(m);
-return m;
+function sphere(
+  radius,
+  color,
+  x, y, z
+) {
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(
+      radius, 16, 12
+    ),
+    material(color)
+  );
+
+  mesh.position.set(x, y, z);
+
+  world.add(mesh);
+
+  return mesh;
 }
 
-function disposeEnvironment(){
-environmentGroup.traverse(o=>{
-if(!o.isMesh)return;
-o.geometry.dispose();
-if(Array.isArray(o.material)){o.material.forEach(m=>m.dispose());}
-else o.material.dispose();
-});
-environmentGroup.clear();
+function cylinder(
+  top,
+  bottom,
+  height,
+  color,
+  x, y, z
+) {
+  const mesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(
+      top,
+      bottom,
+      height,
+      12
+    ),
+    material(color)
+  );
+
+  mesh.position.set(x, y, z);
+
+  world.add(mesh);
+
+  return mesh;
 }
 
-function room(floor,wall){
-createBox(14,.12,14,floor,0,-.1,-2);
-createBox(14,5,.12,wall,0,2.5,-8);
-createBox(.12,5,14,wall,-7,2.5,-2);
-createBox(.12,5,14,wall,7,2.5,-2);
+// ==================================================
+// COMPONENTES DE DECORAÇÃO
+// ==================================================
+
+function room(floorColor, wallColor) {
+  box(14, .12, 14, floorColor, 0, -.1, -2);
+
+  box(14, 5, .12, wallColor, 0, 2.5, -8);
+
+  box(.12, 5, 14, wallColor, -7, 2.5, -2);
+
+  box(.12, 5, 14, wallColor, 7, 2.5, -2);
+
+  box(14, .12, 14, wallColor, 0, 5, -2);
 }
 
-function desk(x,z,color=0x795548){
-createBox(1.7,.12,.8,color,x,.8,z);
-for(const dx of [-.7,.7]){for(const dz of [-.3,.3]){createBox(.08,.75,.08,0x444444,x+dx,.38,z+dz);}}
+function desk(x, z, color = 0x795548) {
+  box(1.8, .12, .85, color, x, .83, z);
+
+  for (const dx of [-.72, .72]) {
+    for (const dz of [-.3, .3]) {
+      box(
+        .08, .76, .08,
+        0x344455,
+        x + dx,
+        .4,
+        z + dz
+      );
+    }
+  }
 }
 
-function sofa(x,z){
-createBox(2.8,.5,1.1,0x526477,x,.45,z);
-createBox(2.8,.9,.3,0x394b60,x,.85,z-.45);
-createBox(.3,.65,1.1,0x394b60,x-1.25,.65,z);
-createBox(.3,.65,1.1,0x394b60,x+1.25,.65,z);
+function sofa(x, z, color = 0x526477) {
+  box(2.8, .5, 1.1, color, x, .43, z);
+
+  box(
+    2.8, .9, .25,
+    color,
+    x, .85, z - .45
+  );
+
+  box(.3, .65, 1.1, color, x - 1.25, .65, z);
+
+  box(.3, .65, 1.1, color, x + 1.25, .65, z);
 }
 
-function tree(x,z){
-createCylinder(.13,.18,1.7,0x775038,x,.85,z);
-createSphere(.8,0x258344,x,2,z);
-createSphere(.6,0x2e9c51,x-.4,1.8,z);
+function tree(x, z) {
+  cylinder(
+    .12, .18, 1.8,
+    0x76513c,
+    x, .9, z
+  );
+
+  sphere(.8, 0x318747, x, 2.15, z);
+
+  sphere(.65, 0x459d54, x - .4, 1.95, z);
+
+  sphere(.6, 0x28773a, x + .45, 2, z);
 }
 
-function bookshelf(x,z){
-createBox(1.6,2.5,.45,0x67452e,x,1.25,z);
-for(let row=0;row<4;row++){
-createBox(1.5,.08,.5,0x3f2c20,x,.45+row*.55,z);
-for(let col=0;col<6;col++){
-const colors=[0x226699,0xa33939,0x28845a,0xc49b42];
-createBox(.17,.35,.24,colors[(row+col)%4],x-.58+col*.22,.66+row*.55,z);
-}}
+function bookshelf(x, z) {
+  box(1.7, 2.7, .45, 0x5c3a29, x, 1.35, z);
+
+  for (let row = 0; row < 4; row++) {
+    box(
+      1.65, .07, .5,
+      0x302018,
+      x, .5 + row * .56, z
+    );
+
+    for (let col = 0; col < 7; col++) {
+      const colors = [
+        0x24699b,
+        0x9f4141,
+        0x309063,
+        0xb39346
+      ];
+
+      box(
+        .15, .36, .26,
+        colors[(row + col) % colors.length],
+        x - .66 + col * .22,
+        .73 + row * .56,
+        z
+      );
+    }
+  }
 }
 
-function windowView(color){
-createBox(5,2.7,.08,0x263b50,0,2.2,-7.85);
-createBox(4.7,2.4,.03,color,0,2.2,-7.78);
-createBox(.09,2.4,.1,0xd8e2ec,0,2.2,-7.7);
+function lamp(x, z) {
+  cylinder(.04, .06, 1.5, 0x9aabbc, x, .75, z);
+
+  cylinder(.4, .2, .35, 0xf5dea2, x, 1.63, z);
 }
 
-const environments=[
-["academy","Academia PMSC"],["living","Sala de estar"],["beach","Praia"],
-["library","Biblioteca"],["future","Escritório futurista"],["nature","Natureza"],
-["penthouse","Cobertura de luxo"],["space","Estação espacial"],["minimal","Sala minimalista"]
+function plant(x, z) {
+  cylinder(.3, .24, .5, 0x98725a, x, .25, z);
+
+  sphere(.55, 0x287c4b, x, .95, z);
+}
+
+function rug(x, z, color) {
+  box(3, .025, 2, color, x, .01, z);
+}
+
+function windowView(color) {
+  box(5.2, 2.8, .1, 0x27394e, 0, 2.3, -7.82);
+
+  box(4.9, 2.5, .03, color, 0, 2.3, -7.75);
+
+  box(.08, 2.5, .05, 0xe9f2fc, 0, 2.3, -7.7);
+}
+
+function starfield() {
+  for (let i = 0; i < 45; i++) {
+    const x = Math.sin(i * 9.8) * 30;
+    const y = 3 + (i % 9) * 2;
+    const z = -12 - (i % 8) * 7;
+
+    sphere(.045, 0xffffff, x, y, z);
+  }
+}
+
+// ==================================================
+// AMBIENTES DISPONÍVEIS
+// ==================================================
+
+const ENVIRONMENTS = [
+  ["academy", "Academia PMSC"],
+  ["living", "Sala de estar"],
+  ["beach", "Praia tropical"],
+  ["library", "Biblioteca"],
+  ["future", "Escritório futurista"],
+  ["nature", "Natureza"],
+  ["penthouse", "Cobertura de luxo"],
+  ["space", "Estação espacial"],
+  ["minimal", "Sala minimalista"]
 ];
 
-let currentEnvironment="academy";
+let currentEnvironment = "academy";
 
-function buildEnvironment(type){
-disposeEnvironment();
-switch(type){
-case "academy":
-scene.background=new THREE.Color(0x06111e);
-room(0x183047,0x10283f);
-createBox(5,.12,.3,0x2b9dd8,0,3.7,-7.7);
-desk(-3.8,-4.5,0x243c56);desk(3.8,-4.5,0x243c56);
-break;
-case "living":
-scene.background=new THREE.Color(0xb4c7d8);
-room(0xb8a28a,0xd7d4ce);
-sofa(-3.8,-4);desk(3.8,-4,0x94765d);windowView(0x8bbad7);
-break;
-case "beach":
-scene.background=new THREE.Color(0x86d5ff);
-createBox(60,.12,60,0xe8d39b,0,-.1,-10);
-createBox(60,.03,25,0x168fc4,0,-.02,-24);
-createSphere(1.1,0xffe9a0,-15,12,-35);
-for(const x of [-5,5]){createCylinder(.1,.18,3,0x926a41,x,1.5,-5);createSphere(1.2,0x278a53,x,3.1,-5);}
-desk(3.5,-3,0xc6a16e);
-break;
-case "library":
-scene.background=new THREE.Color(0x2b251f);
-room(0x5b4332,0x3b3027);
-bookshelf(-5,-5);bookshelf(-3,-5);bookshelf(3,-5);bookshelf(5,-5);
-desk(-3.5,-2);desk(3.5,-2);
-break;
-case "future":
-scene.background=new THREE.Color(0x050d1c);
-room(0x111b35,0x0b1630);
-for(const x of [-5,-3,3,5]){createBox(.08,3.2,.08,0x00cfff,x,1.7,-7.7);}
-desk(-3.8,-4,0x1a4366);desk(3.8,-4,0x1a4366);
-break;
-case "nature":
-scene.background=new THREE.Color(0x9dd8ef);
-createBox(80,.12,80,0x4c9b53,0,-.1,-10);
-for(const [x,z] of [[-6,-6],[6,-6],[-6,1],[6,1],[-3,-7],[3,-7]])tree(x,z);
-desk(3.8,-4,0x8b6848);
-break;
-case "penthouse":
-scene.background=new THREE.Color(0x6e9ac1);
-room(0xd2c9bd,0xe6e0d9);
-windowView(0x6291b5);sofa(-3.8,-4);desk(3.8,-4,0x303b48);
-for(const x of [-5,5]){createCylinder(.05,.05,2.5,0xc6b17b,x,1.25,-5);}
-break;
-case "space":
-scene.background=new THREE.Color(0x01040e);
-room(0x293344,0x1a2436);
-createSphere(2.3,0x237fc3,0,4,-30);
-for(let i=0;i<30;i++){createSphere(.04,0xffffff,Math.sin(i*2.7)*35,4+(i%7)*2,-15-(i%5)*8);}
-desk(3.8,-4,0x334b66);
-break;
-case "minimal":
-scene.background=new THREE.Color(0xdde5ec);
-room(0xe0e0e0,0xf0f0f0);
-desk(3.8,-4,0xaaaaaa);
-createBox(1.8,.2,1.8,0xbcbcbc,-4,.1,-4);
-break;
-}
-createBox(5.8,4.1,.12,0x0a213b,0,1.9,-3.65);
-createBox(2.5,3.2,.12,0x102d49,-4.25,1.8,-4.05);
-createBox(2.5,3.2,.12,0x102d49,4.25,1.8,-4.05);
-applyLighting();
+function clearWorld() {
+  world.traverse(object => {
+    if (!object.isMesh) return;
+
+    object.geometry.dispose();
+
+    if (Array.isArray(object.material)) {
+      object.material.forEach(m => m.dispose());
+    } else {
+      object.material.dispose();
+    }
+  });
+
+  world.clear();
 }
 
-function applyLighting(){
-const night=$("lighting").value==="night";
-ambient.intensity=night?1.1:2.4;
-sunlight.intensity=night?.5:2;
-if(currentEnvironment==="space"){ambient.intensity=1.4;sunlight.intensity=.8;}
+function buildEnvironment(type) {
+  clearWorld();
+
+  switch (type) {
+
+    case "academy":
+      scene.background = new THREE.Color(0x071321);
+
+      room(0x223b53, 0x132d46);
+
+      desk(-4, -4.5, 0x314c64);
+      desk(4, -4.5, 0x314c64);
+
+      box(
+        6, .13, .3,
+        0x0aa0d4,
+        0, 3.8, -7.6
+      );
+
+      lamp(-5, -5);
+      lamp(5, -5);
+
+      break;
+
+    case "living":
+      scene.background = new THREE.Color(0xb2cadb);
+
+      room(0xb9a38c, 0xd6d5d1);
+
+      sofa(-4, -4.5);
+
+      rug(-4, -3.5, 0xddd0bd);
+
+      desk(4, -4.5, 0x997963);
+
+      plant(5.5, -5.8);
+
+      lamp(-5.8, -5.5);
+
+      windowView(0x8bb7d9);
+
+      break;
+
+    case "beach":
+      scene.background = new THREE.Color(0x83d3ff);
+
+      box(
+        100, .12, 100,
+        0xe3d29c,
+        0, -.1, -12
+      );
+
+      box(
+        100, .04, 34,
+        0x168dbd,
+        0, -.02, -32
+      );
+
+      sphere(
+        1.7,
+        0xffe7a2,
+        -18, 14, -40
+      );
+
+      tree(-5.7, -6.5);
+      tree(5.7, -6.5);
+
+      desk(4.2, -3.5, 0x947044);
+
+      break;
+
+    case "library":
+      scene.background = new THREE.Color(0x241c19);
+
+      room(0x604836, 0x3d3028);
+
+      bookshelf(-5.5, -5.7);
+      bookshelf(-3.5, -5.7);
+
+      bookshelf(3.5, -5.7);
+      bookshelf(5.5, -5.7);
+
+      desk(-4, -3.2);
+      desk(4, -3.2);
+
+      lamp(-5.7, -3.5);
+      lamp(5.7, -3.5);
+
+      break;
+
+    case "future":
+      scene.background = new THREE.Color(0x071025);
+
+      room(0x102342, 0x0c1830);
+
+      for (const x of [-5.7, -4.5, 4.5, 5.7]) {
+        box(
+          .09, 3.5, .09,
+          0x00c9f2,
+          x, 2, -7.6
+        );
+      }
+
+      desk(-4.1, -4, 0x1c496a);
+      desk(4.1, -4, 0x1c496a);
+
+      break;
+
+    case "nature":
+      scene.background = new THREE.Color(0x99d7ee);
+
+      box(
+        100, .12, 100,
+        0x4b9958,
+        0, -.1, -12
+      );
+
+      for (const position of [
+        [-6, -6],
+        [6, -6],
+        [-6, 1],
+        [6, 1],
+        [-3, -7],
+        [3, -7]
+      ]) {
+        tree(...position);
+      }
+
+      desk(4.1, -3.7, 0x826341);
+
+      break;
+
+    case "penthouse":
+      scene.background = new THREE.Color(0x799fc1);
+
+      room(0xd6cabc, 0xe7e2da);
+
+      windowView(0x6492b5);
+
+      sofa(-4, -4.5, 0x8f989f);
+
+      rug(-4, -3.6, 0xb4a38d);
+
+      desk(4, -4.5, 0x303d48);
+
+      lamp(5.6, -5.5);
+
+      break;
+
+    case "space":
+      scene.background = new THREE.Color(0x01040d);
+
+      room(0x273447, 0x172135);
+
+      starfield();
+
+      sphere(
+        2.5,
+        0x287fc7,
+        0, 6, -30
+      );
+
+      desk(4.1, -4, 0x344d67);
+
+      break;
+
+    case "minimal":
+      scene.background = new THREE.Color(0xdce7ee);
+
+      room(0xe4e4e4, 0xf3f3f3);
+
+      desk(4, -4.5, 0xa8a8a8);
+
+      box(
+        2.2, .2, 1.8,
+        0xb9b9b9,
+        -4, .1, -4
+      );
+
+      plant(-5.5, -5.6);
+
+      break;
+  }
+
+  // Painéis centrais de estudo.
+  box(
+    6, 4.5, .12,
+    0x071b30,
+    0, 2.1, -3.7
+  );
+
+  box(
+    2.7, 4.2, .12,
+    0x0c2943,
+    -4.5, 2.1, -4.05
+  );
+
+  box(
+    2.7, 4.2, .12,
+    0x0c2943,
+    4.5, 2.1, -4.05
+  );
+
+  applyLighting();
 }
 
-function changeEnvironment(type){
-if(type==="random"){
-const available=environments.map(e=>e[0]);
-type=available[Math.floor(Math.random()*available.length)];
-}
-currentEnvironment=type;
-buildEnvironment(type);
-try{localStorage.setItem("pmsc_environment",type);}catch(e){}
-$("environment").value=type;
-$("status").textContent="Ambiente: "+(environments.find(e=>e[0]===type)?.[1]||type);
-render();
+// ==================================================
+// ILUMINAÇÃO DIA/NOITE
+// ==================================================
+
+function applyLighting() {
+  const night = $("lighting").value === "night";
+
+  ambient.intensity = night ? 1.1 : 2.4;
+
+  sun.intensity = night ? .5 : 2;
+
+  if (currentEnvironment === "space") {
+    ambient.intensity = 1.6;
+    sun.intensity = .9;
+  }
 }
 
-$("environment").onchange=e=>changeEnvironment(e.target.value);
-$("lighting").onchange=()=>{applyLighting();try{localStorage.setItem("pmsc_lighting",$("lighting").value);}catch(e){}};
+function changeEnvironment(type) {
+  if (type === "random") {
+    const possibilities = ENVIRONMENTS.map(e => e[0]);
 
-function label(text,x,y,z,width=4.8,height=.28,action=null,kind="normal"){
-const canvas=document.createElement("canvas");
-canvas.width=2048;canvas.height=256;
-const ctx=canvas.getContext("2d");
-ctx.fillStyle=kind==="correct"?"#16684d":kind==="wrong"?"#893440":action?"#176ca4":"#123c60";
-ctx.fillRect(0,0,2048,256);
-ctx.strokeStyle=action?"#a4efff":"#4289bb";
-ctx.lineWidth=7;ctx.strokeRect(5,5,2038,246);
-ctx.fillStyle="#fff";ctx.textAlign="center";ctx.textBaseline="middle";
-let size=94;
-do{ctx.font=`bold ${size}px Arial`;if(ctx.measureText(String(text)).width<1930)break;size-=3;}while(size>30);
-ctx.fillText(String(text),1024,128);
-const texture=new THREE.CanvasTexture(canvas);
-texture.colorSpace=THREE.SRGBColorSpace;
-texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-const mesh=new THREE.Mesh(
-new THREE.PlaneGeometry(width,height),
-new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide})
-);
-mesh.position.set(x,y,z);
-scene.add(mesh);
-dynamic.push(mesh);
-if(action){mesh.userData.action=action;interactive.push(mesh);}
-return mesh;
+    type = possibilities[
+      Math.floor(Math.random() * possibilities.length)
+    ];
+  }
+
+  currentEnvironment = type;
+
+  buildEnvironment(type);
+
+  $("environment").value = type;
+
+  store(STORAGE.environment, type);
+
+  render();
+
+  const name = ENVIRONMENTS.find(e => e[0] === type)?.[1];
+
+  status("Ambiente selecionado: " + (name || type));
 }
 
-function clearPanels(){
-for(const mesh of dynamic){
-scene.remove(mesh);mesh.geometry.dispose();mesh.material.map.dispose();mesh.material.dispose();
-}
-dynamic.length=0;interactive.length=0;interactive.push(...teleportMarkers);
+$("environment").onchange = event => {
+  changeEnvironment(event.target.value);
+};
+
+$("lighting").onchange = () => {
+  applyLighting();
+
+  store(
+    STORAGE.lighting,
+    $("lighting").value
+  );
+};
+
+// ==================================================
+// CONTROLE DE TEMA
+// ==================================================
+
+$("theme").onchange = event => {
+  selectedTheme = event.target.value;
+
+  store(STORAGE.theme, selectedTheme);
+
+  render();
+};
+
+// ==================================================
+// CONTROLE DE FONTE
+// ==================================================
+
+$("fontSize").oninput = event => {
+  store(STORAGE.font, event.target.value);
+
+  render();
+};
+
+// ==================================================
+// RENDERIZAÇÃO DE TEXTOS 3D
+// ==================================================
+
+function createLabel(
+  text,
+  x, y, z,
+  width = 5,
+  height = .3,
+  action = null,
+  type = "normal"
+) {
+  const canvas = document.createElement("canvas");
+
+  canvas.width = 2048;
+  canvas.height = 256;
+
+  const ctx = canvas.getContext("2d");
+
+  const theme = THEMES[selectedTheme];
+
+  let background = theme.background;
+
+  if (action) background = theme.action;
+
+  if (type === "correct") background = "#126047";
+
+  if (type === "wrong") background = "#813345";
+
+  ctx.fillStyle = background;
+
+  ctx.fillRect(0, 0, 2048, 256);
+
+  ctx.strokeStyle = theme.border;
+
+  ctx.lineWidth = 7;
+
+  ctx.strokeRect(5, 5, 2038, 246);
+
+  ctx.fillStyle = "#ffffff";
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const textValue = String(text);
+
+  const scale = Number($("fontSize").value) / 100;
+
+  let size = Math.floor(91 * scale);
+
+  while (size > 22) {
+    ctx.font = `bold ${size}px Arial`;
+
+    if (ctx.measureText(textValue).width < 1900) {
+      break;
+    }
+
+    size -= 3;
+  }
+
+  ctx.fillText(textValue, 1024, 128);
+
+  const texture = new THREE.CanvasTexture(canvas);
+
+  texture.colorSpace = THREE.SRGBColorSpace;
+
+  texture.anisotropy = Math.min(
+    8,
+    renderer.capabilities.getMaxAnisotropy()
+  );
+
+  const geometry = new THREE.PlaneGeometry(
+    width,
+    height
+  );
+
+  const mesh = new THREE.Mesh(
+    geometry,
+    new THREE.MeshBasicMaterial({
+      map: texture,
+      side: THREE.DoubleSide,
+      transparent: false,
+      toneMapped: false
+    })
+  );
+
+  mesh.position.set(x, y, z);
+
+  scene.add(mesh);
+
+  panels.push(mesh);
+
+  if (action) {
+    mesh.userData.action = action;
+
+    interactive.push(mesh);
+  }
+
+  return mesh;
 }
 
-function wrap(text,max=44){
-const lines=[];let line="";
-for(const word of String(text).split(/\s+/)){
-const candidate=line?line+" "+word:word;
-if(candidate.length>max&&line){lines.push(line);line=word;}else line=candidate;
-}
-if(line)lines.push(line);
-return lines;
+function center(
+  text,
+  y,
+  width = 5.3,
+  height = .28,
+  action = null,
+  type = "normal"
+) {
+  return createLabel(
+    text,
+    0,
+    y,
+    -3.56,
+    width,
+    height,
+    action,
+    type
+  );
 }
 
-function center(text,y,width=5.15,height=.27,action=null,kind="normal"){
-return label(text,0,y,-3.52,width,height,action,kind);
+function clearPanels() {
+  for (const mesh of panels) {
+    scene.remove(mesh);
+
+    mesh.geometry.dispose();
+
+    mesh.material.map.dispose();
+
+    mesh.material.dispose();
+  }
+
+  panels.length = 0;
+
+  interactive.length = 0;
+
+  interactive.push(...teleportMarkers);
 }
 
-const subjects=[
-"Língua Portuguesa","Informática","Direito Constitucional",
-"Constituição de Santa Catarina","Direito Penal Comum",
-"Direito Processual Penal Comum","Direito Penal Militar",
-"Legislação Especial","Legislação de Trânsito","Legislação Institucional"
+function wrap(text, max = 47) {
+  const words = String(text).split(/\s+/);
+
+  const lines = [];
+
+  let line = "";
+
+  for (const word of words) {
+    const candidate = line
+      ? line + " " + word
+      : word;
+
+    if (candidate.length > max && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+
+  if (line) lines.push(line);
+
+  return lines;
+}
+
+// ==================================================
+// DISCIPLINAS
+// ==================================================
+
+const subjects = [
+  "Língua Portuguesa",
+  "Informática",
+  "Direito Constitucional",
+  "Constituição de Santa Catarina",
+  "Direito Penal Comum",
+  "Direito Processual Penal Comum",
+  "Direito Penal Militar",
+  "Legislação Especial",
+  "Legislação de Trânsito",
+  "Legislação Institucional"
 ];
 
-for(const subject of subjects){
-const option=document.createElement("option");
-option.value=subject;option.textContent=subject;
-$("subject").appendChild(option);
+function updateSubjectSelect() {
+  const select = $("subject");
+
+  const previous = select.value;
+
+  select.innerHTML = "";
+
+  const all = document.createElement("option");
+
+  all.value = "Todas";
+  all.textContent = "Todas as disciplinas";
+
+  select.appendChild(all);
+
+  const available = new Set([
+    ...subjects,
+    ...questions.map(q => q.subject)
+  ]);
+
+  for (const subject of available) {
+    const option = document.createElement("option");
+
+    option.value = subject;
+    option.textContent = subject;
+
+    select.appendChild(option);
+  }
+
+  if ([...select.options].some(o => o.value === previous)) {
+    select.value = previous;
+  }
 }
 
-let questions=[];
-let pool=[];
-let current=0;
-let answered=false;
-let examCorrect=0;
-let examDone=0;
-let examEnded=false;
-let wrongQuestions=new Set();
+// ==================================================
+// BANCO DE QUESTÕES
+// ==================================================
 
-let stats={total:0,correct:0,subjects:{}};
+let questions = [];
 
-try{
-const saved=JSON.parse(localStorage.getItem("pmsc_2026_v5"));
-if(saved){stats=saved.stats||stats;wrongQuestions=new Set(saved.wrong||[]);}
-}catch(e){}
+let pool = [];
 
-function saveProgress(){
-try{localStorage.setItem("pmsc_2026_v5",JSON.stringify({stats,wrong:[...wrongQuestions]}));}catch(e){}
-updateStats();
-}
+let current = 0;
 
-function updateStats(){
-const percent=stats.total?Math.round(stats.correct*100/stats.total):0;
-let html=`Respondidas: ${stats.total}<br>Acertos: ${stats.correct}<br>Aproveitamento: ${percent}%<br>Revisar: ${wrongQuestions.size}`;
-for(const [name,value] of Object.entries(stats.subjects)){
-const safe=name.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-html+=`<br>${safe}: ${value.correct}/${value.total}`;
-}
-$("stats").innerHTML=html;
-}
+let answered = false;
 
-function environmentPanel(){
-label("ESCOLHER AMBIENTE",-4.25,3.12,-3.95,2.25,.27);
-environments.forEach((item,index)=>{
-const [id,name]=item;
-label(name,-4.25,2.78-index*.25,-3.94,2.25,.23,
-()=>changeEnvironment(id),currentEnvironment===id?"correct":"normal");
-});
-label("ALEATORIO",-4.25,.25,-3.94,2.25,.24,()=>changeEnvironment("random"));
-label("DIA / NOITE",-4.25,-.08,-3.94,2.25,.24,()=>{
-$("lighting").value=$("lighting").value==="day"?"night":"day";
-$("lighting").dispatchEvent(new Event("change"));
-});
-}
+let examEnded = false;
 
-function render(message=""){
-clearPanels();
-center("PMSC 2026 | ACADEMIA VIRTUAL",3.45,5.3,.27);
-environmentPanel();
-if(!pool.length){
-center("CARREGUE QUESTOES PARA INICIAR",2.4);
-center("USE O MENU PARA IMPORTAR JSON",1.95);
-return;
-}
-if(examEnded){
-center("SIMULADO FINALIZADO",2.6);
-center(`ACERTOS: ${examCorrect} DE ${examDone}`,2.1);
-center("REINICIAR SIMULADO",1.55,3.8,.35,start);
-return;
-}
-const q=pool[current];
-center(q.subject.toUpperCase(),3.08,5.15,.24);
-const questionLines=wrap(q.question,44);
-questionLines.slice(0,4).forEach((text,index)=>{center(text,2.79-index*.24,5.2,.22);});
-q.options.forEach((option,index)=>{
-const lines=wrap(`${"ABCDE"[index]}) ${option}`,46);
-const y=1.7-index*.32;
-let kind="normal";
-if(answered){if(index===q.correct)kind="correct";else if(index===q.selected)kind="wrong";}
-center(lines[0],y,5.15,.28,()=>answer(index),kind);
-if(lines[1]){center(lines[1],y-.115,5.15,.105,()=>answer(index));}
-});
-center(message||`QUESTAO ${current+1} DE ${pool.length}`,-.04,5.1,.24);
-center(current===pool.length-1?"FINALIZAR / REINICIAR":"PROXIMA QUESTAO",-.38,3.8,.29,next);
-label("DESEMPENHO",4.25,2.75,-3.94,2.25,.27);
-label(`${stats.correct} / ${stats.total} ACERTOS`,4.25,2.4,-3.94,2.25,.28);
-label("DISCIPLINA",4.25,1.98,-3.94,2.25,.25);
-label(q.subject.slice(0,27),4.25,1.65,-3.94,2.25,.28);
-if(answered&&q.explanation){
-wrap(q.explanation,27).slice(0,4).forEach((text,index)=>{
-label(text,4.25,1.2-index*.25,-3.94,2.25,.22);
-});
-}
-}
+let examCorrect = 0;
 
-function answer(index){
-if(answered||examEnded||!pool.length)return;
-const q=pool[current];
-answered=true;q.selected=index;
-const right=index===q.correct;
-examDone++;if(right)examCorrect++;
-stats.total++;if(right)stats.correct++;
-if(!stats.subjects[q.subject]){stats.subjects[q.subject]={total:0,correct:0};}
-const s=stats.subjects[q.subject];
-s.total++;if(right)s.correct++;
-if(right)wrongQuestions.delete(q.id);else wrongQuestions.add(q.id);
-saveProgress();
-render(right?"RESPOSTA CORRETA!":`GABARITO: ${"ABCDE"[q.correct]}`);
-}
+let examDone = 0;
 
-function next(){
-if(!pool.length)return;
-if($("mode").value==="exam"&&current===pool.length-1){examEnded=true;render();return;}
-current=(current+1)%pool.length;answered=false;render();
-}
+let flashcardFlipped = false;
 
-function start(){
-const mode=$("mode").value;
-const subject=$("subject").value;
-pool=questions.filter(q=>{
-const matchesSubject=subject==="Todas"||q.subject===subject;
-const matchesReview=mode!=="review"||wrongQuestions.has(q.id);
-return matchesSubject&&matchesReview;
-});
-if(mode==="exam"){
-pool=pool.slice();
-for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
-}
-current=0;answered=false;examCorrect=0;examDone=0;examEnded=false;
-render();
-$("status").textContent=pool.length?`${pool.length} questões disponíveis.`:"Nenhuma questão neste filtro.";
-}
+let wrongQuestions = new Set();
 
-$("start").onclick=start;
-$("mode").onchange=start;
-$("subject").onchange=start;
-
-function normalize(q){
-const question=q.enunciado??q.pergunta??q.questao??q.question;
-const raw=q.alternativas??q.opcoes??q.options;
-if(!question||!raw)return null;
-
-const keys=Array.isArray(raw)?null:Object.keys(raw);
-const options=Array.isArray(raw)?raw:keys.map(k=>raw[k]);
-
-if(options.length<2||options.length>5)return null;
-
-// ✅ Correção do bug "A) A) Servidores..."
-const cleanOptions=autoStripPrefixes(options);
-
-const answer=q.correta??q.resposta??q.gabarito??q.correct;
-let correct=-1;
-
-if(typeof answer==="number"){
-correct=answer;
-}else if(typeof answer==="string"){
-const value=answer.trim();
-if(/^[A-E]$/i.test(value)){
-correct=value.toUpperCase().charCodeAt(0)-65;
-}else if(keys&&keys.includes(value)){
-correct=keys.indexOf(value);
-}else if(/^\d+$/.test(value)){
-correct=Number(value);
-}else{
-// Tenta bater com opções limpas, com prefixo, ou após remover prefixo
-correct=cleanOptions.map(String).indexOf(value);
-if(correct===-1)correct=options.map(String).indexOf(value);
-if(correct===-1)correct=cleanOptions.map(String).indexOf(stripPrefix(value));
-}
-}
-
-if(!Number.isInteger(correct)||correct<0||correct>=cleanOptions.length)return null;
-
-const subject=String(q.disciplina??q.materia??q.subject??"Geral");
-
-return{
-id:String(q.id??`${subject}|${question}`),
-question:String(question),
-options:cleanOptions.map(String),
-correct,
-subject,
-explanation:String(q.explicacao??q.comentario??q.explanation??"")
-};
-}
-
-$("file").onchange=async event=>{
-try{
-let count=0;
-for(const file of event.target.files){
-const data=JSON.parse(await file.text());
-const flat=flattenQuestions(data);
-const valid=flat.map(normalize).filter(Boolean);
-mergeQuestions(valid);
-count+=valid.length;
-}
-updateSubjectDropdown();
-start();
-$("status").textContent=`${count} questões importadas.`;
-}catch(error){
-$("status").textContent="Erro JSON: "+error.message;
-}
+let stats = {
+  total: 0,
+  correct: 0,
+  subjects: {}
 };
 
-$("demo").onclick=()=>{
-questions=[
-{question:"Qual Constituição está atualmente vigente no Brasil?",options:["Constituição de 1967","Constituição de 1988","Constituição de 1946","Constituição de 1937"],correct:1,subject:"Direito Constitucional",explanation:"A Constituição Federal vigente foi promulgada em 1988."},
-{question:"Qual princípio exige atuação administrativa conforme o ordenamento jurídico?",options:["Publicidade","Legalidade","Impessoalidade","Eficiência"],correct:1,subject:"Direito Constitucional",explanation:"O princípio da legalidade orienta a Administração Pública."},
-{question:"Qual artigo do Código Penal trata do furto?",options:["Artigo 121","Artigo 155","Artigo 157","Artigo 171"],correct:1,subject:"Direito Penal Comum",explanation:"O furto está previsto no artigo 155 do Código Penal."},
-{question:"Qual sinalização indica parada obrigatória?",options:["Placa PARE","Placa de estacionamento","Placa de velocidade máxima","Placa de pedestres"],correct:0,subject:"Legislação de Trânsito",explanation:"A placa R-1 indica parada obrigatória."}
-].map(normalize).filter(Boolean);
-updateSubjectDropdown();
-start();
-$("status").textContent="Demonstração carregada.";
+// ==================================================
+// ESTATÍSTICAS SALVAS
+// ==================================================
+
+try {
+  const saved = JSON.parse(
+    getSaved(STORAGE.progress, "null")
+  );
+
+  if (saved) {
+    stats = saved.stats || stats;
+
+    wrongQuestions = new Set(
+      saved.wrong || []
+    );
+  }
+} catch (error) {
+  console.warn("Erro ao recuperar progresso.", error);
+}
+
+function saveProgress() {
+  store(
+    STORAGE.progress,
+    JSON.stringify({
+      stats,
+      wrong: [...wrongQuestions]
+    })
+  );
+
+  updateStats();
+}
+
+function updateStats() {
+  const percentage = stats.total
+    ? Math.round(stats.correct * 100 / stats.total)
+    : 0;
+
+  $("stats").innerHTML = `
+    <div class="stat-grid">
+
+      <div class="stat-card">
+        <strong>${stats.total}</strong>
+        <span>Respondidas</span>
+      </div>
+
+      <div class="stat-card">
+        <strong>${stats.correct}</strong>
+        <span>Acertos</span>
+      </div>
+
+      <div class="stat-card">
+        <strong>${percentage}%</strong>
+        <span>Aproveitamento</span>
+      </div>
+
+      <div class="stat-card">
+        <strong>${wrongQuestions.size}</strong>
+        <span>Revisões pendentes</span>
+      </div>
+
+    </div>
+  `;
+
+  const sessionProgress = pool.length
+    ? Math.round(
+        (current + (answered ? 1 : 0)) /
+        pool.length * 100
+      )
+    : 0;
+
+  $("progressFill").style.width =
+    Math.min(sessionProgress, 100) + "%";
+}
+
+// ==================================================
+// IDENTIFICADORES DAS QUESTÕES
+// ==================================================
+
+function questionId(q) {
+  return String(
+    q.id ??
+    `${q.subject}|${q.question}`
+  );
+}
+
+// ==================================================
+// NORMALIZAÇÃO DOS ARQUIVOS JSON
+// ==================================================
+
+function normalize(rawQuestion) {
+  if (!rawQuestion || typeof rawQuestion !== "object") {
+    return null;
+  }
+
+  const q = rawQuestion;
+
+  const statement =
+    q.enunciado ??
+    q.pergunta ??
+    q.questao ??
+    q.question ??
+    q.texto;
+
+  const rawOptions =
+    q.alternativas ??
+    q.opcoes ??
+    q.options;
+
+  if (!statement || !rawOptions) return null;
+
+  let options = [];
+
+  let keys = null;
+
+  if (Array.isArray(rawOptions)) {
+    options = rawOptions.map(String);
+  } else if (typeof rawOptions === "object") {
+    keys = Object.keys(rawOptions);
+
+    options = keys.map(key =>
+      String(rawOptions[key])
+    );
+  }
+
+  if (options.length < 2 || options.length > 5) {
+    return null;
+  }
+
+  const rawAnswer =
+    q.correta ??
+    q.resposta ??
+    q.gabarito ??
+    q.correct;
+
+  let correct = -1;
+
+  if (typeof rawAnswer === "number") {
+    correct = rawAnswer;
+  }
+
+  if (typeof rawAnswer === "string") {
+    const answer = rawAnswer.trim();
+
+    if (/^[A-E]$/i.test(answer)) {
+      correct = answer.toUpperCase().charCodeAt(0) - 65;
+    } else if (keys && keys.includes(answer)) {
+      correct = keys.indexOf(answer);
+    } else if (/^\d+$/.test(answer)) {
+      correct = Number(answer);
+    } else {
+      correct = options.indexOf(answer);
+    }
+  }
+
+  if (
+    !Number.isInteger(correct) ||
+    correct < 0 ||
+    correct >= options.length
+  ) {
+    return null;
+  }
+
+  const subject = String(
+    q.disciplina ??
+    q.materia ??
+    q.subject ??
+    q.categoria ??
+    "Geral"
+  );
+
+  const normalized = {
+    id: String(
+      q.id ??
+      `${subject}|${statement}`
+    ),
+
+    question: String(statement),
+
+    options,
+
+    correct,
+
+    subject,
+
+    explanation: String(
+      q.explicacao ??
+      q.comentario ??
+      q.justificativa ??
+      q.explanation ??
+      ""
+    )
+  };
+
+  return normalized;
+}
+
+// ==================================================
+// IMPORTAÇÃO E DEDUPLICAÇÃO
+// ==================================================
+
+function mergeQuestions(list, replace = false) {
+  const map = new Map();
+
+  if (!replace) {
+    for (const q of questions) {
+      map.set(questionId(q), q);
+    }
+  }
+
+  for (const q of list) {
+    const normalized = normalize(q);
+
+    if (normalized) {
+      map.set(questionId(normalized), normalized);
+    }
+  }
+
+  questions = [...map.values()];
+
+  updateSubjectSelect();
+
+  start();
+}
+
+// ==================================================
+// EXTRAÇÃO DE ARRAYS JSON
+// ==================================================
+
+function extractQuestions(data) {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (!data || typeof data !== "object") {
+    return [];
+  }
+
+  const candidates = [
+    data.questoes,
+    data.questions,
+    data.perguntas,
+    data.items,
+    data.data
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate;
+    }
+  }
+
+  return [];
+}
+
+// ==================================================
+// GITHUB: DESCOBRIR ARQUIVOS JSON NA RAIZ
+// ==================================================
+
+async function discoverGithubFiles() {
+  const api =
+    `https://api.github.com/repos/` +
+    `${CONFIG.owner}/${CONFIG.repository}/contents/`;
+
+  const response = await fetch(api, {
+    headers: {
+      "Accept": "application/vnd.github+json"
+    },
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      "GitHub API indisponível: HTTP " + response.status
+    );
+  }
+
+  const files = await response.json();
+
+  if (!Array.isArray(files)) {
+    return [];
+  }
+
+  return files.filter(file =>
+    file.type === "file" &&
+    /\.json$/i.test(file.name) &&
+    !file.name.toLowerCase().includes("package") &&
+    !file.name.toLowerCase().includes("config")
+  );
+}
+
+// ==================================================
+// CARREGAR BANCO AUTOMATICAMENTE
+// ==================================================
+
+async function loadGithubQuestions() {
+  status("Procurando arquivos JSON no GitHub...");
+
+  $("bankInfo").textContent =
+    "Verificando repositório público...";
+
+  let files = [];
+
+  try {
+    files = await discoverGithubFiles();
+  } catch (error) {
+    console.warn(error);
+
+    // Alternativa caso a API do GitHub esteja indisponível.
+    const names = [
+      "questoes.json",
+      "questions.json",
+      "perguntas.json",
+      "banco_questoes.json",
+      "banco-de-questoes.json",
+      "pmsc.json",
+      "questoes_pmsc.json"
+    ];
+
+    files = names.map(name => ({
+      name,
+      download_url: new URL(
+        name,
+        location.href
+      ).href
+    }));
+  }
+
+  const collected = [];
+
+  let loadedFiles = 0;
+
+  for (const file of files) {
+    try {
+      if (!file.download_url) continue;
+
+      const url = new URL(file.download_url);
+
+      url.searchParams.set(
+        "_atualizacao",
+        String(Date.now())
+      );
+
+      const response = await fetch(url, {
+        cache: "no-store"
+      });
+
+      if (!response.ok) continue;
+
+      const data = await response.json();
+
+      const raw = extractQuestions(data);
+
+      if (!raw.length) continue;
+
+      const valid = raw
+        .map(normalize)
+        .filter(Boolean);
+
+      if (!valid.length) continue;
+
+      collected.push(...valid);
+
+      loadedFiles++;
+
+    } catch (error) {
+      console.warn(
+        "JSON ignorado:",
+        file.name,
+        error
+      );
+    }
+  }
+
+  if (collected.length) {
+    const unique = new Map();
+
+    for (const q of collected) {
+      unique.set(questionId(q), q);
+    }
+
+    questions = [...unique.values()];
+
+    updateSubjectSelect();
+
+    start();
+
+    $("bankInfo").textContent =
+      `${questions.length} questões carregadas ` +
+      `de ${loadedFiles} arquivo(s) JSON.`;
+
+    status(
+      "Banco de questões atualizado automaticamente."
+    );
+
+  } else {
+    $("bankInfo").textContent =
+      "Nenhum JSON de questões compatível encontrado.";
+
+    status(
+      "Não foi possível carregar questões automaticamente. " +
+      "Verifique os arquivos JSON do repositório."
+    );
+  }
+}
+
+$("refresh").onclick = loadGithubQuestions;
+
+// ==================================================
+// IMPORTAÇÃO MANUAL OPCIONAL
+// ==================================================
+
+$("file").onchange = async event => {
+  let imported = [];
+
+  for (const file of event.target.files) {
+    try {
+      const text = await file.text();
+
+      const data = JSON.parse(text);
+
+      imported.push(...extractQuestions(data));
+
+    } catch (error) {
+      console.warn(error);
+
+      status(
+        "Erro ao ler arquivo " + file.name
+      );
+    }
+  }
+
+  mergeQuestions(imported);
+
+  status(
+    `${imported.length} registros recebidos na importação.`
+  );
 };
 
-$("refresh").onclick=refreshQuestions;
+// ==================================================
+// FLASHCARDS
+// ==================================================
 
-$("reset").onclick=()=>{
-if(!confirm("Zerar estatísticas e revisão?"))return;
-stats={total:0,correct:0,subjects:{}};
-wrongQuestions.clear();
-saveProgress();
-start();
+function renderFlashcard() {
+  const q = pool[current];
+
+  center(
+    "FLASHCARD | MEMORIZAÇÃO",
+    3.4,
+    5.4,
+    .31
+  );
+
+  center(
+    q.subject.toUpperCase(),
+    3.05,
+    5.2,
+    .25
+  );
+
+  if (!flashcardFlipped) {
+    const lines = wrap(q.question, 46);
+
+    lines.slice(0, 6).forEach((line, index) => {
+      center(
+        line,
+        2.65 - index * .32,
+        5.3,
+        .28
+      );
+    });
+
+    center(
+      "TOQUE PARA REVELAR A RESPOSTA",
+      .15,
+      5,
+      .32,
+      flipFlashcard
+    );
+
+  } else {
+    const answerText = q.options[q.correct];
+
+    center(
+      "RESPOSTA CORRETA",
+      2.6,
+      5,
+      .31,
+      null,
+      "correct"
+    );
+
+    const lines = wrap(answerText, 42);
+
+    lines.slice(0, 5).forEach((line, index) => {
+      center(
+        line,
+        2.1 - index * .32,
+        5.2,
+        .27
+      );
+    });
+
+    if (q.explanation) {
+      const explanation = wrap(q.explanation, 44);
+
+      explanation.slice(0, 3).forEach((line, index) => {
+        center(
+          line,
+          .65 - index * .27,
+          5.2,
+          .23
+        );
+      });
+    }
+
+    center(
+      "OCULTAR RESPOSTA",
+      -.35,
+      3.3,
+      .29,
+      flipFlashcard
+    );
+  }
+
+  center(
+    `CARTÃO ${current + 1} / ${pool.length}`,
+    -1.0,
+    4,
+    .26
+  );
+
+  center(
+    "PRÓXIMO FLASHCARD",
+    -1.4,
+    4,
+    .33,
+    nextQuestion
+  );
+}
+
+function flipFlashcard() {
+  if (
+    $("mode").value !== "flashcards" ||
+    !pool.length
+  ) {
+    return;
+  }
+
+  flashcardFlipped = !flashcardFlipped;
+
+  render();
+}
+
+$("flipCard").onclick = flipFlashcard;
+
+$("desktopFlip").onclick = flipFlashcard;
+
+// ==================================================
+// PAINEL DE AMBIENTES DENTRO DO VR
+// ==================================================
+
+function renderEnvironmentPanel() {
+  createLabel(
+    "AMBIENTES",
+    -4.5, 3.72, -3.97,
+    2.4, .27
+  );
+
+  ENVIRONMENTS.forEach((item, index) => {
+    const [id, name] = item;
+
+    createLabel(
+      name,
+      -4.5,
+      3.35 - index * .32,
+      -3.96,
+      2.35,
+      .27,
+      () => changeEnvironment(id),
+      currentEnvironment === id
+        ? "correct"
+        : "normal"
+    );
+  });
+
+  createLabel(
+    "ALEATÓRIO",
+    -4.5, .25, -3.96,
+    2.35, .29,
+    () => changeEnvironment("random")
+  );
+
+  createLabel(
+    "DIA / NOITE",
+    -4.5, -.12, -3.96,
+    2.35, .29,
+    () => {
+      $("lighting").value =
+        $("lighting").value === "day"
+          ? "night"
+          : "day";
+
+      $("lighting").dispatchEvent(
+        new Event("change")
+      );
+
+      render();
+    }
+  );
+}
+
+// ==================================================
+// PAINEL DE DESEMPENHO NO VR
+// ==================================================
+
+function renderStatsPanel() {
+  const percentage = stats.total
+    ? Math.round(stats.correct * 100 / stats.total)
+    : 0;
+
+  createLabel(
+    "DESEMPENHO",
+    4.5, 3.72, -3.97,
+    2.4, .27
+  );
+
+  const values = [
+    `RESPONDIDAS: ${stats.total}`,
+    `ACERTOS: ${stats.correct}`,
+    `APROVEITAMENTO: ${percentage}%`,
+    `REVISÕES: ${wrongQuestions.size}`
+  ];
+
+  values.forEach((value, index) => {
+    createLabel(
+      value,
+      4.5,
+      3.35 - index * .38,
+      -3.96,
+      2.35,
+      .29
+    );
+  });
+
+  createLabel(
+    "MODO DE ESTUDO",
+    4.5, 1.65, -3.96,
+    2.35, .28
+  );
+
+  createLabel(
+    "QUESTÕES",
+    4.5, 1.26, -3.96,
+    2.35, .29,
+    () => switchMode("study")
+  );
+
+  createLabel(
+    "SIMULADO",
+    4.5, .89, -3.96,
+    2.35, .29,
+    () => switchMode("exam")
+  );
+
+  createLabel(
+    "FLASHCARDS",
+    4.5, .52, -3.96,
+    2.35, .29,
+    () => switchMode("flashcards")
+  );
+
+  createLabel(
+    "REVISAR ERROS",
+    4.5, .15, -3.96,
+    2.35, .29,
+    () => switchMode("review")
+  );
+}
+
+function switchMode(mode) {
+  $("mode").value = mode;
+
+  start();
+}
+
+// ==================================================
+// RENDERIZAÇÃO DAS QUESTÕES
+// ==================================================
+
+function render(message = "") {
+  clearPanels();
+
+  renderEnvironmentPanel();
+
+  renderStatsPanel();
+
+  if (!pool.length) {
+    center(
+      "PMSC 2026 | ACADEMIA VIRTUAL",
+      3.35
+    );
+
+    center(
+      "BANCO DE QUESTÕES NÃO CARREGADO",
+      2.45
+    );
+
+    center(
+      "AGUARDANDO ARQUIVOS JSON",
+      1.95
+    );
+
+    return;
+  }
+
+  if ($("mode").value === "flashcards") {
+    renderFlashcard();
+    return;
+  }
+
+  if (examEnded) {
+    center(
+      "SIMULADO FINALIZADO",
+      2.7,
+      5.2,
+      .35
+    );
+
+    center(
+      `ACERTOS: ${examCorrect} / ${examDone}`,
+      2.15
+    );
+
+    const percentage = examDone
+      ? Math.round(examCorrect * 100 / examDone)
+      : 0;
+
+    center(
+      `APROVEITAMENTO: ${percentage}%`,
+      1.6
+    );
+
+    center(
+      "REINICIAR SIMULADO",
+      .8,
+      4,
+      .36,
+      start
+    );
+
+    return;
+  }
+
+  const q = pool[current];
+
+  center(
+    "PMSC 2026 | ESTUDO IMERSIVO",
+    3.65,
+    5.4,
+    .29
+  );
+
+  center(
+    q.subject.toUpperCase(),
+    3.27,
+    5.3,
+    .26
+  );
+
+  const questionLines = wrap(q.question, 46);
+
+  questionLines.slice(0, 5).forEach((line, index) => {
+    center(
+      line,
+      2.94 - index * .25,
+      5.4,
+      .23
+    );
+  });
+
+  const optionsStart = Math.min(
+    1.61,
+    2.94 - questionLines.slice(0, 5).length * .25 - .12
+  );
+
+  const optionsSpacing = .36;
+
+  q.options.forEach((option, index) => {
+    const letter = "ABCDE"[index];
+
+    const lines = wrap(
+      `${letter}) ${option}`,
+      48
+    );
+
+    let type = "normal";
+
+    if (answered) {
+      if (index === q.correct) {
+        type = "correct";
+      } else if (index === q.selected) {
+        type = "wrong";
+      }
+    }
+
+    const y = optionsStart - index * optionsSpacing;
+
+    center(
+      lines[0],
+      y,
+      5.4,
+      .3,
+      () => answerQuestion(index),
+      type
+    );
+
+    if (lines.length > 1) {
+      center(
+        lines[1],
+        y - .14,
+        5.4,
+        .13,
+        () => answerQuestion(index),
+        type
+      );
+    }
+  });
+
+  center(
+    message ||
+    `QUESTÃO ${current + 1} DE ${pool.length}`,
+    -.45,
+    5.3,
+    .27
+  );
+
+  center(
+    "PRÓXIMA QUESTÃO",
+    -.87,
+    4,
+    .32,
+    nextQuestion
+  );
+
+  if (answered && q.explanation) {
+    const explanationLines = wrap(
+      q.explanation,
+      48
+    );
+
+    explanationLines.slice(0, 2).forEach((line, index) => {
+      center(
+        line,
+        -1.3 - index * .23,
+        5.3,
+        .21
+      );
+    });
+  }
+}
+
+// ==================================================
+// CORREÇÃO DAS QUESTÕES
+// ==================================================
+
+function answerQuestion(index) {
+  if (
+    answered ||
+    examEnded ||
+    !pool.length
+  ) {
+    return;
+  }
+
+  const q = pool[current];
+
+  answered = true;
+
+  q.selected = index;
+
+  const correct = index === q.correct;
+
+  examDone++;
+
+  if (correct) {
+    examCorrect++;
+  }
+
+  stats.total++;
+
+  if (correct) {
+    stats.correct++;
+  }
+
+  if (!stats.subjects[q.subject]) {
+    stats.subjects[q.subject] = {
+      total: 0,
+      correct: 0
+    };
+  }
+
+  stats.subjects[q.subject].total++;
+
+  if (correct) {
+    stats.subjects[q.subject].correct++;
+
+    wrongQuestions.delete(q.id);
+  } else {
+    wrongQuestions.add(q.id);
+  }
+
+  saveProgress();
+
+  render(
+    correct
+      ? "RESPOSTA CORRETA!"
+      : `RESPOSTA CORRETA: ${"ABCDE"[q.correct]}`
+  );
+}
+
+// ==================================================
+// PRÓXIMA QUESTÃO
+// ==================================================
+
+function nextQuestion() {
+  if (!pool.length) return;
+
+  const mode = $("mode").value;
+
+  if (
+    mode === "exam" &&
+    current === pool.length - 1
+  ) {
+    examEnded = true;
+
+    render();
+
+    return;
+  }
+
+  current = (current + 1) % pool.length;
+
+  answered = false;
+
+  flashcardFlipped = false;
+
+  render();
+
+  updateStats();
+}
+
+function previousQuestion() {
+  if (!pool.length) return;
+
+  current = Math.max(0, current - 1);
+
+  answered = false;
+
+  flashcardFlipped = false;
+
+  render();
+}
+
+$("next").onclick = nextQuestion;
+
+$("desktopNext").onclick = nextQuestion;
+
+$("desktopPrev").onclick = previousQuestion;
+
+// ==================================================
+// INICIAR SESSÃO
+// ==================================================
+
+function start() {
+  const mode = $("mode").value;
+
+  const subject = $("subject").value;
+
+  pool = questions.filter(q => {
+    const subjectMatches =
+      subject === "Todas" ||
+      q.subject === subject;
+
+    const reviewMatches =
+      mode !== "review" ||
+      wrongQuestions.has(q.id);
+
+    return subjectMatches && reviewMatches;
+  });
+
+  if (mode === "exam") {
+    pool = [...pool];
+
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(
+        Math.random() * (i + 1)
+      );
+
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+  }
+
+  current = 0;
+
+  answered = false;
+
+  examEnded = false;
+
+  examCorrect = 0;
+
+  examDone = 0;
+
+  flashcardFlipped = false;
+
+  render();
+
+  updateStats();
+
+  if (pool.length) {
+    status(
+      `${pool.length} questões disponíveis para estudo.`
+    );
+  } else {
+    status(
+      "Nenhuma questão encontrada para o filtro selecionado."
+    );
+  }
+}
+
+$("start").onclick = start;
+
+$("mode").onchange = start;
+
+$("subject").onchange = start;
+
+// ==================================================
+// DEMONSTRAÇÃO
+// ==================================================
+
+$("demo").onclick = () => {
+  const demo = [
+    {
+      id: "demo01",
+      disciplina: "Direito Constitucional",
+      pergunta:
+        "Em que ano foi promulgada a Constituição Federal vigente?",
+      alternativas: [
+        "1967",
+        "1988",
+        "1946",
+        "1937"
+      ],
+      correta: 1,
+      explicacao:
+        "A Constituição Federal vigente foi promulgada em 1988."
+    },
+    {
+      id: "demo02",
+      disciplina: "Direito Penal Comum",
+      pergunta:
+        "Qual artigo do Código Penal brasileiro trata do furto?",
+      alternativas: [
+        "Artigo 121",
+        "Artigo 155",
+        "Artigo 157",
+        "Artigo 171"
+      ],
+      correta: 1,
+      explicacao:
+        "O crime de furto está previsto no artigo 155 do Código Penal."
+    },
+    {
+      id: "demo03",
+      disciplina: "Legislação de Trânsito",
+      pergunta:
+        "Qual sinalização determina parada obrigatória?",
+      alternativas: [
+        "R-1 PARE",
+        "A-1",
+        "R-19",
+        "R-6"
+      ],
+      correta: 0,
+      explicacao:
+        "A placa R-1 representa parada obrigatória."
+    },
+    {
+      id: "demo04",
+      disciplina: "Direito Constitucional",
+      pergunta:
+        "Qual princípio está previsto no artigo 37 da Constituição Federal?",
+      alternativas: [
+        "Pessoalidade",
+        "Legalidade",
+        "Arbitrariedade",
+        "Informalidade absoluta"
+      ],
+      correta: 1,
+      explicacao:
+        "O artigo 37 estabelece, entre outros, o princípio da legalidade."
+    },
+    {
+      id: "demo05",
+      disciplina: "Língua Portuguesa",
+      pergunta:
+        "Qual alternativa apresenta uma palavra corretamente acentuada?",
+      alternativas: [
+        "Lapis",
+        "Facil",
+        "Lápis",
+        "Voce"
+      ],
+      correta: 2,
+      explicacao:
+        "A palavra lápis é uma paroxítona terminada em -is."
+    }
+  ];
+
+  mergeQuestions(demo);
+
+  status("Demonstração carregada.");
+
+  $("bankInfo").textContent =
+    `${questions.length} questões disponíveis.`;
 };
 
-const markerPositions=[[0,-1.5],[-2.8,-2.5],[2.8,-2.5],[0,-4.8]];
+// ==================================================
+// ZERAR ESTATÍSTICAS
+// ==================================================
 
-function teleport(x,z){
-const head=new THREE.Vector3();
-if(renderer.xr.isPresenting){renderer.xr.getCamera().getWorldPosition(head);}
-else{camera.getWorldPosition(head);}
-rig.position.x+=x-head.x;rig.position.z+=z-head.z;
-$("status").textContent="Teletransporte realizado.";
-}
+$("reset").onclick = () => {
+  if (!confirm(
+    "Deseja apagar as estatísticas e a lista de erros?"
+  )) {
+    return;
+  }
 
-for(const [x,z] of markerPositions){
-const marker=new THREE.Mesh(
-new THREE.CylinderGeometry(.33,.33,.025,40),
-new THREE.MeshBasicMaterial({color:0x20c8fa,transparent:true,opacity:.75})
-);
-marker.position.set(x,.015,z);
-marker.userData.action=()=>teleport(x,z);
-scene.add(marker);teleportMarkers.push(marker);interactive.push(marker);
-}
+  stats = {
+    total: 0,
+    correct: 0,
+    subjects: {}
+  };
 
-function selectObject(source){
-source.updateWorldMatrix(true,false);
-rotation.extractRotation(source.matrixWorld);
-raycaster.ray.origin.setFromMatrixPosition(source.matrixWorld);
-raycaster.ray.direction.set(0,0,-1).applyMatrix4(rotation).normalize();
-const hits=raycaster.intersectObjects(interactive,false);
-if(!hits.length||hits[0].distance>12)return;
-const action=hits[0].object.userData.action;
-if(typeof action==="function")action();
-}
+  wrongQuestions.clear();
 
-const controllerFactory=new XRControllerModelFactory();
-const handFactory=new XRHandModelFactory();
+  saveProgress();
 
-for(let i=0;i<2;i++){
-const controller=renderer.xr.getController(i);
-controller.addEventListener("selectstart",()=>{selectObject(controller);});
-rig.add(controller);
-const pointer=new THREE.Line(
-new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,-6)]),
-new THREE.LineBasicMaterial({color:0x4cdeff})
-);
-controller.add(pointer);
-const grip=renderer.xr.getControllerGrip(i);
-grip.add(controllerFactory.createControllerModel(grip));
-rig.add(grip);
-const hand=renderer.xr.getHand(i);
-hand.add(handFactory.createHandModel(hand,"mesh"));
-hand.addEventListener("selectstart",()=>{selectObject(hand);});
-rig.add(hand);
-}
+  start();
 
-$("enter").onclick=async()=>{
-try{
-if(renderer.xr.isPresenting){await renderer.xr.getSession().end();return;}
-if(!navigator.xr){throw new Error("WebXR não disponível.");}
-const supported=await navigator.xr.isSessionSupported("immersive-vr");
-if(!supported){throw new Error("Realidade virtual não suportada.");}
-const session=await navigator.xr.requestSession("immersive-vr",{optionalFeatures:["local-floor","hand-tracking"]});
-await renderer.xr.setSession(session);
-$("enter").textContent="SAIR DO VR";
-session.addEventListener("end",()=>{$("enter").textContent="ENTRAR EM VR";});
-}catch(error){
-$("status").textContent="Erro VR: "+error.message;
-}
+  status("Estatísticas zeradas.");
 };
 
-const clock=new THREE.Clock();
-const direction=new THREE.Vector3();
-const rightVector=new THREE.Vector3();
+// ==================================================
+// TELETRANSPORTE
+// ==================================================
 
-renderer.setAnimationLoop(()=>{
-const dt=Math.min(clock.getDelta(),.05);
-if(renderer.xr.isPresenting){
-const session=renderer.xr.getSession();
-for(const source of session.inputSources){
-if(!source.gamepad||source.handedness!=="left")continue;
-const axes=source.gamepad.axes;
-const x=axes.length>=4?axes[2]:(axes[0]||0);
-const z=axes.length>=4?axes[3]:(axes[1]||0);
-if(Math.abs(x)<.18&&Math.abs(z)<.18)continue;
-renderer.xr.getCamera().getWorldDirection(direction);direction.y=0;direction.normalize();
-rightVector.set(-direction.z,0,direction.x);
-const move=direction.clone().multiplyScalar(-z).addScaledVector(rightVector,x).multiplyScalar(dt*1.6);
-rig.position.x=THREE.MathUtils.clamp(rig.position.x+move.x,-5.1,5.1);
-rig.position.z=THREE.MathUtils.clamp(rig.position.z+move.z,-5.5,2.5);
+const markerPositions = [
+  [0, -1.5],
+  [-2.8, -2.5],
+  [2.8, -2.5],
+  [0, -4.8]
+];
+
+function teleport(x, z) {
+  const head = new THREE.Vector3();
+
+  camera.getWorldPosition(head);
+
+  rig.position.x += x - head.x;
+
+  rig.position.z += z - head.z;
+
+  rig.position.x = THREE.MathUtils.clamp(
+    rig.position.x,
+    -5.3,
+    5.3
+  );
+
+  rig.position.z = THREE.MathUtils.clamp(
+    rig.position.z,
+    -5.5,
+    3
+  );
+
+  status("Teletransporte realizado.");
 }
+
+for (const [x, z] of markerPositions) {
+  const marker = new THREE.Mesh(
+    new THREE.CylinderGeometry(
+      .35,
+      .35,
+      .03,
+      40
+    ),
+    new THREE.MeshBasicMaterial({
+      color: 0x24d5ff,
+      transparent: true,
+      opacity: .8
+    })
+  );
+
+  marker.position.set(x, .025, z);
+
+  marker.userData.action = () => teleport(x, z);
+
+  scene.add(marker);
+
+  teleportMarkers.push(marker);
+
+  interactive.push(marker);
 }
-renderer.render(scene,camera);
+
+// ==================================================
+// RAYCASTER E INTERAÇÃO
+// ==================================================
+
+function selectObject(source) {
+  source.updateWorldMatrix(true, false);
+
+  rotationMatrix.extractRotation(
+    source.matrixWorld
+  );
+
+  raycaster.ray.origin.setFromMatrixPosition(
+    source.matrixWorld
+  );
+
+  raycaster.ray.direction
+    .set(0, 0, -1)
+    .applyMatrix4(rotationMatrix)
+    .normalize();
+
+  const intersections = raycaster.intersectObjects(
+    interactive,
+    false
+  );
+
+  if (!intersections.length) return;
+
+  const hit = intersections[0];
+
+  if (hit.distance > CONFIG.teleportDistance) {
+    return;
+  }
+
+  const action = hit.object.userData.action;
+
+  if (typeof action === "function") {
+    action();
+  }
+}
+
+// ==================================================
+// CONTROLES WEBXR
+// ==================================================
+
+const controllerFactory =
+  new XRControllerModelFactory();
+
+const handFactory =
+  new XRHandModelFactory();
+
+for (let i = 0; i < 2; i++) {
+  const controller = renderer.xr.getController(i);
+
+  controller.addEventListener(
+    "selectstart",
+    () => selectObject(controller)
+  );
+
+  rig.add(controller);
+
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, -6)
+    ]),
+    new THREE.LineBasicMaterial({
+      color: 0x50dbff
+    })
+  );
+
+  controller.add(line);
+
+  const grip = renderer.xr.getControllerGrip(i);
+
+  grip.add(
+    controllerFactory.createControllerModel(grip)
+  );
+
+  rig.add(grip);
+
+  const hand = renderer.xr.getHand(i);
+
+  hand.add(
+    handFactory.createHandModel(
+      hand,
+      "mesh"
+    )
+  );
+
+  hand.addEventListener(
+    "selectstart",
+    () => selectObject(hand)
+  );
+
+  rig.add(hand);
+}
+
+// ==================================================
+// ENTRAR EM VR
+// ==================================================
+
+$("enter").onclick = async () => {
+  try {
+    if (renderer.xr.isPresenting) {
+      await renderer.xr.getSession().end();
+
+      return;
+    }
+
+    if (!navigator.xr) {
+      throw new Error(
+        "WebXR indisponível neste navegador."
+      );
+    }
+
+    const supported =
+      await navigator.xr.isSessionSupported(
+        "immersive-vr"
+      );
+
+    if (!supported) {
+      throw new Error(
+        "O navegador não suporta realidade virtual imersiva."
+      );
+    }
+
+    const session =
+      await navigator.xr.requestSession(
+        "immersive-vr",
+        {
+          optionalFeatures: [
+            "local-floor",
+            "hand-tracking"
+          ]
+        }
+      );
+
+    await renderer.xr.setSession(session);
+
+    $("enter").textContent = "SAIR DO VR";
+
+    session.addEventListener("end", () => {
+      $("enter").textContent = "ENTRAR EM VR";
+    });
+
+  } catch (error) {
+    status("Erro de VR: " + error.message);
+  }
+};
+
+// ==================================================
+// MOVIMENTAÇÃO POR ANALÓGICO
+// ==================================================
+
+const clock = new THREE.Clock();
+
+const direction = new THREE.Vector3();
+
+const rightVector = new THREE.Vector3();
+
+function movePlayer(dt) {
+  if (!renderer.xr.isPresenting) {
+    return;
+  }
+
+  const session = renderer.xr.getSession();
+
+  if (!session) return;
+
+  for (const source of session.inputSources) {
+    if (
+      !source.gamepad ||
+      source.handedness !== "left"
+    ) {
+      continue;
+    }
+
+    const axes = source.gamepad.axes;
+
+    const x = axes.length >= 4
+      ? axes[2]
+      : axes[0] || 0;
+
+    const z = axes.length >= 4
+      ? axes[3]
+      : axes[1] || 0;
+
+    if (
+      Math.abs(x) < .18 &&
+      Math.abs(z) < .18
+    ) {
+      continue;
+    }
+
+    const xrCamera = renderer.xr.getCamera();
+
+    xrCamera.getWorldDirection(direction);
+
+    direction.y = 0;
+
+    direction.normalize();
+
+    rightVector.set(
+      -direction.z,
+      0,
+      direction.x
+    );
+
+    const movement = direction.clone()
+      .multiplyScalar(-z)
+      .addScaledVector(rightVector, x)
+      .multiplyScalar(dt * CONFIG.speed);
+
+    rig.position.x = THREE.MathUtils.clamp(
+      rig.position.x + movement.x,
+      -5.3,
+      5.3
+    );
+
+    rig.position.z = THREE.MathUtils.clamp(
+      rig.position.z + movement.z,
+      -5.5,
+      3
+    );
+  }
+}
+
+// ==================================================
+// ANIMAÇÃO
+// ==================================================
+
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(
+    clock.getDelta(),
+    .05
+  );
+
+  movePlayer(dt);
+
+  renderer.render(scene, camera);
 });
 
-window.addEventListener("resize",()=>{
-camera.aspect=innerWidth/innerHeight;
-camera.updateProjectionMatrix();
-renderer.setSize(innerWidth,innerHeight);
+// ==================================================
+// REDIMENSIONAMENTO
+// ==================================================
+
+window.addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(
+    innerWidth,
+    innerHeight
+  );
 });
 
-let savedEnvironment="academy";
-try{
-savedEnvironment=localStorage.getItem("pmsc_environment")||"academy";
-const savedLighting=localStorage.getItem("pmsc_lighting");
-if(savedLighting==="day"||savedLighting==="night"){$("lighting").value=savedLighting;}
-}catch(e){}
-if(!environments.some(item=>item[0]===savedEnvironment)){savedEnvironment="academy";}
+// ==================================================
+// MENU
+// ==================================================
 
-changeEnvironment(savedEnvironment);
-updateStats();
-render();
+$("toggleMenu").onclick = () => {
+  const menu = $("menu");
 
-// ═══════════════════════════════════════════════════════════════════
-// AUTO-LOAD (executa depois do render inicial)
-// ═══════════════════════════════════════════════════════════════════
-$("status").textContent = "Buscando questões na raiz do repositório...";
-autoLoadQuestions();
+  const hidden = menu.style.display === "none";
+
+  menu.style.display = hidden ? "block" : "none";
+};
+
+// ==================================================
+// INICIALIZAÇÃO
+// ==================================================
+
+function initialize() {
+  let environment = getSaved(
+    STORAGE.environment,
+    "academy"
+  );
+
+  const lighting = getSaved(
+    STORAGE.lighting,
+    "day"
+  );
+
+  const theme = getSaved(
+    STORAGE.theme,
+    "blue"
+  );
+
+  const font = getSaved(
+    STORAGE.font,
+    "110"
+  );
+
+  if (
+    !ENVIRONMENTS.some(
+      item => item[0] === environment
+    )
+  ) {
+    environment = "academy";
+  }
+
+  $("lighting").value =
+    ["day", "night"].includes(lighting)
+      ? lighting
+      : "day";
+
+  selectedTheme = THEMES[theme]
+    ? theme
+    : "blue";
+
+  $("theme").value = selectedTheme;
+
+  $("fontSize").value = font;
+
+  updateSubjectSelect();
+
+  changeEnvironment(environment);
+
+  updateStats();
+
+  render();
+
+  loadGithubQuestions();
+}
+
+initialize();
 
 </script>
+
 </body>
 </html>
