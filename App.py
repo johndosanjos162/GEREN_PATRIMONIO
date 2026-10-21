@@ -1,241 +1,223 @@
-import datetime
-import json
-import re
 import streamlit as st
-from PIL import Image
+import json
+import datetime
+import math
+import random
+from datetime import datetime
 
-# Configuração de Página Inicial de Alta Performance
+# ============================================================================
+# CONFIGURAÇÃO DE INTERFACE E ESTILO FUTURISTA (STREAMLIT CENTRAL)
+# ============================================================================
 st.set_page_config(
-    page_title="PMSC ARENA VR",
+    page_title="PMSC Arena VR",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Estilização HUD Futurista / Interface Ciborgue via CSS Customizado
+# Estilização CSS Injetada para customização do tema Neon Cyberpunk
 st.markdown("""
 <style>
-    @import url('https://googleapis.com');
-    
-    .reportview-container, .main, .block-container {
-        background-color: #060913 !important;
-        color: #e2e8f0 !important;
-        font-family: 'Rajdhani', sans-serif !important;
-    }
-    h1, h2, h3, .stHeader {
-        font-family: 'Orbitron', sans-serif !important;
-        color: #00f0ff !important;
-        text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
-    }
+    .reportview-container, .main { background-color: #050a14 !important; color: #00ffff !important; }
+    h1, h2, h3, h4, h5, h6, label, p, span { color: #00ffff !important; font-family: 'Courier New', monospace !important; text-shadow: 0 0 8px rgba(0, 255, 255, 0.6); }
     .stButton>button {
-        background: linear-gradient(135deg, #00f0ff 0%, #7000ff 100%) !important;
-        color: #ffffff !important;
-        border: none !important;
-        border-radius: 4px !important;
-        font-family: 'Orbitron', sans-serif !important;
-        font-weight: bold !important;
-        box-shadow: 0 0 15px rgba(0, 240, 255, 0.3) !important;
-        transition: all 0.3s ease !important;
+        background-color: #0d1b2a !important; color: #00ffff !important; border: 2px solid #00ffff !important;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.4) !important; font-family: 'Courier New', monospace !important; 
+        font-weight: bold !important; width: 100%; transition: all 0.3s ease-in-out;
     }
-    .stButton>button:hover {
-        transform: scale(1.03) !important;
-        box-shadow: 0 0 25px rgba(112, 0, 255, 0.6) !important;
-    }
-    .sidebar .sidebar-content {
-        background-color: #0b1122 !important;
-        border-right: 1px solid #00f0ff33 !important;
-    }
+    .stButton>button:hover { background-color: #00ffff !important; color: #050a14 !important; box-shadow: 0 0 20px #00ffff !important; }
+    .stTabs [data-baseweb="tab-list"] { background-color: #0d1b2a; border-radius: 4px; padding: 5px; }
+    .stTabs [data-baseweb="tab"] { color: #ffffff !important; font-family: 'Courier New', monospace; }
+    .stTabs [aria-selected="true"] { color: #00ffff !important; border-bottom: 2px solid #00ffff !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# Inicialização Limpa do State
+# ---------------------------------------------------------------------------
+# CARREGADOR DE QUESTÕES COM SUPORTE A MÚLTIPLOS OBJETOS CONCATENADOS (STREAM)
+# ---------------------------------------------------------------------------
+@st.cache_data(ttl=30)
+def load_questions_db():
+    questions = {}
+    try:
+        with open("json.json", "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            
+        decoder = json.JSONDecoder()
+        idx = 0
+        while idx < len(content):
+            content = content[idx:].strip()
+            if not content:
+                break
+            try:
+                obj, consumed = decoder.raw_decode(content)
+                idx += consumed
+                for materia, lista in obj.items():
+                    if materia not in questions:
+                        questions[materia] = []
+                    for q in lista:
+                        # Deduplicação case-insensitive baseada no enunciado da pergunta
+                        if not any(x['pergunta'].lower() == q['pergunta'].lower() for x in questions[materia]):
+                            questions[materia].append(q)
+            except json.JSONDecodeError:
+                break
+    except FileNotFoundError:
+        pass
+    return questions
+
+questions_db = load_questions_db()
+
+# ---------------------------------------------------------------------------
+# GERENCIAMENTO DE ESTADO DA SESSÃO (SESSION STATE)
+# ---------------------------------------------------------------------------
 if "historico" not in st.session_state:
     st.session_state.historico = []
-if "modo" not in st.session_state:
-    st.session_state.modo = "Treino"
-if "questoes_ativas" not in st.session_state:
-    st.session_state.questoes_ativas = []
-if "simulado_iniciado" not in st.session_state:
-    st.session_state.simulado_iniciado = False
-if "simulado_respostas" not in st.session_state:
-    st.session_state.simulado_respostas = {}
-if "simulado_start_time" not in st.session_state:
-    st.session_state.simulado_start_time = None
+if "simulado_ativo" not in st.session_state:
+    st.session_state.simulado_ativo = False
+if "simulado_questoes" not in st.session_state:
+    st.session_state.simulado_questoes = []
+if "simulado_inicio" not in st.session_state:
+    st.session_state.simulado_inicio = None
+if "respostas_simulado" not in st.session_state:
+    st.session_state.respostas_simulado = {}
+if "treino_questoes" not in st.session_state:
+    st.session_state.treino_questoes = []
 if "vr_carregado" not in st.session_state:
     st.session_state.vr_carregado = False
 
-# Carregador Avançado de Fluxo de Objetos JSON Concatenados (Deduplicador Amigável)
-@st.cache_data(ttl=30)
-def carregar_banco_questoes():
-    banco_unificado = {}
-    try:
-        with open("json.json", "r", encoding="utf-8") as f:
-            conteudo = f.read().strip()
-        
-        decoder = json.JSONDecoder()
-        idx = 0
-        tamanho = len(conteudo)
-        
-        while idx < tamanho:
-            conteudo_restante = conteudo[idx:].strip()
-            if not conteudo_restante:
-                break
-            try:
-                obj, consumido = decoder.raw_decode(conteudo_restante)
-                for materia, lista_q in obj.items():
-                    if materia not in banco_unificado:
-                        banco_unificado[materia] = []
-                    banco_unificado[materia].extend(lista_q)
-                idx += conteudo.find(conteudo_restante) + consumido
-            except json.JSONDecodeError:
-                # Se falhar no raw_decode estruturado, tenta varredura fall-back pura
-                try:
-                    obj_simples = json.loads(conteudo)
-                    for materia, lista_q in obj_simples.items():
-                        if materia not in banco_unificado:
-                            banco_unificado[materia] = []
-                        banco_unificado[materia].extend(lista_q)
-                except Exception:
-                    pass
-                break
-        
-        # Deduplicação rigorosa por string da pergunta (Case-Insensitive)
-        for materia in banco_unificado:
-            vistas = set()
-            filtradas = []
-            for q in banco_unificado[materia]:
-                txt_limpo = re.sub(r'\s+', '', q.get("pergunta", "")).lower()
-                if txt_limpo not in vistas and q.get("pergunta"):
-                    vistas.add(txt_limpo)
-                    filtradas.append(q)
-            banco_unificado[materia] = filtradas
-            
-    except Exception as e:
-        st.sidebar.error(f"Erro Crítico ao ler arquivo de dados: {e}")
-    return banco_unificado
+# Contagem total de questões no banco
+total_questoes_unicas = sum(len(lista) for lista in questions_db.values())
 
-banco = carregar_banco_questoes()
-
-# Contagem Global Módulo 1
-total_questoes_banco = sum(len(lista) for lista in banco.values())
-
-# SIDEBAR - MÓDULO 1
+# ---------------------------------------------------------------------------
+# MÓDULO 1: SIDEBAR CENTRAL DE CONTROLE
+# ---------------------------------------------------------------------------
 st.sidebar.title("🛡️ PMSC ARENA VR")
-st.sidebar.markdown(f"**Total de Questões Únicas:** `{total_questoes_banco}`")
+st.sidebar.markdown(f"**Banco de Dados:** `{total_questoes_unicas}` questões únicas.")
 
-if st.sidebar.button("⚡ Recarregar json.json"):
-    carregar_banco_questoes.clear()
-    st.toast("Banco sincronizado e recarregado!", icon="🔄")
+if st.sidebar.button("🔄 Recarregar Banco (json.json)"):
+    load_questions_db.clear()
+    st.rerun()
 
 st.sidebar.markdown("---")
+st.sidebar.header("🎯 Modo Treinamento")
+materias_disponiveis = list(questions_db.keys()) if questions_db else ["Nenhuma cadastrada"]
+materia_sel = st.sidebar.selectbox("Escolha a Matéria:", materias_disponiveis)
+qtd_treino = st.sidebar.slider("Quantidade de questões:", 5, 20, 10)
 
-materias_disponiveis = list(banco.keys()) if banco else ["Nenhuma matéria localizada"]
-materia_sel = st.sidebar.selectbox("Matéria de Estudo (Treino)", materias_disponiveis)
-qtd_treino = st.sidebar.slider("Quantidade de Questões", 5, 20, 10)
-
-col_b1, col_b2 = st.sidebar.columns(2)
-with col_b1:
-    if st.button("🎯 Iniciar Treino"):
-        if banco and materia_sel in banco:
-            lista_original = banco[materia_sel]
-            st.session_state.questoes_ativas = lista_original[:qtd_treino]
-            st.session_state.modo = "Treino"
-            st.session_state.simulado_iniciado = False
-            st.session_state.vr_carregado = False
-            st.toast("Grade de Treino gerada!", icon="🔥")
-with col_b2:
-    if st.button("📝 Iniciar Simulado"):
-        # Distribuição de Edital Oficial AOCP
-        distribuicao = {
-            "Legislação Institucional": 10, "Direito Constitucional": 8,
-            "Língua Portuguesa": 8, "Direito Penal Comum": 6,
-            "Direito Processual Penal Comum": 6, "Direito Penal Militar": 6,
-            "Legislação Especial": 6, "Legislação de Trânsito": 5, "Informática": 5
-        }
-        pool_simulado = []
-        for mat, qtd in distribuicao.items():
-            lista_q = banco.get(mat, [])
-            pool_simulado.extend(lista_q[:qtd])
-        
-        if len(pool_simulado) > 0:
-            st.session_state.questoes_ativas = pool_simulado[:60]
-            st.session_state.simulado_respostas = {}
-            st.session_state.simulado_start_time = datetime.datetime.now()
-            st.session_state.simulado_iniciado = True
-            st.session_state.modo = "Simulado"
-            st.session_state.vr_carregado = False
-            st.toast("Simulado de 60 questões carregado!", icon="⚔️")
-
-if st.session_state.simulado_iniciado:
-    if st.sidebar.button("❌ Cancelar Simulado Atual"):
-        st.session_state.simulado_iniciado = False
-        st.session_state.questoes_ativas = []
-        st.session_state.modo = "Treino"
+if st.sidebar.button("⚔️ Iniciar Treino VR"):
+    st.session_state.simulado_ativo = False
+    if materia_sel in questions_db and questions_db[materia_sel]:
+        pool = questions_db[materia_sel]
+        st.session_state.treino_questoes = random.sample(pool, min(len(pool), qtd_treino))
         st.session_state.vr_carregado = False
+    else:
+        st.sidebar.error("Sem questões disponíveis para esta matéria.")
 
-# Histórico Recente (Persistente na Sessão)
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 📊 Histórico de Performance (Últimas 5)")
+st.sidebar.header("📝 Simulado Oficial")
+DISTRIBUICAO_EDITAL = {
+    "Legislação Institucional": 10, "Direito Constitucional": 8, "Língua Portuguesa": 8,
+    "Direito Penal Comum": 6, "Direito Processual Penal Comum": 6, "Direito Penal Militar": 6,
+    "Legislação Especial": 6, "Legislação de Trânsito": 5, "Informática": 5
+}
+
+if st.sidebar.button("🚀 Iniciar Simulado 60q (AOCP)"):
+    sim_pool = []
+    for mat, qtd in DISTRIBUICAO_EDITAL.items():
+        disponiveis = questions_db.get(mat, [])
+        if len(disponiveis) < qtd:
+            sim_pool.extend(disponiveis)
+            outras = [q for m, l in questions_db.items() for q in l if q not in sim_pool]
+            if outras:
+                sim_pool.extend(random.sample(outras, min(len(outras), qtd - len(disponiveis))))
+        else:
+            sim_pool.extend(random.sample(disponiveis, qtd))
+    
+    if len(sim_pool) > 0:
+        st.session_state.simulado_questoes = sim_pool[:60]
+        st.session_state.simulado_ativo = True
+        st.session_state.simulado_inicio = datetime.now()
+        st.session_state.respostas_simulado = {}
+        st.session_state.vr_carregado = False
+    else:
+        st.sidebar.error("Banco de dados insuficiente para gerar simulados.")
+
+if st.session_state.simulado_ativo:
+    if st.sidebar.button("🔴 Cancelar Simulado Atual"):
+        st.session_state.simulado_ativo = False
+        st.session_state.simulado_questoes = []
+        st.rerun()
+
+st.sidebar.markdown("---")
+st.sidebar.header("📊 Últimas Provas")
 if st.session_state.historico:
-    for h in reversed(st.session_state.historico[-5:]):
-        status_txt = "🟢 APROVADO" if h['aprovado'] else "🔴 REPROVADO"
-        st.sidebar.markdown(f"**{h['data']}** | {h['modo']}\nAcertos: {h['acertos']} | Nota: {h['nota']:.1f}% \n`{status_txt}`")
+    for h in st.session_state.historico[-5:]:
+        status = "🟢 APROVADO" if h['aprovado'] else "🔴 REPROVADO"
+        st.sidebar.markdown(f"**{h['data']}**<br>Nota: `{h['nota']:.1f}` ({h['acertos']}/60) -> {status}", unsafe_allow_html=True)
 else:
-    st.sidebar.caption("Nenhum registro localizado nesta sessão.")
+    st.sidebar.info("Nenhum registro encontrado na sessão atual.")
 
-# DIVISÃO DE ABAS PRINCIPAIS
-tab_vr, tab_classico = st.tabs(["🎮 ARENA IMERSIVA VR", "📋 SIMULADO MODO CLÁSSICO"])
+# ---------------------------------------------------------------------------
+# INTERFACE PRINCIPAL - DISTRIBUIÇÃO EM TABS
+# ---------------------------------------------------------------------------
+tab1, tab2 = st.tabs(["🌐 MÓDULO 2 & 3: Arena VR Imersiva", "📋 MÓDULO 7: Simulado Tradicional"])
 
-# MÓDULO 2 - FUNÇÃO DE RENDERIZAÇÃO DO FRAME A-FRAME
-def render_vr(questoes):
-    # Serialização limpa em formato string JSON para o motor JS interno
-    lista_limpa = []
-    for idx, q in enumerate(questoes):
-        lista_limpa.append({
-            "id": idx,
-            "materia": q.get("materia", "PMSC Concurso"),
-            "pergunta": q.get("pergunta", "").replace('"', '&quot;'),
-            "alternativas": [alt.replace('"', '&quot;') for alt in q.get("alternativas", [])],
-            "correta": q.get("correta", "A")
-        })
-    q_json_str = json.dumps(lista_limpa)
+with tab1:
+    st.title("⚡ PMSC COGNITIVE ARENA 3D")
+    st.write("Ambiente holográfico imersivo projetado para o Meta Quest Browser e navegadores Desktop convencionais.")
 
-    # Motor 3D Robusto via Template String Puro (Sem f-strings para evitar quebra de CSS)
-    html_template = r"""
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <title>PMSC Arena VR Engine</title>
-        <script src="https://aframe.io"></script>
-        <script src="https://jsdelivr.net"></script>
-        <script>
-          // Componente customizado de alta fidelidade para tracking e física virtual sem conflito super-hands
-          AFRAME.registerComponent('vr-hand', {
+    safe_questions = st.session_state.simulado_questoes if st.session_state.simulado_ativo else st.session_state.treino_questoes
+
+    if not safe_questions:
+        st.info("Utilize as ferramentas do painel esquerdo (Sidebar) para injetar carga de questões na Arena.")
+    else:
+        if not st.session_state.vr_carregado:
+            if st.button("🔌 INICIALIZAR RENDERIZADOR E CARREGAR ARENA 3D"):
+                st.session_state.vr_carregado = True
+                st.rerun()
+        else:
+            # Serialização segura das questões para injeção no JS do A-Frame
+            q_json = json.dumps(safe_questions, ensure_ascii=False)
+            modo_str = "SIMULADO" if st.session_state.simulado_ativo else "TREINAMENTO"
+            
+            # Matriz pura de texto (raw string literal) mitigando erros de interpolação por chaves do JS/CSS
+            html_content = r"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>PMSC Arena VR</title>
+    <script src="https://aframe.io"></script>
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        .vr-hud-overlay {
+            position: absolute; top: 12px; left: 12px; background: rgba(5,10,20,0.9);
+            color: #00ffff; padding: 15px; font-family: 'Courier New', monospace; border: 2px solid #00ffff;
+            border-radius: 4px; mountaineering: none; z-index: 9999; pointer-events: none; box-shadow: 0 0 10px #00ffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="vr-hud-overlay">
+        <div>📡 NETCORE: SYSTEM PMSC ARENA VR</div>
+        <div id="hud-modo">MODO: __MODO__</div>
+        <div id="hud-stats">PROGRESSO: 0 / __LEN__</div>
+        <div id="hud-last-action">🎯 TELEMETRIA PRONTA. AGUARDANDO COMANDO...</div>
+    </div>
+
+    <script>
+        // Carga ativa de dados injetada via template replace
+        const questoesData = __Q_JSON__;
+        let respondidasCount = 0;
+
+        // MÓDULO 3.1 & 3.3 & 7.1: Sistema Avançado de Tracking e Interação Remota Customizada
+        AFRAME.registerComponent('vr-hand', {
             schema: {
-              hand: {type: 'string', default: 'right'}
+                hand: {type: 'string', default: 'right'}
             },
-            init: function () {
-              this.raycaster = new THREE.Raycaster();
-              this.raycaster.far = 100; // Alcance estendido para seleção fluida
-              this.currentGrab = null;
-              this.currentClick = null;
-              this.offset = new THREE.Vector3();
-              this.ajusteThumbstick = 0;
-              
-              this.el.addEventListener('gripdown', this.onGripDown.bind(this));
-              this.el.addEventListener('gripup', this.onGripUp.bind(this));
-              this.el.addEventListener('triggerdown', this.onTriggerDown.bind(this));
-              this.el.addEventListener('thumbstickmoved', this.onThumbstickMoved.bind(this));
-              
-              // Hand Tracking nativo do Meta Quest (Pinch Eventos)
-              this.el.addEventListener('pinchstarted', this.onGripDown.bind(this));
-              this.el.addEventListener('pinchended', this.onGripUp.bind(this));
-            },
-            tick: function () {
-              // Executa o raycast manual preciso a cada ciclo de renderização
-              var origin = new THREE.Vector3();
-              var direction = new THREE.Vector3();
-              var matrix = new THREE.Matrix4();
-              
-              matrix.extractRotation(this.el.object3D.matrixWorld);
+            init: function() {
+                this.raycaster = new THREE.Raycaster();
+                this.raycaster.far = 100; 
+                this.currentGrab = null;
+                this.currentClick = null;
+                this.grabOffset = new THREE.Vector3();
+                this.grabDistance = 0;
+
