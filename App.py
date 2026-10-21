@@ -179,18 +179,19 @@ def render_vr(questoes, modo="ARENA", height=950):
 <script src="https://unpkg.com/super-hands@3.0.5/dist/super-hands.min.js"></script>
 <script>
 // ============================================================
-// vr-hand v3: alcance 50m + click preciso em alternativa
+// vr-hand v5 — grab (bloco inteiro) + click (alternativa exata)
+// Usa laser-controls por baixo → rastreamento correto do controle
 // ============================================================
 AFRAME.registerComponent('vr-hand', {
   init: function() {
     const hand = this.el;
     const raycaster = new THREE.Raycaster();
-    raycaster.far = 50;                                   // ← alcance aumentado
+    raycaster.far = 100;                         // ← alcance 100m
 
     let grabbed = null;
     let grabDist = 0;
-    let currentGrab = null;                               // bloco inteiro
-    let currentClick = null;                              // alternativa exata
+    let currentGrab = null;                      // bloco (para Grip)
+    let currentClick = null;                     // alternativa (para Trigger)
 
     const acharBloco = function(el) {
       let cur = el;
@@ -198,7 +199,7 @@ AFRAME.registerComponent('vr-hand', {
         if (cur.id && cur.id.indexOf('block-') === 0) return cur;
         cur = cur.parentEl;
       }
-      return el;
+      return null;
     };
 
     const acharClickable = function(el) {
@@ -213,22 +214,26 @@ AFRAME.registerComponent('vr-hand', {
     const atualizarAlvo = function() {
       if (grabbed) return;
 
+      // Origem = ponta do controle (laser-controls já posiciona isso)
       const origin = new THREE.Vector3();
       hand.object3D.getWorldPosition(origin);
 
+      // Direção = -Z do controle (para onde ele aponta)
       const q = new THREE.Quaternion();
       hand.object3D.getWorldQuaternion(q);
       const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(q).normalize();
 
       raycaster.set(origin, dir);
-      raycaster.far = 50;
+      raycaster.far = 100;
 
+      // Coleta TODOS os objetos grabbable/clickable da cena
       const objetos = [];
       hand.sceneEl.object3D.traverse((o) => {
-        if (o.el && o.el.classList &&
-            (o.el.classList.contains('grabbable') ||
-             o.el.classList.contains('clickable'))) {
-          objetos.push(o);
+        if (o.el && o.el.classList) {
+          if (o.el.classList.contains('grabbable') ||
+              o.el.classList.contains('clickable')) {
+            objetos.push(o);
+          }
         }
       });
 
@@ -240,12 +245,10 @@ AFRAME.registerComponent('vr-hand', {
         const hit = hits[0];
         const elHit = hit.object.el;
         if (elHit) {
-          // 1) Alvo de grab = bloco inteiro
           const bloco = acharBloco(elHit);
           if (bloco) {
             currentGrab = { el: bloco, distance: hit.distance };
           }
-          // 2) Alvo de click = alternativa exata apontada
           const clickEl = acharClickable(elHit);
           if (clickEl) {
             currentClick = clickEl;
@@ -261,7 +264,7 @@ AFRAME.registerComponent('vr-hand', {
           const dist = currentGrab ? currentGrab.distance : 0;
           dbg.setAttribute('value', '🎯 CLICK [' + letra + '] ' + dist.toFixed(1) + 'm');
         } else if (currentGrab) {
-          dbg.setAttribute('value', '🎯 ' + (currentGrab.el.id || '?') + ' ' +
+          dbg.setAttribute('value', '🎯 ' + currentGrab.el.id + ' ' +
             currentGrab.distance.toFixed(1) + 'm');
         } else {
           dbg.setAttribute('value', '🎯 (nada)');
@@ -291,20 +294,13 @@ AFRAME.registerComponent('vr-hand', {
     };
 
     const doClick = function() {
-      // PRIORIDADE 1: alternativa exata apontada
       if (currentClick) {
         currentClick.emit('click', { target: currentClick });
         if (navigator.vibrate) navigator.vibrate(60);
         return;
       }
-      // FALLBACK: primeiro clickable do bloco apontado
-      if (currentGrab) {
-        const filho = currentGrab.el.querySelector('.clickable');
-        if (filho) {
-          filho.emit('click', { target: filho });
-          if (navigator.vibrate) navigator.vibrate(60);
-        }
-      }
+      // Fallback: se apontou para o bloco mas não para alternativa
+      showToast('⚠️ Aponte para uma alternativa A–E', 800);
     };
 
     this.tick = function() {
@@ -339,7 +335,7 @@ AFRAME.registerComponent('vr-hand', {
 });
 
 // ============================================================
-// hand-live: calibrador
+// hand-live — calibrador
 // ============================================================
 AFRAME.registerComponent('hand-live', {
   schema: { hand: { type: 'string', default: 'left' } },
@@ -368,7 +364,7 @@ AFRAME.registerComponent('hand-live', {
 });
 
 // ============================================================
-// painel-sistema: botões
+// painel-sistema
 // ============================================================
 AFRAME.registerComponent('painel-sistema', {
   init: function() {
@@ -461,7 +457,7 @@ AFRAME.registerComponent('painel-sistema', {
 });
 
 // ============================================================
-// PASSTHROUGH / ESTRELAS / TOAST
+// Passthrough / Stars / Toast
 // ============================================================
 window.enablePassthrough = async function() {
   if (!navigator.xr) { showToast('❌ WebXR não suportado'); return; }
@@ -487,9 +483,7 @@ window.enablePassthrough = async function() {
       document.getElementById('sky').setAttribute('visible', 'true');
     });
     showToast('👁️ PASSTHROUGH ATIVO');
-  } catch (err) {
-    showToast('❌ ' + err.message, 4000);
-  }
+  } catch (err) { showToast('❌ ' + err.message, 4000); }
 };
 
 function createStars() {
@@ -520,7 +514,7 @@ function showToast(msg, ms) {
 }
 
 // ============================================================
-// CRIAR BLOCO (filhos com .grabbable, alternativas com .clickable)
+// CRIAR BLOCO
 // ============================================================
 function createBlock(q, i) {
   const cols = 4, spacing = 3.0;
@@ -560,22 +554,22 @@ function createBlock(q, i) {
     const letra = alt.trim().charAt(0).toUpperCase();
     const row = document.createElement('a-entity');
     row.setAttribute('position', '0 ' + (-0.05 - idx * 0.28) + ' 0.15');
-    row.setAttribute('class', 'clickable grabbable');
+    row.setAttribute('class', 'clickable');
     row.setAttribute('data-i', i);
-    row.setAttribute('data-letra', letra);                // ← para o HUD
+    row.setAttribute('data-letra', letra);
 
     const bg = document.createElement('a-plane');
     bg.setAttribute('width', '2.0');
     bg.setAttribute('height', '0.22');
     bg.setAttribute('color', '#0a1933');
-    bg.setAttribute('class', 'clickable grabbable');
+    bg.setAttribute('class', 'clickable');
 
     const txt = document.createElement('a-text');
     txt.setAttribute('value', alt.length > 60 ? alt.slice(0, 57) + '...' : alt);
     txt.setAttribute('color', '#cfe0ff');
     txt.setAttribute('width', '1.9');
     txt.setAttribute('position', '-0.95 0 0.01');
-    txt.setAttribute('class', 'clickable grabbable');
+    txt.setAttribute('class', 'clickable');
 
     bg.appendChild(txt);
     row.appendChild(bg);
@@ -588,7 +582,7 @@ function createBlock(q, i) {
       const ok = letra === q.correta;
       bg.setAttribute('color', ok ? '#00c853' : '#d50000');
       updateHUD();
-      showToast(ok ? '✅ Correto!' : '❌ Errado — correta: ' + q.correta);
+      showToast(ok ? '✅ Correto!' : '❌ Errado (correta: ' + q.correta + ')');
       console.log('[CLICK]', 'block-' + i, 'letra', letra, 'correta', q.correta, 'ok', ok);
     });
 
@@ -612,9 +606,6 @@ function updateHUD() {
   document.getElementById('hudVRText')?.setAttribute('value', txt);
 }
 
-// ============================================================
-// ORGANIZAR
-// ============================================================
 window.organizarGrade = function() {
   document.querySelectorAll('[id^="block-"]').forEach((b, i) => {
     const cols = 4, sp = 3.0;
@@ -657,9 +648,6 @@ window.espalhar = function() {
   showToast('🎲 ESPALHADO');
 };
 
-// ============================================================
-// SAVE / LOAD
-// ============================================================
 const STORAGE_KEY = 'pmsc_arena_layout';
 function savePos(id) {
   if (!id) return;
@@ -706,9 +694,6 @@ window.carregarLayout = function() {
   } catch (e) { showToast('❌ Erro'); }
 };
 
-// ============================================================
-// INIT
-// ============================================================
 const QUESTIONS = __Q_JSON__;
 window.addEventListener('load', () => {
   const world = document.getElementById('world');
@@ -728,7 +713,7 @@ html, body {
   position: fixed; top: 8px; left: 8px; z-index: 99999;
   background: rgba(0,0,0,0.92); color: #00e5ff;
   border: 1px solid #00e5ff; padding: 10px 14px;
-  border-radius: 10px; font-size: 12px; max-width: 460px;
+  border-radius: 10px; font-size: 12px; max-width: 480px;
 }
 #enter {
   position: fixed; bottom: 12px; left: 50%;
@@ -752,7 +737,7 @@ html, body {
 
 <div id="hud">
   <div style="font-weight:900;color:white;font-size:14px;">__MODO__ — Arena VR</div>
-  <b>Grip</b> = mover · <b>Trigger</b> = responder · <b>Thumbstick</b> = rotacionar<br>
+  <b>Grip</b> = mover bloco · <b>Trigger</b> = responder alternativa<br>
   <div id="status" style="margin-top:6px;color:#00ff88;font-weight:700;">0/__LEN__ respondidas</div>
 </div>
 <button id="enter">🥽 ENTRAR NO VR</button>
@@ -775,28 +760,32 @@ html, body {
 
   <a-entity id="rig" position="0 0 8" movement-controls="fly: true; speed: 0.3">
     <a-entity id="head" camera look-controls wasd-controls="acceleration: 20" position="0 1.65 0">
-      <a-entity position="0 -0.7 -1.1">
-        <a-plane width="2.2" height="0.48" color="black" opacity="0.75"></a-plane>
+      <a-entity position="0 -0.75 -1.1">
+        <a-plane width="2.4" height="0.55" color="black" opacity="0.75"></a-plane>
         <a-text id="hudVRText" value="0/__LEN__" color="#00ff88" width="1.9"
-          align="center" position="0 0.1 0.01"></a-text>
+          align="center" position="0 0.15 0.01"></a-text>
         <a-text id="debugAlvo" value="🎯 (aguardando)" color="#ffaa00" width="1.9"
-          align="center" position="0 -0.1 0.01"></a-text>
+          align="center" position="0 -0.05 0.01"></a-text>
       </a-entity>
     </a-entity>
 
+    <!-- MÃO ESQUERDA — laser-controls restaurado -->
     <a-entity id="leftHand"
-      hand-controls="hand: left"
+      laser-controls="hand: left"
       hand-tracking-controls="hand: left"
       hand-live="hand: left"
       vr-hand
+      raycaster="objects: .grabbable, .clickable; far: 100"
       line="color: #00d1ff; opacity: 0.9">
     </a-entity>
 
+    <!-- MÃO DIREITA -->
     <a-entity id="rightHand"
-      hand-controls="hand: right"
+      laser-controls="hand: right"
       hand-tracking-controls="hand: right"
       hand-live="hand: right"
       vr-hand
+      raycaster="objects: .grabbable, .clickable; far: 100"
       line="color: #ff8a00; opacity: 0.9">
     </a-entity>
   </a-entity>
@@ -844,7 +833,7 @@ html, body {
       position="-2.0 0.2 0.05" geometry="primitive: plane; width: 0.95; height: 0.26"
       material="color: #aa8800"><a-text value="CARREGAR" color="white" width="1.0" align="center"></a-text></a-entity>
 
-    <a-text value="Grip = mover bloco · Trigger = responder · Thumbstick = rotacionar"
+    <a-text value="Grip = mover bloco · Trigger = responder alternativa"
       color="#ffaa00" width="4.8" align="center" position="0 -0.95 0.05"></a-text>
   </a-entity>
 
