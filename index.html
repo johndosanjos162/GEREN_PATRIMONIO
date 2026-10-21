@@ -3,97 +3,66 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<meta name="mobile-web-app-capable" content="yes">
 <title>PMSC Immersive Academy 2026</title>
-
 <style>
-:root{
-  --bg:#060913;--panel:#0d2740;--panel-alt:#123c60;
-  --border:#49baff;--accent:#00d1ff;--ok:#00ff88;
-  --warn:#ffaa00;--err:#ff4444;--text:#e8f4ff;--muted:#8ab0d0;
-}
+:root{--bg:#060913;--panel:#0d2740;--panel-alt:#123c60;--border:#49baff;
+  --accent:#00d1ff;--ok:#00ff88;--warn:#ffaa00;--err:#ff4444;
+  --text:#e8f4ff;--muted:#8ab0d0}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;
   font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text)}
 canvas{display:block;outline:none}
-
-/* MENU */
-#menu{
-  position:fixed;top:12px;left:12px;z-index:100;
-  width:min(420px,94vw);max-height:calc(100vh - 100px);overflow-y:auto;
-  padding:16px;background:rgba(6,9,19,.97);
-  border:1px solid var(--border);border-radius:12px;
-  box-shadow:0 8px 32px rgba(0,209,255,.15);
-  backdrop-filter:blur(12px);
-}
+#menu{position:fixed;top:12px;left:12px;z-index:100;width:min(420px,94vw);
+  max-height:calc(100vh - 100px);overflow-y:auto;padding:16px;
+  background:rgba(6,9,19,.97);border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 8px 32px rgba(0,209,255,.15);backdrop-filter:blur(12px)}
 #menu.hidden{display:none}
 h2{margin:0 0 4px;font-size:16px;color:var(--accent);letter-spacing:1px}
 h3{margin:12px 0 6px;font-size:12px;color:#c5eaff;text-transform:uppercase;letter-spacing:1px}
-button,select,input,textarea{
-  font:inherit;width:100%;padding:10px 12px;margin:4px 0;
-  background:var(--panel-alt);color:#fff;
-  border:1px solid var(--border);border-radius:8px;
-  cursor:pointer;transition:all .15s ease;
-}
+button,select,input{font:inherit;width:100%;padding:10px 12px;margin:4px 0;
+  background:var(--panel-alt);color:#fff;border:1px solid var(--border);
+  border-radius:8px;cursor:pointer;transition:all .15s ease}
 button:hover{background:#1a6aa0;transform:translateY(-1px)}
-button:active{transform:translateY(0)}
 button.primary{background:linear-gradient(90deg,#0066cc,#00d1ff);font-weight:700}
 button.ok{background:#0d6b4f;border-color:#2fbf8f}
 button.warn{background:#7a4a10;border-color:#d19a3a}
 button.err{background:#7a1a1a;border-color:#ff4444}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .row button{margin:0}
-
-#status{
-  margin-top:8px;padding:8px 10px;background:rgba(0,209,255,.1);
-  border-left:3px solid var(--accent);border-radius:4px;
-  font-size:12px;color:#c4e9ff;min-height:20px
-}
+#status{margin-top:8px;padding:8px 10px;background:rgba(0,209,255,.1);
+  border-left:3px solid var(--accent);border-radius:4px;font-size:12px;
+  color:#c4e9ff;min-height:20px}
 #stats-summary{margin-top:8px;padding:10px;background:rgba(0,255,136,.08);
   border-radius:6px;font-size:12px;line-height:1.6}
 #stats-summary b{color:var(--ok)}
 hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
-
-#enter{
-  position:fixed;right:16px;bottom:16px;z-index:100;width:auto;
+#enter{position:fixed;right:16px;bottom:16px;z-index:100;width:auto;
   padding:14px 28px;background:linear-gradient(90deg,#0050a8,#00d1ff);
-  border:2px solid #00d1ff;border-radius:32px;
-  font-weight:900;font-size:14px;letter-spacing:1px;
-  box-shadow:0 0 20px rgba(0,209,255,.6);
-}
+  border:2px solid #00d1ff;border-radius:32px;font-weight:900;font-size:14px;
+  letter-spacing:1px;box-shadow:0 0 20px rgba(0,209,255,.6)}
 #enter.hidden{display:none}
-
-#hud{
-  position:fixed;top:12px;right:12px;z-index:90;padding:10px 16px;
-  background:rgba(6,9,19,.9);border:1px solid var(--accent);
-  border-radius:8px;font-size:12px;color:var(--accent);
-  display:flex;gap:16px;align-items:center;
-}
+#hud{position:fixed;top:12px;right:12px;z-index:90;padding:10px 16px;
+  background:rgba(6,9,19,.9);border:1px solid var(--accent);border-radius:8px;
+  font-size:12px;color:var(--accent);display:flex;gap:16px;align-items:center}
 #hud .k{color:#fff;font-weight:700}
-
-.modal{
-  position:fixed;top:0;left:0;width:100%;height:100%;z-index:200;
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;z-index:200;
   background:rgba(0,0,0,.85);display:none;align-items:center;
-  justify-content:center;padding:20px;
-}
+  justify-content:center;padding:20px}
 .modal.open{display:flex}
-.modal-content{
-  background:var(--bg);border:1px solid var(--border);border-radius:12px;
-  padding:24px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;
-}
+.modal-content{background:var(--bg);border:1px solid var(--border);
+  border-radius:12px;padding:24px;max-width:640px;width:100%;
+  max-height:85vh;overflow-y:auto}
 .modal h2{font-size:20px;margin-bottom:16px;color:var(--accent)}
 .modal .q-text{font-size:16px;line-height:1.5;margin-bottom:16px;white-space:pre-wrap}
 .modal .options{display:flex;flex-direction:column;gap:8px}
 .modal .option{padding:12px;border:1px solid var(--border);border-radius:8px;
-  cursor:pointer;transition:.15s;font-size:14px;line-height:1.4}
-.modal .option:hover{background:var(--panel-alt)}
+  font-size:14px;line-height:1.4}
 .modal .option.correct{border-color:var(--ok);background:rgba(0,255,136,.15)}
 .modal .option.wrong{border-color:var(--err);background:rgba(255,68,68,.15)}
 .modal .explanation{margin-top:16px;padding:12px;background:var(--panel-alt);
-  border-left:3px solid var(--accent);border-radius:4px;
-  font-size:13px;line-height:1.5;white-space:pre-wrap}
+  border-left:3px solid var(--accent);border-radius:4px;font-size:13px;
+  line-height:1.5;white-space:pre-wrap}
 .modal button.close{margin-top:16px;width:auto;padding:10px 24px}
-
 .tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
 .tabs button{flex:1;min-width:70px;padding:8px;font-size:11px;
   background:var(--panel);border-color:transparent}
@@ -101,74 +70,50 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
   color:var(--accent);font-weight:700}
 .tab-content{display:none}
 .tab-content.active{display:block}
-
 .themes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
 .theme-swatch{height:36px;border-radius:6px;border:2px solid transparent;
   cursor:pointer;transition:.2s}
 .theme-swatch.active{border-color:#fff;transform:scale(1.05)}
-
-.flashcard-stage{
-  position:fixed;top:0;left:0;width:100%;height:100%;z-index:150;
-  background:rgba(0,0,0,.95);display:none;
-  flex-direction:column;align-items:center;justify-content:center;padding:20px;
-}
+.flashcard-stage{position:fixed;top:0;left:0;width:100%;height:100%;z-index:150;
+  background:rgba(0,0,0,.95);display:none;flex-direction:column;
+  align-items:center;justify-content:center;padding:20px}
 .flashcard-stage.open{display:flex}
-.flashcard{
-  width:min(650px,92vw);height:min(420px,62vh);
+.flashcard{width:min(650px,92vw);height:min(420px,62vh);
   background:linear-gradient(135deg,var(--panel),var(--panel-alt));
-  border:2px solid var(--accent);border-radius:16px;
-  padding:32px;display:flex;flex-direction:column;
-  justify-content:center;cursor:pointer;
-  box-shadow:0 20px 60px rgba(0,209,255,.3);
-  transition:transform .4s ease;position:relative;
-  transform-style:preserve-3d;
-}
-.flashcard.flipped{transform:rotateY(180deg)}
-.flashcard .front,.flashcard .back{
-  position:absolute;inset:0;padding:32px;
+  border:2px solid var(--accent);border-radius:16px;padding:32px;
   display:flex;flex-direction:column;justify-content:center;
-  backface-visibility:hidden;overflow-y:auto;
-}
+  cursor:pointer;box-shadow:0 20px 60px rgba(0,209,255,.3);
+  transition:transform .4s ease;position:relative;transform-style:preserve-3d}
+.flashcard.flipped{transform:rotateY(180deg)}
+.flashcard .front,.flashcard .back{position:absolute;inset:0;padding:32px;
+  display:flex;flex-direction:column;justify-content:center;
+  backface-visibility:hidden;overflow-y:auto}
 .flashcard .back{transform:rotateY(180deg)}
 .fc-controls{margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 .fc-controls button{width:auto;padding:10px 20px}
 .fc-progress{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
-
 .chart{width:100%;height:140px;margin:8px 0}
 .chart .bar{fill:var(--accent);transition:.3s}
 .chart .bar:hover{fill:var(--ok)}
 .chart .axis{stroke:var(--muted);stroke-width:1}
 .chart .label{fill:var(--text);font-size:10px}
-
-/* TUTORIAL */
-#tutorial{
-  position:fixed;top:0;left:0;width:100%;height:100%;z-index:300;
-  background:rgba(0,0,0,.92);display:none;
-  align-items:center;justify-content:center;padding:20px;
-}
+#tutorial{position:fixed;top:0;left:0;width:100%;height:100%;z-index:300;
+  background:rgba(0,0,0,.92);display:none;align-items:center;
+  justify-content:center;padding:20px}
 #tutorial.open{display:flex}
-.tutorial-card{
-  background:var(--bg);border:2px solid var(--accent);border-radius:16px;
-  padding:32px;max-width:560px;width:100%;text-align:center;
-}
+.tutorial-card{background:var(--bg);border:2px solid var(--accent);
+  border-radius:16px;padding:32px;max-width:560px;width:100%;text-align:center}
 .tutorial-card h2{font-size:24px;color:var(--accent);margin:0 0 16px}
-.tutorial-card p{font-size:14px;line-height:1.6;margin:8px 0;color:var(--text)}
+.tutorial-card p{font-size:14px;line-height:1.6;margin:8px 0}
 .tutorial-card button{margin-top:20px;padding:12px 32px}
-
-@media(max-width:600px){
-  #menu{width:94vw;max-height:62vh}
-  #hud{font-size:10px;gap:8px}
-  .row{grid-template-columns:1fr}
-}
+@media(max-width:600px){#menu{width:94vw;max-height:62vh}
+  .row{grid-template-columns:1fr}}
 </style>
-
 <script type="importmap">
-{
-  "imports":{
-    "three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
-    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
-  }
-}
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+}}
 </script>
 </head>
 <body>
@@ -184,7 +129,6 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
     <button data-tab="theme">🎨 Tema</button>
     <button data-tab="config">⚙️ Config</button>
   </div>
-
   <div class="tab-content active" id="tab-study">
     <h3>Disciplina</h3>
     <select id="subject"><option value="Todas">Todas</option></select>
@@ -201,56 +145,43 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
       <button id="refresh" class="ok">🔄 Atualizar</button>
     </div>
     <div class="row">
-      <button id="focus-mode">🎯 Foco</button>
-      <button id="reading-mode">📖 Leitura</button>
-    </div>
-    <div class="row">
       <button id="flashcards">📇 Flashcards</button>
       <button id="demo">🧪 Demo</button>
     </div>
-    <button id="continue-session" style="display:none">⏵ Continuar última sessão</button>
   </div>
-
   <div class="tab-content" id="tab-exam">
     <h3>Configurar Simulado</h3>
     <select id="exam-qty">
       <option value="10">10 questões</option>
       <option value="20">20 questões</option>
       <option value="40">40 questões</option>
-      <option value="60" selected>60 questões (edital)</option>
+      <option value="60" selected>60 questões</option>
     </select>
     <select id="exam-time">
       <option value="0">Sem cronômetro</option>
       <option value="60">60 min</option>
       <option value="120">120 min</option>
-      <option value="240" selected>240 min (4h)</option>
-    </select>
-    <select id="exam-correct">
-      <option value="end">Corrigir ao finalizar</option>
-      <option value="immediate">Correção imediata</option>
+      <option value="240" selected>240 min</option>
     </select>
     <button id="exam-start" class="primary">▶ Iniciar Simulado</button>
     <div id="exam-status" style="font-size:12px;color:var(--warn);margin-top:8px"></div>
   </div>
-
   <div class="tab-content" id="tab-review">
     <h3>Revisar Erros</h3>
     <div id="review-summary"></div>
     <button id="review-start" class="warn">🔄 Revisar erros</button>
     <button id="reset-stats" class="err">🗑 Zerar estatísticas</button>
   </div>
-
   <div class="tab-content" id="tab-stats">
     <h3>Desempenho por Disciplina</h3>
     <svg class="chart" id="stats-chart" viewBox="0 0 400 140"></svg>
     <div id="stats-detail" style="font-size:12px;line-height:1.6"></div>
   </div>
-
   <div class="tab-content" id="tab-env">
     <h3>Cenário</h3>
     <select id="environment">
       <option value="academy">🏢 Academia PMSC</option>
-      <option value="living">🛋 Sala de estar</option>
+      <option value="living">🛋 Sala</option>
       <option value="beach">🏖 Praia</option>
       <option value="library">📚 Biblioteca</option>
       <option value="future">💻 Escritório</option>
@@ -265,23 +196,15 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
       <option value="day">☀ Dia</option>
       <option value="night">🌙 Noite</option>
     </select>
-    <h3>Qualidade</h3>
-    <select id="quality">
-      <option value="low">Econômico</option>
-      <option value="medium" selected>Equilibrado</option>
-      <option value="high">Alto</option>
-    </select>
     <button id="reset-panels" class="warn">🔄 Restaurar painéis</button>
   </div>
-
   <div class="tab-content" id="tab-theme">
-    <h3>Paleta de Cores</h3>
+    <h3>Paleta</h3>
     <div class="themes" id="theme-grid"></div>
     <h3>Escala de Texto</h3>
     <label style="font-size:12px;color:var(--muted)">Escala: <span id="font-scale-val">100%</span></label>
     <input type="range" id="font-scale" min="80" max="150" value="100" step="5">
   </div>
-
   <div class="tab-content" id="tab-config">
     <h3>Repositório GitHub</h3>
     <input id="repo-input" value="johndosanjos162/PMSC">
@@ -295,7 +218,6 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
     <h3>Ajuda</h3>
     <button id="show-tutorial">📖 Tutorial</button>
   </div>
-
   <div id="status">Pronto</div>
   <div id="stats-summary"></div>
 </div>
@@ -306,7 +228,6 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
   <span>❌ <span class="k" id="hud-err">0</span></span>
   <span>🎯 <span class="k" id="hud-pct">0%</span></span>
 </div>
-
 <button id="enter">ENTRAR EM VR</button>
 
 <div class="modal" id="modal">
@@ -348,13 +269,12 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
 <div id="tutorial">
   <div class="tutorial-card">
     <h2>👋 Bem-vindo!</h2>
-    <p><b>📱 Desktop:</b> Use o menu lateral, clique nas alternativas para responder.</p>
-    <p><b>🥽 Meta Quest 3S:</b> Clique "ENTRAR EM VR" (canto inferior direito).</p>
-    <p><b>🎮 Controles VR:</b></p>
+    <p><b>📱 Desktop:</b> Use o menu lateral.</p>
+    <p><b>🥽 Meta Quest 3S:</b> Clique "ENTRAR EM VR".</p>
     <p style="font-size:13px;text-align:left;padding-left:20px">
-      • <b>Gatilho</b>: selecionar alternativa / botão<br>
-      • <b>Grip</b> na alça ☰: mover painel<br>
-      • <b>Grip + analógico ↕</b>: redimensionar<br>
+      • <b>Gatilho</b>: clicar em botões/alternativas<br>
+      • <b>Grip na alça ☰</b>: mover painel<br>
+      • <b>Grip + analógico ↕</b>: aumentar/diminuir<br>
       • <b>Grip + analógico ↔</b>: rotacionar<br>
       • <b>Analógico esquerdo</b>: caminhar<br>
       • <b>Marcadores azuis</b>: teletransporte
@@ -364,9 +284,6 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
 </div>
 
 <script type="module">
-// ═══════════════════════════════════════════════════════════════════
-// IMPORTS
-// ═══════════════════════════════════════════════════════════════════
 import * as THREE from 'three';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
@@ -377,9 +294,8 @@ const $ = id => document.getElementById(id);
 // STORAGE
 // ═══════════════════════════════════════════════════════════════════
 const STORAGE = {
-  KEY: 'pmsc_academy_v2',
-  VERSION: 2,
-
+  KEY: 'pmsc_academy_v3',
+  VERSION: 3,
   load() {
     try {
       const raw = localStorage.getItem(this.KEY);
@@ -391,20 +307,17 @@ const STORAGE = {
   },
   save(d) {
     try { d.version = this.VERSION; localStorage.setItem(this.KEY, JSON.stringify(d)); }
-    catch (e) { console.warn('save fail', e); }
+    catch (e) {}
   },
   defaults() {
     return {
-      version: 2, theme: 'cyan', environment: 'academy', lighting: 'day',
-      quality: 'medium', fontScale: 100, repo: 'johndosanjos162/PMSC',
+      version: 3, theme: 'cyan', environment: 'academy', lighting: 'day',
+      fontScale: 100, repo: 'johndosanjos162/PMSC',
       stats: { total: 0, correct: 0, bySubject: {} },
-      wrongIds: [], favorites: [],
-      flashcards: {}, history: [], panels: {},
-      lastSession: null
+      wrongIds: [], favorites: [], flashcards: {}, history: [], panels: {}
     };
   }
 };
-
 let DB = STORAGE.load();
 
 // ═══════════════════════════════════════════════════════════════════
@@ -428,7 +341,8 @@ function applyTheme(name) {
   r.style.setProperty('--panel', t.panel);
   r.style.setProperty('--border', t.border);
   r.style.setProperty('--accent', t.accent);
-  DB.theme = name; STORAGE.save(DB);
+  DB.theme = name;
+  STORAGE.save(DB);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -504,44 +418,39 @@ function flattenJSON(data) {
 async function loadFromGitHub() {
   const repo = DB.repo;
   const CANDIDATES = ['questoes.json', 'json.json', 'questions.json', 'banco.json'];
-
   try {
-    $('status').textContent = `🔍 Consultando ${repo}...`;
+    $('status').textContent = `🔍 ${repo}...`;
     const r = await fetch(`https://api.github.com/repos/${repo}/contents/`, {
       headers: { 'Accept': 'application/vnd.github+json' }
     });
     if (r.ok) {
       const files = await r.json();
       if (Array.isArray(files)) {
-        const jsonFiles = files.filter(f =>
-          f.type === 'file' && f.name.endsWith('.json') &&
-          !f.name.startsWith('.') && !['package.json'].includes(f.name)
-        );
+        const jsonFiles = files.filter(f => f.type === 'file' && f.name.endsWith('.json') && !f.name.startsWith('.') && !['package.json'].includes(f.name));
         if (jsonFiles.length > 0) {
           let all = [], loaded = 0;
           for (const f of jsonFiles) {
             try {
-              const content = await fetch(f.download_url).then(r => r.json());
+              const content = await fetch(f.download_url).then(x => x.json());
               const flat = flattenJSON(content);
               const norm = flat.map(q => normalizeQuestion(q)).filter(Boolean);
               if (norm.length > 0) { all.push(...norm); loaded++; }
-            } catch (e) { console.warn('skip', f.name); }
+            } catch (e) {}
           }
           if (all.length > 0) {
-            $('status').textContent = `✅ ${all.length} questões de ${loaded} arquivo(s)`;
+            $('status').textContent = `✅ ${all.length} questões (${loaded} arquivo)`;
             return all;
           }
         }
       }
     }
-  } catch (e) { console.warn('API fail:', e); }
+  } catch (e) {}
 
-  $('status').textContent = '🔍 Tentando nomes conhecidos...';
   for (const name of CANDIDATES) {
     for (const branch of ['main', 'master']) {
       try {
         const url = `https://raw.githubusercontent.com/${repo}/${branch}/${name}`;
-        const content = await fetch(url).then(r => { if (!r.ok) throw new Error('404'); return r.json(); });
+        const content = await fetch(url).then(x => { if (!x.ok) throw 0; return x.json(); });
         const flat = flattenJSON(content);
         const norm = flat.map(q => normalizeQuestion(q)).filter(Boolean);
         if (norm.length > 0) {
@@ -556,7 +465,7 @@ async function loadFromGitHub() {
     const cached = localStorage.getItem('pmsc_questions_cache');
     if (cached) {
       const p = JSON.parse(cached);
-      $('status').textContent = `⚠️ Offline: ${p.length} questões em cache`;
+      $('status').textContent = `⚠️ Offline: ${p.length} em cache`;
       return p;
     }
   } catch (e) {}
@@ -570,13 +479,12 @@ let QUESTIONS = [];
 let currentPool = [];
 let currentIndex = 0;
 let currentAnswer = null;
+let responsesLocked = new Set();
 let examActive = false;
 let examEndsAt = 0;
-let examCorrectMode = 'end';
-let responsesLocked = new Set(); // ids que já foram contabilizadas
 
 // ═══════════════════════════════════════════════════════════════════
-// THREE.JS SCENE
+// THREE.JS
 // ═══════════════════════════════════════════════════════════════════
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x060913);
@@ -633,27 +541,19 @@ const cyl = (r1,r2,h,c,x,y,z) => {
     new THREE.MeshStandardMaterial({color:c}));
   m.position.set(x,y,z); envGroup.add(m); return m;
 };
-
-function room(floor, wall) {
-  box(16, .1, 16, floor, 0, 0, 0);
-  box(16, 5, .1, wall, 0, 2.5, -8);
-  box(.1, 5, 16, wall, -8, 2.5, 0);
-  box(.1, 5, 16, wall, 8, 2.5, 0);
-  box(16, 5, .1, wall, 0, 2.5, 8);
-  box(16, .1, 16, wall, 0, 5, 0);
+function room(f,w) {
+  box(16,.1,16,f,0,0,0); box(16,5,.1,w,0,2.5,-8);
+  box(.1,5,16,w,-8,2.5,0); box(.1,5,16,w,8,2.5,0);
+  box(16,5,.1,w,0,2.5,8); box(16,.1,16,w,0,5,0);
 }
-
-function desk(x, z, c = 0x795548) {
-  box(2, .1, 1, c, x, .85, z);
+function desk(x,z,c=0x795548) {
+  box(2,.1,1,c,x,.85,z);
   for (const dx of [-.8,.8]) for (const dz of [-.4,.4]) box(.08,.8,.08,0x333333,x+dx,.4,z+dz);
 }
-
-function tree(x, z) {
-  cyl(.15,.2,2,0x6b4423,x,1,z);
-  sphere(.9,0x2d8b4e,x,2.2,z);
+function tree(x,z) {
+  cyl(.15,.2,2,0x6b4423,x,1,z); sphere(.9,0x2d8b4e,x,2.2,z);
 }
-
-function bookshelf(x, z) {
+function bookshelf(x,z) {
   box(1.5,2.5,.4,0x5c3a21,x,1.25,z);
   for (let r=0;r<4;r++) {
     box(1.4,.05,.4,0x3d2415,x,.4+r*.55,z);
@@ -666,74 +566,55 @@ function bookshelf(x, z) {
 
 function buildEnvironment(type) {
   clearEnv();
-  const q = DB.quality;
   switch (type) {
     case 'academy':
       scene.background = new THREE.Color(0x06111e);
-      room(0x183047, 0x10283f);
+      room(0x183047,0x10283f);
       box(5,.15,.3,0x2b9dd8,0,3.7,-7.9);
-      desk(-4,-5); desk(4,-5);
-      box(2,.5,1,0x4a7c9e,0,.25,-6);
-      if (q !== 'low') for (const x of [-6,6]) box(.15,4,.15,0x49baff,x,2,-7.9);
-      break;
+      desk(-4,-5); desk(4,-5); break;
     case 'living':
       scene.background = new THREE.Color(0xb4c7d8);
-      room(0xc4a682, 0xe0dcd5);
+      room(0xc4a682,0xe0dcd5);
       box(3,.5,1.2,0x526477,-4,.45,-4);
       box(3,.9,.3,0x394b60,-4,.85,-4.45);
-      desk(4,-4,0x94765d);
-      box(4,2,.05,0x8bbad7,0,2.2,-7.9);
-      break;
+      desk(4,-4,0x94765d); break;
     case 'beach':
       scene.background = new THREE.Color(0x87ceeb);
       box(60,.1,60,0xe8d39b,0,0,0);
       box(60,.05,20,0x1e90ff,0,.05,-25);
       sphere(2,0xffe9a0,-15,12,-35);
-      for (const [x,z] of [[-8,-6],[-5,-8],[8,-6],[5,-8]]) tree(x,z);
-      box(2,.05,2,0xff6b6b,3,3,-3);
-      break;
+      for (const [x,z] of [[-8,-6],[-5,-8],[8,-6],[5,-8]]) tree(x,z); break;
     case 'library':
       scene.background = new THREE.Color(0x2b251f);
-      room(0x5b4332, 0x3b3027);
+      room(0x5b4332,0x3b3027);
       bookshelf(-6,-6); bookshelf(-4,-6); bookshelf(4,-6); bookshelf(6,-6);
-      desk(-4,-2); desk(4,-2);
-      break;
+      desk(-4,-2); desk(4,-2); break;
     case 'future':
       scene.background = new THREE.Color(0x050d1c);
-      room(0x111b35, 0x0b1630);
-      if (q !== 'low') for (let x=-6;x<=6;x+=2) box(.05,4,.05,0x00cfff,x,2,-7.9);
-      desk(-4,-4,0x1a4366); desk(4,-4,0x1a4366);
-      break;
+      room(0x111b35,0x0b1630);
+      for (let x=-6;x<=6;x+=2) box(.05,4,.05,0x00cfff,x,2,-7.9);
+      desk(-4,-4,0x1a4366); desk(4,-4,0x1a4366); break;
     case 'nature':
       scene.background = new THREE.Color(0x87ceeb);
       box(80,.1,80,0x4c9b53,0,0,0);
       for (const [x,z] of [[-8,-8],[8,-8],[-8,2],[8,2],[-5,-10],[5,-10],[0,-12]]) tree(x,z);
-      desk(4,-3,0x8b6848);
-      break;
+      desk(4,-3,0x8b6848); break;
     case 'penthouse':
       scene.background = new THREE.Color(0x1a1a3a);
-      room(0xd2c9bd, 0xe6e0d9);
+      room(0xd2c9bd,0xe6e0d9);
       box(6,3,.05,0x4a6a8a,0,2.2,-7.9);
       box(3,.5,1.2,0x303b48,-4,.45,-4);
-      desk(4,-4,0x1a1a2e);
-      for (const x of [-6,6]) { box(.1,2.5,.1,0xc6b17b,x,1.25,-5); sphere(.3,0xffdd88,x,2.6,-5); }
-      break;
+      desk(4,-4,0x1a1a2e); break;
     case 'space':
       scene.background = new THREE.Color(0x01040e);
-      room(0x293344, 0x1a2436);
+      room(0x293344,0x1a2436);
       sphere(4,0x3a7bc3,0,4,-25);
-      if (q === 'high') for (let i=0;i<50;i++) {
-        const r=30+Math.random()*40, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
-        sphere(.05,0xffffff, r*Math.sin(ph)*Math.cos(th), 4+r*Math.sin(ph)*Math.sin(th), -5+r*Math.cos(ph));
-      }
-      desk(-4,-4,0x334b66); desk(4,-4,0x334b66);
-      break;
+      desk(-4,-4,0x334b66); desk(4,-4,0x334b66); break;
     case 'minimal':
       scene.background = new THREE.Color(0xdde5ec);
-      room(0xe8e8e8, 0xf0f0f0);
+      room(0xe8e8e8,0xf0f0f0);
       box(2,.1,2,0xcccccc,-4,.05,-4);
-      desk(4,-4,0xaaaaaa);
-      break;
+      desk(4,-4,0xaaaaaa); break;
   }
   applyLighting();
 }
@@ -753,7 +634,6 @@ function pickCanvasH(n) {
   if (n <= 4) return 512; if (n <= 6) return 768;
   if (n <= 8) return 1024; return 1280;
 }
-
 function wrapByPixels(text, maxW, ctx) {
   const words = String(text).split(/\s+/);
   const lines = []; let line = '';
@@ -765,14 +645,10 @@ function wrapByPixels(text, maxW, ctx) {
   if (line) lines.push(line);
   return lines;
 }
-
 function drawText(text, opts = {}) {
-  const {
-    width = 2048, maxLines = 4, fontSizeMax = 62, fontSizeMin = 22,
+  const { width = 2048, maxLines = 4, fontSizeMax = 62, fontSizeMin = 22,
     padding = 40, bgColor = '#123c60', borderColor = '#4289bb',
-    textColor = '#ffffff', borderWidth = 7
-  } = opts;
-
+    textColor = '#ffffff', borderWidth = 7 } = opts;
   const H = pickCanvasH(maxLines);
   const c = document.createElement('canvas');
   c.width = width; c.height = H;
@@ -794,7 +670,6 @@ function drawText(text, opts = {}) {
     lines = lines.slice(0, maxLines);
     lines[maxLines-1] = lines[maxLines-1].slice(0,-3) + '…';
   }
-
   ctx.font = `bold ${fs}px Segoe UI,Arial`;
   ctx.fillStyle = textColor; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const th = lines.length * lh;
@@ -802,17 +677,14 @@ function drawText(text, opts = {}) {
   lines.forEach((l, i) => ctx.fillText(l, width/2, sy + i*lh));
   return c;
 }
-
 function createPanelLabel(text, opts = {}) {
   const canvas = drawText(text, opts);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
-
   const w3d = opts.width3D || 2.0;
   const h3d = w3d * (canvas.height / canvas.width);
-
   const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w3d, h3d), mat);
   mesh.userData.canvas = canvas;
@@ -821,10 +693,20 @@ function createPanelLabel(text, opts = {}) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PANEL SYSTEM
+// PANEL SYSTEM (NOVO — com alça grande e visível)
 // ═══════════════════════════════════════════════════════════════════
+const PANEL_W = 2.2;
+const PANEL_H = 1.4;
+const HANDLE_W = PANEL_W;
+const HANDLE_H = 0.28;
+
 function ensurePanel(id, x, y, z, ry = 0) {
-  if (panelRegistry.has(id)) return panelRegistry.get(id);
+  if (panelRegistry.has(id)) {
+    const g = panelRegistry.get(id);
+    g.position.set(x, y, z);
+    g.rotation.y = ry;
+    return g;
+  }
   const g = new THREE.Group();
   g.userData.panelId = id;
   g.position.set(x, y, z);
@@ -832,11 +714,31 @@ function ensurePanel(id, x, y, z, ry = 0) {
   scene.add(g);
   panelRegistry.set(id, g);
 
-  const handle = createPanelLabel(`☰ ${id.toUpperCase()}`, {
-    width3D: 1.2, maxLines: 1, fontSizeMax: 60, padding: 20,
-    bgColor: '#0a3a5a', borderColor: '#00d1ff'
+  // Fundo do painel
+  const bg = new THREE.Mesh(
+    new THREE.PlaneGeometry(PANEL_W, PANEL_H),
+    new THREE.MeshBasicMaterial({ color: 0x0a1a2a, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
+  );
+  bg.position.z = -0.02;
+  g.add(bg);
+
+  // Borda neon
+  const borderGeo = new THREE.EdgesGeometry(new THREE.PlaneGeometry(PANEL_W, PANEL_H));
+  const border = new THREE.LineSegments(borderGeo, new THREE.LineBasicMaterial({ color: 0x00d1ff }));
+  border.position.z = -0.01;
+  g.add(border);
+
+  // ALÇA GRANDE — ocupa toda a largura do painel, texto explícito
+  const handle = createPanelLabel(`☰ ${id.toUpperCase()} — SEGURE PARA MOVER`, {
+    width3D: HANDLE_W,
+    maxLines: 1,
+    fontSizeMax: 70,
+    padding: 25,
+    bgColor: '#0a3a5a',
+    borderColor: '#00d1ff',
+    borderWidth: 6
   });
-  handle.position.set(0, 1.6, 0);
+  handle.position.set(0, PANEL_H / 2 + HANDLE_H / 2 + 0.08, 0.01);
   handle.userData.isGrabHandle = true;
   handle.userData.panelId = id;
   interactive.push(handle);
@@ -858,49 +760,268 @@ function clearPanels() {
     scene.remove(g);
   }
   panelRegistry.clear();
-  for (let i = interactive.length-1; i >= 0; i--) {
+  for (let i = interactive.length - 1; i >= 0; i--) {
     if (!interactive[i].userData.isTeleport) interactive.splice(i, 1);
   }
 }
 
-function addPanelText(panelId, text, yOff, opts = {}) {
+function addPanelLabel(panelId, text, yOff, opts = {}) {
   const g = panelRegistry.get(panelId);
   if (!g) return null;
-  const l = createPanelLabel(text, opts);
-  l.position.set(0, yOff, 0.01);
+  const l = createPanelLabel(text, { width3D: PANEL_W * 0.88, ...opts });
+  l.position.set(0, yOff, 0.02);
   if (opts.onClick) { l.userData.onClick = opts.onClick; interactive.push(l); }
   g.add(l);
   return l;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// RENDER QUESTION PANEL
+// 3D FLASHCARD PANEL
+// ═══════════════════════════════════════════════════════════════════
+let flashcardGroup = null;
+
+function openFlashcard(q) {
+  if (!q) return;
+  if (renderer.xr.isPresenting) showFlashcard3D(q);
+  else openFlashcardHTML(q);
+}
+
+function showFlashcard3D(q) {
+  closeFlashcard3D();
+  flashcardGroup = new THREE.Group();
+  flashcardGroup.userData.isFlashcard = true;
+
+  const hp = new THREE.Vector3();
+  camera.getWorldPosition(hp);
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  dir.y = 0; dir.normalize();
+  const tp = hp.clone().add(dir.multiplyScalar(1.7));
+  tp.y = hp.y;
+  flashcardGroup.position.copy(tp);
+  flashcardGroup.lookAt(hp.x, tp.y, hp.z);
+
+  // Cabeçalho
+  const header = createPanelLabel(`📇 ${q.subject.toUpperCase()}`, {
+    width3D: 1.8, maxLines: 1, fontSizeMax: 70, padding: 20,
+    bgColor: '#0a3a5a', borderColor: '#00d1ff'
+  });
+  header.position.set(0, 1.15, 0.01);
+  header.userData.isFlashcard = true;
+  flashcardGroup.add(header);
+
+  // Frente — pergunta
+  const front = createPanelLabel(q.question, {
+    width3D: 1.8, maxLines: 6, fontSizeMax: 55, padding: 40,
+    bgColor: '#0d2740', borderColor: '#49baff'
+  });
+  front.position.set(0, 0.3, 0.01);
+  front.userData.isFlashcard = true;
+  flashcardGroup.add(front);
+
+  // Botão virar
+  const flipBtn = createPanelLabel('🔄 VIRAR', {
+    width3D: 1.0, maxLines: 1, fontSizeMax: 70, padding: 20,
+    bgColor: '#0066cc', borderColor: '#00d1ff'
+  });
+  flipBtn.position.set(-0.45, -0.55, 0.01);
+  flipBtn.userData.isFlashcard = true;
+  flipBtn.userData.onClick = () => {
+    front.visible = false;
+    flipBtn.visible = false;
+
+    // Verso — resposta correta
+    const answerText = `${'ABCDE'[q.correct]}) ${q.options[q.correct]}`;
+    const back = createPanelLabel(answerText, {
+      width3D: 1.8, maxLines: 3, fontSizeMax: 60, padding: 30,
+      bgColor: '#16684d', borderColor: '#00ff88'
+    });
+    back.position.set(0, 0.55, 0.01);
+    back.userData.isFlashcard = true;
+    flashcardGroup.add(back);
+
+    // Explicação
+    if (q.explanation) {
+      const exp = createPanelLabel(q.explanation, {
+        width3D: 1.8, maxLines: 4, fontSizeMax: 38, padding: 20,
+        bgColor: '#1a1a3a', borderColor: '#ffaa00'
+      });
+      exp.position.set(0, -0.05, 0.01);
+      exp.userData.isFlashcard = true;
+      flashcardGroup.add(exp);
+    }
+
+    // Botões de avaliação
+    const grades = [
+      { label: '😰 Difícil', grade: 0, x: -0.7, bg: '#893440', bd: '#ff4444' },
+      { label: '😊 Médio', grade: 1, x: 0, bg: '#7a4a10', bd: '#ffaa00' },
+      { label: '😎 Fácil', grade: 2, x: 0.7, bg: '#16684d', bd: '#00ff88' }
+    ];
+    grades.forEach(g => {
+      const b = createPanelLabel(g.label, {
+        width3D: 0.6, maxLines: 1, fontSizeMax: 55, padding: 12,
+        bgColor: g.bg, borderColor: g.bd
+      });
+      b.position.set(g.x, -0.7, 0.01);
+      b.userData.isFlashcard = true;
+      b.userData.onClick = () => {
+        updateFlashcardSRS(q.id, g.grade);
+        STORAGE.save(DB);
+        closeFlashcard3D();
+        const idx = currentPool.indexOf(q);
+        openFlashcard(currentPool[(idx + 1) % currentPool.length]);
+      };
+      interactive.push(b);
+      flashcardGroup.add(b);
+    });
+  };
+  interactive.push(flipBtn);
+  flashcardGroup.add(flipBtn);
+
+  // Botão fechar
+  const closeBtn = createPanelLabel('✖ FECHAR', {
+    width3D: 1.0, maxLines: 1, fontSizeMax: 70, padding: 20,
+    bgColor: '#893440', borderColor: '#ff4444'
+  });
+  closeBtn.position.set(0.45, -0.55, 0.01);
+  closeBtn.userData.isFlashcard = true;
+  closeBtn.userData.onClick = () => closeFlashcard3D();
+  interactive.push(closeBtn);
+  flashcardGroup.add(closeBtn);
+
+  scene.add(flashcardGroup);
+}
+
+function closeFlashcard3D() {
+  if (!flashcardGroup) return;
+  scene.remove(flashcardGroup);
+  flashcardGroup.traverse(o => {
+    if (o.userData.texture) o.userData.texture.dispose();
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) o.material.dispose();
+  });
+  for (let i = interactive.length - 1; i >= 0; i--) {
+    if (interactive[i].userData.isFlashcard) interactive.splice(i, 1);
+  }
+  flashcardGroup = null;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 3D FEEDBACK PANEL (substitui modal em VR)
+// ═══════════════════════════════════════════════════════════════════
+let feedbackGroup = null;
+
+function showFeedback(q, selected, correct) {
+  if (renderer.xr.isPresenting) showFeedback3D(q, selected, correct);
+  else showModal(q, selected, correct);
+}
+
+function showFeedback3D(q, selected, correct) {
+  closeFeedback3D();
+  feedbackGroup = new THREE.Group();
+  feedbackGroup.userData.isFeedback = true;
+
+  const hp = new THREE.Vector3();
+  camera.getWorldPosition(hp);
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  dir.y = 0; dir.normalize();
+  const tp = hp.clone().add(dir.multiplyScalar(1.7));
+  tp.y = hp.y - 0.1;
+  feedbackGroup.position.copy(tp);
+  feedbackGroup.lookAt(hp.x, tp.y, hp.z);
+
+  const statusText = correct ? '✅ CORRETO!' : `❌ ERRADO\nCorreta: ${'ABCDE'[q.correct]}`;
+  const status = createPanelLabel(statusText, {
+    width3D: 1.6, maxLines: 2, fontSizeMax: 90, padding: 30,
+    bgColor: correct ? '#16684d' : '#893440',
+    borderColor: correct ? '#00ff88' : '#ff4444'
+  });
+  status.position.set(0, 0.6, 0.01);
+  status.userData.isFeedback = true;
+  feedbackGroup.add(status);
+
+  const answerText = `${'ABCDE'[q.correct]}) ${q.options[q.correct]}`;
+  const ans = createPanelLabel(answerText, {
+    width3D: 1.6, maxLines: 3, fontSizeMax: 55, padding: 25,
+    bgColor: '#0d2740', borderColor: '#00d1ff'
+  });
+  ans.position.set(0, 0.0, 0.01);
+  ans.userData.isFeedback = true;
+  feedbackGroup.add(ans);
+
+  if (q.explanation) {
+    const exp = createPanelLabel(q.explanation, {
+      width3D: 1.6, maxLines: 3, fontSizeMax: 38, padding: 20,
+      bgColor: '#1a1a3a', borderColor: '#ffaa00'
+    });
+    exp.position.set(0, -0.5, 0.01);
+    exp.userData.isFeedback = true;
+    feedbackGroup.add(exp);
+  }
+
+  const nextBtn = createPanelLabel('▶ PRÓXIMA', {
+    width3D: 1.4, maxLines: 1, fontSizeMax: 80, padding: 20,
+    bgColor: '#0066cc', borderColor: '#00d1ff'
+  });
+  nextBtn.position.set(0, -1.0, 0.01);
+  nextBtn.userData.isFeedback = true;
+  nextBtn.userData.onClick = () => {
+    closeFeedback3D();
+    nextQuestion();
+  };
+  interactive.push(nextBtn);
+  feedbackGroup.add(nextBtn);
+
+  scene.add(feedbackGroup);
+}
+
+function closeFeedback3D() {
+  if (!feedbackGroup) return;
+  scene.remove(feedbackGroup);
+  feedbackGroup.traverse(o => {
+    if (o.userData.texture) o.userData.texture.dispose();
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) o.material.dispose();
+  });
+  for (let i = interactive.length - 1; i >= 0; i--) {
+    if (interactive[i].userData.isFeedback) interactive.splice(i, 1);
+  }
+  feedbackGroup = null;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER PANELS
 // ═══════════════════════════════════════════════════════════════════
 function renderQuestionPanel() {
   clearPanels();
 
   if (!currentPool.length) {
-    ensurePanel('center', 0, 2.0, -3.5);
-    addPanelText('center', 'Carregue questões\npara começar', 0, {
-      width3D: 5, maxLines: 2, fontSizeMax: 80, padding: 60
+    ensurePanel('center', 0, 1.5, -1.8);
+    addPanelLabel('center', 'Carregue questões\npara começar', 0, {
+      width3D: 2, maxLines: 2, fontSizeMax: 80, padding: 60
     });
+    renderSidePanels();
     return;
   }
 
   const q = currentPool[currentIndex];
-  ensurePanel('center', 0, 2.0, -3.5);
 
-  addPanelText('center', q.subject.toUpperCase(), 2.2, {
-    width3D: 5, maxLines: 1, fontSizeMax: 60, padding: 30,
+  // ── PAINEL CENTRAL ──
+  ensurePanel('center', 0, 1.5, -1.8);
+
+  addPanelLabel('center', q.subject.toUpperCase(), 0.55, {
+    width3D: 2, maxLines: 1, fontSizeMax: 55, padding: 18,
     bgColor: '#0d3a5a', borderColor: '#00d1ff'
   });
 
-  addPanelText('center', q.question, 0.6, {
-    width3D: 5, maxLines: 6, fontSizeMax: 56, padding: 40
+  // Enunciado com auto-fit
+  addPanelLabel('center', q.question, -0.05, {
+    width3D: 2, maxLines: 5, fontSizeMax: 48, padding: 30
   });
 
   // Alternativas com altura dinâmica
-  let yCur = -0.9;
+  let yCur = -0.7;
   q.options.forEach((opt, i) => {
     const text = `${'ABCDE'[i]}) ${opt}`;
     let bg = '#0d2740', bd = '#49baff';
@@ -909,92 +1030,83 @@ function renderQuestionPanel() {
       else if (i === currentAnswer) { bg = '#893440'; bd = '#ff4444'; }
     }
     const label = createPanelLabel(text, {
-      width3D: 4.5, maxLines: 3, fontSizeMax: 44, padding: 28,
+      width3D: 1.9, maxLines: 2, fontSizeMax: 38, padding: 20,
       bgColor: bg, borderColor: bd
     });
     if (currentAnswer === null) {
       label.userData.onClick = () => selectAnswer(i);
       interactive.push(label);
     }
-    label.position.set(0, yCur, 0.01);
+    label.position.set(0, yCur, 0.02);
     panelRegistry.get('center').add(label);
     const h = label.geometry.parameters.height;
-    yCur -= (h + 0.12);
+    yCur -= (h + 0.08);
   });
 
-  // Explicação
-  if (currentAnswer !== null && q.explanation) {
-    addPanelText('center', '📖 ' + q.explanation, yCur - 0.1, {
-      width3D: 4.5, maxLines: 4, fontSizeMax: 36, padding: 24,
-      bgColor: '#2a1a0a', borderColor: '#ffaa00'
-    });
-  }
-
-  // Status + botão próxima
-  addPanelText('center', `Questão ${currentIndex+1} de ${currentPool.length}`, -4.5, {
-    width3D: 4, maxLines: 1, fontSizeMax: 50, padding: 20,
+  addPanelLabel('center', `Questão ${currentIndex+1} de ${currentPool.length}`, -0.68, {
+    width3D: 1.8, maxLines: 1, fontSizeMax: 45, padding: 15,
     bgColor: '#0a1a2a', borderColor: '#00d1ff'
   });
 
-  const next = createPanelLabel('➡ PRÓXIMA', {
-    width3D: 3, maxLines: 1, fontSizeMax: 60, padding: 20,
-    bgColor: '#0066cc', borderColor: '#00d1ff'
-  });
-  next.position.set(0, -5.0, 0.01);
-  next.userData.onClick = () => nextQuestion();
-  interactive.push(next);
-  panelRegistry.get('center').add(next);
-
-  // Painel esquerdo - desempenho
-  ensurePanel('left', -3.5, 2.0, -3.0, 0.3);
-  addPanelText('left', 'DESEMPENHO', 1.4, {
-    width3D: 1.8, maxLines: 1, fontSizeMax: 50, padding: 15,
-    bgColor: '#0d3a5a', borderColor: '#00d1ff'
-  });
-  addPanelText('left', `${DB.stats.correct}/${DB.stats.total}`, 0.8, {
-    width3D: 1.8, maxLines: 1, fontSizeMax: 90, padding: 20
-  });
-  addPanelText('left', `Erros: ${DB.stats.total - DB.stats.correct}`, 0.2, {
-    width3D: 1.8, maxLines: 1, fontSizeMax: 45, padding: 15
-  });
-  addPanelText('left', `Revisar: ${DB.wrongIds.length}`, -0.4, {
-    width3D: 1.8, maxLines: 1, fontSizeMax: 45, padding: 15,
-    bgColor: '#3a1a0a', borderColor: '#ffaa00'
-  });
-
-  // Painel direito - controles
-  ensurePanel('right', 3.5, 2.0, -3.0, -0.3);
-  addPanelText('right', 'CONTROLES', 1.4, {
-    width3D: 1.8, maxLines: 1, fontSizeMax: 50, padding: 15,
-    bgColor: '#0d3a5a', borderColor: '#00d1ff'
-  });
-
-  const ctrls = [
-    { label: '📇 Flashcard', action: () => openFlashcard(currentPool[currentIndex]) },
-    { label: '⭐ Favoritar', action: () => toggleFavorite() },
-    { label: '🏠 Início', action: () => renderQuestionPanel() }
-  ];
-  ctrls.forEach((c, i) => {
-    const l = createPanelLabel(c.label, {
-      width3D: 1.8, maxLines: 1, fontSizeMax: 44, padding: 15,
-      bgColor: '#0d2740', borderColor: '#49baff'
-    });
-    l.position.set(0, 0.8 - i*0.55, 0.01);
-    l.userData.onClick = c.action;
-    interactive.push(l);
-    panelRegistry.get('right').add(l);
-  });
-
+  renderSidePanels();
   restorePanelStates();
 }
 
-function toggleFavorite() {
-  const q = currentPool[currentIndex];
-  if (!q) return;
-  const i = DB.favorites.indexOf(q.id);
-  if (i >= 0) DB.favorites.splice(i, 1); else DB.favorites.push(q.id);
-  STORAGE.save(DB);
-  $('status').textContent = i >= 0 ? '⭐ Removido' : '⭐ Favoritado';
+function renderSidePanels() {
+  // ── PAINEL ESQUERDO — FERRAMENTAS ──
+  ensurePanel('left', -1.5, 1.5, -1.6, 0.35);
+  addPanelLabel('left', '🔧 FERRAMENTAS', 0.55, {
+    width3D: 1.2, maxLines: 1, fontSizeMax: 55, padding: 15,
+    bgColor: '#0d3a5a', borderColor: '#00d1ff'
+  });
+
+  const leftBtns = [
+    { label: '🎯 Modo Foco', action: toggleFocus },
+    { label: '📖 Modo Leitura', action: toggleReading },
+    { label: '🔄 Resetar Vista', action: resetView },
+    { label: '🌍 Trocar Ambiente', action: cycleEnv },
+    { label: '⚙ Configurações', action: () => { $('menu').classList.remove('hidden'); } }
+  ];
+
+  leftBtns.forEach((btn, i) => {
+    const l = createPanelLabel(btn.label, {
+      width3D: 1.15, maxLines: 1, fontSizeMax: 45, padding: 12,
+      bgColor: '#0d2740', borderColor: '#49baff'
+    });
+    l.position.set(0, 0.25 - i * 0.24, 0.02);
+    l.userData.onClick = btn.action;
+    interactive.push(l);
+    panelRegistry.get('left').add(l);
+  });
+
+  // ── PAINEL DIREITO — AÇÕES ──
+  ensurePanel('right', 1.5, 1.5, -1.6, -0.35);
+  addPanelLabel('right', '📊 PAINEL', 0.55, {
+    width3D: 1.2, maxLines: 1, fontSizeMax: 55, padding: 15,
+    bgColor: '#0d3a5a', borderColor: '#00d1ff'
+  });
+
+  addPanelLabel('right', `${DB.stats.correct}/${DB.stats.total}`, 0.32, {
+    width3D: 1.15, maxLines: 1, fontSizeMax: 70, padding: 15
+  });
+
+  const rightBtns = [
+    { label: '📇 Flashcard', action: () => openFlashcard(currentPool[currentIndex]) },
+    { label: '⭐ Favoritar', action: toggleFavorite },
+    { label: '▶ Próxima', action: nextQuestion },
+    { label: '🔄 Revisar', action: startReview }
+  ];
+
+  rightBtns.forEach((btn, i) => {
+    const l = createPanelLabel(btn.label, {
+      width3D: 1.15, maxLines: 1, fontSizeMax: 45, padding: 12,
+      bgColor: '#0d2740', borderColor: '#49baff'
+    });
+    l.position.set(0, 0.05 - i * 0.26, 0.02);
+    l.userData.onClick = btn.action;
+    interactive.push(l);
+    panelRegistry.get('right').add(l);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1008,12 +1120,16 @@ function savePanelState(id, g) {
 function restorePanelStates() {
   for (const [id, g] of panelRegistry) {
     const s = DB.panels[id];
-    if (s) { g.position.fromArray(s.pos); g.rotation.y = s.rot; g.scale.setScalar(s.scale); }
+    if (s) {
+      g.position.fromArray(s.pos);
+      g.rotation.y = s.rot;
+      g.scale.setScalar(s.scale);
+    }
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// GRAB
+// GRAB (FIX: thumbstickmoved event direto no controller)
 // ═══════════════════════════════════════════════════════════════════
 const raycaster = new THREE.Raycaster();
 const rotM = new THREE.Matrix4();
@@ -1036,34 +1152,26 @@ function startGrab(src, id) {
     panelId: id, group: g,
     startSrc: p.clone(), startGroup: g.position.clone()
   };
-  g.scale.multiplyScalar(1.03);
+  g.scale.multiplyScalar(1.02);
+  $('status').textContent = `✋ Movendo ${id.toUpperCase()} — solte para parar`;
 }
 
-function updateGrab(entity, input) {
-  const s = entity.userData.grabState;
+function updateGrabPosition(src) {
+  const s = src.userData.grabState;
   if (!s) return;
   const p = new THREE.Vector3();
-  entity.getWorldPosition(p);
+  src.getWorldPosition(p);
   const delta = p.clone().sub(s.startSrc);
   s.group.position.copy(s.startGroup.clone().add(delta));
-
-  if (input?.gamepad?.axes) {
-    const ax = input.gamepad.axes;
-    const x = ax[2] || 0, y = ax[3] || 0;
-    if (Math.abs(y) > 0.2) {
-      const sc = Math.max(0.5, Math.min(2, s.group.scale.x * (1 + y*0.012)));
-      s.group.scale.setScalar(sc);
-    }
-    if (Math.abs(x) > 0.2) s.group.rotation.y += x * 0.025;
-  }
 }
 
 function endGrab(src) {
   const s = src.userData.grabState;
   if (!s) return;
-  s.group.scale.multiplyScalar(1/1.03);
+  s.group.scale.multiplyScalar(1/1.02);
   savePanelState(s.panelId, s.group);
   delete src.userData.grabState;
+  $('status').textContent = `📍 ${s.panelId.toUpperCase()} posicionado`;
 }
 
 function selectObject(src) {
@@ -1082,12 +1190,38 @@ const handFactory = new XRHandModelFactory();
 
 for (let i = 0; i < 2; i++) {
   const ctrl = renderer.xr.getController(i);
-  ctrl.addEventListener('selectstart', () => selectObject(ctrl));
+
+  // GRIP = grab
   ctrl.addEventListener('squeezestart', () => {
     const h = raycastFirst(ctrl);
     if (h?.object.userData.isGrabHandle) startGrab(ctrl, h.object.userData.panelId);
   });
   ctrl.addEventListener('squeezeend', () => endGrab(ctrl));
+
+  // TRIGGER = click
+  ctrl.addEventListener('selectstart', () => {
+    const h = raycastFirst(ctrl);
+    if (!h) return;
+    const o = h.object;
+    if (o.userData.isGrabHandle) return;
+    if (o.userData.onClick) o.userData.onClick();
+  });
+
+  // THUMBSTICK durante grab = resize/rotate
+  ctrl.addEventListener('thumbstickmoved', (evt) => {
+    const s = ctrl.userData.grabState;
+    if (!s) return;
+    const { x, y } = evt.detail;
+    if (Math.abs(y) > 0.15) {
+      const sc = Math.max(0.5, Math.min(2.5, s.group.scale.x * (1 + y * 0.015)));
+      s.group.scale.setScalar(sc);
+      $('status').textContent = `📏 Escala: ${sc.toFixed(2)}x`;
+    }
+    if (Math.abs(x) > 0.15) {
+      s.group.rotation.y += x * 0.03;
+    }
+  });
+
   rig.add(ctrl);
 
   const line = new THREE.Line(
@@ -1102,7 +1236,12 @@ for (let i = 0; i < 2; i++) {
 
   const hand = renderer.xr.getHand(i);
   hand.add(handFactory.createHandModel(hand, 'mesh'));
-  hand.addEventListener('selectstart', () => selectObject(hand));
+  hand.addEventListener('selectstart', () => {
+    const h = raycastFirst(hand);
+    if (!h) return;
+    if (h.object.userData.isGrabHandle) startGrab(hand, h.object.userData.panelId);
+    else if (h.object.userData.onClick) h.object.userData.onClick();
+  });
   hand.addEventListener('selectend', () => endGrab(hand));
   rig.add(hand);
 }
@@ -1132,34 +1271,40 @@ for (const [x,z] of [[0,-2],[-3,-2],[3,-2],[0,2]]) {
 // ANIMATION LOOP
 // ═══════════════════════════════════════════════════════════════════
 const clock = new THREE.Clock();
+
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  if (renderer.xr.isPresenting) {
-    const s = renderer.xr.getSession();
-    for (let i = 0; i < s.inputSources.length; i++) {
-      updateGrab(renderer.xr.getController(i), s.inputSources[i]);
-      updateGrab(renderer.xr.getHand(i), s.inputSources[i]);
-    }
+  // Atualiza grabs (fix: só atualiza posição, sem depender de inputSources)
+  for (let i = 0; i < 2; i++) {
+    updateGrabPosition(renderer.xr.getController(i));
+    updateGrabPosition(renderer.xr.getHand(i));
+  }
 
+  // Locomotion (só se nenhum grab ativo)
+  if (renderer.xr.isPresenting) {
     const anyGrab = renderer.xr.getController(0).userData.grabState ||
-                    renderer.xr.getController(1).userData.grabState;
+                    renderer.xr.getController(1).userData.grabState ||
+                    renderer.xr.getHand(0).userData.grabState ||
+                    renderer.xr.getHand(1).userData.grabState;
     if (!anyGrab) {
-      for (const src of s.inputSources) {
+      const sess = renderer.xr.getSession();
+      for (const src of sess.inputSources) {
         if (!src.gamepad || src.handedness !== 'left') continue;
         const ax = src.gamepad.axes;
-        const x = ax[2]||0, z = ax[3]||0;
+        const x = ax[2] || 0, z = ax[3] || 0;
         if (Math.abs(x) < 0.15 && Math.abs(z) < 0.15) continue;
         const dir = new THREE.Vector3();
         renderer.xr.getCamera().getWorldDirection(dir);
         dir.y = 0; dir.normalize();
         const right = new THREE.Vector3(-dir.z, 0, dir.x);
-        const mv = dir.multiplyScalar(-z).addScaledVector(right, x).multiplyScalar(dt*1.5);
+        const mv = dir.multiplyScalar(-z).addScaledVector(right, x).multiplyScalar(dt * 1.5);
         rig.position.x = THREE.MathUtils.clamp(rig.position.x + mv.x, -7, 7);
         rig.position.z = THREE.MathUtils.clamp(rig.position.z + mv.z, -7, 7);
       }
     }
   }
+
   renderer.render(scene, camera);
 });
 
@@ -1197,19 +1342,16 @@ $('enter').onclick = async () => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// UI LOGIC
+// UI LOGIC (resto preservado)
 // ═══════════════════════════════════════════════════════════════════
 function updateHUD() {
   $('hud-total').textContent = DB.stats.total;
   $('hud-ok').textContent = DB.stats.correct;
   $('hud-err').textContent = DB.stats.total - DB.stats.correct;
   $('hud-pct').textContent = DB.stats.total > 0 ? Math.round(DB.stats.correct*100/DB.stats.total)+'%' : '0%';
-
   $('stats-summary').innerHTML =
-    `📊 <b>${DB.stats.total}</b> · ✅ <b>${DB.stats.correct}</b> · ` +
-    `🎯 <b>${DB.stats.total > 0 ? Math.round(DB.stats.correct*100/DB.stats.total) : 0}%</b><br>` +
+    `📊 <b>${DB.stats.total}</b> · ✅ <b>${DB.stats.correct}</b> · 🎯 <b>${DB.stats.total > 0 ? Math.round(DB.stats.correct*100/DB.stats.total) : 0}%</b><br>` +
     `❌ Revisar: <b>${DB.wrongIds.length}</b> · ⭐ Favoritas: <b>${DB.favorites.length}</b>`;
-
   updateStatsChart();
 }
 
@@ -1217,16 +1359,12 @@ function updateStatsChart() {
   const svg = $('stats-chart');
   const bySubj = DB.stats.bySubject;
   const entries = Object.entries(bySubj).filter(([_, v]) => v.total > 0).slice(0, 8);
-
   if (entries.length === 0) {
-    svg.innerHTML = '<text x="200" y="70" text-anchor="middle" fill="#8ab0d0" font-size="12">Sem dados ainda</text>';
-    $('stats-detail').innerHTML = '';
-    return;
+    svg.innerHTML = '<text x="200" y="70" text-anchor="middle" fill="#8ab0d0" font-size="12">Sem dados</text>';
+    $('stats-detail').innerHTML = ''; return;
   }
-
   const w = 400, h = 140, pad = 20;
   const barW = (w - pad*2) / entries.length;
-
   let html = `<line class="axis" x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}"/>`;
   entries.forEach(([subj, v], i) => {
     const pct = v.correct / v.total;
@@ -1234,18 +1372,15 @@ function updateStatsChart() {
     const x = pad + i*barW + 4;
     const y = h - pad - bh;
     html += `<rect class="bar" x="${x}" y="${y}" width="${barW-8}" height="${bh}" rx="2">
-      <title>${subj}: ${v.correct}/${v.total} (${Math.round(pct*100)}%)</title>
-    </rect>`;
+      <title>${subj}: ${v.correct}/${v.total}</title></rect>`;
     html += `<text class="label" x="${x + (barW-8)/2}" y="${h-8}" text-anchor="middle">${subj.slice(0,6)}</text>`;
     html += `<text class="label" x="${x + (barW-8)/2}" y="${y-3}" text-anchor="middle">${Math.round(pct*100)}%</text>`;
   });
   svg.innerHTML = html;
-
   let detail = '<h3 style="margin-top:12px">Detalhes</h3>';
   entries.forEach(([subj, v]) => {
     detail += `<div style="padding:4px 0;border-bottom:1px solid rgba(73,186,255,.15)">
-      <b>${subj}</b>: ${v.correct}/${v.total} (${Math.round(v.correct*100/v.total)}%)
-    </div>`;
+      <b>${subj}</b>: ${v.correct}/${v.total}</div>`;
   });
   $('stats-detail').innerHTML = detail;
 }
@@ -1253,12 +1388,9 @@ function updateStatsChart() {
 function updateReviewSummary() {
   $('review-summary').innerHTML = `
     <div style="padding:10px;background:rgba(255,68,68,.1);border-radius:6px;margin-bottom:8px">
-      ❌ <b>${DB.wrongIds.length}</b> questões erradas
-    </div>
+      ❌ <b>${DB.wrongIds.length}</b> questões erradas</div>
     <div style="padding:10px;background:rgba(255,170,0,.1);border-radius:6px">
-      📇 <b>${Object.keys(DB.flashcards).length}</b> flashcards
-    </div>
-  `;
+      📇 <b>${Object.keys(DB.flashcards).length}</b> flashcards</div>`;
 }
 
 function populateSubjects() {
@@ -1274,9 +1406,7 @@ function populateSubjects() {
   if ([...s.options].some(o => o.value === cur)) s.value = cur;
 }
 
-// ═══════════════════════════════════════════════════════════════════
 // SM-2
-// ═══════════════════════════════════════════════════════════════════
 function updateFlashcardSRS(id, grade) {
   const now = Date.now();
   const c = DB.flashcards[id] || { interval: 0, ease: 2.5, reps: 0, due: now };
@@ -1292,12 +1422,9 @@ function updateFlashcardSRS(id, grade) {
   DB.flashcards[id] = c;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// FLASHCARD
-// ═══════════════════════════════════════════════════════════════════
+// HTML Flashcard (desktop only)
 let currentFlashcard = null;
-
-function openFlashcard(q) {
+function openFlashcardHTML(q) {
   if (!q) return;
   currentFlashcard = q;
   const c = DB.flashcards[q.id] || { interval: 0, reps: 0 };
@@ -1310,19 +1437,15 @@ function openFlashcard(q) {
   $('fc-controls').style.display = 'none';
   $('flashcard-stage').classList.add('open');
 }
-
 $('fc-flip').onclick = () => {
   $('flashcard').classList.toggle('flipped');
   if ($('flashcard').classList.contains('flipped')) $('fc-controls').style.display = 'flex';
 };
-
 $('fc-next').onclick = () => {
   const i = currentPool.indexOf(currentFlashcard);
-  openFlashcard(currentPool[(i+1) % currentPool.length]);
+  openFlashcardHTML(currentPool[(i+1) % currentPool.length]);
 };
-
 $('fc-close').onclick = () => $('flashcard-stage').classList.remove('open');
-
 document.querySelectorAll('[data-grade]').forEach(b => {
   b.onclick = () => {
     if (!currentFlashcard) return;
@@ -1332,33 +1455,18 @@ document.querySelectorAll('[data-grade]').forEach(b => {
   };
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// ANSWER / NAVIGATE
-// ═══════════════════════════════════════════════════════════════════
+// Answer
 function selectAnswer(idx) {
   const q = currentPool[currentIndex];
-  if (!q) return;
-
-  // Simulado com correção ao final: permite trocar
-  if (examActive && examCorrectMode === 'end') {
-    currentAnswer = idx;
-    renderQuestionPanel();
-    return;
-  }
-
-  // Modo imediato ou estudo livre
-  if (currentAnswer !== null) return;
+  if (!q || currentAnswer !== null) return;
   currentAnswer = idx;
   const correct = idx === q.correct;
-
-  // Só contabiliza 1x por id
   if (!responsesLocked.has(q.id)) {
     responsesLocked.add(q.id);
     recordAnswer(q, correct);
   }
-
   renderQuestionPanel();
-  showModal(q, idx, correct);
+  showFeedback(q, idx, correct);
 }
 
 function recordAnswer(q, correct) {
@@ -1399,21 +1507,16 @@ function showModal(q, sel, ok) {
     $('modal-exp').textContent = '📖 ' + q.explanation;
   } else $('modal-exp').style.display = 'none';
 }
-
 $('modal-close').onclick = () => {
   $('modal').classList.remove('open');
   nextQuestion();
 };
 
 function nextQuestion() {
+  closeFeedback3D();
   if (currentIndex < currentPool.length - 1) {
     currentIndex++;
     currentAnswer = null;
-    // Se simulado com correção ao final, manter respostas anteriores
-    if (examActive && examCorrectMode === 'end') {
-      const q = currentPool[currentIndex];
-      if (responsesLocked.has(q.id)) currentAnswer = q.selected ?? null;
-    }
     renderQuestionPanel();
   } else {
     finishSession();
@@ -1423,17 +1526,73 @@ function nextQuestion() {
 function finishSession() {
   const total = currentPool.length;
   const pct = DB.stats.total > 0 ? Math.round(DB.stats.correct*100/DB.stats.total) : 0;
-  const wrong = DB.wrongIds.length;
-  alert(`✅ Sessão finalizada!\n\nQuestões nesta sessão: ${total}\nAproveitamento geral: ${pct}%\nQuestões para revisar: ${wrong}`);
-  $('status').textContent = '✅ Sessão finalizada';
+  alert(`✅ Sessão finalizada!\n\nQuestões: ${total}\nAproveitamento: ${pct}%\nRevisar: ${DB.wrongIds.length}`);
   examActive = false;
-  DB.lastSession = null;
-  STORAGE.save(DB);
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// POOL
-// ═══════════════════════════════════════════════════════════════════
+function toggleFavorite() {
+  const q = currentPool[currentIndex];
+  if (!q) return;
+  const i = DB.favorites.indexOf(q.id);
+  if (i >= 0) DB.favorites.splice(i, 1); else DB.favorites.push(q.id);
+  STORAGE.save(DB);
+  $('status').textContent = i >= 0 ? '⭐ Removido' : '⭐ Favoritado';
+  renderQuestionPanel();
+}
+
+function toggleFocus() {
+  $('menu').classList.add('hidden');
+  $('hud').style.opacity = '0.3';
+  $('status').textContent = '🎯 Modo foco (clique no menu para sair)';
+  setTimeout(() => { $('menu').classList.remove('hidden'); $('hud').style.opacity = '1'; }, 30000);
+}
+
+function toggleReading() {
+  const g = panelRegistry.get('center');
+  if (g) { g.position.set(0, 1.6, -1.2); g.scale.setScalar(1.4); }
+  $('status').textContent = '📖 Modo leitura';
+}
+
+function resetView() {
+  for (const [id, g] of panelRegistry) {
+    const defaults = {
+      center: [0, 1.5, -1.8, 0],
+      left: [-1.5, 1.5, -1.6, 0.35],
+      right: [1.5, 1.5, -1.6, -0.35]
+    };
+    if (defaults[id]) {
+      g.position.set(defaults[id][0], defaults[id][1], defaults[id][2]);
+      g.rotation.y = defaults[id][3];
+      g.scale.setScalar(1);
+    }
+  }
+  DB.panels = {};
+  STORAGE.save(DB);
+  $('status').textContent = '🔄 Vista resetada';
+}
+
+function cycleEnv() {
+  const envs = ['academy','living','beach','library','future','nature','penthouse','space','minimal'];
+  const i = envs.indexOf(DB.environment);
+  const next = envs[(i+1) % envs.length];
+  DB.environment = next;
+  STORAGE.save(DB);
+  buildEnvironment(next);
+  $('environment').value = next;
+  $('status').textContent = `🌍 Ambiente: ${next}`;
+}
+
+function startReview() {
+  currentPool = QUESTIONS.filter(q => DB.wrongIds.includes(q.id));
+  if (!currentPool.length) { $('status').textContent = '✅ Nenhum erro'; return; }
+  currentIndex = 0;
+  currentAnswer = null;
+  responsesLocked.clear();
+  renderQuestionPanel();
+  $('status').textContent = `🔄 Revisando ${currentPool.length} erros`;
+}
+
+// Pool
 function buildPool(mode, subj, limit = 9999) {
   let p = QUESTIONS.slice();
   if (subj && subj !== 'Todas') p = p.filter(q => q.subject === subj);
@@ -1448,31 +1607,24 @@ function buildPool(mode, subj, limit = 9999) {
 
 $('start').onclick = () => {
   currentPool = buildPool($('mode').value, $('subject').value);
-  if (!currentPool.length) { $('status').textContent = '⚠️ Sem questões neste filtro'; return; }
-  currentIndex = 0;
-  currentAnswer = null;
-  examActive = false;
-  responsesLocked.clear();
-  DB.lastSession = { mode: 'study', index: 0, poolSize: currentPool.length, subject: $('subject').value };
-  STORAGE.save(DB);
+  if (!currentPool.length) { $('status').textContent = '⚠️ Sem questões'; return; }
+  currentIndex = 0; currentAnswer = null; responsesLocked.clear();
   renderQuestionPanel();
-  $('status').textContent = `✅ ${currentPool.length} questões carregadas`;
+  $('status').textContent = `✅ ${currentPool.length} questões`;
 };
 
 $('demo').onclick = () => {
   QUESTIONS = [
-    { id: 'd1', question: 'Qual é a Constituição Federal atualmente vigente no Brasil?', options: ['Constituição de 1967', 'Constituição de 1988', 'Constituição de 1946', 'Constituição de 1937'], correct: 1, subject: 'Direito Constitucional', explanation: 'A Constituição de 1988 é a atual.' },
-    { id: 'd2', question: 'Qual princípio exige que a Administração Pública atue conforme a lei?', options: ['Publicidade', 'Legalidade', 'Impessoalidade', 'Eficiência'], correct: 1, subject: 'Direito Constitucional', explanation: 'A legalidade vincula toda atuação administrativa.' },
-    { id: 'd3', question: 'Qual artigo do Código Penal trata do furto?', options: ['Art. 121', 'Art. 155', 'Art. 157', 'Art. 171'], correct: 1, subject: 'Direito Penal Comum', explanation: 'O furto está no art. 155 do CP.' },
-    { id: 'd4', question: 'Qual placa indica parada obrigatória?', options: ['Placa PARE', 'Placa de estacionamento', 'Placa de velocidade máxima', 'Placa de pedestres'], correct: 0, subject: 'Legislação de Trânsito', explanation: 'A placa R-1 indica parada obrigatória.' }
+    { id: 'd1', question: 'Qual é a Constituição Federal atualmente vigente no Brasil?', options: ['Constituição de 1967','Constituição de 1988','Constituição de 1946','Constituição de 1937'], correct: 1, subject: 'Direito Constitucional', explanation: 'A Constituição de 1988 é a atual.' },
+    { id: 'd2', question: 'Qual princípio exige que a Administração Pública atue conforme a lei?', options: ['Publicidade','Legalidade','Impessoalidade','Eficiência'], correct: 1, subject: 'Direito Constitucional', explanation: 'A legalidade vincula toda atuação administrativa.' },
+    { id: 'd3', question: 'Qual artigo do Código Penal trata do furto?', options: ['Art. 121','Art. 155','Art. 157','Art. 171'], correct: 1, subject: 'Direito Penal Comum', explanation: 'O furto está no art. 155.' },
+    { id: 'd4', question: 'Qual placa indica parada obrigatória?', options: ['Placa PARE','Estacionamento','Velocidade máxima','Pedestres'], correct: 0, subject: 'Legislação de Trânsito', explanation: 'A placa R-1 indica parada obrigatória.' }
   ];
   populateSubjects();
   currentPool = QUESTIONS.slice();
-  currentIndex = 0;
-  currentAnswer = null;
-  responsesLocked.clear();
+  currentIndex = 0; currentAnswer = null; responsesLocked.clear();
   renderQuestionPanel();
-  $('status').textContent = '✅ Demo carregada';
+  $('status').textContent = '✅ Demo';
 };
 
 $('refresh').onclick = async () => {
@@ -1484,23 +1636,17 @@ $('refresh').onclick = async () => {
   }
 };
 
-// ═══════════════════════════════════════════════════════════════════
-// EXAM
-// ═══════════════════════════════════════════════════════════════════
 $('exam-start').onclick = () => {
   const qty = parseInt($('exam-qty').value);
   const time = parseInt($('exam-time').value);
-  examCorrectMode = $('exam-correct').value;
-
   currentPool = QUESTIONS.sort(() => Math.random() - 0.5).slice(0, qty);
   if (!currentPool.length) { $('status').textContent = '⚠️ Sem questões'; return; }
-  currentIndex = 0;
-  currentAnswer = null;
+  currentIndex = 0; currentAnswer = null;
   examActive = true;
   examEndsAt = time > 0 ? Date.now() + time*60000 : 0;
   responsesLocked.clear();
   renderQuestionPanel();
-  $('exam-status').textContent = `⏱ ${qty}q ${time > 0 ? '/ '+time+'min' : ''} · ${examCorrectMode === 'end' ? 'ao final' : 'imediata'}`;
+  $('exam-status').textContent = `⏱ ${qty}q ${time > 0 ? '/ '+time+'min' : ''}`;
   $('status').textContent = '✅ Simulado iniciado';
 };
 
@@ -1511,37 +1657,16 @@ setInterval(() => {
   $('exam-status').textContent = `⏱ ${Math.floor(r/60000)}:${Math.floor((r%60000)/1000).toString().padStart(2,'0')}`;
 }, 1000);
 
-// ═══════════════════════════════════════════════════════════════════
-// REVIEW
-// ═══════════════════════════════════════════════════════════════════
-$('review-start').onclick = () => {
-  currentPool = QUESTIONS.filter(q => DB.wrongIds.includes(q.id));
-  if (!currentPool.length) { $('status').textContent = '✅ Nenhum erro para revisar'; return; }
-  currentIndex = 0;
-  currentAnswer = null;
-  examActive = false;
-  responsesLocked.clear();
-  renderQuestionPanel();
-  $('status').textContent = `🔄 Revisando ${currentPool.length} questões erradas`;
-};
-
+$('review-start').onclick = startReview;
 $('reset-stats').onclick = () => {
   if (!confirm('Zerar TODAS as estatísticas?')) return;
   DB.stats = { total: 0, correct: 0, bySubject: {} };
-  DB.wrongIds = [];
-  DB.favorites = [];
-  DB.flashcards = {};
-  DB.history = [];
-  DB.lastSession = null;
+  DB.wrongIds = []; DB.favorites = []; DB.flashcards = []; DB.history = [];
   STORAGE.save(DB);
-  updateHUD();
-  updateReviewSummary();
+  updateHUD(); updateReviewSummary();
   $('status').textContent = '🗑 Zerado';
 };
 
-// ═══════════════════════════════════════════════════════════════════
-// ENV / THEME / CONFIG SELECTORS
-// ═══════════════════════════════════════════════════════════════════
 $('environment').onchange = (e) => {
   let t = e.target.value;
   if (t === 'random') {
@@ -1552,17 +1677,8 @@ $('environment').onchange = (e) => {
   STORAGE.save(DB);
   buildEnvironment(t);
 };
-
 $('lighting').onchange = (e) => { DB.lighting = e.target.value; STORAGE.save(DB); applyLighting(); };
-$('quality').onchange = (e) => { DB.quality = e.target.value; STORAGE.save(DB); buildEnvironment(DB.environment); };
-
-$('reset-panels').onclick = () => {
-  DB.panels = {};
-  STORAGE.save(DB);
-  clearPanels();
-  renderQuestionPanel();
-  $('status').textContent = '🔄 Painéis restaurados';
-};
+$('reset-panels').onclick = () => { resetView(); renderQuestionPanel(); };
 
 function renderThemeSwatches() {
   const g = $('theme-grid');
@@ -1576,13 +1692,11 @@ function renderThemeSwatches() {
     g.appendChild(s);
   }
 }
-
 $('font-scale').oninput = (e) => {
   DB.fontScale = parseInt(e.target.value);
   $('font-scale-val').textContent = DB.fontScale + '%';
   STORAGE.save(DB);
 };
-
 $('repo-apply').onclick = async () => {
   DB.repo = $('repo-input').value.trim();
   STORAGE.save(DB);
@@ -1590,19 +1704,14 @@ $('repo-apply').onclick = async () => {
   QUESTIONS = await loadFromGitHub();
   populateSubjects();
 };
-
 $('export-data').onclick = () => {
   const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `pmsc-backup-${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
+  a.href = url; a.download = `pmsc-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
   URL.revokeObjectURL(url);
 };
-
 $('import-data').onclick = () => $('import-file').click();
-
 $('import-file').onchange = async (e) => {
   const f = e.target.files[0];
   if (!f) return;
@@ -1613,38 +1722,11 @@ $('import-file').onchange = async (e) => {
     STORAGE.save(DB);
     applyTheme(DB.theme);
     buildEnvironment(DB.environment);
-    updateHUD();
-    updateReviewSummary();
-    renderThemeSwatches();
-    $('status').textContent = '✅ Backup importado';
+    updateHUD(); updateReviewSummary(); renderThemeSwatches();
+    $('status').textContent = '✅ Importado';
   } catch (err) { $('status').textContent = '❌ ' + err.message; }
 };
 
-// ═══════════════════════════════════════════════════════════════════
-// MODES
-// ═══════════════════════════════════════════════════════════════════
-$('focus-mode').onclick = () => {
-  $('menu').classList.add('hidden');
-  $('hud').style.opacity = '0.3';
-  $('status').textContent = '🎯 Modo foco (F5 para sair)';
-  setTimeout(() => {
-    $('menu').classList.remove('hidden');
-    $('hud').style.opacity = '1';
-  }, 60000);
-};
-
-$('reading-mode').onclick = () => {
-  if (panelRegistry.has('center')) {
-    const g = panelRegistry.get('center');
-    g.position.set(0, 1.8, -1.8);
-    g.scale.setScalar(1.3);
-  }
-  $('status').textContent = '📖 Modo leitura';
-};
-
-// ═══════════════════════════════════════════════════════════════════
-// TABS
-// ═══════════════════════════════════════════════════════════════════
 document.querySelectorAll('.tabs button').forEach(b => {
   b.onclick = () => {
     document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
@@ -1654,15 +1736,10 @@ document.querySelectorAll('.tabs button').forEach(b => {
   };
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// TUTORIAL
-// ═══════════════════════════════════════════════════════════════════
 $('tutorial-close').onclick = () => $('tutorial').classList.remove('open');
 $('show-tutorial').onclick = () => $('tutorial').classList.add('open');
 
-// ═══════════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════════
+// Init
 (async function init() {
   applyTheme(DB.theme);
   renderThemeSwatches();
@@ -1671,9 +1748,7 @@ $('show-tutorial').onclick = () => $('tutorial').classList.add('open');
   buildEnvironment(DB.environment);
   $('environment').value = DB.environment;
   $('lighting').value = DB.lighting;
-  $('quality').value = DB.quality;
   $('repo-input').value = DB.repo;
-
   updateHUD();
   updateReviewSummary();
 
@@ -1684,32 +1759,19 @@ $('show-tutorial').onclick = () => $('tutorial').classList.add('open');
     currentPool = QUESTIONS.slice();
     currentIndex = 0;
     renderQuestionPanel();
-
-    if (DB.lastSession) {
-      $('continue-session').style.display = 'block';
-      $('continue-session').onclick = () => {
-        currentPool = buildPool('study', DB.lastSession.subject || 'Todas');
-        currentIndex = 0;
-        currentAnswer = null;
-        renderQuestionPanel();
-        $('status').textContent = `⏵ Sessão retomada`;
-      };
-    }
   } else {
-    $('status').textContent = '⚠️ Sem questões. Use "Demo" ou configure repositório.';
-    ensurePanel('center', 0, 2.0, -3.5);
-    addPanelText('center', 'Bem-vindo!\nUse 🧪 Demo\nou configure o repositório.', 0, {
-      width3D: 5, maxLines: 3, fontSizeMax: 70, padding: 60
+    $('status').textContent = '⚠️ Sem questões. Use Demo.';
+    ensurePanel('center', 0, 1.5, -1.8);
+    addPanelLabel('center', 'Bem-vindo!\nUse 🧪 Demo\nou configure repo.', 0, {
+      width3D: 2, maxLines: 3, fontSizeMax: 60, padding: 40
     });
+    renderSidePanels();
   }
 
-  // Tutorial na primeira vez
   if (!localStorage.getItem('pmsc_tutorial_seen')) {
     $('tutorial').classList.add('open');
     localStorage.setItem('pmsc_tutorial_seen', '1');
   }
-
-  console.log('[PMSC Academy v2] iniciado. Questões:', QUESTIONS.length);
 })();
 </script>
 </body>
