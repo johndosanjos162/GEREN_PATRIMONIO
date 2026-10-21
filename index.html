@@ -273,7 +273,7 @@ scene.add(environmentGroup);
 // ═══════════════════════════════════════════════════════════════════
 // PAINÉIS MÓVEIS
 // ═══════════════════════════════════════════════════════════════════
-const panelRegistry = new Map(); // panelId -> THREE.Group
+const panelRegistry = new Map();
 const PANEL_STORAGE_KEY = "pmsc_panels_positions";
 
 function getOrCreatePanelGroup(panelId){
@@ -318,7 +318,7 @@ function restorePanelStates(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// LABELS
+// ⭐ NÚCLEO DO FIX: CANVAS COM AUTO-FIT
 // ═══════════════════════════════════════════════════════════════════
 const dynamic = [];
 const interactive = [];
@@ -326,48 +326,193 @@ const teleportMarkers = [];
 const raycaster = new THREE.Raycaster();
 const rotation = new THREE.Matrix4();
 
-function label(text, x, y, z, width=4.8, height=.28, action=null, kind="normal", panelIdOverride=null){
+// Escolhe altura do canvas baseado no número de linhas
+function pickCanvasHeight(maxLines){
+  if (maxLines <= 1) return 256;
+  if (maxLines <= 2) return 384;
+  if (maxLines <= 4) return 512;
+  if (maxLines <= 6) return 768;
+  if (maxLines <= 8) return 1024;
+  return 1280;
+}
+
+// Escolhe fonte inicial baseado no número de linhas
+function pickFontSizeMax(maxLines){
+  if (maxLines <= 1) return 94;
+  if (maxLines <= 2) return 78;
+  if (maxLines <= 4) return 62;
+  if (maxLines <= 6) return 54;
+  if (maxLines <= 8) return 46;
+  return 40;
+}
+
+// Faz wrap REAL do texto usando measureText
+function wrapTextByPixels(text, maxWidth, ctx){
+  const words = String(text).split(/\s+/);
+  const lines = [];
+  let line = "";
+  for (const word of words){
+    const candidate = line ? line + " " + word : word;
+    if (ctx.measureText(candidate).width > maxWidth && line){
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/**
+ * ⭐ Função principal: desenha texto com auto-fit
+ * Retorna canvas + metadata
+ */
+function drawTextCanvas(text, opts = {}){
+  const {
+    width = 2048,
+    maxLines = 1,
+    fontSizeMax = pickFontSizeMax(maxLines),
+    fontSizeMin = 22,
+    padding = 40,
+    bgColor = "#123c60",
+    textColor = "#ffffff",
+    borderColor = "#4289bb",
+    borderWidth = 7,
+    align = "center",
+    lineHeightFactor = 1.25,
+    bold = true,
+  } = opts;
+
+  const canvasHeight = opts.canvasHeight || pickCanvasHeight(maxLines);
   const canvas = document.createElement("canvas");
-  canvas.width = 2048;
-  canvas.height = 256;
+  canvas.width = width;
+  canvas.height = canvasHeight;
   const ctx = canvas.getContext("2d");
 
-  ctx.fillStyle =
+  // Fundo + borda
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, width, canvasHeight);
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = borderWidth;
+  ctx.strokeRect(borderWidth/2, borderWidth/2, width - borderWidth, canvasHeight - borderWidth);
+
+  const fontWeight = bold ? "bold" : "normal";
+  const maxTextWidth = width - 2 * padding;
+  const maxTextHeight = canvasHeight - 2 * padding;
+
+  // Loop: reduz fonte até caber
+  let fontSize = fontSizeMax;
+  let lines = [];
+  let lineHeight = 0;
+
+  while (fontSize >= fontSizeMin){
+    ctx.font = `${fontWeight} ${fontSize}px Arial`;
+    lines = wrapTextByPixels(text, maxTextWidth, ctx);
+    lineHeight = fontSize * lineHeightFactor;
+    const totalHeight = lines.length * lineHeight;
+
+    if (lines.length <= maxLines && totalHeight <= maxTextHeight){
+      break; // cabeu!
+    }
+    fontSize -= 2;
+  }
+
+  // Se ainda estourou, trunca com … (último recurso)
+  let truncated = false;
+  if (lines.length > maxLines){
+    lines = lines.slice(0, maxLines);
+    truncated = true;
+    let lastLine = lines[maxLines - 1];
+    while (ctx.measureText(lastLine + "…").width > maxTextWidth && lastLine.length > 0){
+      lastLine = lastLine.slice(0, -1);
+    }
+    lines[maxLines - 1] = lastLine.trimEnd() + "…";
+  } else if (lines.length * lineHeight > maxTextHeight){
+    const maxFit = Math.max(1, Math.floor(maxTextHeight / lineHeight));
+    if (maxFit < lines.length){
+      lines = lines.slice(0, maxFit);
+      truncated = true;
+      let lastLine = lines[lines.length - 1];
+      while (ctx.measureText(lastLine + "…").width > maxTextWidth && lastLine.length > 0){
+        lastLine = lastLine.slice(0, -1);
+      }
+      lines[lines.length - 1] = lastLine.trimEnd() + "…";
+    }
+  }
+
+  // Renderiza final
+  ctx.font = `${fontWeight} ${fontSize}px Arial`;
+  ctx.fillStyle = textColor;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = align === "left" ? "left" : align === "right" ? "right" : "center";
+
+  const textHeight = lines.length * lineHeight;
+  const startY = (canvasHeight - textHeight) / 2 + lineHeight / 2;
+  const startX = align === "left" ? padding : align === "right" ? width - padding : width / 2;
+
+  lines.forEach((line, i) => {
+    ctx.fillText(line, startX, startY + i * lineHeight);
+  });
+
+  return { canvas, lines, fontSize, truncated, canvasHeight };
+}
+
+/**
+ * ⭐ label() — agora usa drawTextCanvas e mantém proporção
+ * IMPORTANTE: a altura física é calculada pela proporção do canvas,
+ * NÃO pelo parâmetro height. Isso corrige o "achatamento".
+ */
+function label(text, x, y, z, width = 4.8, height = 0.28, action = null, kind = "normal", panelIdOverride = null, opts = {}){
+  const bgColor =
     kind === "correct" ? "#16684d" :
     kind === "wrong" ? "#893440" :
     kind === "handle" ? "#0a3a5a" :
+    kind === "question" ? "#0d2740" :
     action ? "#176ca4" : "#123c60";
-  ctx.fillRect(0, 0, 2048, 256);
-  ctx.strokeStyle = action ? "#a4efff" : "#4289bb";
-  ctx.lineWidth = 7;
-  ctx.strokeRect(5, 5, 2038, 246);
-  ctx.fillStyle = "#fff";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
+  const borderColor =
+    action ? "#a4efff" :
+    kind === "question" ? "#49baff" :
+    kind === "correct" ? "#2fc77a" :
+    kind === "wrong" ? "#d15464" :
+    "#4289bb";
 
-  let size = 94;
-  do {
-    ctx.font = `bold ${size}px Arial`;
-    if (ctx.measureText(String(text)).width < 1930) break;
-    size -= 3;
-  } while (size > 30);
-  ctx.fillText(String(text), 1024, 128);
+  const maxLines = opts.maxLines || 1;
+  const result = drawTextCanvas(text, {
+    width: 2048,
+    maxLines,
+    fontSizeMax: opts.fontSizeMax || pickFontSizeMax(maxLines),
+    fontSizeMin: opts.fontSizeMin || 22,
+    padding: opts.padding || 40,
+    bgColor,
+    borderColor,
+    align: opts.align || "center",
+    bold: opts.bold !== false,
+  });
 
-  const texture = new THREE.CanvasTexture(canvas);
+  const texture = new THREE.CanvasTexture(result.canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
+  // ⭐ PROPORÇÃO CORRETA — sem esticar
+  const physicalHeight = width * (result.canvas.height / result.canvas.width);
+
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(width, height),
-    new THREE.MeshBasicMaterial({map:texture, side:THREE.DoubleSide})
+    new THREE.PlaneGeometry(width, physicalHeight),
+    new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
   );
   mesh.position.set(x, y, z);
 
-  // Auto-agrupamento por painel
   const panelId = panelIdOverride || detectPanelId(x);
   const group = getOrCreatePanelGroup(panelId);
   group.add(mesh);
   mesh.userData.panelId = panelId;
+  mesh.userData.truncated = result.truncated;
+  mesh.userData.fontSize = result.fontSize;
+
+  if (result.truncated){
+    console.warn("[TRUNCATED]", {text: String(text).slice(0, 60), fontSize: result.fontSize, lines: result.lines.length});
+  }
 
   dynamic.push(mesh);
   if (action){
@@ -377,11 +522,10 @@ function label(text, x, y, z, width=4.8, height=.28, action=null, kind="normal",
   return mesh;
 }
 
-// Alça de arrastar — visual distinto
+// Alça de arrastar
 function createGrabHandle(panelId, x, y, z, width){
-  const mesh = label(`☰ ${panelId.toUpperCase()}`, x, y, z, width, .22, null, "handle", panelId);
+  const mesh = label(`☰ ${panelId.toUpperCase()}`, x, y, z, width, .22, null, "handle", panelId, {maxLines: 1});
   mesh.userData.isGrabHandle = true;
-  // Adiciona à lista de interativos para ser raycastable
   if (!interactive.includes(mesh)) interactive.push(mesh);
   return mesh;
 }
@@ -403,24 +547,8 @@ function clearPanels(){
   panelRegistry.clear();
 }
 
-function wrap(text, max=44){
-  const lines = [];
-  let line = "";
-  for (const word of String(text).split(/\s+/)){
-    const candidate = line ? line + " " + word : word;
-    if (candidate.length > max && line){ lines.push(line); line = word; }
-    else line = candidate;
-  }
-  if (line) lines.push(line);
-  return lines;
-}
-
-function center(text, y, width=5.15, height=.27, action=null, kind="normal"){
-  return label(text, 0, y, -3.52, width, height, action, kind, "question");
-}
-
-function centerStats(text, y, width=2.25, height=.28, action=null, kind="normal"){
-  return label(text, 4.25, y, -3.94, width, height, action, kind, "stats");
+function center(text, y, width=5.15, action=null, kind="normal", opts={}){
+  return label(text, 0, y, -3.52, width, .28, action, kind, "question", opts);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -585,7 +713,7 @@ $("environment").onchange = e => changeEnvironment(e.target.value);
 $("lighting").onchange = () => {applyLighting(); try{localStorage.setItem("pmsc_lighting", $("lighting").value);}catch(e){}};
 
 // ═══════════════════════════════════════════════════════════════════
-// SISTEMA DE PERGUNTAS
+// PERGUNTAS
 // ═══════════════════════════════════════════════════════════════════
 const defaultSubjects = [
   "Língua Portuguesa","Informática","Direito Constitucional",
@@ -630,79 +758,124 @@ function updateStats(){
 }
 
 function environmentPanel(){
-  label("ESCOLHER AMBIENTE", -4.25, 3.12, -3.95, 2.25, .27, null, "normal", "env");
-  createGrabHandle("env", -4.25, 3.42, -3.95, 2.25);
+  label("ESCOLHER AMBIENTE", -4.25, 3.42, -3.95, 2.25, .27, null, "normal", "env", {maxLines: 1});
+  createGrabHandle("env", -4.25, 3.72, -3.95, 2.25);
   environments.forEach((item, index) => {
     const [id, name] = item;
-    label(name, -4.25, 2.78 - index * .25, -3.94, 2.25, .23,
+    label(name, -4.25, 3.0 - index * .28, -3.94, 2.25, .24,
       () => changeEnvironment(id),
-      currentEnvironment === id ? "correct" : "normal", "env");
+      currentEnvironment === id ? "correct" : "normal", "env", {maxLines: 1});
   });
-  label("ALEATORIO", -4.25, .25, -3.94, 2.25, .24, () => changeEnvironment("random"), "normal", "env");
-  label("DIA / NOITE", -4.25, -.08, -3.94, 2.25, .24, () => {
+  label("ALEATORIO", -4.25, .3, -3.94, 2.25, .24, () => changeEnvironment("random"), "normal", "env", {maxLines: 1});
+  label("DIA / NOITE", -4.25, -.05, -3.94, 2.25, .24, () => {
     $("lighting").value = $("lighting").value === "day" ? "night" : "day";
     $("lighting").dispatchEvent(new Event("change"));
-  }, "normal", "env");
+  }, "normal", "env", {maxLines: 1});
 }
 
-function render(message=""){
-  // Limpa grabs ativos
+/**
+ * ⭐ RENDER — layout vertical com altura DINÂMICA por label
+ * Cada label ocupa sua própria altura, sem sobreposição
+ */
+function render(message = ""){
   for (let i = 0; i < 2; i++){
     delete renderer.xr.getController(i).userData.grabState;
     delete renderer.xr.getHand(i).userData.grabState;
   }
 
   clearPanels();
-  center("PMSC 2026 | ACADEMIA VIRTUAL", 3.45, 5.3, .27);
-  createGrabHandle("question", 0, 5.75, -3.52, 5.3);
+
+  // Alça + título
+  createGrabHandle("question", 0, 4.9, -3.52, 5.2);
+  center("PMSC 2026 | ACADEMIA VIRTUAL", 4.45, 5.2, null, "normal", {maxLines: 1, fontSizeMax: 80});
+
+  // Painel de ambiente
   environmentPanel();
 
   if (!pool.length){
-    center("CARREGUE QUESTOES PARA INICIAR", 2.4);
-    center("USE O MENU PARA IMPORTAR JSON", 1.95);
+    center("CARREGUE QUESTÕES PARA INICIAR", 2.4, 5.2, null, "normal", {maxLines: 1});
+    center("USE O MENU PARA IMPORTAR JSON", 1.9, 5.2, null, "normal", {maxLines: 1});
     restorePanelStates();
     return;
   }
   if (examEnded){
-    center("SIMULADO FINALIZADO", 2.6);
-    center(`ACERTOS: ${examCorrect} DE ${examDone}`, 2.1);
-    center("REINICIAR SIMULADO", 1.55, 3.8, .35, start);
+    center("SIMULADO FINALIZADO", 2.6, 5.2, null, "normal", {maxLines: 1});
+    center(`ACERTOS: ${examCorrect} DE ${examDone}`, 2.05, 5.2, null, "normal", {maxLines: 1});
+    center("REINICIAR SIMULADO", 1.4, 4.0, start, "normal", {maxLines: 1});
     restorePanelStates();
     return;
   }
 
   const q = pool[current];
-  center(q.subject.toUpperCase(), 3.08, 5.15, .24);
-  const questionLines = wrap(q.question, 44);
-  questionLines.slice(0, 4).forEach((text, index) => {
-    center(text, 2.79 - index * .24, 5.2, .22);
+
+  // Disciplina
+  center(q.subject.toUpperCase(), 3.85, 5.1, null, "normal", {maxLines: 1, fontSizeMax: 68});
+
+  // ⭐ ENUNCIADO — um único label com auto-fit (até 6 linhas)
+  const enunciado = center(q.question, 2.65, 5.1, null, "question", {
+    maxLines: 6,
+    fontSizeMax: 56,
+    padding: 44,
   });
 
+  // Altura do enunciado para calcular posições abaixo
+  const enunciadoAltura = 5.1 * (enunciado.geometry.parameters.height / enunciado.geometry.parameters.width);
+  const enunciadoBase = 2.65 - enunciadoAltura / 2;
+
+  // ⭐ ALTERNATIVAS — cada uma com auto-fit (até 3 linhas)
+  const gap = 0.12;
+  let yCursor = enunciadoBase - gap - 0.6;
+
   q.options.forEach((option, index) => {
-    const lines = wrap(`${"ABCDE"[index]}) ${option}`, 46);
-    const y = 1.7 - index * .32;
+    const letter = "ABCDE"[index];
+    const text = `${letter}) ${option}`;
     let kind = "normal";
     if (answered){
       if (index === q.correct) kind = "correct";
       else if (index === q.selected) kind = "wrong";
     }
-    center(lines[0], y, 5.15, .28, () => answer(index), kind);
-    if (lines[1]) center(lines[1], y - .115, 5.15, .105, () => answer(index));
+    const alt = center(text, yCursor, 5.1, () => answer(index), kind, {
+      maxLines: 3,
+      fontSizeMax: 48,
+      padding: 32,
+    });
+    const altAltura = 5.1 * (alt.geometry.parameters.height / alt.geometry.parameters.width);
+    yCursor -= (altAltura / 2) + gap + 0.06;
+    yCursor -= (altAltura / 2);
   });
 
-  center(message || `QUESTAO ${current+1} DE ${pool.length}`, -.04, 5.1, .24);
-  center(current === pool.length - 1 ? "FINALIZAR / REINICIAR" : "PROXIMA QUESTAO",
-    -.38, 3.8, .29, next);
+  // Status
+  yCursor -= 0.1;
+  center(message || `QUESTÃO ${current + 1} DE ${pool.length}`, yCursor, 5.0, null, "normal", {
+    maxLines: 1, fontSizeMax: 64,
+  });
 
-  // Painel de stats
-  label("DESEMPENHO", 4.25, 3.05, -3.94, 2.25, .27, null, "normal", "stats");
-  createGrabHandle("stats", 4.25, 3.35, -3.94, 2.25);
-  label(`${stats.correct} / ${stats.total} ACERTOS`, 4.25, 2.7, -3.94, 2.25, .28, null, "normal", "stats");
-  label("DISCIPLINA", 4.25, 2.28, -3.94, 2.25, .25, null, "normal", "stats");
-  label(q.subject.slice(0, 27), 4.25, 1.95, -3.94, 2.25, .28, null, "normal", "stats");
+  // Botão
+  yCursor -= 0.55;
+  center(
+    current === pool.length - 1 ? "FINALIZAR / REINICIAR" : "PRÓXIMA QUESTÃO",
+    yCursor, 3.8, next, "normal", {maxLines: 1, fontSizeMax: 60}
+  );
+
+  // ⭐ PAINEL DE STATS (direita)
+  label("DESEMPENHO", 4.25, 3.42, -3.94, 2.25, .27, null, "normal", "stats", {maxLines: 1});
+  createGrabHandle("stats", 4.25, 3.72, -3.94, 2.25);
+  label(`${stats.correct} / ${stats.total} ACERTOS`, 4.25, 3.0, -3.94, 2.25, .28, null, "normal", "stats", {maxLines: 1});
+  label("DISCIPLINA", 4.25, 2.55, -3.94, 2.25, .25, null, "normal", "stats", {maxLines: 1});
+
+  // Disciplina com auto-fit
+  const discLabel = label(q.subject, 4.25, 2.15, -3.94, 2.25, .28, null, "normal", "stats", {
+    maxLines: 2, fontSizeMax: 42,
+  });
+  const discAltura = 2.25 * (discLabel.geometry.parameters.height / discLabel.geometry.parameters.width);
+
+  // Explicação
   if (answered && q.explanation){
-    wrap(q.explanation, 27).slice(0, 4).forEach((text, index) => {
-      label(text, 4.25, 1.5 - index * .25, -3.94, 2.25, .22, null, "normal", "stats");
+    let expY = 2.15 - discAltura / 2 - 0.2;
+    label("EXPLICAÇÃO", 4.25, expY, -3.94, 2.25, .22, null, "normal", "stats", {maxLines: 1, fontSizeMax: 40});
+    expY -= 0.35;
+    label(q.explanation, 4.25, expY, -3.94, 2.25, .22, null, "normal", "stats", {
+      maxLines: 6, fontSizeMax: 34,
     });
   }
 
@@ -764,9 +937,6 @@ $("start").onclick = start;
 $("mode").onchange = start;
 $("subject").onchange = start;
 
-// ═══════════════════════════════════════════════════════════════════
-// NORMALIZE
-// ═══════════════════════════════════════════════════════════════════
 function normalize(q){
   const question = q.enunciado ?? q.pergunta ?? q.questao ?? q.question;
   const raw = q.alternativas ?? q.opcoes ?? q.options;
@@ -926,7 +1096,6 @@ function updateGrab(entity, inputSource){
   const delta = sourcePos.clone().sub(state.startSourcePos);
   state.group.position.copy(state.startGroupPos.clone().add(delta));
 
-  // Thumbstick para resize/rotate
   if (inputSource && inputSource.gamepad && inputSource.gamepad.axes){
     const axes = inputSource.gamepad.axes;
     const x = axes.length >= 4 ? axes[2] : (axes[0] || 0);
@@ -967,21 +1136,15 @@ const handFactory = new XRHandModelFactory();
 for (let i = 0; i < 2; i++){
   const controller = renderer.xr.getController(i);
 
-  // Trigger = click
-  controller.addEventListener("selectstart", () => {
-    selectObject(controller);
-  });
+  controller.addEventListener("selectstart", () => { selectObject(controller); });
 
-  // Grip = grab
   controller.addEventListener("squeezestart", () => {
     const hit = raycastFirst(controller);
     if (hit && hit.object.userData.panelId){
       startGrab(controller, hit.object.userData.panelId);
     }
   });
-  controller.addEventListener("squeezeend", () => {
-    endGrab(controller);
-  });
+  controller.addEventListener("squeezeend", () => { endGrab(controller); });
 
   rig.add(controller);
 
@@ -1001,7 +1164,6 @@ for (let i = 0; i < 2; i++){
   const hand = renderer.xr.getHand(i);
   hand.add(handFactory.createHandModel(hand, "mesh"));
 
-  // Hand tracking: pinch na alça = grab, pinch em botão = click
   hand.addEventListener("selectstart", () => {
     const hit = raycastFirst(hand);
     if (!hit) return;
@@ -1012,9 +1174,7 @@ for (let i = 0; i < 2; i++){
       obj.userData.action();
     }
   });
-  hand.addEventListener("selectend", () => {
-    endGrab(hand);
-  });
+  hand.addEventListener("selectend", () => { endGrab(hand); });
 
   rig.add(hand);
 }
@@ -1030,9 +1190,7 @@ $("enter").onclick = async () => {
     });
     await renderer.xr.setSession(session);
     $("enter").textContent = "SAIR DO VR";
-    session.addEventListener("end", () => {
-      $("enter").textContent = "ENTRAR EM VR";
-    });
+    session.addEventListener("end", () => { $("enter").textContent = "ENTRAR EM VR"; });
   }catch(error){
     $("status").textContent = "Erro VR: " + error.message;
   }
@@ -1051,7 +1209,6 @@ renderer.setAnimationLoop(() => {
   if (renderer.xr.isPresenting){
     const session = renderer.xr.getSession();
 
-    // Grab updates + thumbstick
     for (let i = 0; i < session.inputSources.length; i++){
       const source = session.inputSources[i];
       const controller = renderer.xr.getController(i);
@@ -1060,7 +1217,6 @@ renderer.setAnimationLoop(() => {
       updateGrab(hand, source);
     }
 
-    // Locomotion (só se nenhum grab estiver ativo)
     if (!anyGrabActive()){
       for (const source of session.inputSources){
         if (!source.gamepad || source.handedness !== "left") continue;
