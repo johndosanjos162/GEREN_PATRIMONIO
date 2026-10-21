@@ -3274,6 +3274,556 @@
         "E) Apenas crime militar."
       ],
       "correta": "B"
+    },
+    {
+      "pergunta": "Conforme o art. 1º do Código de Trânsito Brasileiro (CTB – Lei nº 9.503/1997), o trânsito de qualquer natureza nas vias terrestres do território nacional, abertas à circulação, rege-se por:",
+      "alternativas": [
+        "A) Este Código.",
+        "B) Apenas resoluções do Contran.",
+        "C) Apenas leis estaduais.",
+        "D) Apenas leis municipais.",
+        "E) O Código Penal."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "São objetivos básicos do Sistema Nacional de Trânsito (art. 1º, §2º, do CTB), EXCETO:",
+      "alternativas": [
+        "A) Padronizar os critérios de sinalização.",
+        "B) Garantir a segurança e a fluidez do trânsito.",
+        "C) Educar e informar os usuários.",
+        "D) Fiscalizar o cumprimento da legislação.",
+        "E) Estabelecer penas privativas de liberdade para todas as infrações."
+      ],
+      "correta": "E"
+    },
+    {
+      "pergunta": "A velocidade máxima permitida em vias urbanas, quando não houver sinalização regulamentadora, conforme o art. 61 do CTB, é de:",
+      "alternativas": [
+        "A) 80 km/h nas vias de trânsito rápido; 60 km/h nas vias arteriais; 40 km/h nas vias coletoras; 30 km/h nas vias locais.",
+        "B) 100 km/h em todas as vias.",
+        "C) 60 km/h em todas as vias.",
+        "D) 40 km/h em todas as vias.",
+        "E) 50 km/h em todas as vias."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A velocidade máxima permitida em rodovias de pista simples, quando não houver sinalização, conforme o art. 61 do CTB, é de:",
+      "alternativas": [
+        "A) 100 km/h para automóveis, camionetas e motocicletas; 90 km/h para os demais veículos.",
+        "B) 80 km/h para todos os veículos.",
+        "C) 110 km/h para todos os veículos.",
+        "D) 90 km/h para todos os veículos.",
+        "E) 60 km/h para todos os veículos."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Dirigir sob a influência de álcool ou de qualquer outra substância psicoativa que determine dependência (art. 165 do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa (dez vezes) e suspensão do direito de dirigir por 12 meses, além da medida administrativa de recolhimento do documento de habilitação e retenção do veículo.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A recusa do condutor em se submeter a teste, exame clínico, perícia ou outro procedimento que permita certificar influência de álcool ou outra substância psicoativa (art. 165-A do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com as mesmas penalidades e medidas administrativas do art. 165.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Deixar o condutor de usar o cinto de segurança (art. 167 do CTB) é infração:",
+      "alternativas": [
+        "A) Grave, com multa e retenção do veículo até a regularização.",
+        "B) Gravíssima.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Transportar crianças menores de 10 anos sem o dispositivo de retenção adequado (art. 168 do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa e retenção do veículo até a regularização.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Dirigir veículo sem possuir Carteira Nacional de Habilitação ou Permissão para Dirigir (art. 162, I, do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa (três vezes) e retenção do veículo até a apresentação de condutor habilitado.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Dirigir veículo com Carteira Nacional de Habilitação ou Permissão para Dirigir cassada ou com suspensão do direito de dirigir (art. 162, II, do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa (três vezes) e recolhimento do documento de habilitação e retenção do veículo.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Dirigir veículo com Carteira Nacional de Habilitação de categoria diferente da do veículo (art. 162, III, do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa e retenção do veículo até a apresentação de condutor habilitado.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Dirigir veículo com validade da Carteira Nacional de Habilitação vencida há mais de 30 dias (art. 162, V, do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa e retenção do veículo até a regularização.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Usar o veículo para interromper a circulação na via sem autorização (art. 253-A do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa (vinte vezes) e suspensão do direito de dirigir, além de apreensão do veículo.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Avançar o sinal vermelho do semáforo ou o de parada obrigatória (art. 208 do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Transitar em velocidade superior à máxima permitida em até 20% (art. 218, I, do CTB) é infração:",
+      "alternativas": [
+        "A) Média, com multa.",
+        "B) Grave.",
+        "C) Gravíssima.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Transitar em velocidade superior à máxima permitida em mais de 20% até 50% (art. 218, II, do CTB) é infração:",
+      "alternativas": [
+        "A) Grave, com multa.",
+        "B) Média.",
+        "C) Gravíssima.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Transitar em velocidade superior à máxima permitida em mais de 50% (art. 218, III, do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa (três vezes) e suspensão do direito de dirigir.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Deixar de dar preferência de passagem a pedestre que esteja atravessando a via transversal para onde se dirige o veículo, ou ainda quando não haja sinalização (art. 214 do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Estacionar o veículo em local e horário proibidos pela sinalização (art. 181, XVII, do CTB) é infração:",
+      "alternativas": [
+        "A) Média, com multa e remoção do veículo.",
+        "B) Grave.",
+        "C) Gravíssima.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Estacionar o veículo sobre a calçada ou sobre faixa destinada a pedestre (art. 181, VIII, do CTB) é infração:",
+      "alternativas": [
+        "A) Grave, com multa e remoção do veículo.",
+        "B) Média.",
+        "C) Gravíssima.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Dirigir ameaçando os pedestres que estejam atravessando a via pública, ou os demais veículos (art. 170 do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa e suspensão do direito de dirigir.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Usar o veículo para arremessar sobre os pedestres ou veículos água ou detritos (art. 171 do CTB) é infração:",
+      "alternativas": [
+        "A) Média, com multa.",
+        "B) Grave.",
+        "C) Gravíssima.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Atirar do veículo ou abandonar na via objetos ou substâncias (art. 172 do CTB) é infração:",
+      "alternativas": [
+        "A) Média, com multa.",
+        "B) Grave.",
+        "C) Gravíssima.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Disputar corrida por espírito de emulação (art. 173 do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa (dez vezes), suspensão do direito de dirigir e apreensão do veículo.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Promover na via competição esportiva sem autorização (art. 174 do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa (dez vezes), suspensão do direito de dirigir e apreensão do veículo.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Utilizar-se de veículo para demonstrar ou exibir manobra perigosa, mediante arrancada brusca, derrapagem ou frenagem com deslizamento ou arrastamento de pneus (art. 175 do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa (dez vezes), suspensão do direito de dirigir e apreensão do veículo.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Deixar o condutor envolvido em acidente com vítima de prestar ou providenciar socorro à vítima, podendo fazê-lo (art. 176, I, do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa (cinco vezes) e suspensão do direito de dirigir.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Deixar o condutor de adotar providências para remover o veículo do local do acidente quando não houver vítima e a sinalização e condições de segurança permitirem (art. 178 do CTB) é infração:",
+      "alternativas": [
+        "A) Média, com multa.",
+        "B) Grave.",
+        "C) Gravíssima.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A CNH é classificada em categorias. A categoria B habilita o condutor a dirigir:",
+      "alternativas": [
+        "A) Veículos motorizados, não abrangidos pela categoria A, cujo peso bruto total não exceda a 3.500 kg e cuja lotação não exceda a 8 lugares, excluído o do motorista.",
+        "B) Somente motocicletas.",
+        "C) Ônibus e micro-ônibus.",
+        "D) Caminhões com peso superior a 3.500 kg.",
+        "E) Qualquer veículo."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A categoria A habilita o condutor a dirigir:",
+      "alternativas": [
+        "A) Veículos motorizados de duas ou três rodas, com ou sem carro lateral.",
+        "B) Automóveis.",
+        "C) Ônibus.",
+        "D) Caminhões.",
+        "E) Qualquer veículo."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A categoria C habilita o condutor a dirigir:",
+      "alternativas": [
+        "A) Veículos motorizados usados em transporte de carga, cujo peso bruto total exceda a 3.500 kg.",
+        "B) Somente automóveis.",
+        "C) Somente motocicletas.",
+        "D) Ônibus.",
+        "E) Qualquer veículo."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A categoria D habilita o condutor a dirigir:",
+      "alternativas": [
+        "A) Veículos motorizados usados no transporte de passageiros, cuja lotação exceda a 8 lugares, excluído o do motorista.",
+        "B) Somente automóveis.",
+        "C) Somente motocicletas.",
+        "D) Caminhões leves.",
+        "E) Qualquer veículo."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A categoria E habilita o condutor a dirigir:",
+      "alternativas": [
+        "A) Combinação de veículos em que a unidade tratora se enquadre nas categorias B, C ou D e cuja unidade acoplada, reboque, semirreboque, trailer ou articulada tenha 6.000 kg ou mais de peso bruto total, ou cuja lotação exceda a 8 lugares.",
+        "B) Somente automóveis.",
+        "C) Somente motocicletas.",
+        "D) Ônibus simples.",
+        "E) Qualquer veículo."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O prazo de validade da CNH, em regra, para condutores com idade inferior a 50 anos, é de:",
+      "alternativas": [
+        "A) 10 anos.",
+        "B) 5 anos.",
+        "C) 3 anos.",
+        "D) 1 ano.",
+        "E) Indeterminado."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O prazo de validade da CNH para condutores com idade igual ou superior a 50 anos e inferior a 70 anos, em regra, é de:",
+      "alternativas": [
+        "A) 5 anos.",
+        "B) 10 anos.",
+        "C) 3 anos.",
+        "D) 1 ano.",
+        "E) Indeterminado."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O prazo de validade da CNH para condutores com idade igual ou superior a 70 anos, em regra, é de:",
+      "alternativas": [
+        "A) 3 anos.",
+        "B) 5 anos.",
+        "C) 10 anos.",
+        "D) 1 ano.",
+        "E) Indeterminado."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A pontuação para suspensão do direito de dirigir, em regra, ocorre quando o condutor atingir, no período de 12 meses:",
+      "alternativas": [
+        "A) 20 pontos, se houver duas ou mais infrações gravíssimas; 30 pontos, se houver uma infração gravíssima; 40 pontos, se não houver infração gravíssima.",
+        "B) 15 pontos em qualquer hipótese.",
+        "C) 10 pontos em qualquer hipótese.",
+        "D) 50 pontos em qualquer hipótese.",
+        "E) Não há limite de pontos."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A infração de natureza leve tem valor de multa de:",
+      "alternativas": [
+        "A) R$ 88,38 (e 3 pontos).",
+        "B) R$ 130,16 (e 4 pontos).",
+        "C) R$ 195,23 (e 5 pontos).",
+        "D) R$ 293,47 (e 7 pontos).",
+        "E) R$ 880,41."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A infração de natureza média tem valor de multa de:",
+      "alternativas": [
+        "A) R$ 130,16 (e 4 pontos).",
+        "B) R$ 88,38 (e 3 pontos).",
+        "C) R$ 195,23 (e 5 pontos).",
+        "D) R$ 293,47 (e 7 pontos).",
+        "E) R$ 880,41."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A infração de natureza grave tem valor de multa de:",
+      "alternativas": [
+        "A) R$ 195,23 (e 5 pontos).",
+        "B) R$ 88,38 (e 3 pontos).",
+        "C) R$ 130,16 (e 4 pontos).",
+        "D) R$ 293,47 (e 7 pontos).",
+        "E) R$ 880,41."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A infração de natureza gravíssima tem valor de multa de:",
+      "alternativas": [
+        "A) R$ 293,47 (e 7 pontos), podendo ser multiplicada conforme o caso.",
+        "B) R$ 88,38 (e 3 pontos).",
+        "C) R$ 130,16 (e 4 pontos).",
+        "D) R$ 195,23 (e 5 pontos).",
+        "E) R$ 50,00."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O Contran é o órgão máximo normativo e consultivo do Sistema Nacional de Trânsito e tem por finalidade:",
+      "alternativas": [
+        "A) Estabelecer as normas regulamentares referidas no CTB e as diretrizes da Política Nacional de Trânsito.",
+        "B) Apenas fiscalizar o trânsito.",
+        "C) Apenas aplicar multas.",
+        "D) Apenas emitir CNH.",
+        "E) Não existe no CTB."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O Denatran (atual Senatran) é o órgão máximo executivo de trânsito da União e tem por finalidade:",
+      "alternativas": [
+        "A) Cumprir e fazer cumprir a legislação de trânsito e as resoluções do Contran, no âmbito de suas competências.",
+        "B) Apenas legislar sobre trânsito.",
+        "C) Apenas aplicar multas estaduais.",
+        "D) Apenas emitir CNH municipal.",
+        "E) Não existe no CTB."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A sinalização de trânsito é classificada em:",
+      "alternativas": [
+        "A) Vertical, horizontal, semafórica, dispositivos auxiliares e sinalização temporária.",
+        "B) Apenas vertical.",
+        "C) Apenas horizontal.",
+        "D) Apenas semafórica.",
+        "E) Não há classificação."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A placa de regulamentação tem por finalidade:",
+      "alternativas": [
+        "A) Informar aos usuários as condições, proibições, obrigações ou restrições no uso das vias.",
+        "B) Apenas advertir sobre perigos.",
+        "C) Apenas indicar direções.",
+        "D) Apenas informar serviços.",
+        "E) Não existe."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A placa de advertência tem por finalidade:",
+      "alternativas": [
+        "A) Alertar os usuários sobre condições potencialmente perigosas, obstáculos ou restrições à circulação.",
+        "B) Apenas regulamentar proibições.",
+        "C) Apenas indicar direções.",
+        "D) Apenas informar serviços.",
+        "E) Não existe."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O uso de capacete de segurança para condutor e passageiro de motocicleta, motoneta e ciclomotor (art. 244 do CTB) é:",
+      "alternativas": [
+        "A) Obrigatório, sendo infração gravíssima a ausência, com multa e suspensão do direito de dirigir.",
+        "B) Facultativo.",
+        "C) Obrigatório apenas para o condutor.",
+        "D) Obrigatório apenas em rodovias.",
+        "E) Não é exigido."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Transportar criança menor de 10 anos nos bancos dianteiros do veículo, salvo nos casos excepcionais previstos em resolução do Contran (art. 64 do CTB), é:",
+      "alternativas": [
+        "A) Proibido.",
+        "B) Permitido em qualquer hipótese.",
+        "C) Permitido apenas em veículos antigos.",
+        "D) Permitido apenas em estradas.",
+        "E) Não há proibição."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O farol baixo deve ser utilizado, durante a noite e em túneis com iluminação pública, em todas as vias (art. 40 do CTB). Durante o dia, em rodovias de pista simples situadas fora de áreas urbanas, o uso do farol baixo é:",
+      "alternativas": [
+        "A) Obrigatório.",
+        "B) Facultativo.",
+        "C) Proibido.",
+        "D) Obrigatório apenas em dias chuvosos.",
+        "E) Não há regra."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A ultrapassagem de outro veículo pelo acostamento (art. 191 do CTB) é infração:",
+      "alternativas": [
+        "A) Gravíssima, com multa.",
+        "B) Grave.",
+        "C) Média.",
+        "D) Leve.",
+        "E) Não é infração."
+      ],
+      "correta": "A"
     }
   ],
   "Direito Penal Comum": [
@@ -3714,6 +4264,556 @@
         "C) Detenção de 6 meses a 2 anos.",
         "D) Reclusão de 2 a 8 anos.",
         "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Conforme o art. 1º do Código Penal, não há crime sem lei anterior que o defina, nem pena sem prévia cominação legal. Esse princípio é conhecido como:",
+      "alternativas": [
+        "A) Princípio da culpabilidade.",
+        "B) Princípio da legalidade.",
+        "C) Princípio da interveniência mínima.",
+        "D) Princípio da insignificância.",
+        "E) Princípio da proporcionalidade."
+      ],
+      "correta": "B"
+    },
+    {
+      "pergunta": "Sobre a lei penal no tempo, é correto afirmar que:",
+      "alternativas": [
+        "A) A lei penal sempre retroage.",
+        "B) A lei penal não retroagirá, salvo para beneficiar o réu.",
+        "C) A lei penal mais gravosa sempre retroage.",
+        "D) A lei penal nunca retroage.",
+        "E) A retroatividade depende de autorização judicial."
+      ],
+      "correta": "B"
+    },
+    {
+      "pergunta": "O crime consumado, segundo o art. 14, I, do CP, ocorre quando:",
+      "alternativas": [
+        "A) O agente inicia a execução, mas não atinge o resultado por circunstâncias alheias à sua vontade.",
+        "B) Se reúnem todos os elementos de sua definição legal.",
+        "C) O agente desiste voluntariamente de prosseguir na execução.",
+        "D) O agente impede que o resultado se produza.",
+        "E) O agente pratica atos preparatórios."
+      ],
+      "correta": "B"
+    },
+    {
+      "pergunta": "A tentativa, prevista no art. 14, II, do CP, ocorre quando:",
+      "alternativas": [
+        "A) O agente inicia a execução, mas não consuma o crime por circunstâncias alheias à sua vontade.",
+        "B) O agente desiste voluntariamente.",
+        "C) O agente impede o resultado.",
+        "D) O crime se consuma.",
+        "E) O agente pratica apenas atos preparatórios."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "São causas de exclusão da ilicitude (art. 23 do CP), EXCETO:",
+      "alternativas": [
+        "A) Estado de necessidade.",
+        "B) Legítima defesa.",
+        "C) Estrito cumprimento do dever legal.",
+        "D) Exercício regular de direito.",
+        "E) Erro de proibição inevitável."
+      ],
+      "correta": "E"
+    },
+    {
+      "pergunta": "Sobre a legítima defesa (art. 25 do CP), é correto afirmar que:",
+      "alternativas": [
+        "A) Exige agressão injusta, atual ou iminente, a direito próprio ou de outrem, usando moderadamente dos meios necessários.",
+        "B) Só se aplica a direito próprio.",
+        "C) Só se aplica a agressão futura.",
+        "D) Não exige moderação dos meios.",
+        "E) Só se aplica a crimes dolosos."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O estado de necessidade (art. 24 do CP) configura-se quando:",
+      "alternativas": [
+        "A) O agente pratica o fato para salvar de perigo atual, que não provocou por sua vontade, nem podia de outro modo evitar, direito próprio ou alheio, cujo sacrifício, nas circunstâncias, não era razoável exigir-se.",
+        "B) O agente provoca o perigo intencionalmente.",
+        "C) O perigo é futuro e incerto.",
+        "D) Só se aplica a direito próprio.",
+        "E) Não exige proporcionalidade."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Sobre a imputabilidade penal, é correto afirmar que, em regra, é inimputável:",
+      "alternativas": [
+        "A) O menor de 18 anos.",
+        "B) O menor de 21 anos.",
+        "C) O maior de 70 anos.",
+        "D) O estrangeiro.",
+        "E) O analfabeto."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A emoção e a paixão, conforme o art. 28, I, do CP:",
+      "alternativas": [
+        "A) Excluem a imputabilidade penal.",
+        "B) Não excluem a imputabilidade penal.",
+        "C) Excluem a ilicitude.",
+        "D) Excluem a culpabilidade em qualquer hipótese.",
+        "E) Sempre reduzem a pena."
+      ],
+      "correta": "B"
+    },
+    {
+      "pergunta": "A embriaguez voluntária ou culposa, conforme o art. 28, II, do CP:",
+      "alternativas": [
+        "A) Exclui a imputabilidade penal.",
+        "B) Não exclui a imputabilidade penal.",
+        "C) Exclui a ilicitude.",
+        "D) Sempre isenta de pena.",
+        "E) Só se aplica a crimes culposos."
+      ],
+      "correta": "B"
+    },
+    {
+      "pergunta": "Sobre o erro de tipo (art. 20 do CP), é correto afirmar que:",
+      "alternativas": [
+        "A) Exclui o dolo, mas permite a punição por culpa se prevista em lei.",
+        "B) Sempre isenta de pena.",
+        "C) Nunca exclui o dolo.",
+        "D) Só se aplica a crimes militares.",
+        "E) Apenas atenua a pena."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Sobre o erro de proibição (art. 21 do CP), é correto afirmar que:",
+      "alternativas": [
+        "A) O desconhecimento da lei é inescusável. O erro sobre a ilicitude do fato, se inevitável, isenta de pena; se evitável, pode diminuí-la de 1/6 a 1/3.",
+        "B) O desconhecimento da lei é sempre escusável.",
+        "C) O erro de proibição sempre isenta de pena.",
+        "D) O erro de proibição nunca isenta de pena.",
+        "E) Só se aplica a crimes hediondos."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "No concurso de pessoas (art. 29 do CP), quem, de qualquer modo, concorre para o crime:",
+      "alternativas": [
+        "A) Incide nas penas a este cominadas, na medida de sua culpabilidade.",
+        "B) Responde sempre pela mesma pena do autor.",
+        "C) Só responde se for coautor.",
+        "D) Não responde se for partícipe.",
+        "E) Só responde se houver acordo prévio."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Sobre o concurso material (art. 69 do CP), é correto afirmar que:",
+      "alternativas": [
+        "A) Quando o agente, mediante mais de uma ação ou omissão, pratica dois ou mais crimes, aplicam-se cumulativamente as penas privativas de liberdade.",
+        "B) Aplica-se a pena de um só dos crimes, aumentada.",
+        "C) Só se aplica a crimes idênticos.",
+        "D) Só se aplica a crimes diversos.",
+        "E) Não existe no CP."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Sobre o concurso formal (art. 70 do CP), é correto afirmar que:",
+      "alternativas": [
+        "A) Quando o agente, mediante uma só ação ou omissão, pratica dois ou mais crimes, aplica-se a mais grave das penas ou, se iguais, somente uma delas, aumentada de 1/6 até metade.",
+        "B) Aplicam-se cumulativamente as penas.",
+        "C) Só se aplica a crimes idênticos.",
+        "D) Não existe no CP.",
+        "E) Só se aplica a crimes hediondos."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Sobre o crime continuado (art. 71 do CP), é correto afirmar que:",
+      "alternativas": [
+        "A) Aplica-se a pena de um só dos crimes, se idênticas, ou a mais grave, se diversas, aumentada de 1/6 a 2/3, quando o agente pratica dois ou mais crimes da mesma espécie, em condições semelhantes de tempo, lugar, maneira de execução e outras.",
+        "B) Aplicam-se cumulativamente as penas.",
+        "C) Só se aplica a crimes de espécies diferentes.",
+        "D) Não existe no CP.",
+        "E) Só se aplica a crimes hediondos."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "As penas privativas de liberdade, conforme o art. 32 do CP, são:",
+      "alternativas": [
+        "A) Reclusão e detenção.",
+        "B) Apenas reclusão.",
+        "C) Apenas detenção.",
+        "D) Reclusão, detenção e prisão simples.",
+        "E) Reclusão, detenção e prisão perpétua."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A pena de multa, conforme o art. 49 do CP, consiste em:",
+      "alternativas": [
+        "A) Pagamento ao fundo penitenciário da quantia fixada na sentença, calculada em dias-multa.",
+        "B) Pagamento à vítima.",
+        "C) Substituição obrigatória da pena privativa de liberdade.",
+        "D) Não existe no CP.",
+        "E) É fixada pelo delegado."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A substituição da pena privativa de liberdade por restritiva de direitos (art. 44 do CP) é cabível, em regra, quando:",
+      "alternativas": [
+        "A) A pena aplicada não for superior a 4 anos e o crime não for cometido com violência ou grave ameaça à pessoa (ou, se culposo, qualquer que seja a pena), o condenado não for reincidente em crime doloso e a culpabilidade, antecedentes, conduta social e personalidade, bem como os motivos e circunstâncias, indicarem a suficiência da substituição.",
+        "B) A pena for superior a 8 anos.",
+        "C) O crime for hediondo.",
+        "D) O condenado for reincidente em crime doloso.",
+        "E) Sempre que o juiz quiser."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "São causas de extinção da punibilidade (art. 107 do CP), EXCETO:",
+      "alternativas": [
+        "A) Morte do agente.",
+        "B) Anistia, graça ou indulto.",
+        "C) Prescrição, decadência ou perempção.",
+        "D) Retratação do agente, nos casos em que a lei a admite.",
+        "E) Reincidência."
+      ],
+      "correta": "E"
+    },
+    {
+      "pergunta": "A prescrição, antes de transitar em julgado a sentença final, regula-se:",
+      "alternativas": [
+        "A) Pelo máximo da pena privativa de liberdade cominada ao crime.",
+        "B) Pelo mínimo da pena.",
+        "C) Pela pena aplicada.",
+        "D) Pela pena média.",
+        "E) Não há prescrição no CP."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de homicídio simples (art. 121 do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 6 a 20 anos.",
+        "B) Reclusão de 12 a 30 anos.",
+        "C) Reclusão de 1 a 3 anos.",
+        "D) Detenção de 1 a 3 anos.",
+        "E) Reclusão de 2 a 8 anos."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de homicídio qualificado (art. 121, §2º, do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 12 a 30 anos.",
+        "B) Reclusão de 6 a 20 anos.",
+        "C) Reclusão de 1 a 3 anos.",
+        "D) Detenção de 2 a 8 anos.",
+        "E) Reclusão de 4 a 12 anos."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O feminicídio (art. 121, §2º, VI, do CP) é o homicídio cometido:",
+      "alternativas": [
+        "A) Contra a mulher por razões da condição de sexo feminino, envolvendo violência doméstica e familiar ou menosprezo ou discriminação à condição de mulher.",
+        "B) Contra qualquer mulher.",
+        "C) Apenas contra mulher casada.",
+        "D) Apenas contra mulher com filhos.",
+        "E) Apenas contra mulher maior de 18 anos."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "A lesão corporal leve (art. 129 do CP) tem pena de:",
+      "alternativas": [
+        "A) Detenção de 3 meses a 1 ano.",
+        "B) Reclusão de 1 a 3 anos.",
+        "C) Detenção de 1 a 3 anos.",
+        "D) Reclusão de 2 a 5 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de furto simples (art. 155 do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 1 a 4 anos e multa.",
+        "B) Reclusão de 4 a 10 anos e multa.",
+        "C) Detenção de 6 meses a 2 anos.",
+        "D) Reclusão de 2 a 8 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O furto qualificado (art. 155, §4º, do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 2 a 8 anos e multa, nas hipóteses de destruição ou rompimento de obstáculo, abuso de confiança, fraude, escalada ou destreza, ou concurso de duas ou mais pessoas.",
+        "B) Reclusão de 1 a 4 anos.",
+        "C) Detenção de 6 meses a 2 anos.",
+        "D) Reclusão de 4 a 10 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de roubo (art. 157 do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 4 a 10 anos e multa.",
+        "B) Reclusão de 1 a 4 anos.",
+        "C) Detenção de 6 meses a 2 anos.",
+        "D) Reclusão de 2 a 8 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O roubo circunstanciado pelo emprego de arma de fogo (art. 157, §2º-A, I, do CP) tem a pena aumentada de:",
+      "alternativas": [
+        "A) 2/3 (dois terços).",
+        "B) 1/3 (um terço).",
+        "C) Metade.",
+        "D) 1/6 (um sexto).",
+        "E) Não há aumento."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de estelionato (art. 171 do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 1 a 5 anos e multa.",
+        "B) Reclusão de 4 a 10 anos.",
+        "C) Detenção de 6 meses a 2 anos.",
+        "D) Reclusão de 2 a 8 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de peculato (art. 312 do CP) consiste em:",
+      "alternativas": [
+        "A) Apropriar-se o funcionário público de dinheiro, valor ou qualquer outro bem móvel, público ou particular, de que tem a posse em razão do cargo, ou desviá-lo, em proveito próprio ou alheio.",
+        "B) Solicitar ou receber vantagem indevida.",
+        "C) Retardar ou deixar de praticar ato de ofício.",
+        "D) Exigir vantagem indevida.",
+        "E) Facilitar a prática de crime."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de corrupção passiva (art. 317 do CP) consiste em:",
+      "alternativas": [
+        "A) Solicitar ou receber, para si ou para outrem, direta ou indiretamente, ainda que fora da função ou antes de assumi-la, mas em razão dela, vantagem indevida, ou aceitar promessa de tal vantagem.",
+        "B) Oferecer ou prometer vantagem indevida a funcionário público.",
+        "C) Apropriar-se de bem público.",
+        "D) Retardar ato de ofício.",
+        "E) Facilitar a fuga de preso."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de corrupção ativa (art. 333 do CP) consiste em:",
+      "alternativas": [
+        "A) Oferecer ou prometer vantagem indevida a funcionário público, para determiná-lo a praticar, omitir ou retardar ato de ofício.",
+        "B) Solicitar vantagem indevida.",
+        "C) Apropriar-se de bem público.",
+        "D) Retardar ato de ofício.",
+        "E) Facilitar a fuga de preso."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de prevaricação (art. 319 do CP) consiste em:",
+      "alternativas": [
+        "A) Retardar ou deixar de praticar, indevidamente, ato de ofício, ou praticá-lo contra disposição expressa de lei, para satisfazer interesse ou sentimento pessoal.",
+        "B) Solicitar vantagem indevida.",
+        "C) Oferecer vantagem indevida.",
+        "D) Apropriar-se de bem público.",
+        "E) Facilitar a fuga de preso."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de resistência (art. 329 do CP) consiste em:",
+      "alternativas": [
+        "A) Opor-se à execução de ato legal, mediante violência ou ameaça a funcionário competente para executá-lo ou a quem lhe esteja prestando auxílio.",
+        "B) Desobedecer ordem legal.",
+        "C) Desacatar funcionário público.",
+        "D) Ameaçar funcionário público.",
+        "E) Caluniar funcionário público."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de desobediência (art. 330 do CP) consiste em:",
+      "alternativas": [
+        "A) Desobedecer a ordem legal de funcionário público.",
+        "B) Opor-se mediante violência.",
+        "C) Desacatar funcionário público.",
+        "D) Ameaçar funcionário público.",
+        "E) Caluniar funcionário público."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de desacato (art. 331 do CP) consiste em:",
+      "alternativas": [
+        "A) Desacatar funcionário público no exercício da função ou em razão dela.",
+        "B) Desobedecer ordem legal.",
+        "C) Opor-se mediante violência.",
+        "D) Ameaçar funcionário público.",
+        "E) Caluniar funcionário público."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Sobre o princípio da insignificância, é correto afirmar que:",
+      "alternativas": [
+        "A) Pode excluir a tipicidade material quando a ofensa ao bem jurídico for ínfima, desde que preenchidos os requisitos jurisprudenciais (mínima ofensividade, ausência de periculosidade social, reduzido grau de reprovabilidade e inexpressividade da lesão).",
+        "B) Não se aplica no Direito Penal brasileiro.",
+        "C) Só se aplica a crimes militares.",
+        "D) Só se aplica a crimes hediondos.",
+        "E) Sempre isenta de pena."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de ameaça (art. 147 do CP) tem pena de:",
+      "alternativas": [
+        "A) Detenção de 1 a 6 meses, ou multa.",
+        "B) Reclusão de 1 a 3 anos.",
+        "C) Detenção de 1 a 3 anos.",
+        "D) Reclusão de 2 a 5 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de lesão corporal gravíssima (art. 129, §2º, do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 2 a 8 anos.",
+        "B) Detenção de 3 meses a 1 ano.",
+        "C) Reclusão de 1 a 5 anos.",
+        "D) Detenção de 1 a 3 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de sequestro e cárcere privado (art. 148 do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 1 a 3 anos.",
+        "B) Detenção de 3 meses a 1 ano.",
+        "C) Reclusão de 2 a 5 anos.",
+        "D) Detenção de 1 a 2 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de extorsão (art. 158 do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 4 a 10 anos e multa.",
+        "B) Reclusão de 1 a 4 anos.",
+        "C) Detenção de 6 meses a 2 anos.",
+        "D) Reclusão de 2 a 8 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de receptação (art. 180 do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 1 a 4 anos e multa.",
+        "B) Reclusão de 4 a 10 anos.",
+        "C) Detenção de 6 meses a 2 anos.",
+        "D) Reclusão de 2 a 8 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de falso testemunho ou falsa perícia (art. 342 do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 2 a 4 anos e multa.",
+        "B) Detenção de 1 a 3 anos.",
+        "C) Reclusão de 1 a 3 anos.",
+        "D) Detenção de 6 meses a 2 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Sobre a suspensão condicional da pena (sursis), é correto afirmar que:",
+      "alternativas": [
+        "A) Pode ser concedida quando a pena privativa de liberdade não for superior a 2 anos, preenchidos os demais requisitos legais.",
+        "B) Só se aplica a penas superiores a 4 anos.",
+        "C) Não existe no CP.",
+        "D) Só se aplica a crimes hediondos.",
+        "E) É obrigatória em qualquer caso."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O livramento condicional pode ser concedido ao condenado a pena privativa de liberdade igual ou superior a:",
+      "alternativas": [
+        "A) 2 anos, desde que cumprida mais de um terço da pena (se não reincidente em crime doloso) ou mais da metade (se reincidente), além dos demais requisitos.",
+        "B) 1 ano.",
+        "C) 5 anos.",
+        "D) 10 anos.",
+        "E) Não existe no CP."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Sobre o arrependimento posterior (art. 16 do CP), é correto afirmar que:",
+      "alternativas": [
+        "A) Nos crimes cometidos sem violência ou grave ameaça à pessoa, reparado o dano ou restituída a coisa até o recebimento da denúncia ou da queixa, por ato voluntário do agente, a pena será reduzida de 1 a 2/3.",
+        "B) Sempre isenta de pena.",
+        "C) Só se aplica a crimes hediondos.",
+        "D) Não existe no CP.",
+        "E) Aumenta a pena."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Sobre a desistência voluntária e o arrependimento eficaz (art. 15 do CP), é correto afirmar que:",
+      "alternativas": [
+        "A) O agente que, voluntariamente, desiste de prosseguir na execução ou impede que o resultado se produza, só responde pelos atos já praticados.",
+        "B) Responde pelo crime consumado.",
+        "C) Responde pela tentativa.",
+        "D) É isento de pena em qualquer hipótese.",
+        "E) Não existe no CP."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "O crime de denunciação caluniosa (art. 339 do CP) tem pena de:",
+      "alternativas": [
+        "A) Reclusão de 2 a 8 anos e multa.",
+        "B) Detenção de 1 a 3 anos.",
+        "C) Reclusão de 1 a 4 anos.",
+        "D) Detenção de 6 meses a 2 anos.",
+        "E) Multa apenas."
+      ],
+      "correta": "A"
+    },
+    {
+      "pergunta": "Sobre a reincidência (art. 63 do CP), é correto afirmar que:",
+      "alternativas": [
+        "A) Verifica-se quando o agente comete novo crime depois de transitar em julgado a sentença que o tenha condenado por crime anterior.",
+        "B) Só se verifica com condenação anterior por crime hediondo.",
+        "C) Não existe no CP.",
+        "D) Só se aplica a crimes militares.",
+        "E) Não gera efeitos penais."
       ],
       "correta": "A"
     }
@@ -6019,1110 +7119,6 @@
         "C) É um programa de edição.",
         "D) É um tipo de firewall.",
         "E) É um tipo de monitor."
-      ],
-      "correta": "A"
-    },
-    {
-  "Direito Penal Comum": [
-    {
-      "pergunta": "Conforme o art. 1º do Código Penal, não há crime sem lei anterior que o defina, nem pena sem prévia cominação legal. Esse princípio é conhecido como:",
-      "alternativas": [
-        "A) Princípio da culpabilidade.",
-        "B) Princípio da legalidade.",
-        "C) Princípio da interveniência mínima.",
-        "D) Princípio da insignificância.",
-        "E) Princípio da proporcionalidade."
-      ],
-      "correta": "B"
-    },
-    {
-      "pergunta": "Sobre a lei penal no tempo, é correto afirmar que:",
-      "alternativas": [
-        "A) A lei penal sempre retroage.",
-        "B) A lei penal não retroagirá, salvo para beneficiar o réu.",
-        "C) A lei penal mais gravosa sempre retroage.",
-        "D) A lei penal nunca retroage.",
-        "E) A retroatividade depende de autorização judicial."
-      ],
-      "correta": "B"
-    },
-    {
-      "pergunta": "O crime consumado, segundo o art. 14, I, do CP, ocorre quando:",
-      "alternativas": [
-        "A) O agente inicia a execução, mas não atinge o resultado por circunstâncias alheias à sua vontade.",
-        "B) Se reúnem todos os elementos de sua definição legal.",
-        "C) O agente desiste voluntariamente de prosseguir na execução.",
-        "D) O agente impede que o resultado se produza.",
-        "E) O agente pratica atos preparatórios."
-      ],
-      "correta": "B"
-    },
-    {
-      "pergunta": "A tentativa, prevista no art. 14, II, do CP, ocorre quando:",
-      "alternativas": [
-        "A) O agente inicia a execução, mas não consuma o crime por circunstâncias alheias à sua vontade.",
-        "B) O agente desiste voluntariamente.",
-        "C) O agente impede o resultado.",
-        "D) O crime se consuma.",
-        "E) O agente pratica apenas atos preparatórios."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "São causas de exclusão da ilicitude (art. 23 do CP), EXCETO:",
-      "alternativas": [
-        "A) Estado de necessidade.",
-        "B) Legítima defesa.",
-        "C) Estrito cumprimento do dever legal.",
-        "D) Exercício regular de direito.",
-        "E) Erro de proibição inevitável."
-      ],
-      "correta": "E"
-    },
-    {
-      "pergunta": "Sobre a legítima defesa (art. 25 do CP), é correto afirmar que:",
-      "alternativas": [
-        "A) Exige agressão injusta, atual ou iminente, a direito próprio ou de outrem, usando moderadamente dos meios necessários.",
-        "B) Só se aplica a direito próprio.",
-        "C) Só se aplica a agressão futura.",
-        "D) Não exige moderação dos meios.",
-        "E) Só se aplica a crimes dolosos."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O estado de necessidade (art. 24 do CP) configura-se quando:",
-      "alternativas": [
-        "A) O agente pratica o fato para salvar de perigo atual, que não provocou por sua vontade, nem podia de outro modo evitar, direito próprio ou alheio, cujo sacrifício, nas circunstâncias, não era razoável exigir-se.",
-        "B) O agente provoca o perigo intencionalmente.",
-        "C) O perigo é futuro e incerto.",
-        "D) Só se aplica a direito próprio.",
-        "E) Não exige proporcionalidade."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Sobre a imputabilidade penal, é correto afirmar que, em regra, é inimputável:",
-      "alternativas": [
-        "A) O menor de 18 anos.",
-        "B) O menor de 21 anos.",
-        "C) O maior de 70 anos.",
-        "D) O estrangeiro.",
-        "E) O analfabeto."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A emoção e a paixão, conforme o art. 28, I, do CP:",
-      "alternativas": [
-        "A) Excluem a imputabilidade penal.",
-        "B) Não excluem a imputabilidade penal.",
-        "C) Excluem a ilicitude.",
-        "D) Excluem a culpabilidade em qualquer hipótese.",
-        "E) Sempre reduzem a pena."
-      ],
-      "correta": "B"
-    },
-    {
-      "pergunta": "A embriaguez voluntária ou culposa, conforme o art. 28, II, do CP:",
-      "alternativas": [
-        "A) Exclui a imputabilidade penal.",
-        "B) Não exclui a imputabilidade penal.",
-        "C) Exclui a ilicitude.",
-        "D) Sempre isenta de pena.",
-        "E) Só se aplica a crimes culposos."
-      ],
-      "correta": "B"
-    },
-    {
-      "pergunta": "Sobre o erro de tipo (art. 20 do CP), é correto afirmar que:",
-      "alternativas": [
-        "A) Exclui o dolo, mas permite a punição por culpa se prevista em lei.",
-        "B) Sempre isenta de pena.",
-        "C) Nunca exclui o dolo.",
-        "D) Só se aplica a crimes militares.",
-        "E) Apenas atenua a pena."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Sobre o erro de proibição (art. 21 do CP), é correto afirmar que:",
-      "alternativas": [
-        "A) O desconhecimento da lei é inescusável. O erro sobre a ilicitude do fato, se inevitável, isenta de pena; se evitável, pode diminuí-la de 1/6 a 1/3.",
-        "B) O desconhecimento da lei é sempre escusável.",
-        "C) O erro de proibição sempre isenta de pena.",
-        "D) O erro de proibição nunca isenta de pena.",
-        "E) Só se aplica a crimes hediondos."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "No concurso de pessoas (art. 29 do CP), quem, de qualquer modo, concorre para o crime:",
-      "alternativas": [
-        "A) Incide nas penas a este cominadas, na medida de sua culpabilidade.",
-        "B) Responde sempre pela mesma pena do autor.",
-        "C) Só responde se for coautor.",
-        "D) Não responde se for partícipe.",
-        "E) Só responde se houver acordo prévio."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Sobre o concurso material (art. 69 do CP), é correto afirmar que:",
-      "alternativas": [
-        "A) Quando o agente, mediante mais de uma ação ou omissão, pratica dois ou mais crimes, aplicam-se cumulativamente as penas privativas de liberdade.",
-        "B) Aplica-se a pena de um só dos crimes, aumentada.",
-        "C) Só se aplica a crimes idênticos.",
-        "D) Só se aplica a crimes diversos.",
-        "E) Não existe no CP."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Sobre o concurso formal (art. 70 do CP), é correto afirmar que:",
-      "alternativas": [
-        "A) Quando o agente, mediante uma só ação ou omissão, pratica dois ou mais crimes, aplica-se a mais grave das penas ou, se iguais, somente uma delas, aumentada de 1/6 até metade.",
-        "B) Aplicam-se cumulativamente as penas.",
-        "C) Só se aplica a crimes idênticos.",
-        "D) Não existe no CP.",
-        "E) Só se aplica a crimes hediondos."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Sobre o crime continuado (art. 71 do CP), é correto afirmar que:",
-      "alternativas": [
-        "A) Aplica-se a pena de um só dos crimes, se idênticas, ou a mais grave, se diversas, aumentada de 1/6 a 2/3, quando o agente pratica dois ou mais crimes da mesma espécie, em condições semelhantes de tempo, lugar, maneira de execução e outras.",
-        "B) Aplicam-se cumulativamente as penas.",
-        "C) Só se aplica a crimes de espécies diferentes.",
-        "D) Não existe no CP.",
-        "E) Só se aplica a crimes hediondos."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "As penas privativas de liberdade, conforme o art. 32 do CP, são:",
-      "alternativas": [
-        "A) Reclusão e detenção.",
-        "B) Apenas reclusão.",
-        "C) Apenas detenção.",
-        "D) Reclusão, detenção e prisão simples.",
-        "E) Reclusão, detenção e prisão perpétua."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A pena de multa, conforme o art. 49 do CP, consiste em:",
-      "alternativas": [
-        "A) Pagamento ao fundo penitenciário da quantia fixada na sentença, calculada em dias-multa.",
-        "B) Pagamento à vítima.",
-        "C) Substituição obrigatória da pena privativa de liberdade.",
-        "D) Não existe no CP.",
-        "E) É fixada pelo delegado."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A substituição da pena privativa de liberdade por restritiva de direitos (art. 44 do CP) é cabível, em regra, quando:",
-      "alternativas": [
-        "A) A pena aplicada não for superior a 4 anos e o crime não for cometido com violência ou grave ameaça à pessoa (ou, se culposo, qualquer que seja a pena), o condenado não for reincidente em crime doloso e a culpabilidade, antecedentes, conduta social e personalidade, bem como os motivos e circunstâncias, indicarem a suficiência da substituição.",
-        "B) A pena for superior a 8 anos.",
-        "C) O crime for hediondo.",
-        "D) O condenado for reincidente em crime doloso.",
-        "E) Sempre que o juiz quiser."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "São causas de extinção da punibilidade (art. 107 do CP), EXCETO:",
-      "alternativas": [
-        "A) Morte do agente.",
-        "B) Anistia, graça ou indulto.",
-        "C) Prescrição, decadência ou perempção.",
-        "D) Retratação do agente, nos casos em que a lei a admite.",
-        "E) Reincidência."
-      ],
-      "correta": "E"
-    },
-    {
-      "pergunta": "A prescrição, antes de transitar em julgado a sentença final, regula-se:",
-      "alternativas": [
-        "A) Pelo máximo da pena privativa de liberdade cominada ao crime.",
-        "B) Pelo mínimo da pena.",
-        "C) Pela pena aplicada.",
-        "D) Pela pena média.",
-        "E) Não há prescrição no CP."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de homicídio simples (art. 121 do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 6 a 20 anos.",
-        "B) Reclusão de 12 a 30 anos.",
-        "C) Reclusão de 1 a 3 anos.",
-        "D) Detenção de 1 a 3 anos.",
-        "E) Reclusão de 2 a 8 anos."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de homicídio qualificado (art. 121, §2º, do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 12 a 30 anos.",
-        "B) Reclusão de 6 a 20 anos.",
-        "C) Reclusão de 1 a 3 anos.",
-        "D) Detenção de 2 a 8 anos.",
-        "E) Reclusão de 4 a 12 anos."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O feminicídio (art. 121, §2º, VI, do CP) é o homicídio cometido:",
-      "alternativas": [
-        "A) Contra a mulher por razões da condição de sexo feminino, envolvendo violência doméstica e familiar ou menosprezo ou discriminação à condição de mulher.",
-        "B) Contra qualquer mulher.",
-        "C) Apenas contra mulher casada.",
-        "D) Apenas contra mulher com filhos.",
-        "E) Apenas contra mulher maior de 18 anos."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A lesão corporal leve (art. 129 do CP) tem pena de:",
-      "alternativas": [
-        "A) Detenção de 3 meses a 1 ano.",
-        "B) Reclusão de 1 a 3 anos.",
-        "C) Detenção de 1 a 3 anos.",
-        "D) Reclusão de 2 a 5 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de furto simples (art. 155 do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 1 a 4 anos e multa.",
-        "B) Reclusão de 4 a 10 anos e multa.",
-        "C) Detenção de 6 meses a 2 anos.",
-        "D) Reclusão de 2 a 8 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O furto qualificado (art. 155, §4º, do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 2 a 8 anos e multa, nas hipóteses de destruição ou rompimento de obstáculo, abuso de confiança, fraude, escalada ou destreza, ou concurso de duas ou mais pessoas.",
-        "B) Reclusão de 1 a 4 anos.",
-        "C) Detenção de 6 meses a 2 anos.",
-        "D) Reclusão de 4 a 10 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de roubo (art. 157 do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 4 a 10 anos e multa.",
-        "B) Reclusão de 1 a 4 anos.",
-        "C) Detenção de 6 meses a 2 anos.",
-        "D) Reclusão de 2 a 8 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O roubo circunstanciado pelo emprego de arma de fogo (art. 157, §2º-A, I, do CP) tem a pena aumentada de:",
-      "alternativas": [
-        "A) 2/3 (dois terços).",
-        "B) 1/3 (um terço).",
-        "C) Metade.",
-        "D) 1/6 (um sexto).",
-        "E) Não há aumento."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de estelionato (art. 171 do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 1 a 5 anos e multa.",
-        "B) Reclusão de 4 a 10 anos.",
-        "C) Detenção de 6 meses a 2 anos.",
-        "D) Reclusão de 2 a 8 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de peculato (art. 312 do CP) consiste em:",
-      "alternativas": [
-        "A) Apropriar-se o funcionário público de dinheiro, valor ou qualquer outro bem móvel, público ou particular, de que tem a posse em razão do cargo, ou desviá-lo, em proveito próprio ou alheio.",
-        "B) Solicitar ou receber vantagem indevida.",
-        "C) Retardar ou deixar de praticar ato de ofício.",
-        "D) Exigir vantagem indevida.",
-        "E) Facilitar a prática de crime."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de corrupção passiva (art. 317 do CP) consiste em:",
-      "alternativas": [
-        "A) Solicitar ou receber, para si ou para outrem, direta ou indiretamente, ainda que fora da função ou antes de assumi-la, mas em razão dela, vantagem indevida, ou aceitar promessa de tal vantagem.",
-        "B) Oferecer ou prometer vantagem indevida a funcionário público.",
-        "C) Apropriar-se de bem público.",
-        "D) Retardar ato de ofício.",
-        "E) Facilitar a fuga de preso."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de corrupção ativa (art. 333 do CP) consiste em:",
-      "alternativas": [
-        "A) Oferecer ou prometer vantagem indevida a funcionário público, para determiná-lo a praticar, omitir ou retardar ato de ofício.",
-        "B) Solicitar vantagem indevida.",
-        "C) Apropriar-se de bem público.",
-        "D) Retardar ato de ofício.",
-        "E) Facilitar a fuga de preso."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de prevaricação (art. 319 do CP) consiste em:",
-      "alternativas": [
-        "A) Retardar ou deixar de praticar, indevidamente, ato de ofício, ou praticá-lo contra disposição expressa de lei, para satisfazer interesse ou sentimento pessoal.",
-        "B) Solicitar vantagem indevida.",
-        "C) Oferecer vantagem indevida.",
-        "D) Apropriar-se de bem público.",
-        "E) Facilitar a fuga de preso."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de resistência (art. 329 do CP) consiste em:",
-      "alternativas": [
-        "A) Opor-se à execução de ato legal, mediante violência ou ameaça a funcionário competente para executá-lo ou a quem lhe esteja prestando auxílio.",
-        "B) Desobedecer ordem legal.",
-        "C) Desacatar funcionário público.",
-        "D) Ameaçar funcionário público.",
-        "E) Caluniar funcionário público."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de desobediência (art. 330 do CP) consiste em:",
-      "alternativas": [
-        "A) Desobedecer a ordem legal de funcionário público.",
-        "B) Opor-se mediante violência.",
-        "C) Desacatar funcionário público.",
-        "D) Ameaçar funcionário público.",
-        "E) Caluniar funcionário público."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de desacato (art. 331 do CP) consiste em:",
-      "alternativas": [
-        "A) Desacatar funcionário público no exercício da função ou em razão dela.",
-        "B) Desobedecer ordem legal.",
-        "C) Opor-se mediante violência.",
-        "D) Ameaçar funcionário público.",
-        "E) Caluniar funcionário público."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Sobre o princípio da insignificância, é correto afirmar que:",
-      "alternativas": [
-        "A) Pode excluir a tipicidade material quando a ofensa ao bem jurídico for ínfima, desde que preenchidos os requisitos jurisprudenciais (mínima ofensividade, ausência de periculosidade social, reduzido grau de reprovabilidade e inexpressividade da lesão).",
-        "B) Não se aplica no Direito Penal brasileiro.",
-        "C) Só se aplica a crimes militares.",
-        "D) Só se aplica a crimes hediondos.",
-        "E) Sempre isenta de pena."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de ameaça (art. 147 do CP) tem pena de:",
-      "alternativas": [
-        "A) Detenção de 1 a 6 meses, ou multa.",
-        "B) Reclusão de 1 a 3 anos.",
-        "C) Detenção de 1 a 3 anos.",
-        "D) Reclusão de 2 a 5 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de lesão corporal gravíssima (art. 129, §2º, do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 2 a 8 anos.",
-        "B) Detenção de 3 meses a 1 ano.",
-        "C) Reclusão de 1 a 5 anos.",
-        "D) Detenção de 1 a 3 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de sequestro e cárcere privado (art. 148 do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 1 a 3 anos.",
-        "B) Detenção de 3 meses a 1 ano.",
-        "C) Reclusão de 2 a 5 anos.",
-        "D) Detenção de 1 a 2 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de extorsão (art. 158 do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 4 a 10 anos e multa.",
-        "B) Reclusão de 1 a 4 anos.",
-        "C) Detenção de 6 meses a 2 anos.",
-        "D) Reclusão de 2 a 8 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de receptação (art. 180 do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 1 a 4 anos e multa.",
-        "B) Reclusão de 4 a 10 anos.",
-        "C) Detenção de 6 meses a 2 anos.",
-        "D) Reclusão de 2 a 8 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de falso testemunho ou falsa perícia (art. 342 do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 2 a 4 anos e multa.",
-        "B) Detenção de 1 a 3 anos.",
-        "C) Reclusão de 1 a 3 anos.",
-        "D) Detenção de 6 meses a 2 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Sobre a suspensão condicional da pena (sursis), é correto afirmar que:",
-      "alternativas": [
-        "A) Pode ser concedida quando a pena privativa de liberdade não for superior a 2 anos, preenchidos os demais requisitos legais.",
-        "B) Só se aplica a penas superiores a 4 anos.",
-        "C) Não existe no CP.",
-        "D) Só se aplica a crimes hediondos.",
-        "E) É obrigatória em qualquer caso."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O livramento condicional pode ser concedido ao condenado a pena privativa de liberdade igual ou superior a:",
-      "alternativas": [
-        "A) 2 anos, desde que cumprida mais de um terço da pena (se não reincidente em crime doloso) ou mais da metade (se reincidente), além dos demais requisitos.",
-        "B) 1 ano.",
-        "C) 5 anos.",
-        "D) 10 anos.",
-        "E) Não existe no CP."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Sobre o arrependimento posterior (art. 16 do CP), é correto afirmar que:",
-      "alternativas": [
-        "A) Nos crimes cometidos sem violência ou grave ameaça à pessoa, reparado o dano ou restituída a coisa até o recebimento da denúncia ou da queixa, por ato voluntário do agente, a pena será reduzida de 1 a 2/3.",
-        "B) Sempre isenta de pena.",
-        "C) Só se aplica a crimes hediondos.",
-        "D) Não existe no CP.",
-        "E) Aumenta a pena."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Sobre a desistência voluntária e o arrependimento eficaz (art. 15 do CP), é correto afirmar que:",
-      "alternativas": [
-        "A) O agente que, voluntariamente, desiste de prosseguir na execução ou impede que o resultado se produza, só responde pelos atos já praticados.",
-        "B) Responde pelo crime consumado.",
-        "C) Responde pela tentativa.",
-        "D) É isento de pena em qualquer hipótese.",
-        "E) Não existe no CP."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O crime de denunciação caluniosa (art. 339 do CP) tem pena de:",
-      "alternativas": [
-        "A) Reclusão de 2 a 8 anos e multa.",
-        "B) Detenção de 1 a 3 anos.",
-        "C) Reclusão de 1 a 4 anos.",
-        "D) Detenção de 6 meses a 2 anos.",
-        "E) Multa apenas."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Sobre a reincidência (art. 63 do CP), é correto afirmar que:",
-      "alternativas": [
-        "A) Verifica-se quando o agente comete novo crime depois de transitar em julgado a sentença que o tenha condenado por crime anterior.",
-        "B) Só se verifica com condenação anterior por crime hediondo.",
-        "C) Não existe no CP.",
-        "D) Só se aplica a crimes militares.",
-        "E) Não gera efeitos penais."
-      ],
-      "correta": "A"
-    }
-  ],
-  "Legislação de Trânsito": [
-    {
-      "pergunta": "Conforme o art. 1º do Código de Trânsito Brasileiro (CTB – Lei nº 9.503/1997), o trânsito de qualquer natureza nas vias terrestres do território nacional, abertas à circulação, rege-se por:",
-      "alternativas": [
-        "A) Este Código.",
-        "B) Apenas resoluções do Contran.",
-        "C) Apenas leis estaduais.",
-        "D) Apenas leis municipais.",
-        "E) O Código Penal."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "São objetivos básicos do Sistema Nacional de Trânsito (art. 1º, §2º, do CTB), EXCETO:",
-      "alternativas": [
-        "A) Padronizar os critérios de sinalização.",
-        "B) Garantir a segurança e a fluidez do trânsito.",
-        "C) Educar e informar os usuários.",
-        "D) Fiscalizar o cumprimento da legislação.",
-        "E) Estabelecer penas privativas de liberdade para todas as infrações."
-      ],
-      "correta": "E"
-    },
-    {
-      "pergunta": "A velocidade máxima permitida em vias urbanas, quando não houver sinalização regulamentadora, conforme o art. 61 do CTB, é de:",
-      "alternativas": [
-        "A) 80 km/h nas vias de trânsito rápido; 60 km/h nas vias arteriais; 40 km/h nas vias coletoras; 30 km/h nas vias locais.",
-        "B) 100 km/h em todas as vias.",
-        "C) 60 km/h em todas as vias.",
-        "D) 40 km/h em todas as vias.",
-        "E) 50 km/h em todas as vias."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A velocidade máxima permitida em rodovias de pista simples, quando não houver sinalização, conforme o art. 61 do CTB, é de:",
-      "alternativas": [
-        "A) 100 km/h para automóveis, camionetas e motocicletas; 90 km/h para os demais veículos.",
-        "B) 80 km/h para todos os veículos.",
-        "C) 110 km/h para todos os veículos.",
-        "D) 90 km/h para todos os veículos.",
-        "E) 60 km/h para todos os veículos."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Dirigir sob a influência de álcool ou de qualquer outra substância psicoativa que determine dependência (art. 165 do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa (dez vezes) e suspensão do direito de dirigir por 12 meses, além da medida administrativa de recolhimento do documento de habilitação e retenção do veículo.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A recusa do condutor em se submeter a teste, exame clínico, perícia ou outro procedimento que permita certificar influência de álcool ou outra substância psicoativa (art. 165-A do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com as mesmas penalidades e medidas administrativas do art. 165.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Deixar o condutor de usar o cinto de segurança (art. 167 do CTB) é infração:",
-      "alternativas": [
-        "A) Grave, com multa e retenção do veículo até a regularização.",
-        "B) Gravíssima.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Transportar crianças menores de 10 anos sem o dispositivo de retenção adequado (art. 168 do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa e retenção do veículo até a regularização.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Dirigir veículo sem possuir Carteira Nacional de Habilitação ou Permissão para Dirigir (art. 162, I, do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa (três vezes) e retenção do veículo até a apresentação de condutor habilitado.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Dirigir veículo com Carteira Nacional de Habilitação ou Permissão para Dirigir cassada ou com suspensão do direito de dirigir (art. 162, II, do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa (três vezes) e recolhimento do documento de habilitação e retenção do veículo.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Dirigir veículo com Carteira Nacional de Habilitação de categoria diferente da do veículo (art. 162, III, do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa e retenção do veículo até a apresentação de condutor habilitado.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Dirigir veículo com validade da Carteira Nacional de Habilitação vencida há mais de 30 dias (art. 162, V, do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa e retenção do veículo até a regularização.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Usar o veículo para interromper a circulação na via sem autorização (art. 253-A do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa (vinte vezes) e suspensão do direito de dirigir, além de apreensão do veículo.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Avançar o sinal vermelho do semáforo ou o de parada obrigatória (art. 208 do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Transitar em velocidade superior à máxima permitida em até 20% (art. 218, I, do CTB) é infração:",
-      "alternativas": [
-        "A) Média, com multa.",
-        "B) Grave.",
-        "C) Gravíssima.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Transitar em velocidade superior à máxima permitida em mais de 20% até 50% (art. 218, II, do CTB) é infração:",
-      "alternativas": [
-        "A) Grave, com multa.",
-        "B) Média.",
-        "C) Gravíssima.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Transitar em velocidade superior à máxima permitida em mais de 50% (art. 218, III, do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa (três vezes) e suspensão do direito de dirigir.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Deixar de dar preferência de passagem a pedestre que esteja atravessando a via transversal para onde se dirige o veículo, ou ainda quando não haja sinalização (art. 214 do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Estacionar o veículo em local e horário proibidos pela sinalização (art. 181, XVII, do CTB) é infração:",
-      "alternativas": [
-        "A) Média, com multa e remoção do veículo.",
-        "B) Grave.",
-        "C) Gravíssima.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Estacionar o veículo sobre a calçada ou sobre faixa destinada a pedestre (art. 181, VIII, do CTB) é infração:",
-      "alternativas": [
-        "A) Grave, com multa e remoção do veículo.",
-        "B) Média.",
-        "C) Gravíssima.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Dirigir ameaçando os pedestres que estejam atravessando a via pública, ou os demais veículos (art. 170 do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa e suspensão do direito de dirigir.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Usar o veículo para arremessar sobre os pedestres ou veículos água ou detritos (art. 171 do CTB) é infração:",
-      "alternativas": [
-        "A) Média, com multa.",
-        "B) Grave.",
-        "C) Gravíssima.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Atirar do veículo ou abandonar na via objetos ou substâncias (art. 172 do CTB) é infração:",
-      "alternativas": [
-        "A) Média, com multa.",
-        "B) Grave.",
-        "C) Gravíssima.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Disputar corrida por espírito de emulação (art. 173 do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa (dez vezes), suspensão do direito de dirigir e apreensão do veículo.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Promover na via competição esportiva sem autorização (art. 174 do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa (dez vezes), suspensão do direito de dirigir e apreensão do veículo.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Utilizar-se de veículo para demonstrar ou exibir manobra perigosa, mediante arrancada brusca, derrapagem ou frenagem com deslizamento ou arrastamento de pneus (art. 175 do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa (dez vezes), suspensão do direito de dirigir e apreensão do veículo.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Deixar o condutor envolvido em acidente com vítima de prestar ou providenciar socorro à vítima, podendo fazê-lo (art. 176, I, do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa (cinco vezes) e suspensão do direito de dirigir.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Deixar o condutor de adotar providências para remover o veículo do local do acidente quando não houver vítima e a sinalização e condições de segurança permitirem (art. 178 do CTB) é infração:",
-      "alternativas": [
-        "A) Média, com multa.",
-        "B) Grave.",
-        "C) Gravíssima.",
-        "D) Leve.",
-        "E) Não é infração."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A CNH é classificada em categorias. A categoria B habilita o condutor a dirigir:",
-      "alternativas": [
-        "A) Veículos motorizados, não abrangidos pela categoria A, cujo peso bruto total não exceda a 3.500 kg e cuja lotação não exceda a 8 lugares, excluído o do motorista.",
-        "B) Somente motocicletas.",
-        "C) Ônibus e micro-ônibus.",
-        "D) Caminhões com peso superior a 3.500 kg.",
-        "E) Qualquer veículo."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A categoria A habilita o condutor a dirigir:",
-      "alternativas": [
-        "A) Veículos motorizados de duas ou três rodas, com ou sem carro lateral.",
-        "B) Automóveis.",
-        "C) Ônibus.",
-        "D) Caminhões.",
-        "E) Qualquer veículo."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A categoria C habilita o condutor a dirigir:",
-      "alternativas": [
-        "A) Veículos motorizados usados em transporte de carga, cujo peso bruto total exceda a 3.500 kg.",
-        "B) Somente automóveis.",
-        "C) Somente motocicletas.",
-        "D) Ônibus.",
-        "E) Qualquer veículo."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A categoria D habilita o condutor a dirigir:",
-      "alternativas": [
-        "A) Veículos motorizados usados no transporte de passageiros, cuja lotação exceda a 8 lugares, excluído o do motorista.",
-        "B) Somente automóveis.",
-        "C) Somente motocicletas.",
-        "D) Caminhões leves.",
-        "E) Qualquer veículo."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A categoria E habilita o condutor a dirigir:",
-      "alternativas": [
-        "A) Combinação de veículos em que a unidade tratora se enquadre nas categorias B, C ou D e cuja unidade acoplada, reboque, semirreboque, trailer ou articulada tenha 6.000 kg ou mais de peso bruto total, ou cuja lotação exceda a 8 lugares.",
-        "B) Somente automóveis.",
-        "C) Somente motocicletas.",
-        "D) Ônibus simples.",
-        "E) Qualquer veículo."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O prazo de validade da CNH, em regra, para condutores com idade inferior a 50 anos, é de:",
-      "alternativas": [
-        "A) 10 anos.",
-        "B) 5 anos.",
-        "C) 3 anos.",
-        "D) 1 ano.",
-        "E) Indeterminado."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O prazo de validade da CNH para condutores com idade igual ou superior a 50 anos e inferior a 70 anos, em regra, é de:",
-      "alternativas": [
-        "A) 5 anos.",
-        "B) 10 anos.",
-        "C) 3 anos.",
-        "D) 1 ano.",
-        "E) Indeterminado."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O prazo de validade da CNH para condutores com idade igual ou superior a 70 anos, em regra, é de:",
-      "alternativas": [
-        "A) 3 anos.",
-        "B) 5 anos.",
-        "C) 10 anos.",
-        "D) 1 ano.",
-        "E) Indeterminado."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A pontuação para suspensão do direito de dirigir, em regra, ocorre quando o condutor atingir, no período de 12 meses:",
-      "alternativas": [
-        "A) 20 pontos, se houver duas ou mais infrações gravíssimas; 30 pontos, se houver uma infração gravíssima; 40 pontos, se não houver infração gravíssima.",
-        "B) 15 pontos em qualquer hipótese.",
-        "C) 10 pontos em qualquer hipótese.",
-        "D) 50 pontos em qualquer hipótese.",
-        "E) Não há limite de pontos."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A infração de natureza leve tem valor de multa de:",
-      "alternativas": [
-        "A) R$ 88,38 (e 3 pontos).",
-        "B) R$ 130,16 (e 4 pontos).",
-        "C) R$ 195,23 (e 5 pontos).",
-        "D) R$ 293,47 (e 7 pontos).",
-        "E) R$ 880,41."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A infração de natureza média tem valor de multa de:",
-      "alternativas": [
-        "A) R$ 130,16 (e 4 pontos).",
-        "B) R$ 88,38 (e 3 pontos).",
-        "C) R$ 195,23 (e 5 pontos).",
-        "D) R$ 293,47 (e 7 pontos).",
-        "E) R$ 880,41."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A infração de natureza grave tem valor de multa de:",
-      "alternativas": [
-        "A) R$ 195,23 (e 5 pontos).",
-        "B) R$ 88,38 (e 3 pontos).",
-        "C) R$ 130,16 (e 4 pontos).",
-        "D) R$ 293,47 (e 7 pontos).",
-        "E) R$ 880,41."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A infração de natureza gravíssima tem valor de multa de:",
-      "alternativas": [
-        "A) R$ 293,47 (e 7 pontos), podendo ser multiplicada conforme o caso.",
-        "B) R$ 88,38 (e 3 pontos).",
-        "C) R$ 130,16 (e 4 pontos).",
-        "D) R$ 195,23 (e 5 pontos).",
-        "E) R$ 50,00."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O Contran é o órgão máximo normativo e consultivo do Sistema Nacional de Trânsito e tem por finalidade:",
-      "alternativas": [
-        "A) Estabelecer as normas regulamentares referidas no CTB e as diretrizes da Política Nacional de Trânsito.",
-        "B) Apenas fiscalizar o trânsito.",
-        "C) Apenas aplicar multas.",
-        "D) Apenas emitir CNH.",
-        "E) Não existe no CTB."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O Denatran (atual Senatran) é o órgão máximo executivo de trânsito da União e tem por finalidade:",
-      "alternativas": [
-        "A) Cumprir e fazer cumprir a legislação de trânsito e as resoluções do Contran, no âmbito de suas competências.",
-        "B) Apenas legislar sobre trânsito.",
-        "C) Apenas aplicar multas estaduais.",
-        "D) Apenas emitir CNH municipal.",
-        "E) Não existe no CTB."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A sinalização de trânsito é classificada em:",
-      "alternativas": [
-        "A) Vertical, horizontal, semafórica, dispositivos auxiliares e sinalização temporária.",
-        "B) Apenas vertical.",
-        "C) Apenas horizontal.",
-        "D) Apenas semafórica.",
-        "E) Não há classificação."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A placa de regulamentação tem por finalidade:",
-      "alternativas": [
-        "A) Informar aos usuários as condições, proibições, obrigações ou restrições no uso das vias.",
-        "B) Apenas advertir sobre perigos.",
-        "C) Apenas indicar direções.",
-        "D) Apenas informar serviços.",
-        "E) Não existe."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A placa de advertência tem por finalidade:",
-      "alternativas": [
-        "A) Alertar os usuários sobre condições potencialmente perigosas, obstáculos ou restrições à circulação.",
-        "B) Apenas regulamentar proibições.",
-        "C) Apenas indicar direções.",
-        "D) Apenas informar serviços.",
-        "E) Não existe."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O uso de capacete de segurança para condutor e passageiro de motocicleta, motoneta e ciclomotor (art. 244 do CTB) é:",
-      "alternativas": [
-        "A) Obrigatório, sendo infração gravíssima a ausência, com multa e suspensão do direito de dirigir.",
-        "B) Facultativo.",
-        "C) Obrigatório apenas para o condutor.",
-        "D) Obrigatório apenas em rodovias.",
-        "E) Não é exigido."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "Transportar criança menor de 10 anos nos bancos dianteiros do veículo, salvo nos casos excepcionais previstos em resolução do Contran (art. 64 do CTB), é:",
-      "alternativas": [
-        "A) Proibido.",
-        "B) Permitido em qualquer hipótese.",
-        "C) Permitido apenas em veículos antigos.",
-        "D) Permitido apenas em estradas.",
-        "E) Não há proibição."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "O farol baixo deve ser utilizado, durante a noite e em túneis com iluminação pública, em todas as vias (art. 40 do CTB). Durante o dia, em rodovias de pista simples situadas fora de áreas urbanas, o uso do farol baixo é:",
-      "alternativas": [
-        "A) Obrigatório.",
-        "B) Facultativo.",
-        "C) Proibido.",
-        "D) Obrigatório apenas em dias chuvosos.",
-        "E) Não há regra."
-      ],
-      "correta": "A"
-    },
-    {
-      "pergunta": "A ultrapassagem de outro veículo pelo acostamento (art. 191 do CTB) é infração:",
-      "alternativas": [
-        "A) Gravíssima, com multa.",
-        "B) Grave.",
-        "C) Média.",
-        "D) Leve.",
-        "E) Não é infração."
       ],
       "correta": "A"
     }
