@@ -2,6 +2,7 @@ import json
 import random
 import glob
 import os
+import urllib.parse
 import streamlit as st
 from datetime import datetime
 
@@ -169,7 +170,6 @@ with st.sidebar:
 # ==================== ABAS PRINCIPAIS ====================
 aba_livre, aba_simulado, aba_treino = st.tabs(["🥽 Arena Livre VR", "📝 Simulado Clássico", "📚 Treino & Lista"])
 
-# Definir pool de questões ativas dependendo do modo
 if st.session_state["simulado_ativo"]:
     questoes_ativas = st.session_state["questoes_simulado"]
 elif st.session_state["questoes_treino"]:
@@ -248,7 +248,6 @@ with aba_livre:
             
         q_json_str = json.dumps(questoes_ativas, ensure_ascii=False)
         
-        # Template HTML/JS com componente robusto vr-hand (sem super-hands, evitando tela preta)
         html_template = r"""
         <!DOCTYPE html>
         <html>
@@ -284,7 +283,6 @@ with aba_livre:
 
               <a-sky id="main-sky" color="#050a14"></a-sky>
 
-              <!-- Rig e Controles Quest 3 / 3S -->
               <a-entity id="rig" movement-controls="fly: false">
                 <a-entity id="camera" camera look-controls position="0 1.6 0">
                   <a-cursor fuse="false" raycaster="objects: .clickable, .grabbable"></a-cursor>
@@ -297,7 +295,6 @@ with aba_livre:
               <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
               <a-light type="directional" position="2 4 2" intensity="0.6"></a-light>
 
-              <!-- Painel de Controle Principal -->
               <a-entity id="control-panel" position="0 2 -2.2">
                 <a-plane width="2.4" height="1.4" color="#0b132b" opacity="0.95" material="shader: flat">
                   <a-text value="PMSC 2026 - PAINEL DE CONTROLE" position="0 0.55 0.01" align="center" color="#00d1ff" width="2.2" scale="0.7 0.7 0.7"></a-text>
@@ -320,7 +317,6 @@ with aba_livre:
                 </a-plane>
               </a-entity>
 
-              <!-- Painel Calibrador de Mãos -->
               <a-entity id="calibrator-panel" position="1.8 1.8 -1.8" rotation="0 -25 0">
                 <a-plane width="1.3" height="1.4" color="#111122" opacity="0.95" material="shader: flat">
                   <a-text value="CALIBRADOR VR" position="0 0.56 0.01" align="center" color="#ffaa00" width="1.8" scale="0.6 0.6 0.6"></a-text>
@@ -334,7 +330,6 @@ with aba_livre:
                 </a-plane>
               </a-entity>
 
-              <!-- Container de Questões -->
               <a-entity id="questoes-container"></a-entity>
             </a-scene>
 
@@ -342,7 +337,6 @@ with aba_livre:
               const questoesData = __Q_JSON__;
               const modoStr = "__MODO__";
 
-              // Componente customizado 'vr-hand' para grab à distância e clique sem conflitos
               AFRAME.registerComponent('vr-hand', {
                 schema: { side: { type: 'string', default: 'right' } },
                 init: function () {
@@ -674,7 +668,9 @@ with aba_livre:
         html_vr = html_template.replace("__Q_JSON__", q_json_str)
         html_vr = html_vr.replace("__MODO__", st.session_state["modo_atual"])
         
-        st.components.v1.html(html_vr, height=720, scrolling=False)
+        # Renderização limpa via st.iframe com Data URI (Resolve o aviso e o travamento)
+        encoded_html = urllib.parse.quote(html_vr)
+        st.iframe(f"data:text/html;charset=utf-8,{encoded_html}", height=720, scrolling=False)
 
 # ==================== RODAPÉ ====================
 st.markdown("---")
