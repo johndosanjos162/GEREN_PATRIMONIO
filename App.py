@@ -1,8 +1,7 @@
 """
-PMSC Arena VR — Versão Otimizada para Meta Quest 3/3S
-- MSDF text, renderer de alta fidelidade, partículas leves
-- Cockpit UI, HUD head-locked, filtro de brilho
-- Passthrough immersive-ar com baixa latência
+PMSC Arena VR — v10
+- Backend: normalização gramatical/textual robusta (re.sub, capitalização, extração da letra)
+- Frontend: click isolado por alternativa (bg com .clickable próprio, data-letra, data-correta)
 """
 import streamlit as st
 import streamlit.components.v1 as components
@@ -10,6 +9,7 @@ import json
 import random
 import time
 import pathlib
+import re
 import html as html_module
 from datetime import datetime
 
@@ -29,6 +29,120 @@ DISTRIBUICAO = {
 TOTAL_OFICIAL = sum(DISTRIBUICAO.values())
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# NORMALIZAÇÃO GRAMATICAL / TEXTUAL
+# ═══════════════════════════════════════════════════════════════════════
+def _limpar_espacos(texto: str) -> str:
+    """Colapsa espaços/tabs/quebras múltiplas em um único espaço."""
+    return re.sub(r"\s+", " ", texto or "").strip()
+
+
+def _capitalizar(texto: str) -> str:
+    """Garante a primeira letra maiúscula."""
+    if not texto:
+        return texto
+    return texto[0].upper() + texto[1:]
+
+
+def normalizar_enunciado(texto: str) -> str:
+    """
+    - remove espaços duplos
+    - colapsa whitespace
+    - capitaliza a primeira letra
+    - garante pontuação final (. ? ! : ;)
+    """
+    if not isinstance(texto, str):
+        return ""
+    t = _limpar_espacos(texto)
+    t = _capitalizar(t)
+    if t and t[-1] not in ".?!:;":
+        t += "."
+    return t
+
+
+def normalizar_alternativa(texto: str) -> str:
+    """
+    - remove espaços duplos
+    - remove prefixo tipo 'A) ', 'a. ', 'B - ', 'C: '
+    - capitaliza a primeira letra
+    """
+    if not isinstance(texto, str):
+        return ""
+    t = _limpar_espacos(texto)
+    # remove prefixo apenas quando realmente for "letra + ) . - :"
+    t = re.sub(r"^[A-Ea-e]\s*[\)\.\-\:]\s*", "", t)
+    t = _capitalizar(t)
+    return t
+
+
+def extrair_letra(correta: str) -> str:
+    """
+    Extrai APENAS uma letra A–E do campo correta.
+    Aceita: 'B', 'b', 'B)', 'B) texto', 'B. texto', 'Alternativa B', 'letra B'
+    """
+    if not isinstance(correta, str):
+        return ""
+    c = correta.strip().upper()
+    # Caso direto: começa com A-E
+    m = re.match(r"^([A-E])(?:[\)\.\-\:\s]|$)", c)
+    if m:
+        return m.group(1)
+    # Caso "alternativa B" / "letra C" / "opção D"
+    m = re.search(r"\b([A-E])\b", c)
+    if m:
+        return m.group(1)
+    return ""
+
+
+def normalizar_questao(q: dict):
+    """Normaliza uma questão. Retorna None se malformada."""
+    if not isinstance(q, dict):
+        return None
+
+    letra = extrair_letra(q.get("correta", ""))
+    if not letra:
+        return None
+
+    pergunta = normalizar_enunciado(q.get("pergunta", ""))
+    if not pergunta:
+        return None
+
+    alts_raw = q.get("alternativas", [])
+    if not isinstance(alts_raw, list) or len(alts_raw) < 5:
+        return None
+
+    alts_limpas = [normalizar_alternativa(a) for a in alts_raw[:5]]
+    if any(not a for a in alts_limpas):
+        return None
+
+    # Re-prefixa A) B) C) D) E)
+    alts_final = [f"{chr(65 + i)}) {alt}" for i, alt in enumerate(alts_limpas)]
+
+    return {
+        "pergunta": pergunta,
+        "alternativas": alts_final,
+        "correta": letra,
+        "materia": q.get("materia", ""),
+    }
+
+
+def normalizar_banco(banco: dict) -> dict:
+    """Aplica normalização em todas as questões do banco."""
+    resultado = {}
+    for materia, lista in banco.items():
+        novas = []
+        for q in lista:
+            nq = normalizar_questao(q)
+            if nq:
+                novas.append(nq)
+        if novas:
+            resultado[materia] = novas
+    return resultado
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# PARSER + LOAD
+# ═══════════════════════════════════════════════════════════════════════
 def _parse_concatenado(conteudo: str) -> dict:
     decoder = json.JSONDecoder()
     idx, n = 0, len(conteudo)
@@ -78,6 +192,10 @@ def load_json():
                     parsed = _parse_concatenado(f.read())
                 if not parsed:
                     continue
+                # ✅ NORMALIZAÇÃO GRAMATICAL
+                parsed = normalizar_banco(parsed)
+                if not parsed:
+                    continue
                 bruto, removidas = 0, 0
                 for mat in list(parsed.keys()):
                     un, r = _deduplicar(parsed[mat])
@@ -123,7 +241,7 @@ if not banco:
 
 
 def embed_with_webxr_permissions(inner_html: str, height: int = 950):
-    """Duplo iframe: interno com allow='xr-spatial-tracking; ...'."""
+    """Duplo iframe com allow='xr-spatial-tracking; ...'."""
     escaped = html_module.escape(inner_html, quote=True)
     wrapper = r'''<!DOCTYPE html>
 <html><head><meta charset="utf-8">
@@ -161,12 +279,12 @@ def render_vr(questoes, modo="ARENA", height=950):
 <html>
 <head>
 <meta charset="utf-8">
-<title>PMSC Arena VR — Otimizado</title>
+<title>PMSC Arena VR</title>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════
-// vr-hand v9 — otimizado, vetores reutilizáveis, duplo evento
+// vr-hand v10 — click isolado por alternativa (bg individual)
 // ═══════════════════════════════════════════════════════════════════
 AFRAME.registerComponent('vr-hand', {
   init: function() {
@@ -175,21 +293,19 @@ AFRAME.registerComponent('vr-hand', {
     let offset = new THREE.Vector3();
     let distAdjust = 0;
 
-    // Vetores reutilizáveis (evita GC no tick)
     const _pos = new THREE.Vector3();
     const _dir = new THREE.Vector3();
     const _q = new THREE.Quaternion();
     const _target = new THREE.Vector3();
     const _local = new THREE.Vector3();
-    const _blockPos = new THREE.Vector3();
+    const _bp = new THREE.Vector3();
 
     if (!hand.components.raycaster) {
       hand.setAttribute('raycaster', 'objects: .clickable, .ui-btn, .grabbable; far: 20; interval: 100');
     }
 
     const getPos = function() {
-      hand.object3D.getWorldPosition(_pos);
-      return _pos;
+      hand.object3D.getWorldPosition(_pos); return _pos;
     };
     const getDir = function() {
       hand.object3D.getWorldQuaternion(_q);
@@ -216,12 +332,9 @@ AFRAME.registerComponent('vr-hand', {
         list = ray.intersectObjects(objs, true);
       }
       for (const hit of list) {
-        let el = hit.object ? hit.object.el : null;
-        let cur = el;
+        let cur = hit.object ? hit.object.el : null;
         while (cur) {
-          if (predicate(cur)) {
-            return { el: cur, distance: hit.distance };
-          }
+          if (predicate(cur)) return { el: cur, distance: hit.distance };
           cur = cur.parentEl;
         }
       }
@@ -246,8 +359,8 @@ AFRAME.registerComponent('vr-hand', {
       if (!b) return;
       grabbed = b.el;
       const hp = getPos();
-      grabbed.object3D.getWorldPosition(_blockPos);
-      offset.copy(_blockPos).sub(hp);
+      grabbed.object3D.getWorldPosition(_bp);
+      offset.copy(_bp).sub(hp);
       distAdjust = 0;
       grabbed.setAttribute('material', 'emissive', '#ffaa00');
       grabbed.setAttribute('material', 'emissiveIntensity', '1');
@@ -273,7 +386,8 @@ AFRAME.registerComponent('vr-hand', {
         showToast('⚠️ Aponte para uma alternativa A–E', 800);
         return;
       }
-      c.el.emit('click', { target: c.el });
+      // ⚠️ Emite click EXATAMENTE no bg apontado (que tem o listener)
+      c.el.emit('click', { target: c.el }, true);
       if (navigator.vibrate) navigator.vibrate(60);
     };
 
@@ -310,11 +424,13 @@ AFRAME.registerComponent('vr-hand', {
       }
     });
 
+    // ═══ Feedback visual apenas em elementos não respondidos ═══
     hand.addEventListener('raycaster-intersection', function(evt) {
       const els = evt.detail.els || [];
       for (const el of els) {
         if (el.classList && (el.classList.contains('clickable') ||
                              el.classList.contains('ui-btn'))) {
+          if (el.dataset.respondida === 'true') continue;  // não ilumina já respondido
           if (!el.dataset.hl) {
             el.dataset.hl = 'true';
             el.setAttribute('material', 'emissive', '#00f5d4');
@@ -327,8 +443,10 @@ AFRAME.registerComponent('vr-hand', {
       const els = evt.detail.clearedEls || [];
       for (const el of els) {
         if (el.dataset && el.dataset.hl) {
-          el.setAttribute('material', 'emissive', '#000000');
-          el.setAttribute('material', 'emissiveIntensity', '0');
+          if (el.dataset.respondida !== 'true') {
+            el.setAttribute('material', 'emissive', '#000000');
+            el.setAttribute('material', 'emissiveIntensity', '0');
+          }
           delete el.dataset.hl;
         }
       }
@@ -369,7 +487,7 @@ AFRAME.registerComponent('hand-live', {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// painel-sistema (inclui filtro de brilho e toggle HUD)
+// painel-sistema
 // ═══════════════════════════════════════════════════════════════════
 AFRAME.registerComponent('painel-sistema', {
   init: function() {
@@ -381,7 +499,11 @@ AFRAME.registerComponent('painel-sistema', {
     const stars = document.getElementById('stars');
     const ambient = document.getElementById('ambientLight');
     let handScale = 1, headH = 1.65;
-    let brightness = 1.0; // 0.3 a 1.0
+    let brightness = 1.0;
+
+    function applyBrightness(b) {
+      if (ambient) ambient.setAttribute('light', 'intensity', (0.8 * b).toFixed(2));
+    }
 
     this.el.querySelectorAll('.calib-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -390,7 +512,6 @@ AFRAME.registerComponent('painel-sistema', {
         if (a === 'passthrough') { window.enablePassthrough(); return; }
         if (a === 'dark') {
           sky.setAttribute('visible', 'true');
-          sky.setAttribute('color', '#050a14');
           sky.setAttribute('material', 'shader: flat; color: #050a14');
           stars.setAttribute('visible', 'false');
           showToast('ESCURO');
@@ -420,7 +541,6 @@ AFRAME.registerComponent('painel-sistema', {
           stars.setAttribute('visible', 'true');
           showToast('ESPAÇO');
         }
-
         if (a === 'brightnessUp') {
           brightness = Math.min(1.0, brightness + 0.1);
           applyBrightness(brightness);
@@ -431,13 +551,11 @@ AFRAME.registerComponent('painel-sistema', {
           applyBrightness(brightness);
           showToast('Brilho ' + Math.round(brightness * 100) + '%');
         }
-
         if (a === 'organizar') window.organizarGrade();
         if (a === 'porMateria') window.organizarPorMateria();
         if (a === 'espalhar') window.espalhar();
         if (a === 'salvar') window.salvarLayout();
         if (a === 'carregar') window.carregarLayout();
-
         if (a === 'maoMais') {
           handScale = Math.min(2.0, handScale + 0.1);
           const v = handScale + ' ' + handScale + ' ' + handScale;
@@ -469,32 +587,20 @@ AFRAME.registerComponent('painel-sistema', {
           const sess = document.querySelector('a-scene').renderer.xr.getSession();
           if (sess) sess.end();
         }
-        if (a === 'toggleHUD') {
-          window.toggleHUDMode();
-        }
+        if (a === 'toggleHUD') window.toggleHUDMode();
 
         const orig = btn.getAttribute('material').color;
         btn.setAttribute('material', 'color', '#00ff88');
         setTimeout(() => btn.setAttribute('material', 'color', orig), 200);
       });
     });
-
-    function applyBrightness(b) {
-      // Ajusta a luz ambiente e a cor do céu para reduzir fadiga
-      if (ambient) ambient.setAttribute('light', 'intensity', (0.8 * b).toFixed(2));
-      const skyEl = document.getElementById('sky');
-      if (skyEl) {
-        const c = Math.round(255 * b);
-        skyEl.setAttribute('material', 'color', 'rgb(' + c + ',' + c + ',' + c + ')');
-      }
-    }
   }
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// HUD head-locked / hand-locked toggle
+// HUD head/hand toggle
 // ═══════════════════════════════════════════════════════════════════
-let hudMode = 'head'; // 'head' ou 'hand'
+let hudMode = 'head';
 window.toggleHUDMode = function() {
   const hud = document.getElementById('hudPanel');
   const head = document.getElementById('head');
@@ -520,7 +626,7 @@ window.toggleHUDMode = function() {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// Passthrough de baixa latência
+// Passthrough
 // ═══════════════════════════════════════════════════════════════════
 window.enablePassthrough = async function() {
   if (!navigator.xr) { showToast('❌ WebXR não suportado'); return; }
@@ -539,10 +645,7 @@ window.enablePassthrough = async function() {
       requiredFeatures: ['local-floor'],
       optionalFeatures: ['passthrough', 'hand-tracking', 'hit-test', 'bounded-floor'],
     });
-    // Tentativa de forçar passthrough de baixa latência
-    try {
-      await sess.updateRenderState({ passthroughEnabled: true });
-    } catch (e) { /* nem todos os browsers suportam */ }
+    try { await sess.updateRenderState({ passthroughEnabled: true }); } catch (e) {}
     await renderer.xr.setSession(sess);
     sess.addEventListener('end', () => {
       sceneEl.object3D.background = new THREE.Color(0x050a14);
@@ -554,7 +657,7 @@ window.enablePassthrough = async function() {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// Estrelas otimizadas (THREE.Points — 1 draw call)
+// Estrelas otimizadas (1 draw call)
 // ═══════════════════════════════════════════════════════════════════
 let starsPoints = null;
 function createStarsPoints() {
@@ -595,38 +698,29 @@ function showToast(msg, ms) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Cria bloco com gradiente neon (canvas) — reduz draw calls
+// Textura neon do cartão (canvas, 1 draw call por bloco)
 // ═══════════════════════════════════════════════════════════════════
 function makeCardTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 512; canvas.height = 512;
   const ctx = canvas.getContext('2d');
-  // Gradiente azul-marinho profundo
   const grad = ctx.createLinearGradient(0, 0, 512, 512);
   grad.addColorStop(0, '#0d1b2a');
   grad.addColorStop(1, '#14283f');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 512, 512);
-  // Borda neon ciano
   ctx.strokeStyle = '#00f5d4';
   ctx.lineWidth = 8;
   ctx.strokeRect(4, 4, 504, 504);
-  // Linhas decorativas sutis
-  ctx.strokeStyle = 'rgba(0, 245, 212, 0.15)';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 5; i++) {
-    ctx.beginPath();
-    ctx.moveTo(30, 100 + i * 80);
-    ctx.lineTo(482, 100 + i * 80);
-    ctx.stroke();
-  }
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
-
 const CARD_TEX = makeCardTexture();
 
+// ═══════════════════════════════════════════════════════════════════
+// CRIA BLOCO — cada bg é uma alternativa isolada com listener próprio
+// ═══════════════════════════════════════════════════════════════════
 function createBlock(q, i) {
   const cols = 4, spacing = 3.0;
   const x = (i % cols) * spacing - ((cols - 1) * spacing / 2);
@@ -640,11 +734,10 @@ function createBlock(q, i) {
   root.setAttribute('data-materia', q.materia || 'Geral');
   root.setAttribute('geometry', 'primitive: box; width: 2.4; height: 2.2; depth: 0.24');
   root.setAttribute('material', 'shader: flat; color: #0d1b2a; emissive: #00f5d4; emissiveIntensity: 0.15');
-  // Aplica textura de cartão se disponível
-  if (CARD_TEX) {
-    root.setAttribute('material', 'map', CARD_TEX);
-  }
+  if (CARD_TEX) root.setAttribute('material', 'map', CARD_TEX);
+  root.userData = { respondida: false, letraEscolhida: null };
 
+  // Título
   const title = document.createElement('a-text');
   title.setAttribute('value', (i + 1) + '. ' + q.materia);
   title.setAttribute('color', '#00f5d4');
@@ -657,6 +750,7 @@ function createBlock(q, i) {
   title.setAttribute('negate', 'false');
   root.appendChild(title);
 
+  // Pergunta
   const qtext = document.createElement('a-text');
   const shortQ = q.pergunta.length > 150 ? q.pergunta.slice(0, 147) + '...' : q.pergunta;
   qtext.setAttribute('value', shortQ);
@@ -671,43 +765,63 @@ function createBlock(q, i) {
   qtext.setAttribute('negate', 'false');
   root.appendChild(qtext);
 
+  // Alternativas — CADA bg tem .clickable + listener PRÓPRIO + data-correta
   q.alternativas.forEach((alt, idx) => {
     const letra = alt.trim().charAt(0).toUpperCase();
+    const isCorreta = (letra === q.correta);
+
     const row = document.createElement('a-entity');
     row.setAttribute('position', '0 ' + (-0.05 - idx * 0.28) + ' 0.15');
-    row.setAttribute('class', 'clickable ui-btn');
-    row.setAttribute('data-i', i);
-    row.setAttribute('data-letra', letra);
 
     const bg = document.createElement('a-plane');
+    bg.setAttribute('id', 'alt-' + i + '-' + idx);
     bg.setAttribute('geometry', 'primitive: plane; width: 2.0; height: 0.22');
     bg.setAttribute('material', 'shader: flat; color: #0a1933; emissive: #000000; emissiveIntensity: 0; side: double');
     bg.setAttribute('class', 'clickable ui-btn');
+    bg.setAttribute('data-i', i);
+    bg.setAttribute('data-letra', letra);
+    bg.setAttribute('data-correta', isCorreta ? 'true' : 'false');
 
     const txt = document.createElement('a-text');
     txt.setAttribute('value', alt.length > 60 ? alt.slice(0, 57) + '...' : alt);
     txt.setAttribute('color', '#cfe0ff');
     txt.setAttribute('width', '1.9');
     txt.setAttribute('position', '-0.95 0 0.02');
-    txt.setAttribute('class', 'clickable ui-btn');
     txt.setAttribute('font', 'mozillavr');
     txt.setAttribute('shader', 'msdf');
     txt.setAttribute('negate', 'false');
+    // ⚠️ Sem .clickable no texto — só o bg é alvo
 
     bg.appendChild(txt);
     row.appendChild(bg);
 
-    row.addEventListener('click', (e) => {
+    // ═══════ CLICK ISOLADO — escuta no PRÓPRIO bg apontado ═══════
+    bg.addEventListener('click', function(e) {
       e.stopPropagation();
+
       if (root.userData.respondida) return;
       root.userData.respondida = true;
       root.userData.letraEscolhida = letra;
-      const ok = letra === q.correta;
-      bg.setAttribute('material', 'color', ok ? '#00c853' : '#d50000');
-      bg.setAttribute('material', 'emissive', ok ? '#00ff88' : '#ff2222');
-      bg.setAttribute('material', 'emissiveIntensity', '0.8');
+
+      // 1) Limpa emissive de TODAS as alternativas do MESMO bloco
+      const todasDoBloco = root.querySelectorAll('[data-correta]');
+      todasDoBloco.forEach(function(el) {
+        el.setAttribute('material', 'emissive', '#000000');
+        el.setAttribute('material', 'emissiveIntensity', '0');
+        delete el.dataset.hl;
+      });
+
+      // 2) Aplica cor SÓ no bg clicado
+      const cor = isCorreta ? '#00aa55' : '#aa2222';
+      bg.setAttribute('material', 'color', cor);
+      bg.setAttribute('material', 'emissive', cor);
+      bg.setAttribute('material', 'emissiveIntensity', '0.7');
+      bg.dataset.respondida = 'true';
+
       updateHUD();
-      showToast(ok ? '✅ Correto!' : '❌ Errado (correta: ' + q.correta + ')');
+      showToast(isCorreta
+        ? '✅ Correto! (' + letra + ')'
+        : '❌ Errado. Correta: ' + q.correta);
     });
 
     root.appendChild(row);
@@ -718,12 +832,9 @@ function createBlock(q, i) {
 
 function updateHUD() {
   let total = 0, respondidas = 0;
-  document.querySelectorAll('[data-i]').forEach(row => {
-    const bg = row.querySelector('a-plane');
-    if (!bg) return;
+  document.querySelectorAll('[data-correta]').forEach(function(el) {
     total++;
-    const c = bg.getAttribute('material').color;
-    if (c === '#00c853' || c === '#d50000') respondidas++;
+    if (el.dataset.respondida === 'true') respondidas++;
   });
   const txt = respondidas + '/' + total;
   const st = document.getElementById('status');
@@ -849,41 +960,30 @@ document.getElementById('enter').addEventListener('click', () => {
 </script>
 
 <style>
-html, body {
-  margin: 0; padding: 0; width: 100%; height: 100vh;
-  overflow: hidden; background: #050a14;
-  font-family: 'Segoe UI', sans-serif;
-}
-#hud {
-  position: fixed; top: 8px; left: 8px; z-index: 99999;
+html, body { margin: 0; padding: 0; width: 100%; height: 100vh;
+  overflow: hidden; background: #050a14; font-family: 'Segoe UI', sans-serif; }
+#hud { position: fixed; top: 8px; left: 8px; z-index: 99999;
   background: rgba(0,0,0,0.92); color: #00e5ff;
   border: 1px solid #00f5d4; padding: 10px 14px;
-  border-radius: 10px; font-size: 12px; max-width: 480px;
-}
-#enter {
-  position: fixed; bottom: 12px; left: 50%;
+  border-radius: 10px; font-size: 12px; max-width: 480px; }
+#enter { position: fixed; bottom: 12px; left: 50%;
   transform: translateX(-50%); z-index: 99999;
   background: linear-gradient(90deg, #00d1ff, #7000ff);
   color: white; border: none; padding: 14px 32px;
-  border-radius: 999px; font-weight: 900; font-size: 15px;
-  cursor: pointer;
-}
-#toast {
-  position: fixed; bottom: 80px; left: 50%;
+  border-radius: 999px; font-weight: 900; font-size: 15px; cursor: pointer; }
+#toast { position: fixed; bottom: 80px; left: 50%;
   transform: translateX(-50%); z-index: 999999;
   background: rgba(0,0,0,0.95); color: #00f5d4;
   border: 2px solid #00f5d4; padding: 10px 22px;
   border-radius: 10px; font-size: 14px; font-weight: 700;
-  display: none; pointer-events: none;
-}
+  display: none; pointer-events: none; }
 </style>
 </head>
 <body>
 
 <div id="hud">
   <div style="font-weight:900;color:white;font-size:14px;">__MODO__ — Arena VR</div>
-  <b>Grip</b> = pegar à distância · <b>Trigger</b> = responder<br>
-  <b>Thumbstick ↑↓</b> = empurrar/afastar · <b>←→</b> = rotacionar<br>
+  <b>Grip</b> = pegar · <b>Trigger</b> = responder · <b>Stick</b> = ajustar<br>
   <div id="status" style="margin-top:6px;color:#00f5d4;font-weight:700;">0/__LEN__ respondidas</div>
 </div>
 <button id="enter">🥽 ENTRAR NO VR</button>
@@ -906,22 +1006,17 @@ html, body {
 
   <a-entity id="rig" position="0 0 8" movement-controls="fly: true; speed: 0.3">
     <a-entity id="head" camera look-controls wasd-controls="acceleration: 20" position="0 1.65 0">
-      <!-- HUD head-locked -->
       <a-entity id="hudPanel" position="0 -0.35 -1" scale="0.6 0.6 0.6">
         <a-plane width="1.2" height="0.35" color="#0d1b2a" opacity="0.85" material="shader: flat"></a-plane>
         <a-text id="hudVRText" value="0/__LEN__" color="#00f5d4" width="1.1"
-          align="center" position="0 0.08 0.01"
-          font="mozillavr" shader="msdf" negate="false"></a-text>
+          align="center" position="0 0.08 0.01" font="mozillavr" shader="msdf" negate="false"></a-text>
         <a-text id="timerText" value="00:00" color="#ffffff" width="0.5"
-          align="right" position="0.4 -0.08 0.01"
-          font="mozillavr" shader="msdf" negate="false"></a-text>
+          align="right" position="0.4 -0.08 0.01" font="mozillavr" shader="msdf" negate="false"></a-text>
         <a-text id="debugAlvo" value="🎯" color="#ffaa00" width="0.8"
-          align="left" position="-0.4 -0.08 0.01"
-          font="mozillavr" shader="msdf" negate="false"></a-text>
+          align="left" position="-0.4 -0.08 0.01" font="mozillavr" shader="msdf" negate="false"></a-text>
       </a-entity>
     </a-entity>
 
-    <!-- MÃO ESQUERDA -->
     <a-entity id="leftHand"
       laser-controls="hand: left"
       hand-tracking-controls="hand: left; modelStyle: dots; color: #00d1ff"
@@ -931,7 +1026,6 @@ html, body {
       line="color: #00d1ff; opacity: 0.85">
     </a-entity>
 
-    <!-- MÃO DIREITA -->
     <a-entity id="rightHand"
       laser-controls="hand: right"
       hand-tracking-controls="hand: right; modelStyle: dots; color: #ff8a00"
@@ -942,9 +1036,7 @@ html, body {
     </a-entity>
   </a-entity>
 
-  <!-- PAINEL PRINCIPAL (curvatura cockpit) -->
   <a-entity id="mainPanel" position="0 2.4 -2.5"
-    rotation="0 0 0"
     class="grabbable"
     geometry="primitive: box; width: 5.2; height: 3.0; depth: 0.06"
     material="color: #0a0a0a; opacity: 0.94; shader: flat"
@@ -952,7 +1044,6 @@ html, body {
     <a-text value="PMSC 2026 — ARENA VR" color="#00f5d4" width="5.5" align="center" position="0 1.35 0.05"
       font="mozillavr" shader="msdf" negate="false"></a-text>
 
-    <!-- Linha 1: Ambientes -->
     <a-entity class="grabbable clickable ui-btn calib-btn" data-action="dark"
       position="-2.0 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
       material="shader: flat; color: #1a3a6a"><a-text value="ESCURO" color="white" width="0.9" align="center" font="mozillavr" shader="msdf"></a-text></a-entity>
@@ -969,7 +1060,6 @@ html, body {
       position="1.8 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
       material="shader: flat; color: #2a0a5a"><a-text value="ESPAÇO" color="white" width="0.9" align="center" font="mozillavr" shader="msdf"></a-text></a-entity>
 
-    <!-- Linha 2: Passthrough + Brilho -->
     <a-entity class="grabbable clickable ui-btn calib-btn" data-action="passthrough"
       position="-2.0 0.55 0.05" geometry="primitive: plane; width: 1.05; height: 0.26"
       material="shader: flat; color: #7a1fa2"><a-text value="PASSTHROUGH" color="white" width="1.1" align="center" font="mozillavr" shader="msdf"></a-text></a-entity>
@@ -986,7 +1076,6 @@ html, body {
       position="1.75 0.55 0.05" geometry="primitive: plane; width: 1.0; height: 0.26"
       material="shader: flat; color: #1a6a5a"><a-text value="POR MATÉRIA" color="white" width="1.05" align="center" font="mozillavr" shader="msdf"></a-text></a-entity>
 
-    <!-- Linha 3: Save / Load / HUD / Sair -->
     <a-entity class="grabbable clickable ui-btn calib-btn" data-action="salvar"
       position="-2.0 0.2 0.05" geometry="primitive: plane; width: 0.7; height: 0.26"
       material="shader: flat; color: #00aa44"><a-text value="SALVAR" color="white" width="0.75" align="center" font="mozillavr" shader="msdf"></a-text></a-entity>
@@ -1008,7 +1097,6 @@ html, body {
       font="mozillavr" shader="msdf" negate="false"></a-text>
   </a-entity>
 
-  <!-- CALIBRADOR (painel curvo à direita) -->
   <a-entity id="calibPanel" position="3.2 2.4 -2.8"
     rotation="0 -15 0"
     class="grabbable"
@@ -1064,7 +1152,7 @@ html, body {
         st.rerun()
 
 
-st.title("🎯 PMSC Arena VR — Otimizado")
+st.title("🎯 PMSC Arena VR — v10 (Gramática + Click Isolado)")
 st.caption(
     f"✅ {info['arquivo']} · {info['unicas']} questões únicas "
     f"({info['removidas']} duplicatas) · Meta Quest 3/3S"
@@ -1118,8 +1206,7 @@ tab_vr, tab_sim = st.tabs(["🥽 Arena VR", "📝 Simulado"])
 
 with tab_vr:
     if st.session_state.simulado:
-        qs = st.session_state.simulado["questoes"]
-        render_vr(qs, modo="SIMULADO", height=950)
+        render_vr(st.session_state.simulado["questoes"], modo="SIMULADO", height=950)
     elif st.session_state.treino:
         render_vr(st.session_state.treino, modo="TREINO", height=950)
     else:
