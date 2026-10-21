@@ -179,38 +179,50 @@ def render_vr(questoes, modo="ARENA", height=950):
 <script src="https://unpkg.com/super-hands@3.0.5/dist/super-hands.min.js"></script>
 <script>
 // ============================================================
-// vr-hand: raycaster PRÓPRIO + sobe pela árvore até o bloco
+// vr-hand v3: alcance 50m + click preciso em alternativa
 // ============================================================
 AFRAME.registerComponent('vr-hand', {
   init: function() {
     const hand = this.el;
     const raycaster = new THREE.Raycaster();
-    raycaster.far = 25;
+    raycaster.far = 50;                                   // ← alcance aumentado
+
     let grabbed = null;
     let grabDist = 0;
-    let currentTarget = null;
+    let currentGrab = null;                               // bloco inteiro
+    let currentClick = null;                              // alternativa exata
 
-    // Sobe pela hierarquia até achar o bloco principal
     const acharBloco = function(el) {
       let cur = el;
       while (cur) {
         if (cur.id && cur.id.indexOf('block-') === 0) return cur;
         cur = cur.parentEl;
       }
-      // Se não for filho de bloco, retorna o próprio
       return el;
     };
 
-    const atualizarAlvo = function() {
-      if (grabbed) { currentTarget = null; return; }
-      const origin = new THREE.Vector3();
-      const dir = new THREE.Vector3(0, 0, -1)
-        .applyQuaternion(hand.object3D.getWorldQuaternion(new THREE.Quaternion()))
-        .normalize();
-      hand.object3D.getWorldPosition(origin);
-      raycaster.set(origin, dir);
+    const acharClickable = function(el) {
+      let cur = el;
+      while (cur) {
+        if (cur.classList && cur.classList.contains('clickable')) return cur;
+        cur = cur.parentEl;
+      }
+      return null;
+    };
 
-      // Coleta todos os objetos da cena (el do A-Frame)
+    const atualizarAlvo = function() {
+      if (grabbed) return;
+
+      const origin = new THREE.Vector3();
+      hand.object3D.getWorldPosition(origin);
+
+      const q = new THREE.Quaternion();
+      hand.object3D.getWorldQuaternion(q);
+      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(q).normalize();
+
+      raycaster.set(origin, dir);
+      raycaster.far = 50;
+
       const objetos = [];
       hand.sceneEl.object3D.traverse((o) => {
         if (o.el && o.el.classList &&
@@ -221,21 +233,36 @@ AFRAME.registerComponent('vr-hand', {
       });
 
       const hits = raycaster.intersectObjects(objetos, true);
-      currentTarget = null;
+      currentGrab = null;
+      currentClick = null;
+
       if (hits.length > 0) {
         const hit = hits[0];
         const elHit = hit.object.el;
         if (elHit) {
-          currentTarget = { el: acharBloco(elHit), distance: hit.distance };
+          // 1) Alvo de grab = bloco inteiro
+          const bloco = acharBloco(elHit);
+          if (bloco) {
+            currentGrab = { el: bloco, distance: hit.distance };
+          }
+          // 2) Alvo de click = alternativa exata apontada
+          const clickEl = acharClickable(elHit);
+          if (clickEl) {
+            currentClick = clickEl;
+          }
         }
       }
 
-      // Debug no HUD
+      // HUD de debug
       const dbg = document.getElementById('debugAlvo');
       if (dbg) {
-        if (currentTarget) {
-          dbg.setAttribute('value', '🎯 ' + (currentTarget.el.id || '?') +
-            ' (' + currentTarget.distance.toFixed(1) + 'm)');
+        if (currentClick) {
+          const letra = currentClick.getAttribute('data-letra') || '?';
+          const dist = currentGrab ? currentGrab.distance : 0;
+          dbg.setAttribute('value', '🎯 CLICK [' + letra + '] ' + dist.toFixed(1) + 'm');
+        } else if (currentGrab) {
+          dbg.setAttribute('value', '🎯 ' + (currentGrab.el.id || '?') + ' ' +
+            currentGrab.distance.toFixed(1) + 'm');
         } else {
           dbg.setAttribute('value', '🎯 (nada)');
         }
@@ -243,16 +270,13 @@ AFRAME.registerComponent('vr-hand', {
     };
 
     const startGrab = function() {
-      if (grabbed || !currentTarget) return;
-      grabbed = currentTarget.el;
-      grabDist = currentTarget.distance;
-      const mat = grabbed.getAttribute('material') || {};
+      if (grabbed || !currentGrab) return;
+      grabbed = currentGrab.el;
+      grabDist = currentGrab.distance;
       grabbed.setAttribute('material', 'emissive', '#ffaa00');
       grabbed.setAttribute('material', 'emissiveIntensity', '1');
-      showToast('✋ ' + grabbed.id, 900);
+      showToast('✋ ' + grabbed.id + ' (' + grabDist.toFixed(1) + 'm)', 900);
       if (navigator.vibrate) navigator.vibrate(30);
-      const dbg = document.getElementById('debugAlvo');
-      if (dbg) dbg.setAttribute('value', '✋ ' + grabbed.id);
     };
 
     const endGrab = function() {
@@ -267,18 +291,18 @@ AFRAME.registerComponent('vr-hand', {
     };
 
     const doClick = function() {
-      if (!currentTarget) return;
-      const el = currentTarget.el;
-      // Se é alternativa (clickable dentro de bloco)
-      if (el.classList.contains('clickable')) {
-        el.emit('click', { target: el });
-        if (navigator.vibrate) navigator.vibrate(40);
-      } else {
-        // Procura um clickable filho
-        const filho = el.querySelector('.clickable');
+      // PRIORIDADE 1: alternativa exata apontada
+      if (currentClick) {
+        currentClick.emit('click', { target: currentClick });
+        if (navigator.vibrate) navigator.vibrate(60);
+        return;
+      }
+      // FALLBACK: primeiro clickable do bloco apontado
+      if (currentGrab) {
+        const filho = currentGrab.el.querySelector('.clickable');
         if (filho) {
           filho.emit('click', { target: filho });
-          if (navigator.vibrate) navigator.vibrate(40);
+          if (navigator.vibrate) navigator.vibrate(60);
         }
       }
     };
@@ -287,10 +311,10 @@ AFRAME.registerComponent('vr-hand', {
       atualizarAlvo();
       if (grabbed) {
         const origin = new THREE.Vector3();
-        const dir = new THREE.Vector3(0, 0, -1)
-          .applyQuaternion(hand.object3D.getWorldQuaternion(new THREE.Quaternion()))
-          .normalize();
         hand.object3D.getWorldPosition(origin);
+        const q = new THREE.Quaternion();
+        hand.object3D.getWorldQuaternion(q);
+        const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(q).normalize();
         const target = origin.clone().add(dir.clone().multiplyScalar(grabDist));
         const parent = grabbed.object3D.parent;
         if (parent) {
@@ -344,7 +368,7 @@ AFRAME.registerComponent('hand-live', {
 });
 
 // ============================================================
-// painel-sistema: botões do painel
+// painel-sistema: botões
 // ============================================================
 AFRAME.registerComponent('painel-sistema', {
   init: function() {
@@ -411,8 +435,7 @@ AFRAME.registerComponent('painel-sistema', {
           showToast('Mão - (' + handScale.toFixed(1) + ')');
         }
         if (a === 'alturaMais') {
-          headH += 0.1;
-          head.setAttribute('position', '0 ' + headH + ' 0');
+          headH += 0.1; head.setAttribute('position', '0 ' + headH + ' 0');
           showToast('Altura ' + headH.toFixed(1) + 'm');
         }
         if (a === 'alturaMenos') {
@@ -497,7 +520,7 @@ function showToast(msg, ms) {
 }
 
 // ============================================================
-// CRIAR BLOCO — TODOS os filhos com .grabbable
+// CRIAR BLOCO (filhos com .grabbable, alternativas com .clickable)
 // ============================================================
 function createBlock(q, i) {
   const cols = 4, spacing = 3.0;
@@ -513,7 +536,6 @@ function createBlock(q, i) {
   root.setAttribute('geometry', 'primitive: box; width: 2.4; height: 2.2; depth: 0.24');
   root.setAttribute('material', 'color: #13244a; emissive: #000000; emissiveIntensity: 0');
 
-  // Título — .grabbable para o raio bater nele
   const title = document.createElement('a-text');
   title.setAttribute('value', (i + 1) + '. ' + q.materia);
   title.setAttribute('color', '#00e5ff');
@@ -523,7 +545,6 @@ function createBlock(q, i) {
   title.setAttribute('class', 'grabbable');
   root.appendChild(title);
 
-  // Pergunta
   const qtext = document.createElement('a-text');
   const shortQ = q.pergunta.length > 150 ? q.pergunta.slice(0, 147) + '...' : q.pergunta;
   qtext.setAttribute('value', shortQ);
@@ -535,13 +556,13 @@ function createBlock(q, i) {
   qtext.setAttribute('class', 'grabbable');
   root.appendChild(qtext);
 
-  // Alternativas — clickable (para responder) + grabbable (para o raio bater)
   q.alternativas.forEach((alt, idx) => {
     const letra = alt.trim().charAt(0).toUpperCase();
     const row = document.createElement('a-entity');
     row.setAttribute('position', '0 ' + (-0.05 - idx * 0.28) + ' 0.15');
     row.setAttribute('class', 'clickable grabbable');
     row.setAttribute('data-i', i);
+    row.setAttribute('data-letra', letra);                // ← para o HUD
 
     const bg = document.createElement('a-plane');
     bg.setAttribute('width', '2.0');
@@ -567,7 +588,8 @@ function createBlock(q, i) {
       const ok = letra === q.correta;
       bg.setAttribute('color', ok ? '#00c853' : '#d50000');
       updateHUD();
-      showToast(ok ? '✅ Correto!' : '❌ Errado');
+      showToast(ok ? '✅ Correto!' : '❌ Errado — correta: ' + q.correta);
+      console.log('[CLICK]', 'block-' + i, 'letra', letra, 'correta', q.correta, 'ok', ok);
     });
 
     root.appendChild(row);
@@ -706,7 +728,7 @@ html, body {
   position: fixed; top: 8px; left: 8px; z-index: 99999;
   background: rgba(0,0,0,0.92); color: #00e5ff;
   border: 1px solid #00e5ff; padding: 10px 14px;
-  border-radius: 10px; font-size: 12px; max-width: 420px;
+  border-radius: 10px; font-size: 12px; max-width: 460px;
 }
 #enter {
   position: fixed; bottom: 12px; left: 50%;
@@ -730,7 +752,7 @@ html, body {
 
 <div id="hud">
   <div style="font-weight:900;color:white;font-size:14px;">__MODO__ — Arena VR</div>
-  <b>Grip</b> = mover bloco · <b>Trigger</b> = responder · <b>Thumbstick</b> = rotacionar<br>
+  <b>Grip</b> = mover · <b>Trigger</b> = responder · <b>Thumbstick</b> = rotacionar<br>
   <div id="status" style="margin-top:6px;color:#00ff88;font-weight:700;">0/__LEN__ respondidas</div>
 </div>
 <button id="enter">🥽 ENTRAR NO VR</button>
@@ -753,17 +775,17 @@ html, body {
 
   <a-entity id="rig" position="0 0 8" movement-controls="fly: true; speed: 0.3">
     <a-entity id="head" camera look-controls wasd-controls="acceleration: 20" position="0 1.65 0">
-      <a-entity position="0 -0.6 -1.1">
-        <a-plane width="1.8" height="0.4" color="black" opacity="0.75"></a-plane>
+      <a-entity position="0 -0.7 -1.1">
+        <a-plane width="2.2" height="0.48" color="black" opacity="0.75"></a-plane>
         <a-text id="hudVRText" value="0/__LEN__" color="#00ff88" width="1.9"
-          align="center" position="0 0.06 0.01"></a-text>
+          align="center" position="0 0.1 0.01"></a-text>
         <a-text id="debugAlvo" value="🎯 (aguardando)" color="#ffaa00" width="1.9"
           align="center" position="0 -0.1 0.01"></a-text>
       </a-entity>
     </a-entity>
 
     <a-entity id="leftHand"
-      laser-controls="hand: left"
+      hand-controls="hand: left"
       hand-tracking-controls="hand: left"
       hand-live="hand: left"
       vr-hand
@@ -771,7 +793,7 @@ html, body {
     </a-entity>
 
     <a-entity id="rightHand"
-      laser-controls="hand: right"
+      hand-controls="hand: right"
       hand-tracking-controls="hand: right"
       hand-live="hand: right"
       vr-hand
