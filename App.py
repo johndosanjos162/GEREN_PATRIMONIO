@@ -6,11 +6,7 @@ import time
 import pathlib
 from datetime import datetime
 
-st.set_page_config(
-    page_title="PMSC 2026 — Arena VR",
-    page_icon="🎯",
-    layout="wide",
-)
+st.set_page_config(page_title="PMSC 2026 — Arena VR", page_icon="🎯", layout="wide")
 
 DISTRIBUICAO = {
     "Legislação Institucional": 10, "Direito Constitucional": 8,
@@ -21,10 +17,8 @@ DISTRIBUICAO = {
 TOTAL = sum(DISTRIBUICAO.values())
 
 
-def _parse_concatenado(conteudo: str) -> dict:
-    decoder = json.JSONDecoder()
-    idx, n = 0, len(conteudo)
-    resultado = {}
+def _parse_concatenado(conteudo):
+    decoder, idx, n, resultado = json.JSONDecoder(), 0, len(conteudo), {}
     while idx < n:
         while idx < n and conteudo[idx].isspace():
             idx += 1
@@ -35,16 +29,16 @@ def _parse_concatenado(conteudo: str) -> dict:
         except json.JSONDecodeError:
             break
         if isinstance(obj, dict):
-            for materia, lista in obj.items():
-                if isinstance(lista, list):
-                    resultado.setdefault(materia, []).extend(lista)
+            for m, l in obj.items():
+                if isinstance(l, list):
+                    resultado.setdefault(m, []).extend(l)
         elif isinstance(obj, list):
             for q in obj:
                 resultado.setdefault(q.get("materia", "Geral"), []).append(q)
     return resultado
 
 
-def _deduplicar(lista):
+def _dedup(lista):
     vistos, unicas, rem = set(), [], 0
     for q in lista:
         t = q.get("pergunta", "").strip().lower()
@@ -60,29 +54,23 @@ def _deduplicar(lista):
 
 @st.cache_data(ttl=30, show_spinner=False)
 def load_json():
-    candidatos = [
-        pathlib.Path(__file__).parent / "json.json",
-        pathlib.Path.cwd() / "json.json",
-    ]
-    for path in candidatos:
+    for path in [pathlib.Path(__file__).parent / "json.json",
+                 pathlib.Path.cwd() / "json.json"]:
         if path.exists():
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    conteudo = f.read()
-                parsed = _parse_concatenado(conteudo)
+                    parsed = _parse_concatenado(f.read())
                 if not parsed:
                     continue
-                total_bruto, removidas = 0, 0
+                bruto, remov = 0, 0
                 for mat in list(parsed.keys()):
-                    unicas, rem = _deduplicar(parsed[mat])
-                    parsed[mat] = unicas
-                    total_bruto += len(unicas) + rem
-                    removidas += rem
-                return parsed, {
-                    "arquivo": path.name, "bruto": total_bruto,
-                    "removidas": removidas,
-                    "unicas": sum(len(v) for v in parsed.values()),
-                }
+                    un, r = _dedup(parsed[mat])
+                    parsed[mat] = un
+                    bruto += len(un) + r
+                    remov += r
+                return parsed, {"arquivo": path.name, "bruto": bruto,
+                                "removidas": remov,
+                                "unicas": sum(len(v) for v in parsed.values())}
             except Exception as e:
                 return None, {"erro": str(e)}
     return None, {"erro": "json.json não encontrado"}
@@ -104,25 +92,18 @@ def montar_simulado(banco):
     return sim
 
 
-for k, d in [("simulado", None), ("treino", []), ("hist", []),
-             ("vr_ready", False)]:
+for k, d in [("simulado", None), ("treino", []), ("hist", []), ("vr_ready", False)]:
     if k not in st.session_state:
         st.session_state[k] = d
 
 banco, info = load_json()
 if not banco:
     st.error(f"❌ json.json: {info.get('erro', '?')}")
-    try:
-        st.write("Arquivos:", [f.name for f in pathlib.Path(__file__).parent.iterdir()])
-    except Exception:
-        pass
     st.stop()
 
 st.title("🎯 PMSC 2026 — Arena VR")
-st.caption(
-    f"✅ {info['arquivo']} · {info['unicas']}q únicas "
-    f"({info['removidas']} duplicatas) · Meta Quest 3S"
-)
+st.caption(f"✅ {info['arquivo']} · {info['unicas']}q únicas "
+           f"({info['removidas']} duplicatas) · Meta Quest 3S")
 
 with st.sidebar:
     st.success(f"📚 {info['unicas']} questões únicas")
@@ -171,14 +152,11 @@ with st.sidebar:
         st.caption("Nenhum simulado ainda.")
 
 
-# ==================================================================
-# RENDER VR
-# ==================================================================
 def render_vr(questoes, modo="ARENA", height=950):
     if not st.session_state.vr_ready:
         st.info(f"{len(questoes)} questões prontas para a arena VR.")
-        if st.button(f"🥽 CARREGAR VR — {modo}",
-                     type="primary", use_container_width=True):
+        if st.button(f"🥽 CARREGAR VR — {modo}", type="primary",
+                     use_container_width=True):
             st.session_state.vr_ready = True
             st.rerun()
         return
@@ -201,47 +179,80 @@ def render_vr(questoes, modo="ARENA", height=950):
 <script src="https://unpkg.com/super-hands@3.0.5/dist/super-hands.min.js"></script>
 <script>
 // ============================================================
-// COMPONENTE: vr-hand  (grab/click/rotate customizados)
-// Resolve o bug do super-hands: raycast manual que ATRAVESSA
-// os textos e encontra o BLOCO INTEIRO mais próximo.
+// vr-hand: raycaster PRÓPRIO + sobe pela árvore até o bloco
 // ============================================================
 AFRAME.registerComponent('vr-hand', {
   init: function() {
     const hand = this.el;
+    const raycaster = new THREE.Raycaster();
+    raycaster.far = 25;
     let grabbed = null;
     let grabDist = 0;
+    let currentTarget = null;
 
-    // ---- Helper: acha o elemento mais próximo com a classe ----
-    const closestByClass = function(className) {
-      const rc = hand.components.raycaster;
-      if (!rc || !rc.intersections || rc.intersections.length === 0) return null;
-      for (let i = 0; i < rc.intersections.length; i++) {
-        const hit = rc.intersections[i];
-        let el = hit.object.el;
-        while (el) {
-          if (el.classList && el.classList.contains(className)) {
-            return { el: el, distance: hit.distance };
-          }
-          el = el.parentEl;
-        }
+    // Sobe pela hierarquia até achar o bloco principal
+    const acharBloco = function(el) {
+      let cur = el;
+      while (cur) {
+        if (cur.id && cur.id.indexOf('block-') === 0) return cur;
+        cur = cur.parentEl;
       }
-      return null;
+      // Se não for filho de bloco, retorna o próprio
+      return el;
     };
 
-    // ---- GRAB ----
-    const startGrab = function() {
-      if (grabbed) return;
-      const found = closestByClass('grabbable');
-      if (!found) { showToast('⚠️ Nada grabbable à frente'); return; }
-      grabbed = found.el;
-      grabDist = found.distance;
+    const atualizarAlvo = function() {
+      if (grabbed) { currentTarget = null; return; }
+      const origin = new THREE.Vector3();
+      const dir = new THREE.Vector3(0, 0, -1)
+        .applyQuaternion(hand.object3D.getWorldQuaternion(new THREE.Quaternion()))
+        .normalize();
+      hand.object3D.getWorldPosition(origin);
+      raycaster.set(origin, dir);
 
-      // Feedback
+      // Coleta todos os objetos da cena (el do A-Frame)
+      const objetos = [];
+      hand.sceneEl.object3D.traverse((o) => {
+        if (o.el && o.el.classList &&
+            (o.el.classList.contains('grabbable') ||
+             o.el.classList.contains('clickable'))) {
+          objetos.push(o);
+        }
+      });
+
+      const hits = raycaster.intersectObjects(objetos, true);
+      currentTarget = null;
+      if (hits.length > 0) {
+        const hit = hits[0];
+        const elHit = hit.object.el;
+        if (elHit) {
+          currentTarget = { el: acharBloco(elHit), distance: hit.distance };
+        }
+      }
+
+      // Debug no HUD
+      const dbg = document.getElementById('debugAlvo');
+      if (dbg) {
+        if (currentTarget) {
+          dbg.setAttribute('value', '🎯 ' + (currentTarget.el.id || '?') +
+            ' (' + currentTarget.distance.toFixed(1) + 'm)');
+        } else {
+          dbg.setAttribute('value', '🎯 (nada)');
+        }
+      }
+    };
+
+    const startGrab = function() {
+      if (grabbed || !currentTarget) return;
+      grabbed = currentTarget.el;
+      grabDist = currentTarget.distance;
+      const mat = grabbed.getAttribute('material') || {};
       grabbed.setAttribute('material', 'emissive', '#ffaa00');
       grabbed.setAttribute('material', 'emissiveIntensity', '1');
-      const idCurto = (grabbed.id || '').substring(0, 12);
-      showToast('✋ Segurando ' + idCurto, 900);
+      showToast('✋ ' + grabbed.id, 900);
       if (navigator.vibrate) navigator.vibrate(30);
+      const dbg = document.getElementById('debugAlvo');
+      if (dbg) dbg.setAttribute('value', '✋ ' + grabbed.id);
     };
 
     const endGrab = function() {
@@ -255,49 +266,56 @@ AFRAME.registerComponent('vr-hand', {
       grabDist = 0;
     };
 
-    // ---- CLICK em alternativa ----
     const doClick = function() {
-      const found = closestByClass('clickable');
-      if (!found) return;
-      found.el.emit('click', { target: found.el });
-      if (navigator.vibrate) navigator.vibrate(40);
+      if (!currentTarget) return;
+      const el = currentTarget.el;
+      // Se é alternativa (clickable dentro de bloco)
+      if (el.classList.contains('clickable')) {
+        el.emit('click', { target: el });
+        if (navigator.vibrate) navigator.vibrate(40);
+      } else {
+        // Procura um clickable filho
+        const filho = el.querySelector('.clickable');
+        if (filho) {
+          filho.emit('click', { target: filho });
+          if (navigator.vibrate) navigator.vibrate(40);
+        }
+      }
     };
 
-    // ---- Listeners (controle + hand tracking) ----
+    this.tick = function() {
+      atualizarAlvo();
+      if (grabbed) {
+        const origin = new THREE.Vector3();
+        const dir = new THREE.Vector3(0, 0, -1)
+          .applyQuaternion(hand.object3D.getWorldQuaternion(new THREE.Quaternion()))
+          .normalize();
+        hand.object3D.getWorldPosition(origin);
+        const target = origin.clone().add(dir.clone().multiplyScalar(grabDist));
+        const parent = grabbed.object3D.parent;
+        if (parent) {
+          const local = parent.worldToLocal(target.clone());
+          grabbed.object3D.position.copy(local);
+        }
+      }
+    };
+
     hand.addEventListener('gripdown', startGrab);
     hand.addEventListener('gripup', endGrab);
     hand.addEventListener('pinchstarted', startGrab);
     hand.addEventListener('pinchended', endGrab);
     hand.addEventListener('triggerdown', doClick);
-
-    // ---- Thumbstick: rotaciona enquanto segura ----
-    hand.addEventListener('thumbstickmoved', function(evt) {
+    hand.addEventListener('thumbstickmoved', (evt) => {
       if (!grabbed) return;
-      const x = evt.detail.x;
-      const y = evt.detail.y;
+      const x = evt.detail.x, y = evt.detail.y;
       if (Math.abs(x) > 0.15) grabbed.object3D.rotation.y += x * 0.03;
       if (Math.abs(y) > 0.15) grabbed.object3D.rotation.x += y * 0.03;
     });
-
-    // ---- Loop: move o objeto agarrado ----
-    this.tick = function() {
-      if (!grabbed) return;
-      const dir = new THREE.Vector3();
-      hand.object3D.getWorldDirection(dir);
-      const pos = new THREE.Vector3();
-      hand.object3D.getWorldPosition(pos);
-      const target = pos.clone().add(dir.clone().multiplyScalar(grabDist));
-      const parent = grabbed.object3D.parent;
-      if (parent) {
-        const local = parent.worldToLocal(target.clone());
-        grabbed.object3D.position.copy(local);
-      }
-    };
   }
 });
 
 // ============================================================
-// COMPONENTE: hand-live (calibrador em tempo real)
+// hand-live: calibrador
 // ============================================================
 AFRAME.registerComponent('hand-live', {
   schema: { hand: { type: 'string', default: 'left' } },
@@ -314,20 +332,19 @@ AFRAME.registerComponent('hand-live', {
     if (!tEl) return;
     const p = this.el.object3D.position;
     const s = this.el.object3D.scale.x;
-    const isTracking = !!this.el.components['hand-tracking-controls'];
-    const tracking = isTracking ? 'TRACKING' : 'CONTROLE';
+    const isTrack = !!this.el.components['hand-tracking-controls'];
+    const tracking = isTrack ? 'TRACKING' : 'CONTROLE';
     tEl.setAttribute('value',
       this.data.hand.toUpperCase() + ': ' + tracking +
       '\nPos ' + p.x.toFixed(2) + ' ' + p.y.toFixed(2) + ' ' + p.z.toFixed(2) +
       '\nEscala ' + s.toFixed(2) +
       ' | ' + (this.pinch ? 'PINCH' : 'ABERTA') +
-      (this.grip ? ' GRIP' : '')
-    );
+      (this.grip ? ' GRIP' : ''));
   }
 });
 
 // ============================================================
-// SISTEMA DO PAINEL (fundo, organizar, calibração)
+// painel-sistema: botões do painel
 // ============================================================
 AFRAME.registerComponent('painel-sistema', {
   init: function() {
@@ -342,12 +359,10 @@ AFRAME.registerComponent('painel-sistema', {
     this.el.querySelectorAll('.calib-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const a = btn.getAttribute('data-action');
-
         if (a === 'passthrough') { window.enablePassthrough(); return; }
         if (a === 'dark') {
           sky.setAttribute('visible', 'true');
-          sky.setAttribute('color', '#050a14');
-          sky.removeAttribute('src');
+          sky.setAttribute('color', '#050a14'); sky.removeAttribute('src');
           stars.setAttribute('visible', 'false');
           showToast('ESCURO');
         }
@@ -374,32 +389,26 @@ AFRAME.registerComponent('painel-sistema', {
         }
         if (a === 'space') {
           sky.setAttribute('visible', 'true');
-          sky.setAttribute('color', '#000005');
-          sky.removeAttribute('src');
-          createStars();
-          stars.setAttribute('visible', 'true');
+          sky.setAttribute('color', '#000005'); sky.removeAttribute('src');
+          createStars(); stars.setAttribute('visible', 'true');
           showToast('ESPAÇO');
         }
-
         if (a === 'organizar') window.organizarGrade();
         if (a === 'porMateria') window.organizarPorMateria();
         if (a === 'espalhar') window.espalhar();
         if (a === 'salvar') window.salvarLayout();
         if (a === 'carregar') window.carregarLayout();
-
         if (a === 'maoMais') {
           handScale += 0.1;
           const v = handScale + ' ' + handScale + ' ' + handScale;
-          left.setAttribute('scale', v);
-          right.setAttribute('scale', v);
-          showToast('Mão + (escala ' + handScale.toFixed(1) + ')');
+          left.setAttribute('scale', v); right.setAttribute('scale', v);
+          showToast('Mão + (' + handScale.toFixed(1) + ')');
         }
         if (a === 'maoMenos') {
           handScale = Math.max(0.2, handScale - 0.1);
           const v = handScale + ' ' + handScale + ' ' + handScale;
-          left.setAttribute('scale', v);
-          right.setAttribute('scale', v);
-          showToast('Mão - (escala ' + handScale.toFixed(1) + ')');
+          left.setAttribute('scale', v); right.setAttribute('scale', v);
+          showToast('Mão - (' + handScale.toFixed(1) + ')');
         }
         if (a === 'alturaMais') {
           headH += 0.1;
@@ -420,7 +429,6 @@ AFRAME.registerComponent('painel-sistema', {
           const sess = document.querySelector('a-scene').renderer.xr.getSession();
           if (sess) sess.end();
         }
-
         const orig = btn.getAttribute('material').color;
         btn.setAttribute('material', 'color', '#00ff88');
         setTimeout(() => btn.setAttribute('material', 'color', orig), 200);
@@ -430,7 +438,7 @@ AFRAME.registerComponent('painel-sistema', {
 });
 
 // ============================================================
-// PASSTHROUGH
+// PASSTHROUGH / ESTRELAS / TOAST
 // ============================================================
 window.enablePassthrough = async function() {
   if (!navigator.xr) { showToast('❌ WebXR não suportado'); return; }
@@ -489,7 +497,7 @@ function showToast(msg, ms) {
 }
 
 // ============================================================
-// CRIA BLOCO DE QUESTÃO  (o PARENT é a caixa grabbable)
+// CRIAR BLOCO — TODOS os filhos com .grabbable
 // ============================================================
 function createBlock(q, i) {
   const cols = 4, spacing = 3.0;
@@ -505,47 +513,48 @@ function createBlock(q, i) {
   root.setAttribute('geometry', 'primitive: box; width: 2.4; height: 2.2; depth: 0.24');
   root.setAttribute('material', 'color: #13244a; emissive: #000000; emissiveIntensity: 0');
 
-  // Título
+  // Título — .grabbable para o raio bater nele
   const title = document.createElement('a-text');
   title.setAttribute('value', (i + 1) + '. ' + q.materia);
   title.setAttribute('color', '#00e5ff');
   title.setAttribute('width', '2.3');
   title.setAttribute('align', 'center');
   title.setAttribute('position', '0 0.85 0.14');
+  title.setAttribute('class', 'grabbable');
   root.appendChild(title);
 
   // Pergunta
   const qtext = document.createElement('a-text');
-  const shortQ = q.pergunta.length > 150
-    ? q.pergunta.slice(0, 147) + '...' : q.pergunta;
+  const shortQ = q.pergunta.length > 150 ? q.pergunta.slice(0, 147) + '...' : q.pergunta;
   qtext.setAttribute('value', shortQ);
   qtext.setAttribute('color', 'white');
   qtext.setAttribute('width', '2.2');
   qtext.setAttribute('align', 'center');
   qtext.setAttribute('position', '0 0.45 0.14');
   qtext.setAttribute('wrap-count', '36');
+  qtext.setAttribute('class', 'grabbable');
   root.appendChild(qtext);
 
-  // Alternativas
+  // Alternativas — clickable (para responder) + grabbable (para o raio bater)
   q.alternativas.forEach((alt, idx) => {
     const letra = alt.trim().charAt(0).toUpperCase();
     const row = document.createElement('a-entity');
     row.setAttribute('position', '0 ' + (-0.05 - idx * 0.28) + ' 0.15');
-    row.setAttribute('class', 'clickable');
+    row.setAttribute('class', 'clickable grabbable');
     row.setAttribute('data-i', i);
 
     const bg = document.createElement('a-plane');
     bg.setAttribute('width', '2.0');
     bg.setAttribute('height', '0.22');
     bg.setAttribute('color', '#0a1933');
-    bg.setAttribute('class', 'clickable');
+    bg.setAttribute('class', 'clickable grabbable');
 
     const txt = document.createElement('a-text');
     txt.setAttribute('value', alt.length > 60 ? alt.slice(0, 57) + '...' : alt);
     txt.setAttribute('color', '#cfe0ff');
     txt.setAttribute('width', '1.9');
     txt.setAttribute('position', '-0.95 0 0.01');
-    txt.setAttribute('class', 'clickable');
+    txt.setAttribute('class', 'clickable grabbable');
 
     bg.appendChild(txt);
     row.appendChild(bg);
@@ -567,9 +576,6 @@ function createBlock(q, i) {
   return root;
 }
 
-// ============================================================
-// HUD
-// ============================================================
 function updateHUD() {
   let total = 0, respondidas = 0;
   document.querySelectorAll('[data-i]').forEach(row => {
@@ -585,18 +591,17 @@ function updateHUD() {
 }
 
 // ============================================================
-// ORGANIZAÇÃO
+// ORGANIZAR
 // ============================================================
 window.organizarGrade = function() {
-  const blocks = document.querySelectorAll('[id^="block-"]');
-  blocks.forEach((b, i) => {
+  document.querySelectorAll('[id^="block-"]').forEach((b, i) => {
     const cols = 4, sp = 3.0;
     const x = (i % cols) * sp - ((cols - 1) * sp / 2);
     const z = Math.floor(i / cols) * -3.4 - 1.5;
     b.setAttribute('animation',
       'property: position; to: ' + x + ' 1.3 ' + z + '; dur: 800');
   });
-  showToast('📐 GRADE organizada');
+  showToast('📐 GRADE');
 };
 
 window.organizarPorMateria = function() {
@@ -612,12 +617,11 @@ window.organizarPorMateria = function() {
     cluster.forEach((b, i) => {
       const col = i % 2, row = Math.floor(i / 2);
       b.setAttribute('animation',
-        'property: position; to: ' +
-        (baseX + (col - 0.5) * 2.8) + ' 1.5 ' +
-        (-3 - row * 2.8) + '; dur: 900');
+        'property: position; to: ' + (baseX + (col - 0.5) * 2.8) +
+        ' 1.5 ' + (-3 - row * 2.8) + '; dur: 900');
     });
   });
-  showToast('🎯 POR MATÉRIA (' + names.length + ' clusters)');
+  showToast('🎯 POR MATÉRIA (' + names.length + ')');
 };
 
 window.espalhar = function() {
@@ -635,7 +639,6 @@ window.espalhar = function() {
 // SAVE / LOAD
 // ============================================================
 const STORAGE_KEY = 'pmsc_arena_layout';
-
 function savePos(id) {
   if (!id) return;
   const el = document.getElementById(id);
@@ -678,16 +681,13 @@ window.carregarLayout = function() {
       n++;
     });
     showToast('📂 ' + n + ' objetos restaurados');
-  } catch (e) {
-    showToast('❌ Erro ao carregar');
-  }
+  } catch (e) { showToast('❌ Erro'); }
 };
 
 // ============================================================
 // INIT
 // ============================================================
 const QUESTIONS = __Q_JSON__;
-
 window.addEventListener('load', () => {
   const world = document.getElementById('world');
   if (!world) return;
@@ -754,34 +754,31 @@ html, body {
   <a-entity id="rig" position="0 0 8" movement-controls="fly: true; speed: 0.3">
     <a-entity id="head" camera look-controls wasd-controls="acceleration: 20" position="0 1.65 0">
       <a-entity position="0 -0.6 -1.1">
-        <a-plane width="1.6" height="0.32" color="black" opacity="0.75"></a-plane>
+        <a-plane width="1.8" height="0.4" color="black" opacity="0.75"></a-plane>
         <a-text id="hudVRText" value="0/__LEN__" color="#00ff88" width="1.9"
-          align="center" position="0 0 0.01"></a-text>
+          align="center" position="0 0.06 0.01"></a-text>
+        <a-text id="debugAlvo" value="🎯 (aguardando)" color="#ffaa00" width="1.9"
+          align="center" position="0 -0.1 0.01"></a-text>
       </a-entity>
     </a-entity>
 
-    <!-- MÃO ESQUERDA — vr-hand custom + laser + tracking -->
     <a-entity id="leftHand"
       laser-controls="hand: left"
       hand-tracking-controls="hand: left"
       hand-live="hand: left"
       vr-hand
-      raycaster="objects: .grabbable, .clickable; far: 25"
       line="color: #00d1ff; opacity: 0.9">
     </a-entity>
 
-    <!-- MÃO DIREITA -->
     <a-entity id="rightHand"
       laser-controls="hand: right"
       hand-tracking-controls="hand: right"
       hand-live="hand: right"
       vr-hand
-      raycaster="objects: .grabbable, .clickable; far: 25"
       line="color: #ff8a00; opacity: 0.9">
     </a-entity>
   </a-entity>
 
-  <!-- ========== PAINEL PRINCIPAL (movível + filhos movíveis) ========== -->
   <a-entity id="mainPanel" position="0 2.6 -4"
     class="grabbable"
     geometry="primitive: box; width: 5.2; height: 3.0; depth: 0.06"
@@ -789,113 +786,74 @@ html, body {
     painel-sistema>
     <a-text value="PMSC 2026 — ARENA VR" color="#00e5ff" width="5.5" align="center" position="0 1.35 0.05"></a-text>
 
-    <!-- Fundos -->
     <a-entity class="grabbable clickable calib-btn" data-action="dark"
       position="-2.0 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
-      material="color: #1a3a6a">
-      <a-text value="ESCURO" color="white" width="0.9" align="center"></a-text>
-    </a-entity>
+      material="color: #1a3a6a"><a-text value="ESCURO" color="white" width="0.9" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="beach"
       position="-1.05 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
-      material="color: #1a5a6a">
-      <a-text value="PRAIA" color="white" width="0.9" align="center"></a-text>
-    </a-entity>
+      material="color: #1a5a6a"><a-text value="PRAIA" color="white" width="0.9" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="office"
       position="-0.1 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
-      material="color: #2a4a6a">
-      <a-text value="ESCRITÓRIO" color="white" width="0.9" align="center"></a-text>
-    </a-entity>
+      material="color: #2a4a6a"><a-text value="ESCRITÓRIO" color="white" width="0.9" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="library"
       position="0.85 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
-      material="color: #5a3a1a">
-      <a-text value="BIBLIOTECA" color="white" width="0.9" align="center"></a-text>
-    </a-entity>
+      material="color: #5a3a1a"><a-text value="BIBLIOTECA" color="white" width="0.9" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="space"
       position="1.8 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
-      material="color: #2a0a5a">
-      <a-text value="ESPAÇO" color="white" width="0.9" align="center"></a-text>
-    </a-entity>
+      material="color: #2a0a5a"><a-text value="ESPAÇO" color="white" width="0.9" align="center"></a-text></a-entity>
 
-    <!-- Passthrough + organizar -->
     <a-entity class="grabbable clickable calib-btn" data-action="passthrough"
       position="-2.0 0.55 0.05" geometry="primitive: plane; width: 1.05; height: 0.26"
-      material="color: #7a1fa2">
-      <a-text value="PASSTHROUGH" color="white" width="1.1" align="center"></a-text>
-    </a-entity>
+      material="color: #7a1fa2"><a-text value="PASSTHROUGH" color="white" width="1.1" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="organizar"
       position="-0.85 0.55 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
-      material="color: #1a6a3a">
-      <a-text value="ORGANIZAR" color="white" width="0.9" align="center"></a-text>
-    </a-entity>
+      material="color: #1a6a3a"><a-text value="ORGANIZAR" color="white" width="0.9" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="porMateria"
       position="0.1 0.55 0.05" geometry="primitive: plane; width: 1.0; height: 0.26"
-      material="color: #1a6a5a">
-      <a-text value="POR MATÉRIA" color="white" width="1.05" align="center"></a-text>
-    </a-entity>
+      material="color: #1a6a5a"><a-text value="POR MATÉRIA" color="white" width="1.05" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="espalhar"
       position="1.1 0.55 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
-      material="color: #6a1a1a">
-      <a-text value="ESPALHAR" color="white" width="0.9" align="center"></a-text>
-    </a-entity>
+      material="color: #6a1a1a"><a-text value="ESPALHAR" color="white" width="0.9" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="salvar"
       position="2.0 0.55 0.05" geometry="primitive: plane; width: 0.7; height: 0.26"
-      material="color: #00aa44">
-      <a-text value="SALVAR" color="white" width="0.75" align="center"></a-text>
-    </a-entity>
+      material="color: #00aa44"><a-text value="SALVAR" color="white" width="0.75" align="center"></a-text></a-entity>
 
-    <!-- Carregar + dica -->
     <a-entity class="grabbable clickable calib-btn" data-action="carregar"
       position="-2.0 0.2 0.05" geometry="primitive: plane; width: 0.95; height: 0.26"
-      material="color: #aa8800">
-      <a-text value="CARREGAR" color="white" width="1.0" align="center"></a-text>
-    </a-entity>
+      material="color: #aa8800"><a-text value="CARREGAR" color="white" width="1.0" align="center"></a-text></a-entity>
 
     <a-text value="Grip = mover bloco · Trigger = responder · Thumbstick = rotacionar"
       color="#ffaa00" width="4.8" align="center" position="0 -0.95 0.05"></a-text>
   </a-entity>
 
-  <!-- ========== CALIBRADOR ========== -->
   <a-entity id="calibPanel" position="3.6 2.6 -4"
     class="grabbable"
     geometry="primitive: box; width: 2.0; height: 2.4; depth: 0.06"
     material="color: #111111; opacity: 0.92">
-    <a-text value="CALIBRADOR" color="#00ff88" width="2.4"
-      align="center" position="0 1.05 0.05"></a-text>
-    <a-text id="leftData" value="LEFT: aguardando" color="#00d1ff"
-      width="1.9" align="left" position="-0.85 0.55 0.05" wrap-count="34"></a-text>
-    <a-text id="rightData" value="RIGHT: aguardando" color="#ff8a00"
-      width="1.9" align="left" position="-0.85 0.15 0.05" wrap-count="34"></a-text>
+    <a-text value="CALIBRADOR" color="#00ff88" width="2.4" align="center" position="0 1.05 0.05"></a-text>
+    <a-text id="leftData" value="LEFT: aguardando" color="#00d1ff" width="1.9"
+      align="left" position="-0.85 0.55 0.05" wrap-count="34"></a-text>
+    <a-text id="rightData" value="RIGHT: aguardando" color="#ff8a00" width="1.9"
+      align="left" position="-0.85 0.15 0.05" wrap-count="34"></a-text>
 
     <a-entity class="grabbable clickable calib-btn" data-action="maoMais"
       position="-0.55 -0.2 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
-      material="color: #2a5a1a">
-      <a-text value="MÃO +" color="white" width="0.85" align="center"></a-text>
-    </a-entity>
+      material="color: #2a5a1a"><a-text value="MÃO +" color="white" width="0.85" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="maoMenos"
       position="0.4 -0.2 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
-      material="color: #2a5a1a">
-      <a-text value="MÃO -" color="white" width="0.85" align="center"></a-text>
-    </a-entity>
+      material="color: #2a5a1a"><a-text value="MÃO -" color="white" width="0.85" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="alturaMais"
       position="-0.55 -0.5 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
-      material="color: #1a3a6a">
-      <a-text value="ALT +" color="white" width="0.85" align="center"></a-text>
-    </a-entity>
+      material="color: #1a3a6a"><a-text value="ALT +" color="white" width="0.85" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="alturaMenos"
       position="0.4 -0.5 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
-      material="color: #1a3a6a">
-      <a-text value="ALT -" color="white" width="0.85" align="center"></a-text>
-    </a-entity>
+      material="color: #1a3a6a"><a-text value="ALT -" color="white" width="0.85" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="resetPos"
       position="-0.55 -0.8 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
-      material="color: #1a3a6a">
-      <a-text value="RESET POS" color="white" width="0.85" align="center"></a-text>
-    </a-entity>
+      material="color: #1a3a6a"><a-text value="RESET POS" color="white" width="0.85" align="center"></a-text></a-entity>
     <a-entity class="grabbable clickable calib-btn" data-action="sairVR"
       position="0.4 -0.8 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
-      material="color: #a00000">
-      <a-text value="SAIR VR" color="white" width="0.85" align="center"></a-text>
-    </a-entity>
+      material="color: #a00000"><a-text value="SAIR VR" color="white" width="0.85" align="center"></a-text></a-entity>
   </a-entity>
 
   <a-entity id="world"></a-entity>
@@ -910,11 +868,10 @@ document.getElementById('enter').addEventListener('click', () => {
 </html>
 """
 
-    html = (html
-            .replace("__Q_JSON__", q_json)
-            .replace("__MODO__", modo)
-            .replace("__LEN__", str(len(safe)))
-            .replace("__HEIGHT__", str(height)))
+    html = (html.replace("__Q_JSON__", q_json)
+                .replace("__MODO__", modo)
+                .replace("__LEN__", str(len(safe)))
+                .replace("__HEIGHT__", str(height)))
 
     components.html(html, height=height, scrolling=False)
 
@@ -924,9 +881,6 @@ document.getElementById('enter').addEventListener('click', () => {
         st.rerun()
 
 
-# ==================================================================
-# TABS
-# ==================================================================
 tab_vr, tab_sim = st.tabs(["🥽 Arena VR", "📝 Simulado"])
 
 with tab_vr:
@@ -996,8 +950,7 @@ with tab_sim:
                 c1, c2, c3 = st.columns(3)
                 c1.metric("📊 Nota", f"{ult['nota']}%")
                 c2.metric("✅ Acertos", f"{ult['acertos']}/{ult['total']}")
-                c3.metric("🏁 Status",
-                          "APROVADO ✅" if ult["aprovado"] else "REPROVADO ❌")
+                c3.metric("🏁 Status", "APROVADO ✅" if ult["aprovado"] else "REPROVADO ❌")
                 with st.expander("Ver gabarito"):
                     for i, d in enumerate(ult["detalhes"]):
                         ic = "✅" if d["acertou"] else "❌"
