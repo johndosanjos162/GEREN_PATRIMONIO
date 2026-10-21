@@ -3,117 +3,187 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#07150f">
+<meta name="theme-color" content="#04120a">
 <title>PMSC 2026 — Academia Militar Imersiva</title>
 
 <style>
 :root{
-  --bg:#080e11;
-  --card:#14231f;
-  --input:#203b32;
-  --text:#f7fff9;
-  --line:#456c5d;
-  --accent:#98f8bb;
-  --muted:#d0e2d5;
+  --bg:#04120a;
+  --bg-2:#071c10;
+  --card:#0f2418;
+  --input:#183a26;
+  --text:#f0fdf4;
+  --line:#2f5c40;
+  --accent:#7cffac;
+  --muted:#a8c4b3;
+  --glow:rgba(124,255,172,.35);
 }
 *{box-sizing:border-box}
 body{
-  margin:0;background:var(--bg);color:var(--text);
+  margin:0;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #0d2f1c 0%, transparent 60%),
+    var(--bg);
+  color:var(--text);
   font:15px system-ui,Arial,sans-serif;
 }
 button,input,select{font:inherit;color:inherit}
 button,select,input{
-  border:1px solid var(--line);background:var(--input);
-  padding:10px;border-radius:9px;
+  border:1px solid var(--line);
+  background:linear-gradient(180deg, #1e4429, var(--input));
+  padding:10px;
+  border-radius:9px;
+  transition:border-color .15s, box-shadow .15s, transform .05s;
 }
 button{cursor:pointer}
 button:hover,button:focus-visible{
   border-color:var(--accent);
-  outline:1px solid var(--accent);
+  outline:none;
+  box-shadow:0 0 0 1px var(--accent), 0 0 16px var(--glow);
 }
+button:active{transform:translateY(1px)}
 button:disabled{opacity:.55}
 select,input[type=search],input[type=number]{width:100%}
 input[type=range]{width:100%;accent-color:var(--accent)}
 header{
-  display:flex;justify-content:space-between;align-items:center;
-  gap:10px;padding:14px 20px;background:#0c271a;
-  border-bottom:1px solid var(--line);flex-wrap:wrap;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:14px 20px;
+  background:linear-gradient(180deg, #0f2b1b, #0a2114);
+  border-bottom:1px solid var(--line);
+  box-shadow:0 4px 24px rgba(0,0,0,.45);
+  flex-wrap:wrap;
 }
-header strong{font-size:19px}
+header strong{
+  font-size:19px;
+  letter-spacing:.3px;
+  text-shadow:0 1px 0 rgba(0,0,0,.6), 0 0 12px rgba(124,255,172,.25);
+}
 small,.muted{color:var(--muted)}
 .layout{
-  display:grid;grid-template-columns:320px minmax(0,1fr);
+  display:grid;
+  grid-template-columns:320px minmax(0,1fr);
   min-height:calc(100vh - 65px);
 }
 aside{
-  padding:14px;background:var(--card);
+  padding:14px;
+  background:linear-gradient(180deg, #0f2418, #0a1a12);
   border-right:1px solid var(--line);
-  max-height:calc(100vh - 65px);overflow:auto;
+  max-height:calc(100vh - 65px);
+  overflow:auto;
 }
 main{min-width:0;padding:14px}
 .panel{
-  background:linear-gradient(145deg,#1b3028 0%,#101f1b 100%);
-  border:1px solid var(--line);border-radius:14px;
-  padding:16px;margin-bottom:12px;
-  box-shadow:0 10px 28px rgba(0,0,0,.18),
-             inset 0 1px 0 rgba(255,255,255,.07);
+  background:linear-gradient(180deg, #0f2418, #0a1d13);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
 }
-h2{font-size:19px;margin:0 0 12px}
-h3{font-size:15px;color:var(--accent)}
+h2{font-size:19px;margin:0 0 12px;letter-spacing:.2px}
+h3{
+  font-size:15px;
+  color:var(--accent);
+  text-shadow:0 0 10px rgba(124,255,172,.25);
+  margin-top:18px;
+}
 label{
-  display:block;font-size:13px;
-  color:var(--muted);margin:12px 0 5px;
+  display:block;
+  font-size:13px;
+  color:var(--muted);
+  margin:12px 0 5px;
 }
 .row{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
 .row>*{flex:1}
-.nav{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.nav{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
 .nav button{font-size:13px}
 #scene{
-  height:360px;border-radius:10px;overflow:hidden;
-  background:radial-gradient(
-    ellipse at 50% 25%,#314a46,#101e1c 72%
-  );
+  height:360px;
+  border-radius:10px;
+  overflow:hidden;
+  background:radial-gradient(circle at 50% 40%, #14281d, #0a1710 70%);
+  box-shadow:inset 0 0 40px rgba(0,0,0,.6);
 }
 #scene canvas{display:block}
 .answer{
-  display:block;width:100%;white-space:pre-wrap;
-  text-align:left;line-height:1.55;margin:7px 0;
+  display:block;
+  width:100%;
+  white-space:pre-wrap;
+  text-align:left;
+  line-height:1.55;
+  margin:7px 0;
+  transition:transform .08s, border-color .15s, box-shadow .15s;
 }
-.selected{outline:2px solid #72d6ff}
-.correct{border-color:#50ff9d;background:#136439}
-.wrong{border-color:#ff8e91;background:#66333d}
+.answer:hover{
+  box-shadow:0 0 0 1px var(--accent), 0 0 18px rgba(124,255,172,.18);
+}
+.selected{outline:2px solid #72d6ff; box-shadow:0 0 18px rgba(114,214,255,.35);}
+.correct{
+  border-color:#50ff9d;
+  background:linear-gradient(180deg,#136439,#0d4a2b);
+  box-shadow:0 0 18px rgba(80,255,157,.35);
+}
+.wrong{
+  border-color:#ff8e91;
+  background:linear-gradient(180deg,#66333d,#4a2129);
+  box-shadow:0 0 18px rgba(255,142,145,.28);
+}
 #question{
-  font-size:18px;line-height:1.7;
-  white-space:pre-wrap;overflow-wrap:anywhere;
-}
-.chip{
-  display:inline-block;padding:6px;border:1px solid var(--line);
-  border-radius:9px;margin:3px;font-size:12px;
+  font-size:18px;
+  line-height:1.7;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
 }
 .metric{
-  display:inline-block;background:#244e35;
-  border-radius:9px;padding:12px;margin:4px;
+  display:inline-block;
+  background:linear-gradient(180deg,#1c4a30,#123322);
+  border:1px solid var(--line);
+  border-radius:11px;
+  padding:12px;
+  margin:4px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 6px 20px rgba(0,0,0,.35);
 }
 .metric strong{
-  display:block;font-size:22px;color:var(--accent);
-}
-#message{
-  padding:9px;border-left:3px solid var(--accent);
-  background:#1c3b2a;white-space:pre-wrap;
-  line-height:1.6;margin:12px 0;
+  display:block;
+  font-size:22px;
+  color:var(--accent);
+  text-shadow:0 0 12px rgba(124,255,172,.4);
 }
 #status{font-size:12px;color:var(--muted)}
-.hidden{display:none!important}
 .focus aside,.focus #sceneSection{display:none}
 .focus .layout{grid-template-columns:1fr}
-.note{font-size:12px;line-height:1.6;color:var(--muted)}
-.scroll{max-height:250px;overflow:auto}
+.note{
+  font-size:12px;
+  line-height:1.6;
+  color:var(--muted);
+}
 .bar{
-  width:100%;height:10px;background:#264b35;
-  border-radius:6px;overflow:hidden;
+  width:100%;
+  height:10px;
+  background:#1b3b28;
+  border-radius:6px;
+  overflow:hidden;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.5);
 }
 .bar span{
-  display:block;height:100%;background:var(--accent);
+  display:block;
+  height:100%;
+  background:linear-gradient(90deg,#5cf29a,#7cffac);
+  box-shadow:0 0 14px rgba(124,255,172,.55);
+  transition:width .35s ease;
+}
+hr{
+  border:none;
+  height:1px;
+  background:linear-gradient(90deg, transparent, var(--line), transparent);
+  margin:16px 0;
 }
 @media(max-width:850px){
   .layout{display:block}
@@ -142,153 +212,152 @@ label{
 
 <div class="layout">
 <aside>
-  <div class="nav" id="navigation"></div>
 
-  <h3>Ambiente e realidade virtual</h3>
+<div class="nav" id="navigation"></div>
 
-  <label>Ambiente</label>
-  <select id="environment"></select>
+<h3>Ambiente e realidade virtual</h3>
 
-  <label>Iluminação</label>
-  <select id="lighting">
-    <option value="day">Dia</option>
-    <option value="night">Noite</option>
-  </select>
+<label>Ambiente</label>
+<select id="environment"></select>
 
-  <label>Qualidade gráfica</label>
-  <select id="quality">
-    <option value="low">Econômica</option>
-    <option value="medium">Equilibrada</option>
-    <option value="high">Alta</option>
-  </select>
+<label>Iluminação</label>
+<select id="lighting">
+  <option value="day">Claro</option>
+  <option value="medium">Escuro Médio</option>
+  <option value="dark">Escuro</option>
+  <option value="night">Noite</option>
+</select>
 
-  <label>Fonte no VR</label>
-  <input id="fontSize" type="range"
-         min="90" max="145" value="115">
+<label>Qualidade gráfica</label>
+<select id="quality">
+  <option value="low">Econômica</option>
+  <option value="medium">Equilibrada</option>
+  <option value="high">Alta</option>
+</select>
 
-  <label>Distância do painel central</label>
-  <input id="distance" type="range"
-         min="1.8" max="4" step=".1" value="2.5">
+<label>Fonte no VR</label>
+<input id="fontSize" type="range" min="90" max="145" value="115">
 
-  <label>Altura do painel central</label>
-  <input id="panelHeight" type="range"
-         min="1" max="2.5" step=".1" value="1.65">
+<label>Distância do painel central</label>
+<input id="distance" type="range" min="1.8" max="4" step=".1" value="2.5">
 
-  <label>Escala do painel central</label>
-  <input id="panelScale" type="range"
-         min=".85" max="1.45" step=".05" value="1">
+<label>Altura do painel central</label>
+<input id="panelHeight" type="range" min="1" max="2.5" step=".1" value="1.65">
 
-  <label>Velocidade de caminhada</label>
-  <input id="speed" type="range"
-         min=".5" max="2.5" step=".1" value="1.4">
+<label>Escala do painel central</label>
+<input id="panelScale" type="range" min=".85" max="1.45" step=".05" value="1">
 
-  <label>Rotação por toque no analógico direito</label>
-  <select id="snap">
-    <option value="30">30 graus</option>
-    <option value="45">45 graus</option>
-    <option value="0">Desligada</option>
-  </select>
+<label>Velocidade de caminhada</label>
+<input id="speed" type="range" min=".5" max="2.5" step=".1" value="1.4">
 
-  <div class="row">
-    <button id="resetPanels">Reposicionar painéis</button>
-    <button id="vrButton">ENTRAR EM VR</button>
-  </div>
+<label>Rotação pelo analógico direito</label>
+<select id="snap">
+  <option value="30">30 graus</option>
+  <option value="45">45 graus</option>
+  <option value="0">Desligada</option>
+</select>
 
-  <div class="note">
-    Em VR: analógico esquerdo caminha;
-    analógico direito gira; gatilho seleciona;
-    grip arrasta painéis; pinça na faixa superior
-    também arrasta; círculos no piso fazem teletransporte.
-  </div>
+<div class="row">
+  <button id="resetPanels">Reposicionar painéis</button>
+  <button id="vrButton">ENTRAR EM VR</button>
+</div>
 
-  <hr>
-  <h3>Banco de questões</h3>
-  <div id="bankStatus" class="note">Aguardando JSON…</div>
+<div class="note">
+  No Meta Quest 3S:
+  analógico esquerdo para caminhar;
+  analógico direito para girar;
+  gatilho para selecionar;
+  grip para arrastar painéis;
+  pinça das mãos para selecionar ou arrastar.
+  Os círculos luminosos no chão são destinos de teletransporte.
+</div>
 
-  <div class="row">
-    <button id="reload">Atualizar JSON do GitHub</button>
-    <button id="demo">Demonstração</button>
-  </div>
+<hr>
+<h3>Banco de questões</h3>
+<div id="bankStatus" class="note">Aguardando JSON…</div>
 
-  <label>Importar JSON (opcional)</label>
-  <input id="upload" type="file"
-         accept=".json,application/json" multiple>
+<div class="row">
+  <button id="reload">Atualizar JSON do GitHub</button>
+  <button id="demo">Demonstração</button>
+</div>
 
-  <hr>
-  <h3>Filtros</h3>
+<label>Importar JSON (opcional)</label>
+<input id="upload" type="file" accept=".json,application/json" multiple>
 
-  <label>Disciplina</label>
-  <select id="subject">
-    <option value="">Todas</option>
-  </select>
+<hr>
+<h3>Filtros</h3>
 
-  <label>Assunto</label>
-  <select id="topic">
-    <option value="">Todos</option>
-  </select>
+<label>Disciplina</label>
+<select id="subject">
+  <option value="">Todas</option>
+</select>
 
-  <label>Dificuldade</label>
-  <select id="difficulty">
-    <option value="">Todas</option>
-    <option value="facil">Fácil</option>
-    <option value="media">Média</option>
-    <option value="dificil">Difícil</option>
-  </select>
+<label>Assunto</label>
+<select id="topic">
+  <option value="">Todos</option>
+</select>
 
-  <label>Pesquisar</label>
-  <input id="search" type="search"
-         placeholder="Palavra ou artigo">
+<label>Dificuldade</label>
+<select id="difficulty">
+  <option value="">Todas</option>
+  <option value="facil">Fácil</option>
+  <option value="media">Média</option>
+  <option value="dificil">Difícil</option>
+</select>
 
-  <hr>
-  <h3>Simulado</h3>
+<label>Pesquisar</label>
+<input id="search" type="search" placeholder="Palavra ou artigo">
 
-  <label>Quantidade</label>
-  <select id="examCount">
-    <option>10</option>
-    <option>20</option>
-    <option>40</option>
-    <option>60</option>
-    <option value="all">Todas</option>
-  </select>
+<hr>
+<h3>Simulado</h3>
 
-  <label>Tempo em minutos (0 = livre)</label>
-  <input id="examTime" type="number"
-         min="0" max="300" value="60">
+<label>Quantidade</label>
+<select id="examCount">
+  <option>10</option>
+  <option>20</option>
+  <option>40</option>
+  <option>60</option>
+  <option value="all">Todas</option>
+</select>
 
-  <label>Correção</label>
-  <select id="examFeedback">
-    <option value="end">Ao finalizar</option>
-    <option value="immediate">Imediata</option>
-  </select>
+<label>Tempo em minutos (0 = livre)</label>
+<input id="examTime" type="number" min="0" max="300" value="60">
 
-  <hr>
-  <h3>Dados e acessibilidade</h3>
+<label>Correção</label>
+<select id="examFeedback">
+  <option value="end">Ao finalizar</option>
+  <option value="immediate">Imediata</option>
+</select>
 
-  <div class="row">
-    <button id="focus">Modo foco</button>
-    <button id="reading">Modo leitura</button>
-  </div>
+<hr>
+<h3>Dados e acessibilidade</h3>
 
-  <div class="row">
-    <button id="backup">Exportar backup</button>
-    <button id="csv">Histórico CSV</button>
-  </div>
+<div class="row">
+  <button id="focus">Modo foco</button>
+  <button id="reading">Modo leitura</button>
+</div>
 
-  <label>Restaurar backup</label>
-  <input id="restore" type="file" accept=".json">
+<div class="row">
+  <button id="backup">Exportar backup</button>
+  <button id="csv">Histórico CSV</button>
+</div>
 
-  <div class="row">
-    <button id="resetStats">Zerar progresso</button>
-  </div>
+<label>Restaurar backup</label>
+<input id="restore" type="file" accept=".json">
+
+<div class="row">
+  <button id="resetStats">Zerar progresso</button>
+</div>
+
 </aside>
 
 <main>
   <section id="sceneSection" class="panel">
-    <h2>Ambiente 3D • Quest 3S</h2>
+    <h2>Ambiente 3D • Meta Quest 3S</h2>
     <div id="scene"></div>
     <p class="note">
       No computador, utilize a interface de estudo abaixo.
-      No Quest, toque em “ENTRAR EM VR”.
+      No Quest, selecione ENTRAR EM VR.
     </p>
   </section>
 
@@ -299,19 +368,28 @@ label{
 </div>
 
 <script type="module">
+
 import * as THREE from 'three';
+
 import {
   XRControllerModelFactory
 } from 'three/addons/webxr/XRControllerModelFactory.js';
+
 import {
   XRHandModelFactory
 } from 'three/addons/webxr/XRHandModelFactory.js';
 
-// =====================================================
-// NÚCLEO, CONFIGURAÇÕES E ARMAZENAMENTO
-// =====================================================
+import {
+  RoomEnvironment
+} from 'three/addons/environments/RoomEnvironment.js';
+
+
+// ============================================================
+// 1. APP CORE E CONFIGURAÇÕES
+// ============================================================
 
 const $ = id => document.getElementById(id);
+
 const KEY = 'pmsc_quest_complete_v8';
 const REPO = 'johndosanjos162/PMSC';
 
@@ -354,55 +432,74 @@ const pages = [
 
 const defaultState = () => ({
   settings:{
-    env:0,lighting:'day',quality:'medium',
-    fontSize:115,distance:2.5,
-    panelHeight:1.65,panelScale:1,
-    speed:1.4,snap:30
+    env:0,
+    lighting:'day',
+    quality:'medium',
+    fontSize:115,
+    distance:2.5,
+    panelHeight:1.65,
+    panelScale:1,
+    speed:1.4,
+    snap:30
   },
-  history:[],favorites:[],reviews:{},
-  exams:[],session:null,panels:{}
+  history:[],
+  favorites:[],
+  reviews:{},
+  exams:[],
+  session:null,
+  panels:{}
 });
 
-let state=defaultState();
-let db=null,questions=[],page='home';
-let busy=false,serial=0;
+let state = defaultState();
+let db = null;
+let questions = [];
+let page = 'home';
+let busy = false;
 
 function note(msg){
-  $('status').textContent=msg;
+  $('status').textContent = msg;
 }
 
 function safeStore(){
   try{
     localStorage.setItem(KEY,JSON.stringify(state));
-  }catch(e){console.warn(e)}
+  }catch(e){
+    console.warn(e);
+  }
   idbPut('progress',state);
 }
 
 function restoreState(){
   try{
-    const saved=JSON.parse(localStorage.getItem(KEY));
-    if(saved&&typeof saved==='object'){
-      state={
-        ...defaultState(),...saved,
+    const saved = JSON.parse(localStorage.getItem(KEY));
+    if(saved && typeof saved === 'object'){
+      state = {
+        ...defaultState(),
+        ...saved,
         settings:{
-          ...defaultState().settings,...saved.settings
+          ...defaultState().settings,
+          ...saved.settings
         }
       };
     }
-  }catch{}
+  }catch(e){
+    console.warn(e);
+  }
 }
 
 function el(tag,text,parent,cls){
-  const n=document.createElement(tag);
-  if(text!==undefined&&text!==null)n.textContent=String(text);
-  if(cls)n.className=cls;
-  if(parent)parent.append(n);
+  const n = document.createElement(tag);
+  if(text !== undefined && text !== null){
+    n.textContent = String(text);
+  }
+  if(cls) n.className = cls;
+  if(parent) parent.append(n);
   return n;
 }
 
 function button(text,callback,parent){
-  const b=el('button',text,parent);
-  b.onclick=callback;
+  const b = el('button',text,parent);
+  b.onclick = callback;
   return b;
 }
 
@@ -411,173 +508,272 @@ function dateText(ms){
 }
 
 function download(name,content,type){
-  const u=URL.createObjectURL(new Blob([content],{type}));
-  const a=document.createElement('a');
-  a.href=u;a.download=name;
+  const url = URL.createObjectURL(
+    new Blob([content],{type})
+  );
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+
   document.body.append(a);
-  a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(u),1500);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url),1500);
 }
 
 function csv(v){
-  return '"'+String(v??'').replace(/"/g,'""')+'"';
+  return '"' + String(v ?? '').replace(/"/g,'""') + '"';
 }
 
+function clamp(v,a,b){
+  return Math.max(a,Math.min(b,v));
+}
+
+function shadeColor(hex,percent){
+  const num = parseInt(hex.replace('#',''),16);
+  const r = clamp(((num>>16)&0xff) + percent,0,255);
+  const g = clamp(((num>>8)&0xff) + percent,0,255);
+  const b = clamp((num&0xff) + percent,0,255);
+  return '#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1);
+}
+
+
+// ============================================================
+// 2. INDEXEDDB
+// ============================================================
+
 async function openDB(){
-  return new Promise(resolve=>{
-    if(!('indexedDB' in window))return resolve(null);
+  return new Promise(resolve => {
+    if(!('indexedDB' in window)){
+      resolve(null);
+      return;
+    }
+
     try{
-      const r=indexedDB.open('PMSC_QUEST_V8',1);
-      r.onupgradeneeded=()=>r.result.createObjectStore('kv');
-      r.onsuccess=()=>resolve(r.result);
-      r.onerror=()=>resolve(null);
-    }catch{resolve(null)}
+      const r = indexedDB.open('PMSC_QUEST_V8',1);
+
+      r.onupgradeneeded = () => {
+        r.result.createObjectStore('kv');
+      };
+
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => resolve(null);
+    }catch{
+      resolve(null);
+    }
   });
 }
 
 function idbGet(key){
-  return new Promise(resolve=>{
-    if(!db)return resolve(null);
+  return new Promise(resolve => {
+    if(!db){
+      resolve(null);
+      return;
+    }
+
     try{
-      const r=db.transaction('kv').objectStore('kv').get(key);
-      r.onsuccess=()=>resolve(r.result??null);
-      r.onerror=()=>resolve(null);
-    }catch{resolve(null)}
+      const r = db.transaction('kv')
+        .objectStore('kv')
+        .get(key);
+
+      r.onsuccess = () => resolve(r.result ?? null);
+      r.onerror = () => resolve(null);
+    }catch{
+      resolve(null);
+    }
   });
 }
 
 function idbPut(key,value){
-  if(!db)return;
+  if(!db) return;
+
   try{
     db.transaction('kv','readwrite')
-      .objectStore('kv').put(value,key);
-  }catch(e){console.warn(e)}
+      .objectStore('kv')
+      .put(value,key);
+  }catch(e){
+    console.warn(e);
+  }
 }
 
-// =====================================================
-// NORMALIZAÇÃO DOS ARQUIVOS JSON
-// =====================================================
+
+// ============================================================
+// 3. NORMALIZADOR DE QUESTÕES JSON
+// ============================================================
 
 function normalize(raw,disc){
-  if(!raw||typeof raw!=='object')return null;
+  if(!raw || typeof raw !== 'object') return null;
 
-  const text=
-    raw.enunciado??raw.pergunta??
-    raw.questao??raw.question??raw.texto;
+  const text =
+    raw.enunciado ??
+    raw.pergunta ??
+    raw.questao ??
+    raw.question ??
+    raw.texto;
 
-  let src=
-    raw.alternativas??raw.opcoes??
-    raw.options??raw.respostas;
+  let src =
+    raw.alternativas ??
+    raw.opcoes ??
+    raw.options ??
+    raw.respostas;
 
-  if(typeof text!=='string'||!text.trim()||!src)return null;
+  if(typeof text !== 'string' || !text.trim() || !src){
+    return null;
+  }
 
-  let options=[],keys=null;
+  let options = [];
+  let keys = null;
 
   if(Array.isArray(src)){
-    options=src.map(v=>
-      typeof v==='string'
-        ?v
-        :String(v?.texto??v?.text??v?.alternativa??'')
+    options = src.map(v =>
+      typeof v === 'string'
+        ? v
+        : String(v?.texto ?? v?.text ?? v?.alternativa ?? '')
     );
-  }else if(typeof src==='object'){
-    keys=Object.keys(src);
-    options=keys.map(k=>
-      String(src[k]?.texto??src[k]?.text??src[k])
+  }else if(typeof src === 'object'){
+    keys = Object.keys(src);
+    options = keys.map(k =>
+      String(src[k]?.texto ?? src[k]?.text ?? src[k])
     );
   }
 
   if(
-    options.length<2||options.length>5||
-    options.some(t=>!t.trim())
-  )return null;
+    options.length < 2 ||
+    options.length > 5 ||
+    options.some(t => !t.trim())
+  ){
+    return null;
+  }
 
-  let answer=
-    raw.correta??raw.gabarito??raw.correct??
-    raw.resposta_correta??
-    raw.alternativa_correta??raw.resposta;
+  let answer =
+    raw.correta ??
+    raw.gabarito ??
+    raw.correct ??
+    raw.resposta_correta ??
+    raw.alternativa_correta ??
+    raw.resposta;
 
-  let correct=-1;
+  let correct = -1;
 
-  if(typeof answer==='number'){
-    correct=answer;
-  }else if(typeof answer==='string'){
-    const a=answer.trim();
-    const match=a.match(
+  if(typeof answer === 'number'){
+    correct = answer;
+  }else if(typeof answer === 'string'){
+    const a = answer.trim();
+
+    const match = a.match(
       /^(?:letra\s*)?([A-E])(?:\)|\.|\s|$)/i
     );
 
     if(match){
-      correct=match[1].toUpperCase().charCodeAt(0)-65;
-    }else if(keys&&keys.includes(a)){
-      correct=keys.indexOf(a);
+      correct = match[1].toUpperCase().charCodeAt(0)-65;
+    }else if(keys && keys.includes(a)){
+      correct = keys.indexOf(a);
     }else if(/^\d+$/.test(a)){
-      correct=+a;
+      correct = Number(a);
     }else{
-      correct=options.indexOf(a);
+      correct = options.indexOf(a);
     }
   }
 
   if(
-    !Number.isInteger(correct)||
-    correct<0||correct>=options.length
-  )return null;
+    !Number.isInteger(correct) ||
+    correct < 0 ||
+    correct >= options.length
+  ){
+    return null;
+  }
 
-  const subject=String(
-    raw.disciplina??raw.materia??
-    raw.subject??disc??'Geral'
+  const subject = String(
+    raw.disciplina ??
+    raw.materia ??
+    raw.subject ??
+    disc ??
+    'Geral'
   );
 
-  const question=text.trim();
+  const question = text.trim();
 
   return {
-    id:String(raw.id??raw.codigo??subject+'|'+question),
+    id:String(
+      raw.id ??
+      raw.codigo ??
+      subject+'|'+question
+    ),
     subject,
     topic:String(
-      raw.assunto??raw.topico??raw.topic??'Geral'
+      raw.assunto ??
+      raw.topico ??
+      raw.topic ??
+      'Geral'
     ),
-    difficulty:String(raw.dificuldade??'media').toLowerCase(),
-    question,options,correct,
+    difficulty:String(
+      raw.dificuldade ?? 'media'
+    ).toLowerCase(),
+    question,
+    options,
+    correct,
     explanation:String(
-      raw.explicacao??raw.comentario??
-      raw.justificativa??''
+      raw.explicacao ??
+      raw.comentario ??
+      raw.justificativa ??
+      ''
     ),
-    reference:String(raw.referencia??''),
-    tags:Array.isArray(raw.tags)?raw.tags:[]
+    reference:String(raw.referencia ?? ''),
+    tags:Array.isArray(raw.tags) ? raw.tags : []
   };
 }
 
 function extract(
-  data,subject='Geral',out=[],seen=new WeakSet()
+  data,
+  subject='Geral',
+  out=[],
+  seen=new WeakSet()
 ){
   if(
-    !data||typeof data!=='object'||seen.has(data)
-  )return out;
+    !data ||
+    typeof data !== 'object' ||
+    seen.has(data)
+  ){
+    return out;
+  }
 
   seen.add(data);
 
   if(Array.isArray(data)){
-    for(const x of data)extract(x,subject,out,seen);
+    for(const item of data){
+      extract(item,subject,out,seen);
+    }
     return out;
   }
 
-  const q=normalize(data,subject);
+  const question = normalize(data,subject);
 
-  if(q){
-    out.push(q);
+  if(question){
+    out.push(question);
     return out;
   }
 
-  const generic=new Set([
-    'questoes','questions','data','dados',
-    'items','disciplinas','banco','perguntas','lista'
+  const generic = new Set([
+    'questoes',
+    'questions',
+    'data',
+    'dados',
+    'items',
+    'disciplinas',
+    'banco',
+    'perguntas',
+    'lista'
   ]);
 
   for(const [key,val] of Object.entries(data)){
-    if(val&&typeof val==='object'){
+    if(val && typeof val === 'object'){
       extract(
         val,
-        generic.has(key.toLowerCase())?subject:key,
-        out,seen
+        generic.has(key.toLowerCase()) ? subject : key,
+        out,
+        seen
       );
     }
   }
@@ -585,72 +781,86 @@ function extract(
   return out;
 }
 
+
+// ============================================================
+// 4. GERENCIAMENTO DO BANCO
+// ============================================================
+
 function merge(list,replace=true){
-  const map=new Map(
-    replace?[]:questions.map(q=>[q.id,q])
+  const map = new Map(
+    replace ? [] : questions.map(q => [q.id,q])
   );
 
-  let rejected=0;
+  let rejected = 0;
 
   for(const item of list){
-    const q=
-      item?.options&&item?.question&&
-      typeof item?.correct==='number'
-        ?item
-        :normalize(item,'Geral');
+    const q =
+      item?.options &&
+      item?.question &&
+      typeof item?.correct === 'number'
+        ? item
+        : normalize(item,'Geral');
 
-    if(q)map.set(q.id,q);
-    else rejected++;
+    if(q){
+      map.set(q.id,q);
+    }else{
+      rejected++;
+    }
   }
 
-  questions=[...map.values()];
+  questions = [...map.values()];
+
   idbPut('bank',questions);
+
   fillFilters();
 
-  if(!state.session||!state.session.ids?.length){
-    newSession(page==='exam'?'exam':'study',false);
+  if(!state.session || !state.session.ids?.length){
+    newSession(page === 'exam' ? 'exam' : 'study',false);
   }
 
   render();
-  return {rejected,total:questions.length};
+
+  return {
+    rejected,
+    total:questions.length
+  };
 }
 
-// =====================================================
-// BUSCA AUTOMÁTICA DE JSONS NA RAIZ DO GITHUB
-// =====================================================
-
 async function loadBank(){
-  if(busy)return;
-  busy=true;
+  if(busy) return;
+  busy = true;
 
-  const job=++serial;
-  note('Lendo JSON da raiz…');
-  $('bankStatus').textContent='Procurando arquivos JSON…';
+  note('Lendo arquivos JSON da raiz…');
 
-  const urls=new Set([
+  $('bankStatus').textContent = 'Procurando arquivos JSON…';
+
+  const urls = new Set([
     new URL('json.json',location.href).href
   ]);
 
-  let fileCount=0,failed=0,rejected=0;
+  let fileCount = 0;
+  let failed = 0;
 
   try{
-    const r=await fetch(
+    const r = await fetch(
       `https://api.github.com/repos/${REPO}/contents/`,
       {
         cache:'no-store',
-        headers:{Accept:'application/vnd.github+json'}
+        headers:{
+          Accept:'application/vnd.github+json'
+        }
       }
     );
 
     if(r.ok){
-      const files=await r.json();
+      const files = await r.json();
 
       if(Array.isArray(files)){
         for(const f of files){
           if(
-            f.type==='file'&&
-            /\.json$/i.test(f.name)&&
-            f.download_url&&
+            f.type === 'file' &&
+            /\.json$/i.test(f.name) &&
+            f.download_url &&
             !/package|config|manifest|lock/i.test(f.name)
           ){
             urls.add(f.download_url);
@@ -659,166 +869,182 @@ async function loadBank(){
       }
     }
   }catch(e){
-    console.warn('GitHub API',e);
+    console.warn('GitHub API:',e);
   }
 
-  const map=new Map();
+  const map = new Map();
 
   for(const uri of [...urls].slice(0,45)){
     try{
-      const r=await fetch(uri,{cache:'no-store'});
-      if(!r.ok)throw Error('HTTP '+r.status);
+      const r = await fetch(uri,{cache:'no-store'});
 
-      const txt=await r.text();
-      if(txt.length>10000000){
-        throw Error('Arquivo >10MB');
+      if(!r.ok){
+        throw Error('HTTP '+r.status);
       }
 
-      const list=extract(JSON.parse(txt));
-      if(list.length)fileCount++;
+      const txt = await r.text();
 
-      for(const q of list)map.set(q.id,q);
+      if(txt.length > 10000000){
+        throw Error('Arquivo acima de 10 MB');
+      }
+
+      const list = extract(JSON.parse(txt));
+
+      if(list.length){
+        fileCount++;
+      }
+
+      for(const q of list){
+        map.set(q.id,q);
+      }
 
     }catch(e){
       failed++;
-      console.warn('JSON não carregado',uri,e);
+      console.warn('JSON não carregado:',uri,e);
     }
-  }
-
-  if(job!==serial){
-    busy=false;
-    return;
   }
 
   if(map.size){
-    const result=merge([...map.values()]);
-    rejected=result.rejected;
+    merge([...map.values()]);
 
-    $('bankStatus').textContent=
+    $('bankStatus').textContent =
       `${questions.length} questões • `+
       `${fileCount} arquivo(s) • `+
-      `${failed} falha(s) • `+
-      `${rejected} rejeitadas`;
+      `${failed} falha(s)`;
 
     note('Questões atualizadas automaticamente.');
   }else{
-    const cached=await idbGet('bank');
+    const cached = await idbGet('bank');
 
-    if(Array.isArray(cached)&&cached.length){
+    if(Array.isArray(cached) && cached.length){
       merge(cached);
     }
 
-    $('bankStatus').textContent=questions.length
-      ?`Usando ${questions.length} questões do cache.`
-      :'Não encontrei questões válidas. Verifique json.json.';
+    $('bankStatus').textContent = questions.length
+      ? `Usando ${questions.length} questões do cache.`
+      : 'Nenhuma questão válida encontrada no JSON.';
 
     note(
       questions.length
-        ?'Banco local recuperado.'
-        :'Falha ao carregar JSON.'
+        ? 'Banco local recuperado.'
+        : 'Falha ao carregar JSON.'
     );
   }
 
-  busy=false;
+  busy = false;
   render();
 }
 
-// =====================================================
-// FILTROS E SESSÕES
-// =====================================================
+
+// ============================================================
+// 5. FILTROS E DISCIPLINAS
+// ============================================================
 
 function filtered(){
-  const s=$('subject').value;
-  const t=$('topic').value;
-  const d=$('difficulty').value;
-  const k=$('search').value.toLowerCase();
+  const s = $('subject').value;
+  const t = $('topic').value;
+  const d = $('difficulty').value;
+  const k = $('search').value.toLowerCase();
 
-  return questions.filter(q=>
-    (!s||q.subject===s)&&
-    (!t||q.topic===t)&&
-    (!d||q.difficulty===d)&&
+  return questions.filter(q =>
+    (!s || q.subject === s) &&
+    (!t || q.topic === t) &&
+    (!d || q.difficulty === d) &&
     (
-      !k||
+      !k ||
       (
-        q.question+' '+q.subject+' '+
-        q.topic+' '+q.reference
+        q.question+' '+
+        q.subject+' '+
+        q.topic+' '+
+        q.reference
       ).toLowerCase().includes(k)
     )
   );
 }
 
 function fillFilters(){
-  const groups=[
+  const groups = [
     [
       'subject',
       [...new Set([
-        ...subjectsBase,...questions.map(q=>q.subject)
+        ...subjectsBase,
+        ...questions.map(q => q.subject)
       ])]
     ],
     [
       'topic',
-      [...new Set(questions.map(q=>q.topic))]
+      [...new Set(questions.map(q => q.topic))]
     ]
   ];
 
   for(const [id,values] of groups){
-    const n=$(id),old=n.value;
+    const node = $(id);
+    const previous = node.value;
 
-    n.replaceChildren(
+    node.replaceChildren(
       new Option(
-        id==='subject'
-          ?'Todas as disciplinas'
-          :'Todos os assuntos',
+        id === 'subject'
+          ? 'Todas as disciplinas'
+          : 'Todos os assuntos',
         ''
       )
     );
 
-    for(const v of values.sort(
-      (a,b)=>a.localeCompare(b,'pt-BR')
+    for(const value of values.sort(
+      (a,b) => a.localeCompare(b,'pt-BR')
     )){
-      n.add(new Option(v,v));
+      node.add(new Option(value,value));
     }
 
-    n.value=[...n.options].some(
-      x=>x.value===old
-    )?old:'';
+    node.value = [...node.options].some(
+      o => o.value === previous
+    ) ? previous : '';
   }
 }
 
-function shuffle(a){
-  const b=[...a];
+function shuffle(array){
+  const a = [...array];
 
-  for(let i=b.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [b[i],b[j]]=[b[j],b[i]];
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
   }
 
-  return b;
+  return a;
 }
+
+
+// ============================================================
+// 6. ESTUDOS E SIMULADOS
+// ============================================================
 
 function newSession(mode=page,persist=true){
-  let items=filtered();
+  let items = filtered();
 
-  if(mode==='review'){
-    items=items.filter(q=>state.reviews[q.id]);
+  if(mode === 'review'){
+    items = items.filter(q => state.reviews[q.id]);
   }
 
-  if(mode==='exam'){
-    items=shuffle(items);
-    const n=$('examCount').value;
-    if(n!=='all')items=items.slice(0,+n);
+  if(mode === 'exam'){
+    items = shuffle(items);
+
+    const n = $('examCount').value;
+
+    if(n !== 'all'){
+      items = items.slice(0,Number(n));
+    }
   }
 
-  state.session={
+  state.session = {
     mode,
-    ids:items.map(q=>q.id),
+    ids:items.map(q => q.id),
     index:0,
     answers:{},
     graded:{},
     start:Date.now(),
-    minutes:mode==='exam'
-      ?Math.max(0,Number($('examTime').value)||0)
-      :0,
+    minutes:mode === 'exam'
+      ? Math.max(0,Number($('examTime').value)||0)
+      : 0,
     feedback:$('examFeedback').value,
     finished:false,
     flip:false,
@@ -826,43 +1052,49 @@ function newSession(mode=page,persist=true){
     report:null
   };
 
-  if(persist)safeStore();
+  if(persist){
+    safeStore();
+  }
+
   render();
 }
 
 function currentPool(){
-  if(!state.session)return[];
+  if(!state.session) return [];
 
   return state.session.ids
-    .map(id=>questions.find(q=>q.id===id))
+    .map(id => questions.find(q => q.id === id))
     .filter(Boolean);
 }
 
 function currentQuestion(){
-  const a=currentPool();
+  const pool = currentPool();
 
-  if(!a.length)return null;
+  if(!pool.length) return null;
 
-  state.session.index=Math.max(
-    0,Math.min(state.session.index,a.length-1)
+  state.session.index = Math.max(
+    0,
+    Math.min(state.session.index,pool.length-1)
   );
 
-  return a[state.session.index];
+  return pool[state.session.index];
 }
 
 function record(q,choice,mode){
-  const correct=choice===q.correct;
+  const correct = choice === q.correct;
 
   state.history.push({
     id:q.id,
     subject:q.subject,
     topic:q.topic,
-    correct,choice,mode,
+    correct,
+    choice,
+    mode,
     date:Date.now()
   });
 
-  if(state.history.length>12000){
-    state.history=state.history.slice(-12000);
+  if(state.history.length > 12000){
+    state.history = state.history.slice(-12000);
   }
 
   if(!correct){
@@ -873,54 +1105,69 @@ function record(q,choice,mode){
 }
 
 function gradeReview(id,quality){
-  const old=state.reviews[id]||{
-    interval:0,repetitions:0,ease:2.5
+  const old = state.reviews[id] || {
+    interval:0,
+    repetitions:0,
+    ease:2.5
   };
 
-  let r=old.repetitions;
-  let interval=old.interval;
-  let ease=old.ease;
+  let repetitions = old.repetitions;
+  let interval = old.interval;
+  let ease = old.ease;
 
-  if(quality<3){
-    r=0;
-    interval=1;
+  if(quality < 3){
+    repetitions = 0;
+    interval = 1;
   }else{
-    r++;
-    interval=r===1
-      ?1
-      :r===2
-        ?6
-        :Math.max(1,Math.round(interval*ease));
+    repetitions++;
+
+    if(repetitions === 1){
+      interval = 1;
+    }else if(repetitions === 2){
+      interval = 6;
+    }else{
+      interval = Math.max(
+        1,
+        Math.round(interval*ease)
+      );
+    }
   }
 
-  ease=Math.max(
+  ease = Math.max(
     1.3,
     ease+.1-(5-quality)*(.08+(5-quality)*.02)
   );
 
-  state.reviews[id]={
-    interval,repetitions:r,ease,
+  state.reviews[id] = {
+    interval,
+    repetitions,
+    ease,
     due:Date.now()+interval*86400000
   };
 }
 
-function choose(i){
-  const q=currentQuestion();
-  const s=state.session;
+function choose(index){
+  const q = currentQuestion();
+  const s = state.session;
 
-  if(!q||s.finished||s.mode==='flash')return;
+  if(!q || s.finished || s.mode === 'flash'){
+    return;
+  }
 
-  if(s.mode==='exam'){
-    s.answers[q.id]=i;
+  if(s.mode === 'exam'){
+    s.answers[q.id] = index;
 
-    if(s.feedback==='immediate'&&!s.graded[q.id]){
-      s.graded[q.id]=true;
-      record(q,i,'exam');
+    if(
+      s.feedback === 'immediate' &&
+      !s.graded[q.id]
+    ){
+      s.graded[q.id] = true;
+      record(q,index,'exam');
     }
   }else if(!s.graded[q.id]){
-    s.answers[q.id]=i;
-    s.graded[q.id]=true;
-    record(q,i,s.mode);
+    s.answers[q.id] = index;
+    s.graded[q.id] = true;
+    record(q,index,s.mode);
   }
 
   safeStore();
@@ -928,53 +1175,63 @@ function choose(i){
 }
 
 function next(delta){
-  const s=state.session;
-  const a=currentPool();
+  const s = state.session;
+  const a = currentPool();
 
-  if(!s||!a.length)return;
+  if(!s || !a.length) return;
 
   if(
-    s.mode==='exam'&&delta>0&&
-    s.index===a.length-1
+    s.mode === 'exam' &&
+    delta > 0 &&
+    s.index === a.length-1
   ){
     finishExam();
     return;
   }
 
-  s.index=Math.max(
-    0,Math.min(a.length-1,s.index+delta)
+  s.index = Math.max(
+    0,
+    Math.min(a.length-1,s.index+delta)
   );
 
-  s.flip=false;
-  s.scroll=0;
+  s.flip = false;
+  s.scroll = 0;
 
   safeStore();
   render();
 }
 
 function finishExam(){
-  const s=state.session;
+  const s = state.session;
 
-  if(!s||s.mode!=='exam'||s.finished)return;
+  if(!s || s.mode !== 'exam' || s.finished){
+    return;
+  }
 
-  let correct=0,wrong=0,blank=0;
-  const bySubject={};
+  let correct = 0;
+  let wrong = 0;
+  let blank = 0;
+
+  const bySubject = {};
 
   for(const q of currentPool()){
-    const v=s.answers[q.id];
+    const v = s.answers[q.id];
 
     if(!bySubject[q.subject]){
-      bySubject[q.subject]={total:0,correct:0};
+      bySubject[q.subject] = {
+        total:0,
+        correct:0
+      };
     }
 
     bySubject[q.subject].total++;
 
-    if(v===undefined){
+    if(v === undefined){
       blank++;
       continue;
     }
 
-    if(v===q.correct){
+    if(v === q.correct){
       correct++;
       bySubject[q.subject].correct++;
     }else{
@@ -982,16 +1239,19 @@ function finishExam(){
     }
 
     if(!s.graded[q.id]){
-      s.graded[q.id]=true;
+      s.graded[q.id] = true;
       record(q,v,'exam');
     }
   }
 
-  s.finished=true;
-  s.report={
+  s.finished = true;
+
+  s.report = {
     date:Date.now(),
     total:currentPool().length,
-    correct,wrong,blank,
+    correct,
+    wrong,
+    blank,
     ms:Date.now()-s.start,
     bySubject
   };
@@ -1003,65 +1263,79 @@ function finishExam(){
 }
 
 function gradeCard(level){
-  const q=currentQuestion();
-  if(!q)return;
+  const q = currentQuestion();
+
+  if(!q) return;
 
   gradeReview(q.id,level);
-  state.session.flip=false;
+
+  state.session.flip = false;
 
   safeStore();
   next(1);
 }
 
 function favorite(){
-  const q=currentQuestion();
-  if(!q)return;
+  const q = currentQuestion();
 
-  state.favorites=state.favorites.includes(q.id)
-    ?state.favorites.filter(id=>id!==q.id)
-    :[...state.favorites,q.id];
+  if(!q) return;
+
+  state.favorites = state.favorites.includes(q.id)
+    ? state.favorites.filter(id => id !== q.id)
+    : [...state.favorites,q.id];
 
   safeStore();
   render();
 }
 
 function stats(){
-  const h=state.history;
-  const ok=h.filter(v=>v.correct).length;
+  const h = state.history;
+  const ok = h.filter(v => v.correct).length;
 
   return {
     total:h.length,
     ok,
-    pct:h.length?Math.round(100*ok/h.length):0,
+    pct:h.length
+      ? Math.round(100*ok/h.length)
+      : 0,
     pending:Object.values(state.reviews)
-      .filter(r=>r.due<=Date.now()).length,
+      .filter(r => r.due <= Date.now()).length,
     exams:state.exams.length
   };
 }
 
 function recommend(){
-  const bucket={};
+  const bucket = {};
 
   for(const v of state.history){
-    const z=bucket[v.subject]??={total:0,ok:0};
-    z.total++;
-    if(v.correct)z.ok++;
+    if(!bucket[v.subject]){
+      bucket[v.subject] = {
+        total:0,
+        ok:0
+      };
+    }
+
+    bucket[v.subject].total++;
+
+    if(v.correct){
+      bucket[v.subject].ok++;
+    }
   }
 
   return Object.entries(bucket)
-    .filter(([,z])=>z.total>=2)
+    .filter(([,z]) => z.total >= 2)
     .sort(
-      (a,b)=>
-        a[1].ok/a[1].total-
+      (a,b) =>
+        a[1].ok/a[1].total -
         b[1].ok/b[1].total
-    )[0]?.[0]||'Comece respondendo algumas questões';
+    )[0]?.[0] || 'Comece respondendo algumas questões';
 }
 
 function go(p){
-  page=p;
+  page = p;
 
   if(['exam','study','flash','review'].includes(p)){
-    if(!state.session||state.session.mode!==p){
+    if(!state.session || state.session.mode !== p){
       newSession(p);
     }else{
       render();
@@ -1071,113 +1345,127 @@ function go(p){
   }
 }
 
-// =====================================================
-// INTERFACE DESKTOP
-// =====================================================
 
-function heading(t,p){
-  el('h2',t,p);
-}
+// ============================================================
+// 7. INTERFACE DESKTOP
+// ============================================================
 
 function render(){
-  const c=$('content');
+  const c = $('content');
   c.replaceChildren();
 
   for(const b of document.querySelectorAll(
     '#navigation button'
   )){
-    b.style.borderColor=
-      b.dataset.page===page?'#7cffac':'';
+    b.style.borderColor =
+      b.dataset.page === page ? '#7cffac' : '';
+    b.style.boxShadow =
+      b.dataset.page === page
+        ? '0 0 0 1px #7cffac, 0 0 16px rgba(124,255,172,.35)'
+        : '';
   }
 
-  const s=stats();
+  const s = stats();
 
-  if(page==='home'){
-    heading('Central Inteligente de Estudos',c);
+  if(page === 'home'){
+    el('h2','Central Inteligente de Estudos',c);
 
     el(
       'p',
-      `Questões carregadas: ${questions.length} • `+
+      `Questões: ${questions.length} • `+
       `Respondidas: ${s.total} • `+
-      `Acertos: ${s.pct}% • `+
-      `Revisões pendentes: ${s.pending}`,
+      `Aproveitamento: ${s.pct}% • `+
+      `Revisões: ${s.pending}`,
       c
     );
 
     el('p','Recomendação: '+recommend(),c);
 
-    const r=el('div',null,c,'row');
+    const row = el('div',null,c,'row');
 
-    button('Estudar questões',()=>go('study'),r);
-    button('Simulado',()=>go('exam'),r);
-    button('Flashcards',()=>go('flash'),r);
-    button('Revisões',()=>go('review'),r);
+    button('Estudar questões',()=>go('study'),row);
+    button('Simulado',()=>go('exam'),row);
+    button('Flashcards',()=>go('flash'),row);
+    button('Revisões',()=>go('review'),row);
 
     if(state.session?.ids?.length){
-      button('Continuar última sessão',()=>{
-        page=state.session.mode;
-        render();
-      },c);
+      button(
+        'Continuar última sessão',
+        ()=>{
+          page = state.session.mode;
+          render();
+        },
+        c
+      );
     }
   }
 
-  else if(page==='bank'){
-    heading('Banco de Questões do GitHub',c);
+  else if(page === 'bank'){
+    el('h2','Banco de Questões do GitHub',c);
 
     el('p',$('bankStatus').textContent,c);
+
     el(
       'p',
-      `Repositório público: ${REPO} • `+
-      `raiz: json.json e demais arquivos .json`,
+      `Repositório: ${REPO} • `+
+      `json.json e demais arquivos JSON da raiz`,
       c
     );
 
-    const counts={};
+    const counts = {};
 
     for(const q of questions){
-      counts[q.subject]=(counts[q.subject]||0)+1;
+      counts[q.subject] = (counts[q.subject]||0)+1;
     }
 
-    for(const [n,v] of Object.entries(counts)){
-      el('p',n+': '+v,c);
+    for(const [name,total] of Object.entries(counts)){
+      el('p',name+': '+total,c);
     }
 
     button('Atualizar',loadBank,c);
   }
 
-  else if(page==='stats'){
-    heading('Evolução e Desempenho',c);
+  else if(page === 'stats'){
+    el('h2','Evolução e Desempenho',c);
 
-    for(const [n,v] of [
+    for(const [name,value] of [
       ['Respondidas',s.total],
       ['Acertos',s.ok],
       ['Aproveitamento',s.pct+'%'],
       ['Simulados',s.exams],
       ['Revisões pendentes',s.pending]
     ]){
-      const m=el('div',null,c,'metric');
-      el('strong',v,m);
-      el('small',n,m);
+      const m = el('div',null,c,'metric');
+      el('strong',value,m);
+      el('small',name,m);
     }
 
-    const groups={};
+    const groups = {};
 
     for(const v of state.history){
-      const g=groups[v.subject]??={n:0,ok:0};
-      g.n++;
-      if(v.correct)g.ok++;
+      if(!groups[v.subject]){
+        groups[v.subject] = {n:0,ok:0};
+      }
+
+      groups[v.subject].n++;
+
+      if(v.correct){
+        groups[v.subject].ok++;
+      }
     }
 
-    heading('Por disciplina',c);
+    el('h2','Por disciplina',c);
 
     for(const [name,g] of Object.entries(groups)){
       el('p',`${name}: ${g.ok}/${g.n}`,c);
-      const p=el('div',null,c,'bar');
-      const b=el('span',null,p);
-      b.style.width=(g.ok/g.n*100)+'%';
+
+      const bar = el('div',null,c,'bar');
+      const fill = el('span',null,bar);
+
+      fill.style.width = (g.ok/g.n*100)+'%';
     }
 
-    heading('Simulados recentes',c);
+    el('h2','Simulados recentes',c);
 
     for(const r of state.exams.slice(-8).reverse()){
       el(
@@ -1190,27 +1478,29 @@ function render(){
     }
   }
 
-  else if(page==='settings'){
-    heading('Configurações e Controles',c);
+  else if(page === 'settings'){
+    el('h2','Configurações e Controles',c);
 
     el(
       'p',
-      'Ajuste fontes, distância, ambiente e velocidade '+
-      'no menu lateral. Em VR, segure o botão grip '+
-      'apontando para um painel e mova a mão.',
+      'Ajuste fonte, distância, altura e tamanho '+
+      'dos painéis no menu lateral.',
       c
     );
 
     el(
       'p',
-      'A pinça também pode mover o painel pela barra '+
-      'superior. Use o gatilho ou a pinça para selecionar.',
+      'Em VR, segure o botão grip apontando para '+
+      'um painel e mova o controle. '+
+      'Solte para fixar. Com as mãos, faça pinça '+
+      'sobre a faixa superior do painel.',
       c
     );
 
     button(
       'Restaurar posição dos painéis',
-      resetPanelPositions,c
+      resetPanelPositions,
+      c
     );
 
     button(
@@ -1218,40 +1508,35 @@ function render(){
       ()=>document.body.classList.toggle('focus'),
       c
     );
-
-    button(
-      'Modo leitura',
-      ()=>document.body.classList.toggle('reading'),
-      c
-    );
   }
 
   else{
-    const q=currentQuestion();
-    const pool=currentPool();
-    const session=state.session;
+    const q = currentQuestion();
+    const pool = currentPool();
+    const session = state.session;
 
-    heading(
+    el(
+      'h2',
       ({
         study:'Questões',
         exam:'Simulado',
         flash:'Flashcards',
         review:'Revisão de Erros'
-      })[page]||'Estudos',
+      })[page] || 'Estudos',
       c
     );
 
     if(!q){
       el(
         'p',
-        'Nenhuma questão disponível. Atualize o JSON '+
+        'Nenhuma questão disponível. Atualize os JSONs '+
         'ou escolha outra disciplina.',
         c
       );
     }
 
-    else if(session.finished&&session.report){
-      const r=session.report;
+    else if(session.finished && session.report){
+      const r = session.report;
 
       el(
         'p',
@@ -1272,126 +1557,131 @@ function render(){
         'p',
         `${session.index+1}/${pool.length} • `+
         `${q.subject} • ${q.topic}`,
-        c,'muted'
+        c,
+        'muted'
       );
 
       el('div',q.question,c,'question');
 
-      if(page==='flash'){
-        const card=el(
+      if(page === 'flash'){
+        const card = el(
           'div',
           session.flip
-            ?'RESPOSTA: '+q.options[q.correct]+
+            ? 'RESPOSTA: '+q.options[q.correct]+
               '\n'+q.explanation
-            :'Toque em Virar para revelar a resposta',
-          c,'question'
+            : 'Toque em Virar para revelar a resposta',
+          c,
+          'question'
         );
 
-        card.style.padding='20px';
+        card.style.padding = '20px';
 
-        button('Virar flashcard',()=>{
-          session.flip=!session.flip;
-          safeStore();
-          render();
-        },c);
+        button(
+          'Virar flashcard',
+          ()=>{
+            session.flip = !session.flip;
+            safeStore();
+            render();
+          },
+          c
+        );
 
         if(session.flip){
-          const r=el('div',null,c,'row');
+          const r = el('div',null,c,'row');
 
-          for(const [t,v] of [
-            ['Difícil',1],['Bom',4],['Fácil',5]
+          for(const [name,value] of [
+            ['Difícil',1],
+            ['Bom',4],
+            ['Fácil',5]
           ]){
-            button(t,()=>gradeCard(v),r);
+            button(name,()=>gradeCard(value),r);
           }
         }
-      }
-
-      else{
-        q.options.forEach((o,i)=>{
-          const b=button(
-            String.fromCharCode(65+i)+') '+o,
-            ()=>choose(i),c
+      }else{
+        q.options.forEach((option,i)=>{
+          const b = button(
+            String.fromCharCode(65+i)+') '+option,
+            ()=>choose(i),
+            c
           );
 
-          b.className='answer';
+          b.className = 'answer';
 
-          const ans=session.answers[q.id];
-          const reveal=
-            page!=='exam'||
-            session.feedback==='immediate';
+          const answer = session.answers[q.id];
 
-          if(ans===i)b.classList.add('selected');
+          const reveal =
+            page !== 'exam' ||
+            session.feedback === 'immediate';
 
-          if(ans!==undefined&&reveal){
-            if(i===q.correct){
+          if(answer === i){
+            b.classList.add('selected');
+          }
+
+          if(answer !== undefined && reveal){
+            if(i === q.correct){
               b.classList.add('correct');
-            }else if(i===ans){
+            }else if(i === answer){
               b.classList.add('wrong');
             }
           }
         });
 
-        const ans=session.answers[q.id];
+        const answer = session.answers[q.id];
 
         if(
-          ans!==undefined&&
+          answer !== undefined &&
           (
-            page!=='exam'||
-            session.feedback==='immediate'
+            page !== 'exam' ||
+            session.feedback === 'immediate'
           )
         ){
           el(
             'p',
-            (ans===q.correct?'Correto. ':'Incorreto. ')+
+            (answer === q.correct ? 'Correto. ' : 'Incorreto. ')+
             (q.explanation||'')+
-            (q.reference?' Referência: '+q.reference:''),
-            c,'note'
+            (q.reference
+              ? ' Referência: '+q.reference
+              : ''),
+            c,
+            'note'
           );
         }
       }
 
-      const r=el('div',null,c,'row');
+      const row = el('div',null,c,'row');
 
-      button('◀ Anterior',()=>next(-1),r);
-      button('Próxima ▶',()=>next(1),r);
+      button('◀ Anterior',()=>next(-1),row);
+      button('Próxima ▶',()=>next(1),row);
 
       button(
         state.favorites.includes(q.id)
-          ?'★ Favorita':'☆ Favoritar',
-        favorite,r
+          ? '★ Favorita'
+          : '☆ Favoritar',
+        favorite,
+        row
       );
 
-      if(page==='exam'){
+      if(page === 'exam'){
         button('Finalizar simulado',finishExam,c);
 
-        const left=session.minutes
-          ?Math.max(
+        const seconds = session.minutes
+          ? Math.max(
               0,
               Math.ceil(
-                (session.minutes*60000-
-                (Date.now()-session.start))/1000
+                (
+                  session.minutes*60000 -
+                  (Date.now()-session.start)
+                )/1000
               )
             )
-          :0;
+          : 0;
 
         el(
           'p',
           session.minutes
-            ?`Tempo restante: ${Math.floor(left/60)}m `+
-             `${left%60}s`
-            :'Sem limite de tempo',
-          c
-        );
-      }
-
-      if(page==='review'){
-        el(
-          'p',
-          `Revisão prevista: ${
-            state.reviews[q.id]
-              ?dateText(state.reviews[q.id].due)
-              :'Não marcada'
-          }`,
+            ? `Tempo: ${Math.floor(seconds/60)}m `+
+              `${seconds%60}s`
+            : 'Sem limite de tempo',
           c
         );
       }
@@ -1400,6 +1690,11 @@ function render(){
 
   updateVR();
 }
+
+
+// ============================================================
+// 8. EXPORTAÇÃO E BACKUP
+// ============================================================
 
 function exportBackup(){
   download(
@@ -1410,12 +1705,16 @@ function exportBackup(){
 }
 
 function exportCSV(){
-  const rows=[
+  const rows = [
     'id,disciplina,assunto,acerto,modo,data',
-    ...state.history.map(x=>
+    ...state.history.map(x =>
       [
-        x.id,x.subject,x.topic,x.correct,
-        x.mode,new Date(x.date).toISOString()
+        x.id,
+        x.subject,
+        x.topic,
+        x.correct,
+        x.mode,
+        new Date(x.date).toISOString()
       ].map(csv).join(',')
     )
   ];
@@ -1427,37 +1726,37 @@ function exportCSV(){
   );
 }
 
-// =====================================================
-// MOTOR THREE.JS, ACES E ILUMINAÇÃO FÍSICA
-// =====================================================
 
-const scene=new THREE.Scene();
-scene.background=new THREE.Color('#8aafb2');
+// ============================================================
+// 9. THREE.JS - CENA PRINCIPAL
+// ============================================================
 
-const camera=new THREE.PerspectiveCamera(
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#7d9ba8');
+scene.fog = new THREE.Fog('#7d9ba8', 18, 50);
+
+const camera = new THREE.PerspectiveCamera(
   70,1,.05,180
 );
+
 camera.position.set(0,1.65,0);
 
-const rig=new THREE.Group();
+const rig = new THREE.Group();
 rig.add(camera);
 scene.add(rig);
 
-const renderer=new THREE.WebGLRenderer({
+const renderer = new THREE.WebGLRenderer({
   antialias:true,
   powerPreference:'high-performance'
 });
 
-renderer.xr.enabled=true;
-renderer.outputColorSpace=THREE.SRGBColorSpace;
-
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.12;
-
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.shadowMap.autoUpdate=false;
-renderer.shadowMap.needsUpdate=true;
+renderer.xr.enabled = true;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.xr.setFoveation(0.5);
 
 renderer.setPixelRatio(
   Math.min(devicePixelRatio,1.6)
@@ -1465,228 +1764,58 @@ renderer.setPixelRatio(
 
 $('scene').append(renderer.domElement);
 
-const ambient=new THREE.HemisphereLight(
-  0xffffff,0x465446,1.35
+// ---- IBL: environment map HDR procedural (realismo PBR) ----
+const pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+
+const envRT = pmrem.fromScene(
+  new RoomEnvironment(renderer), 0.04
+);
+
+scene.environment = envRT.texture;
+
+pmrem.dispose();
+
+// ---- Iluminação principal ----
+const ambient = new THREE.HemisphereLight(
+  0xcfe8ff,
+  0x2a3a2e,
+  0.6
 );
 scene.add(ambient);
 
-const sun=new THREE.DirectionalLight(
-  0xfff4df,2.35
+const sun = new THREE.DirectionalLight(
+  0xfff4e0,
+  1.8
 );
-sun.position.set(5,9,4);
-sun.castShadow=true;
+sun.position.set(8,14,6);
+sun.castShadow = true;
 sun.shadow.mapSize.set(1024,1024);
-sun.shadow.camera.left=-12;
-sun.shadow.camera.right=12;
-sun.shadow.camera.top=12;
-sun.shadow.camera.bottom=-12;
-sun.shadow.camera.near=1;
-sun.shadow.camera.far=35;
-sun.shadow.bias=-.00035;
-sun.shadow.normalBias=.025;
+sun.shadow.camera.left = -16;
+sun.shadow.camera.right = 16;
+sun.shadow.camera.top = 16;
+sun.shadow.camera.bottom = -16;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 45;
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.02;
 scene.add(sun);
+scene.add(sun.target);
 
-// =====================================================
-// PMREM / ILUMINAÇÃO AMBIENTAL HDR PROCEDURAL
-// =====================================================
-
-const iblSource=new THREE.Scene();
-
-const iblShader=new THREE.ShaderMaterial({
-  side:THREE.BackSide,
-  depthWrite:false,
-  uniforms:{
-    night:{value:0}
-  },
-  vertexShader:`
-    varying vec3 vDirection;
-    void main(){
-      vDirection=normalize(position);
-      gl_Position=
-        projectionMatrix*
-        modelViewMatrix*
-        vec4(position,1.0);
-    }
-  `,
-  fragmentShader:`
-    varying vec3 vDirection;
-    uniform float night;
-
-    void main(){
-      vec3 d=normalize(vDirection);
-      float skyBlend=smoothstep(-.20,.85,d.y);
-
-      vec3 groundColor=vec3(.19,.22,.19);
-      vec3 skyColor=vec3(.42,.56,.73);
-
-      vec3 dayColor=mix(
-        groundColor,skyColor,skyBlend
-      );
-
-      vec3 sunDirection=normalize(
-        vec3(.35,.85,.45)
-      );
-
-      float sunlight=pow(
-        max(dot(d,sunDirection),0.),512.
-      );
-
-      dayColor+=sunlight*vec3(6.,5.2,3.9);
-
-      vec3 nightColor=mix(
-        vec3(.055,.065,.09),
-        vec3(.12,.16,.24),
-        skyBlend
-      );
-
-      gl_FragColor=vec4(
-        mix(dayColor,nightColor,night),1.
-      );
-    }
-  `
-});
-
-const iblSphere=new THREE.Mesh(
-  new THREE.SphereGeometry(15,32,16),
-  iblShader
-);
-
-iblSource.add(iblSphere);
-
-const iblPmrem=new THREE.PMREMGenerator(renderer);
-
-iblShader.uniforms.night.value=0;
-const iblDayTarget=iblPmrem.fromScene(
-  iblSource,.06
-);
-
-iblShader.uniforms.night.value=1;
-const iblNightTarget=iblPmrem.fromScene(
-  iblSource,.06
-);
-
-scene.environment=iblDayTarget.texture;
-
-iblSphere.geometry.dispose();
-iblShader.dispose();
-iblPmrem.dispose();
-
-// =====================================================
-// TEXTURAS PBR PROCEDURAIS
-// =====================================================
-
-const world=new THREE.Group();
+const world = new THREE.Group();
 scene.add(world);
 
-function makeSurfaceTexture(kind){
-  const canvas=document.createElement('canvas');
-  canvas.width=256;
-  canvas.height=256;
-
-  const ctx=canvas.getContext('2d');
-  const img=ctx.createImageData(256,256);
-
-  for(let y=0;y<256;y++){
-    for(let x=0;x<256;x++){
-      const i=(y*256+x)*4;
-
-      const grain=
-        Math.abs(
-          Math.sin(x*12.9898+y*78.233)*
-          43758.5453
-        )%1;
-
-      const micro=
-        Math.sin(x*.12)*Math.cos(y*.11);
-
-      let r=245,g=245,b=245;
-
-      if(kind==='color'){
-        r=g=b=235+Math.round(
-          grain*15+micro*3
-        );
-      }
-
-      if(kind==='roughness'){
-        r=g=b=195+Math.round(grain*45);
-      }
-
-      if(kind==='normal'){
-        r=127+Math.round(micro*10);
-        g=127+Math.round(
-          Math.sin(y*.16)*9
-        );
-        b=254;
-      }
-
-      if(kind==='ao'){
-        const u=Math.abs(x/255-.5)*2;
-        const v=Math.abs(y/255-.5)*2;
-        const edge=Math.max(u,v);
-        r=g=b=Math.round(
-          255-25*edge*edge
-        );
-      }
-
-      img.data[i]=r;
-      img.data[i+1]=g;
-      img.data[i+2]=b;
-      img.data[i+3]=255;
-    }
-  }
-
-  ctx.putImageData(img,0,0);
-
-  const t=new THREE.CanvasTexture(canvas);
-
-  t.colorSpace=kind==='color'
-    ?THREE.SRGBColorSpace
-    :THREE.NoColorSpace;
-
-  t.wrapS=THREE.RepeatWrapping;
-  t.wrapT=THREE.RepeatWrapping;
-  t.repeat.set(2,2);
-
-  t.generateMipmaps=true;
-  t.minFilter=THREE.LinearMipmapLinearFilter;
-  t.magFilter=THREE.LinearFilter;
-  t.anisotropy=4;
-
-  return t;
-}
-
-const surfaceMaps={
-  color:makeSurfaceTexture('color'),
-  roughness:makeSurfaceTexture('roughness'),
-  normal:makeSurfaceTexture('normal'),
-  ao:makeSurfaceTexture('ao')
-};
-
-const mats=new Map();
+const mats = new Map();
 
 function mat(color){
   if(!mats.has(color)){
-    const metalColors=new Set([
-      '#cccccc','#a3aaa3','#435b4e',
-      '#59675c','#4f6858'
-    ]);
-
-    const metal=metalColors.has(
-      String(color).toLowerCase()
-    );
-
     mats.set(
       color,
       new THREE.MeshStandardMaterial({
         color,
-        map:surfaceMaps.color,
-        roughnessMap:surfaceMaps.roughness,
-        normalMap:surfaceMaps.normal,
-        aoMap:surfaceMaps.ao,
-        aoMapIntensity:.42,
-        roughness:metal?.55:.88,
-        metalness:metal?.57:0,
-        normalScale:new THREE.Vector2(.13,.13)
+        roughness:.72,
+        metalness:.08,
+        envMapIntensity:.9
       })
     );
   }
@@ -1694,151 +1823,153 @@ function mat(color){
   return mats.get(color);
 }
 
-function withAO(geo){
-  geo.setAttribute(
-    'uv2',
-    geo.attributes.uv.clone()
-  );
-  return geo;
-}
-
 function box(x,y,z,w,h,d,color){
-  const o=new THREE.Mesh(
-    withAO(new THREE.BoxGeometry(w,h,d)),
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
     mat(color)
   );
 
-  o.castShadow=
-    w<=6&&h<=5&&d<=6&&
-    Math.max(w,h,d)>.4;
+  mesh.position.set(x,y,z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  world.add(mesh);
 
-  o.receiveShadow=true;
-  o.position.set(x,y,z);
-  world.add(o);
-  return o;
+  return mesh;
 }
 
 function cyl(x,y,z,r,h,color){
-  const o=new THREE.Mesh(
-    withAO(new THREE.CylinderGeometry(r,r,h,12)),
+  const mesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(r,r,h,14),
     mat(color)
   );
 
-  o.castShadow=true;
-  o.receiveShadow=true;
-  o.position.set(x,y,z);
-  world.add(o);
-  return o;
+  mesh.position.set(x,y,z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  world.add(mesh);
+
+  return mesh;
 }
 
 function ball(x,y,z,r,color){
-  const o=new THREE.Mesh(
-    withAO(new THREE.SphereGeometry(r,12,10)),
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(r,14,12),
     mat(color)
   );
 
-  o.castShadow=true;
-  o.receiveShadow=true;
-  o.position.set(x,y,z);
-  world.add(o);
-  return o;
+  mesh.position.set(x,y,z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  world.add(mesh);
+
+  return mesh;
 }
 
-// =====================================================
-// BANDEIRAS DO BRASIL
-// =====================================================
+
+// ============================================================
+// 10. BANDEIRA DO BRASIL EM 3D
+// ============================================================
 
 function flagTexture(){
-  const c=document.createElement('canvas');
-  c.width=512;
-  c.height=340;
+  const canvas = document.createElement('canvas');
 
-  const a=c.getContext('2d');
+  canvas.width = 512;
+  canvas.height = 340;
 
-  a.fillStyle='#169b62';
-  a.fillRect(0,0,512,340);
+  const c = canvas.getContext('2d');
 
-  a.fillStyle='#ffdf00';
-  a.beginPath();
-  a.moveTo(256,32);
-  a.lineTo(481,170);
-  a.lineTo(256,308);
-  a.lineTo(31,170);
-  a.closePath();
-  a.fill();
+  c.fillStyle = '#169b62';
+  c.fillRect(0,0,512,340);
 
-  a.fillStyle='#002776';
-  a.beginPath();
-  a.arc(256,170,96,0,Math.PI*2);
-  a.fill();
+  c.fillStyle = '#ffdf00';
+  c.beginPath();
+  c.moveTo(256,32);
+  c.lineTo(481,170);
+  c.lineTo(256,308);
+  c.lineTo(31,170);
+  c.closePath();
+  c.fill();
 
-  a.save();
-  a.translate(256,170);
-  a.rotate(-.16);
+  c.fillStyle = '#002776';
+  c.beginPath();
+  c.arc(256,170,96,0,Math.PI*2);
+  c.fill();
 
-  a.fillStyle='#fff';
-  a.fillRect(-100,-10,200,21);
+  c.save();
+  c.translate(256,170);
+  c.rotate(-.16);
 
-  a.fillStyle='#072a58';
-  a.font='bold 16px Arial';
-  a.textAlign='center';
-  a.fillText('ORDEM E PROGRESSO',0,6);
-  a.restore();
+  c.fillStyle = '#ffffff';
+  c.fillRect(-100,-10,200,21);
 
-  a.fillStyle='white';
+  c.fillStyle = '#072a58';
+  c.font = 'bold 16px Arial';
+  c.textAlign = 'center';
+
+  c.fillText('ORDEM E PROGRESSO',0,6);
+  c.restore();
+
+  c.fillStyle = 'white';
 
   for(let i=0;i<19;i++){
-    const xx=190+(i*37)%132;
-    const yy=108+(i*53)%127;
+    const x = 190+(i*37)%132;
+    const y = 108+(i*53)%127;
 
-    a.beginPath();
-    a.arc(xx,yy,2.4,0,Math.PI*2);
-    a.fill();
+    c.beginPath();
+    c.arc(x,y,2.4,0,Math.PI*2);
+    c.fill();
   }
 
-  const t=new THREE.CanvasTexture(c);
-  t.colorSpace=THREE.SRGBColorSpace;
-  return t;
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = Math.min(
+    8,
+    renderer.capabilities.getMaxAnisotropy()
+  );
+
+  return texture;
 }
 
-const flagTex=flagTexture();
+const flagTex = flagTexture();
 
-flagTex.generateMipmaps=true;
-flagTex.minFilter=THREE.LinearMipmapLinearFilter;
-flagTex.magFilter=THREE.LinearFilter;
-flagTex.anisotropy=4;
-
-const flagMaterial=new THREE.MeshStandardMaterial({
+const flagMaterial = new THREE.MeshStandardMaterial({
   map:flagTex,
   side:THREE.DoubleSide,
-  roughness:.96,
-  metalness:0
+  roughness:.78,
+  metalness:.0,
+  envMapIntensity:.5
 });
 
 function flag(x,z){
   cyl(x,2,z,.045,4,'#cccccc');
 
-  const m=new THREE.Mesh(
+  const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(1.65,1.07),
     flagMaterial
   );
 
-  m.position.set(x+.9,3.25,z);
-  world.add(m);
+  mesh.position.set(x+.9,3.25,z);
+  mesh.castShadow = true;
+  world.add(mesh);
 }
 
-// =====================================================
-// OBJETOS DOS AMBIENTES
-// =====================================================
+
+// ============================================================
+// 11. OBJETOS DOS QUARTÉIS
+// ============================================================
 
 function building(x,z){
-  box(x,2,z,5,4,3,'#89968e');
+  box(x,2,z,5,4,3,'#8e9b91');
+
   box(x,4.2,z,5.6,.35,3.6,'#57665d');
 
   for(let i=-1;i<=1;i++){
     box(
-      x+i*1.3,2.2,z+1.53,
-      .8,1.1,.07,'#204552'
+      x+i*1.3,
+      2.2,
+      z+1.53,
+      .8,1.1,.07,
+      '#1d3d4a'
     );
   }
 }
@@ -1850,7 +1981,8 @@ function table(x,z){
     for(const dz of [-.3,.3]){
       box(
         x+dx,.4,z+dz,
-        .08,.75,.08,'#59675c'
+        .08,.75,.08,
+        '#59675c'
       );
     }
   }
@@ -1859,25 +1991,32 @@ function table(x,z){
 function tree(x,z){
   cyl(x,1,z,.16,2,'#6b4b32');
 
-  const crown=new THREE.Mesh(
-    new THREE.ConeGeometry(1.05,2.5,8),
+  const crown = new THREE.Mesh(
+    new THREE.ConeGeometry(1.05,2.5,10),
     mat('#315b3c')
   );
 
   crown.position.set(x,3.1,z);
+  crown.castShadow = true;
+  crown.receiveShadow = true;
   world.add(crown);
 }
 
 function bunk(x,z){
   for(const y of [.5,1.5]){
-    box(x,y,z,1.7,.17,2.15,'#677b77');
+    box(
+      x,y,z,
+      1.7,.17,2.15,
+      '#677b77'
+    );
   }
 
   for(const dx of [-.73,.73]){
     for(const dz of [-.95,.95]){
       box(
         x+dx,1,z+dz,
-        .08,2,.08,'#a3aaa3'
+        .08,2,.08,
+        '#a3aaa3'
       );
     }
   }
@@ -1891,22 +2030,72 @@ function makeRoom(){
   box(0,5.85,-1,24,.23,22,'#788a7e');
 }
 
-// =====================================================
-// DEZ AMBIENTES MILITARES
-// =====================================================
+
+// ============================================================
+// 12. AMBIENTES MILITARES
+// ============================================================
 
 function buildWorld(n){
-  world.traverse(o=>{
-    if(o.isMesh)o.geometry.dispose();
+  world.traverse(object=>{
+    if(object.isMesh){
+      object.geometry.dispose();
+    }
   });
 
   world.clear();
 
-  scene.background=new THREE.Color(
-    n===3?'#a6cee1':'#7899a6'
-  );
+  // Céu em gradiente (filho do rig → segue a câmera)
+  if(rig.userData.sky){
+    rig.remove(rig.userData.sky);
+    rig.userData.sky.geometry.dispose();
+    rig.userData.sky.material.dispose();
+    rig.userData.sky = null;
+  }
 
-  if(n!==3){
+  const outdoors = (n === 3);
+
+  const skyTop = new THREE.Color(outdoors ? '#6ba7cc' : '#3d5666');
+  const skyBot = new THREE.Color(outdoors ? '#d1e7f0' : '#8ba0a1');
+
+  const skyGeo = new THREE.SphereGeometry(80, 24, 12);
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    fog: false,
+    uniforms: {
+      top: { value: skyTop },
+      bottom: { value: skyBot }
+    },
+    vertexShader: `
+      varying vec3 vPos;
+      void main(){
+        vPos = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 top;
+      uniform vec3 bottom;
+      varying vec3 vPos;
+      void main(){
+        float h = normalize(vPos).y;
+        float t = smoothstep(-0.15, 0.75, h);
+        gl_FragColor = vec4(mix(bottom, top, t), 1.0);
+      }
+    `
+  });
+
+  const sky = new THREE.Mesh(skyGeo, skyMat);
+  sky.frustumCulled = false;
+  rig.add(sky);
+  rig.userData.sky = sky;
+
+  // Fundo + fog coerentes com o ambiente
+  const bgColor = outdoors ? '#8fbcd4' : '#6b8188';
+  scene.background = new THREE.Color(bgColor);
+  scene.fog = new THREE.Fog(bgColor, 16, 46);
+
+  if(n !== 3){
     makeRoom();
   }else{
     box(0,-.13,-1,70,.2,70,'#547d47');
@@ -1915,20 +2104,21 @@ function buildWorld(n){
   flag(-8,-9);
   flag(8,-9);
 
-  if(n===0){
+  if(n === 0){
     building(0,-8);
 
     for(let x=-6;x<=6;x+=2){
       box(
         x,.025,-2,
-        .1,.02,6,'#e7e3d2'
+        .1,.02,6,
+        '#e7e3d2'
       );
     }
 
     cyl(0,.3,-6,1,.6,'#8b9288');
   }
 
-  if(n===1){
+  if(n === 1){
     for(let x=-5;x<=5;x+=2.5){
       for(let z=-6;z<=0;z+=2){
         table(x,z);
@@ -1938,24 +2128,26 @@ function buildWorld(n){
     box(0,2.7,-10.7,6.2,2,.09,'#1f4935');
   }
 
-  if(n===2){
+  if(n === 2){
     building(-5,-7);
 
     for(let x=-1;x<=7;x+=.75){
       box(
         x,1.5,-7.4,
-        .09,3,.1,'#435b4e'
+        .09,3,.1,
+        '#435b4e'
       );
     }
 
     box(1,3.8,-8,8,.5,1,'#4f6858');
   }
 
-  if(n===3){
+  if(n === 3){
     for(let x=-8;x<=8;x+=4){
       box(
         x,.65,-5,
-        2,1.3,1.2,'#947d56'
+        2,1.3,1.2,
+        '#947d56'
       );
 
       tree(x+1.5,-9);
@@ -1964,25 +2156,31 @@ function buildWorld(n){
     for(let z=-1;z<=5;z+=2){
       box(
         -5,.25,z,
-        2.8,.3,.2,'#8a6949'
+        2.8,.3,.2,
+        '#8a6949'
       );
     }
   }
 
-  if(n===4){
+  if(n === 4){
     for(let x=-6;x<=6;x+=3){
       bunk(x,-6);
       bunk(x,0);
     }
 
-    box(0,2.7,-10.7,5,1.6,.08,'#284e3b');
+    box(
+      0,2.7,-10.7,
+      5,1.6,.08,
+      '#284e3b'
+    );
   }
 
-  if(n===5){
+  if(n === 5){
     for(let x=-7;x<=7;x+=2.7){
       box(
         x,2,-8,
-        2.15,4,.7,'#725a3f'
+        2.15,4,.7,
+        '#725a3f'
       );
     }
 
@@ -1990,124 +2188,242 @@ function buildWorld(n){
     table(3,-3);
   }
 
-  if(n===6){
+  if(n === 6){
     for(let z=-6;z<=1;z+=2.2){
       for(let x=-5;x<=5;x+=2.2){
         box(
           x,.6,z,
-          1.5,.6,.75,'#606f5b'
+          1.5,.6,.75,
+          '#606f5b'
         );
       }
     }
 
-    box(0,2.8,-10.7,7.5,2,.07,'#245344');
+    box(
+      0,2.8,-10.7,
+      7.5,2,.07,
+      '#245344'
+    );
   }
 
-  if(n===7){
+  if(n === 7){
     table(-4,-5);
     table(4,-5);
-    box(0,2.5,-10.7,7,2,.09,'#294c3c');
+
+    box(
+      0,2.5,-10.7,
+      7,2,.09,
+      '#294c3c'
+    );
 
     for(let x=-6;x<=6;x+=4){
       ball(x,1.3,-8,.48,'#548a6b');
     }
   }
 
-  if(n===8){
+  if(n === 8){
     for(let x=-8;x<=8;x+=4){
-      cyl(x,1.5,-7,.24,3,'#9ba99d');
+      cyl(
+        x,1.5,-7,
+        .24,3,
+        '#9ba99d'
+      );
+
       tree(x,-9);
     }
 
-    box(0,.3,-6,5,.6,2,'#949b8d');
+    box(
+      0,.3,-6,
+      5,.6,2,
+      '#949b8d'
+    );
   }
 
-  if(n===9){
+  if(n === 9){
     for(let x=-5;x<=5;x+=3){
-      box(x,1,-7,2,.4,.9,'#3b5351');
-      box(x,2.3,-9,1.8,1.2,.1,'#24556b');
+      box(
+        x,1,-7,
+        2,.4,.9,
+        '#3b5351'
+      );
+
+      box(
+        x,2.3,-9,
+        1.8,1.2,.1,
+        '#24556b'
+      );
     }
 
-    box(0,3.9,-10.7,7,.17,.15,'#4cc5ab');
+    box(
+      0,3.9,-10.7,
+      7,.17,.15,
+      '#4cc5ab'
+    );
   }
 
   applyLight();
 }
 
+// ============================================================
+// ILUMINAÇÃO — 4 MODOS (Claro / Escuro Médio / Escuro / Noite)
+// ============================================================
 function applyLight(){
-  const night=state.settings.lighting==='night';
+  const mode = state.settings.lighting;
+  const outdoors = (state.settings.env === 3);
 
-  ambient.intensity=night?.75:1.35;
-  sun.intensity=night?.35:2.35;
+  let ambI, ambColor, ambGround, sunI, sunColor;
+  let bg, skyTop, skyBot, fogNear, fogFar, envInt;
 
-  scene.environment=night
-    ?iblNightTarget.texture
-    :iblDayTarget.texture;
+  if(mode === 'day'){
+    // CLARO — luz de dia cheia, ambiente bem iluminado
+    ambI = 0.6;
+    ambColor = 0xcfe8ff;
+    ambGround = 0x2a3a2e;
+    sunI = 1.85;
+    sunColor = 0xfff4e0;
+    bg = outdoors ? '#8fbcd4' : '#6b8188';
+    skyTop = outdoors ? '#6ba7cc' : '#3d5666';
+    skyBot = outdoors ? '#d1e7f0' : '#8ba0a1';
+    fogNear = 16; fogFar = 46;
+    envInt = 0.9;
+  } else if(mode === 'medium'){
+    // ESCURO MÉDIO — penumbra, luz suave e quente
+    ambI = 0.38;
+    ambColor = 0x8fa8c8;
+    ambGround = 0x18221a;
+    sunI = 1.05;
+    sunColor = 0xffe4b8;
+    bg = outdoors ? '#4a6675' : '#3a4e55';
+    skyTop = outdoors ? '#3d6780' : '#26363f';
+    skyBot = outdoors ? '#8aa8b8' : '#4d6068';
+    fogNear = 14; fogFar = 40;
+    envInt = 0.6;
+  } else if(mode === 'dark'){
+    // ESCURO — atmosfera noturna densa, quase sem luz direta
+    ambI = 0.14;
+    ambColor = 0x405878;
+    ambGround = 0x080e08;
+    sunI = 0.35;
+    sunColor = 0x7ea0d0;
+    bg = outdoors ? '#0f1a22' : '#0a1216';
+    skyTop = outdoors ? '#0c1a24' : '#040c10';
+    skyBot = outdoors ? '#243644' : '#0f1a1e';
+    fogNear = 8; fogFar = 28;
+    envInt = 0.22;
+  } else {
+    // NOITE — luar azulado, levemente mais claro que "escuro"
+    ambI = 0.22;
+    ambColor = 0x5068a0;
+    ambGround = 0x0c120c;
+    sunI = 0.42;
+    sunColor = 0x9eb0e0;
+    bg = outdoors ? '#141e2a' : '#0c1418';
+    skyTop = outdoors ? '#0a1622' : '#060e16';
+    skyBot = outdoors ? '#22303e' : '#0e181c';
+    fogNear = 9; fogFar = 30;
+    envInt = 0.3;
+  }
 
-  renderer.toneMappingExposure=night?1.04:1.12;
-  renderer.shadowMap.needsUpdate=true;
+  ambient.intensity = ambI;
+  ambient.color.setHex(ambColor);
+  ambient.groundColor.setHex(ambGround);
+  sun.intensity = sunI;
+  sun.color.setHex(sunColor);
+
+  // Fundo, fog e céu coerentes com o modo
+  scene.background.set(bg);
+  if(scene.fog){
+    scene.fog.color.set(bg);
+    scene.fog.near = fogNear;
+    scene.fog.far = fogFar;
+  }
+
+  // Realismo PBR: IBL mais fraco em cenas escuras
+  for(const m of mats.values()){
+    m.envMapIntensity = envInt;
+  }
+  flagMaterial.envMapIntensity = envInt;
+
+  if(rig.userData.sky){
+    rig.userData.sky.material.uniforms.top.value.set(skyTop);
+    rig.userData.sky.material.uniforms.bottom.value.set(skyBot);
+  }
 }
 
-// =====================================================
-// PAINÉIS VR: TEXTURA E TIPOGRAFIA EM ALTA DEFINIÇÃO
-// =====================================================
 
-const WIDTH=2048;
-const HEIGHT=1536;
+// ============================================================
+// 13. PAINÉIS VR EM ALTA RESOLUÇÃO
+// ============================================================
 
-const panels={};
-const panelMeshes=[];
+const WIDTH = 2048;
+const HEIGHT = 1536;
 
-const raycaster=new THREE.Raycaster();
-const tmpMatrix=new THREE.Matrix4();
+const panels = {};
+const panelMeshes = [];
 
-let hovered=null;
+const raycaster = new THREE.Raycaster();
+const tmpMatrix = new THREE.Matrix4();
+
+let hovered = null;
 
 function makePanel(id,w,h,x,y,z){
-  const canvas=document.createElement('canvas');
-  canvas.width=WIDTH;
-  canvas.height=HEIGHT;
+  const canvas = document.createElement('canvas');
 
-  const ctx=canvas.getContext('2d');
-  const texture=new THREE.CanvasTexture(canvas);
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
 
-  texture.colorSpace=THREE.SRGBColorSpace;
-  texture.generateMipmaps=true;
-  texture.minFilter=THREE.LinearMipmapLinearFilter;
-  texture.magFilter=THREE.LinearFilter;
+  const ctx = canvas.getContext('2d');
 
-  texture.anisotropy=Math.min(
+  const texture = new THREE.CanvasTexture(canvas);
+
+  texture.colorSpace = THREE.SRGBColorSpace;
+
+  texture.anisotropy = Math.min(
     8,
     renderer.capabilities.getMaxAnisotropy()
   );
 
-  const group=new THREE.Group();
+  const group = new THREE.Group();
+
   group.position.set(x,y,z);
   scene.add(group);
 
-  const mesh=new THREE.Mesh(
+  const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(w,h),
     new THREE.MeshBasicMaterial({
       map:texture,
       side:THREE.DoubleSide,
-      toneMapped:false
+      toneMapped:false,
+      fog:false
     })
   );
 
   group.add(mesh);
 
-  panels[id]={
-    id,canvas,ctx,texture,group,mesh,
-    regions:[],w,h
+  panels[id] = {
+    id,
+    canvas,
+    ctx,
+    texture,
+    group,
+    mesh,
+    regions:[],
+    w,
+    h
   };
 
   panelMeshes.push(mesh);
-  mesh.userData.id=id;
+  mesh.userData.id = id;
 }
 
 makePanel('main',3.2,2.4,0,1.65,-2.5);
 makePanel('left',1.6,2,-3.15,1.6,-2.9);
 makePanel('right',1.6,2,3.15,1.6,-2.9);
+
+
+// ============================================================
+// 14. POSICIONAMENTO DOS PAINÉIS
+// ============================================================
 
 function panelPositionReset(){
   panels.main.group.position.set(
@@ -2129,13 +2445,17 @@ function panelPositionReset(){
 }
 
 function resetPanelPositions(){
-  state.panels={};
+  state.panels = {};
+
   panelPositionReset();
   safeStore();
   updateVR();
 }
 
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+// ============================================================
+// 15. DESENHO DE TEXTO NÍTIDO
+// ============================================================
 
 function round(ctx,x,y,w,h,r=16){
   ctx.beginPath();
@@ -2143,30 +2463,44 @@ function round(ctx,x,y,w,h,r=16){
 }
 
 function text(
-  ctx,t,x,y,
-  size=46,color='#f3fff4',weight='700'
+  ctx,
+  value,
+  x,y,
+  size=46,
+  color='#f3fff4',
+  weight='600'
 ){
-  ctx.font=`${weight} ${size}px Arial`;
-  ctx.fillStyle=color;
-  ctx.fillText(String(t),x,y);
+  ctx.font = `${weight} ${size}px "Segoe UI",Arial,sans-serif`;
+  ctx.shadowBlur = 8;
+  ctx.shadowColor = 'rgba(0,0,0,.55)';
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = color;
+  ctx.fillText(String(value),x,y);
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
 }
 
 function wrapped(ctx,content,width,size){
-  ctx.font=`700 ${size}px Arial`;
+  ctx.font = `600 ${size}px "Segoe UI",Arial,sans-serif`;
 
-  const lines=[];
+  const lines = [];
 
   for(const paragraph of String(content).split('\n')){
-    let line='';
+    let line = '';
 
     for(const word of paragraph.split(/\s+/)){
-      const trial=line?line+' '+word:word;
+      const candidate = line
+        ? line+' '+word
+        : word;
 
-      if(ctx.measureText(trial).width>width&&line){
+      if(
+        ctx.measureText(candidate).width > width &&
+        line
+      ){
         lines.push(line);
-        line=word;
+        line = word;
       }else{
-        line=trial;
+        line = candidate;
       }
     }
 
@@ -2180,51 +2514,42 @@ function region(p,x,y,w,h,action){
   p.regions.push({x,y,w,h,action});
 }
 
-// =====================================================
-// HUD HOLOGRÁFICO COM GRADIENTES
-// =====================================================
-
 function background(p,title){
-  const c=p.ctx;
+  const c = p.ctx;
 
-  p.regions=[];
-  c.imageSmoothingEnabled=true;
-  c.imageSmoothingQuality='high';
+  p.regions = [];
 
-  const g=c.createLinearGradient(
-    0,0,WIDTH,HEIGHT
-  );
-
-  g.addColorStop(0,'#102923');
-  g.addColorStop(.55,'#091d19');
-  g.addColorStop(1,'#071512');
-
-  c.fillStyle=g;
+  // Fundo em gradiente vertical
+  const bgGrad = c.createLinearGradient(0,0,0,HEIGHT);
+  bgGrad.addColorStop(0,'#0b2a1b');
+  bgGrad.addColorStop(0.55,'#071c12');
+  bgGrad.addColorStop(1,'#04120b');
+  c.fillStyle = bgGrad;
   c.fillRect(0,0,WIDTH,HEIGHT);
 
-  const gh=c.createLinearGradient(
-    0,14,0,164
-  );
-
-  gh.addColorStop(0,'#276248');
-  gh.addColorStop(1,'#164432');
-
-  c.fillStyle=gh;
+  // Cabeçalho em gradiente
+  const hGrad = c.createLinearGradient(0,14,0,164);
+  hGrad.addColorStop(0,'#1e5b3c');
+  hGrad.addColorStop(1,'#0d3322');
+  c.fillStyle = hGrad;
   round(c,14,14,WIDTH-28,150,22);
   c.fill();
 
-  c.strokeStyle='#9af6bc';
-  c.lineWidth=6;
-
+  // Borda com glow
+  c.strokeStyle = '#73e6a0';
+  c.lineWidth = 5;
+  c.shadowBlur = 22;
+  c.shadowColor = 'rgba(115,230,160,.55)';
   round(c,14,14,WIDTH-28,HEIGHT-28,25);
   c.stroke();
+  c.shadowBlur = 0;
 
-  text(c,title,55,111,67);
+  text(c,title,55,111,67,'#ffffff','700');
 
   text(
     c,
-    '☰ SEGURE GRIP / PINÇA AQUI PARA MOVER',
-    57,204,31,'#bbefd0'
+    'SEGURE GRIP / PINÇA AQUI PARA MOVER',
+    57,204,31,'#bbefd0','600'
   );
 
   region(p,0,0,WIDTH,220,'drag');
@@ -2232,101 +2557,134 @@ function background(p,title){
 
 function vrButton(
   p,label,x,y,w,h,action,
-  color='#205c41',size=42
+  color='#205c41',
+  size=42
 ){
-  const c=p.ctx;
+  const c = p.ctx;
 
-  const hot=
-    hovered?.panel===p.id&&
-    hovered?.action===action;
+  const hot =
+    hovered?.panel === p.id &&
+    hovered?.action === action;
 
-  c.fillStyle=hot?'#378a5e':color;
+  // Gradiente de fundo
+  const grad = c.createLinearGradient(x,y,x,y+h);
+  if(hot){
+    grad.addColorStop(0,'#4aa575');
+    grad.addColorStop(1,'#2b6f4c');
+  }else{
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, shadeColor(color,-16));
+  }
+  c.fillStyle = grad;
+
   round(c,x,y,w,h,18);
   c.fill();
 
-  c.strokeStyle=hot?'#dcffea':'#64a983';
-  c.lineWidth=4;
+  // Borda + glow no hover
+  c.strokeStyle = hot ? '#dcffea' : '#64a983';
+  c.lineWidth = 4;
+
+  if(hot){
+    c.shadowBlur = 20;
+    c.shadowColor = 'rgba(220,255,234,.65)';
+  }
+
   round(c,x,y,w,h,18);
   c.stroke();
+  c.shadowBlur = 0;
 
-  const lines=wrapped(c,label,w-45,size);
+  const lines = wrapped(c,label,w-45,size);
 
   lines.slice(0,2).forEach((line,i)=>{
     text(
       c,line,
       x+22,
       y+Math.min(h-16,51+i*(size+6)),
-      size
+      size,
+      '#f4fff7'
     );
   });
 
   region(p,x,y,w,h,action);
 }
 
-// =====================================================
-// PAINEL PRINCIPAL E QUESTÕES COM ROLAGEM
-// =====================================================
+
+// ============================================================
+// 16. PAINEL PRINCIPAL COM ROLAGEM
+// ============================================================
 
 function drawMain(){
-  const p=panels.main;
-  const c=p.ctx;
-  const s=state.session;
-  const q=currentQuestion();
-  const a=currentPool();
+  const p = panels.main;
+  const c = p.ctx;
+
+  const s = state.session;
+  const q = currentQuestion();
+  const pool = currentPool();
 
   background(p,'PMSC 2026 • SALA DE ESTUDO');
 
   if(!q){
     text(
-      c,'AGUARDANDO QUESTÕES DO GITHUB',
+      c,
+      'AGUARDANDO QUESTÕES DO GITHUB',
       85,370,59
     );
 
     text(
-      c,'Atualize o banco no painel lateral.',
+      c,
+      'Atualize o banco no painel lateral.',
       85,470,45
     );
 
-    p.texture.needsUpdate=true;
+    p.texture.needsUpdate = true;
     return;
   }
 
   text(
     c,
-    `${s.index+1} / ${a.length} • ${q.subject}`,
+    `${s.index+1} / ${pool.length} • ${q.subject}`,
     78,304,46,'#a7f0c0'
   );
 
   text(c,q.topic,78,360,36,'#b7cbbd');
 
-  const size=Math.round(
+  const size = Math.round(
     46*Number(state.settings.fontSize)/115
   );
 
-  const lineH=size*1.36;
-  const blocks=[];
+  const lineH = size*1.36;
 
-  const add=(kind,content,act,color)=>{
-    const lines=wrapped(
+  const blocks = [];
+
+  function add(kind,content,act,color){
+    const fontSize = kind === 'question'
+      ? size
+      : size-3;
+
+    const lines = wrapped(
       c,
       content,
       1760,
-      kind==='question'?size:size-3
+      fontSize
     );
 
-    const height=Math.max(
+    const height = Math.max(
       95,
       lines.length*(lineH+2)+25
     );
 
     blocks.push({
-      kind,lines,act,color,height
+      kind,
+      lines,
+      act,
+      color,
+      height
     });
-  };
+  }
 
   add('question',q.question,null);
 
-  if(s.mode==='flash'){
+  if(s.mode === 'flash'){
     if(s.flip){
       add(
         'text',
@@ -2346,23 +2704,23 @@ function drawMain(){
     }
   }else{
     q.options.forEach((option,i)=>{
-      const chosen=s.answers[q.id];
+      const chosen = s.answers[q.id];
 
-      const reveal=
-        s.mode!=='exam'||
-        s.feedback==='immediate'||
+      const reveal =
+        s.mode !== 'exam' ||
+        s.feedback === 'immediate' ||
         s.finished;
 
-      let color='#1d5941';
+      let color = '#1d5941';
 
-      if(chosen!==undefined&&reveal){
-        if(i===q.correct){
-          color='#146c40';
-        }else if(i===chosen){
-          color='#773641';
+      if(chosen !== undefined && reveal){
+        if(i === q.correct){
+          color = '#146c40';
+        }else if(i === chosen){
+          color = '#773641';
         }
-      }else if(chosen===i){
-        color='#215b86';
+      }else if(chosen === i){
+        color = '#215b86';
       }
 
       add(
@@ -2373,13 +2731,13 @@ function drawMain(){
       );
     });
 
-    const chosen=s.answers[q.id];
+    const chosen = s.answers[q.id];
 
     if(
-      chosen!==undefined&&
+      chosen !== undefined &&
       (
-        s.mode!=='exam'||
-        s.feedback==='immediate'||
+        s.mode !== 'exam' ||
+        s.feedback === 'immediate' ||
         s.finished
       )
     ){
@@ -2401,16 +2759,16 @@ function drawMain(){
     }
   }
 
-  const viewTop=390;
-  const viewBottom=1245;
-  const viewH=viewBottom-viewTop;
+  const viewTop = 390;
+  const viewBottom = 1245;
+  const viewH = viewBottom-viewTop;
 
-  const total=blocks.reduce(
-    (sum,b)=>sum+b.height+12,
+  const total = blocks.reduce(
+    (sum,b) => sum+b.height+12,
     0
   );
 
-  s.scroll=clamp(
+  s.scroll = clamp(
     s.scroll,
     0,
     Math.max(0,total-viewH)
@@ -2421,17 +2779,27 @@ function drawMain(){
   c.rect(56,viewTop,1935,viewH);
   c.clip();
 
-  let y=viewTop-s.scroll;
+  let y = viewTop-s.scroll;
 
   for(const b of blocks){
     if(
-      y+b.height>=viewTop&&
-      y<=viewBottom
+      y+b.height >= viewTop &&
+      y <= viewBottom
     ){
-      if(b.kind==='option'){
-        c.fillStyle=b.color;
+      if(b.kind === 'option'){
+        // Opção com gradiente sutil
+        const optGrad = c.createLinearGradient(66,y,66,y+b.height);
+        optGrad.addColorStop(0, shadeColor(b.color,10));
+        optGrad.addColorStop(1, shadeColor(b.color,-10));
+        c.fillStyle = optGrad;
+
         round(c,66,y,1870,b.height-5,14);
         c.fill();
+
+        c.strokeStyle = 'rgba(124,255,172,.22)';
+        c.lineWidth = 2;
+        round(c,66,y,1870,b.height-5,14);
+        c.stroke();
 
         region(
           p,
@@ -2439,99 +2807,115 @@ function drawMain(){
           Math.max(viewTop,y),
           1870,
           Math.min(viewBottom,y+b.height)-
-          Math.max(viewTop,y),
+            Math.max(viewTop,y),
           b.act
         );
       }
 
-      let ty=y+Math.max(58,lineH);
+      let ty = y+Math.max(58,lineH);
 
       for(const line of b.lines){
         text(
-          c,line,92,ty,
-          b.kind==='question'?size:size-3,
-          b.kind==='question'
-            ?'#ffffff'
-            :'#effcf3'
+          c,
+          line,
+          92,ty,
+          b.kind === 'question' ? size : size-3,
+          b.kind === 'question'
+            ? '#ffffff'
+            : '#effcf3'
         );
 
-        ty+=lineH+2;
+        ty += lineH+2;
       }
     }
 
-    y+=b.height+12;
+    y += b.height+12;
   }
 
   c.restore();
 
   vrButton(
     p,'▲ SUBIR',
-    65,1288,270,99,'scrollUp'
+    65,1288,270,99,
+    'scrollUp'
   );
 
   vrButton(
     p,'▼ DESCER',
-    350,1288,290,99,'scrollDown'
+    350,1288,290,99,
+    'scrollDown'
   );
 
   vrButton(
     p,'◀ ANTERIOR',
-    660,1288,385,99,'prev'
+    660,1288,385,99,
+    'prev'
   );
 
   vrButton(
     p,'PRÓXIMA ▶',
-    1062,1288,396,99,'next'
+    1062,1288,396,99,
+    'next'
   );
 
   vrButton(
     p,
-    s.mode==='flash'
-      ?'VIRAR'
-      :s.mode==='exam'
-        ?'FINALIZAR'
-        :'★ FAVORITO',
+    s.mode === 'flash'
+      ? 'VIRAR'
+      : s.mode === 'exam'
+        ? 'FINALIZAR'
+        : '★ FAVORITO',
     1477,1288,500,99,
-    s.mode==='flash'
-      ?'flip'
-      :s.mode==='exam'
-        ?'finish'
-        :'favorite'
+    s.mode === 'flash'
+      ? 'flip'
+      : s.mode === 'exam'
+        ? 'finish'
+        : 'favorite'
   );
 
-  const footer=
-    s.mode==='exam'&&s.minutes
-      ?`TEMPO: ${Math.max(
-          0,
-          Math.ceil(
-            (
-              s.minutes*60000-
-              (Date.now()-s.start)
-            )/60000
-          )
-        )} MIN`
-      :s.mode==='flash'
-        ?'FLASHCARD'
-        :s.mode==='exam'
-          ?'SIMULADO'
-          :'ESTUDO';
+  let footer = 'ESTUDO';
+
+  if(s.mode === 'flash'){
+    footer = 'FLASHCARD';
+  }else if(s.mode === 'exam'){
+    footer = 'SIMULADO';
+
+    if(s.minutes){
+      const left = Math.max(
+        0,
+        Math.ceil(
+          (
+            s.minutes*60000 -
+            (Date.now()-s.start)
+          )/60000
+        )
+      );
+
+      footer = `TEMPO: ${left} MIN`;
+    }
+  }
 
   text(c,footer,85,1470,36,'#a5ffd2');
 
-  p.texture.needsUpdate=true;
+  p.texture.needsUpdate = true;
 }
 
+
+// ============================================================
+// 17. PAINÉIS LATERAIS
+// ============================================================
+
 function drawSide(id){
-  const p=panels[id];
-  const c=p.ctx;
+  const p = panels[id];
+  const c = p.ctx;
 
   background(
     p,
-    id==='left'?'AMBIENTES':'ESTATÍSTICAS'
+    id === 'left' ? 'AMBIENTES' : 'ESTATÍSTICAS'
   );
 
-  if(id==='left'){
-    let y=280;
+  if(id === 'left'){
+    let y = 280;
 
     environments.forEach((name,i)=>{
       vrButton(
@@ -2539,24 +2923,26 @@ function drawSide(id){
         `${i+1}. ${name}`,
         55,y,1935,95,
         'env:'+i,
-        i===state.settings.env
-          ?'#226e47'
-          :'#214b38',
+        i === state.settings.env
+          ? '#2a7d52'
+          : '#1c3f2d',
         42
       );
 
-      y+=110;
+      y += 110;
     });
 
     vrButton(
-      p,'REPOSICIONAR',
+      p,
+      'REPOSICIONAR',
       55,1400,1935,94,
       'resetPanels'
     );
-  }else{
-    const z=stats();
 
-    const lines=[
+  }else{
+    const z = stats();
+
+    const lines = [
       `QUESTÕES: ${questions.length}`,
       `RESPONDIDAS: ${z.total}`,
       `ACERTOS: ${z.ok}`,
@@ -2565,11 +2951,11 @@ function drawSide(id){
       `SIMULADOS: ${z.exams}`
     ];
 
-    lines.forEach((v,i)=>{
-      text(c,v,74,310+i*116,53);
+    lines.forEach((value,i)=>{
+      text(c,value,74,310+i*116,53);
     });
 
-    const modes=[
+    const modes = [
       ['QUESTÕES','study'],
       ['SIMULADO','exam'],
       ['FLASHCARDS','flash'],
@@ -2578,112 +2964,136 @@ function drawSide(id){
 
     modes.forEach(([name,mode],i)=>{
       vrButton(
-        p,name,
+        p,
+        name,
         65,1010+i*105,1900,88,
         'go:'+mode
       );
     });
   }
 
-  p.texture.needsUpdate=true;
+  p.texture.needsUpdate = true;
 }
 
 function updateVR(){
-  if(!panels.main)return;
   drawMain();
   drawSide('left');
   drawSide('right');
 }
 
 function scrollVR(delta){
-  const s=state.session;
-  if(!s)return;
+  const s = state.session;
 
-  s.scroll=Math.max(0,s.scroll+delta);
+  if(!s) return;
+
+  s.scroll = Math.max(0,s.scroll+delta);
+
   updateVR();
 }
 
-// =====================================================
-// AÇÕES INTERATIVAS WEBXR
-// =====================================================
 
-let lastActionTime=0;
-let lastActionName='';
+// ============================================================
+// 18. AÇÕES DOS BOTÕES NO VR
+// ============================================================
+
+let lastActionTime = 0;
+let lastActionName = '';
 
 function action(act){
-  if(!act)return;
+  if(!act) return;
 
-  const t=performance.now();
+  const t = performance.now();
 
   if(
-    lastActionName===act&&
-    t-lastActionTime<270
-  )return;
+    lastActionName === act &&
+    t-lastActionTime < 270
+  ){
+    return;
+  }
 
-  lastActionTime=t;
-  lastActionName=act;
+  lastActionTime = t;
+  lastActionName = act;
 
-  if(act==='drag')return;
+  if(act === 'drag') return;
 
   if(act.startsWith('answer:')){
-    return choose(+act.split(':')[1]);
+    choose(Number(act.split(':')[1]));
+    return;
   }
 
   if(act.startsWith('env:')){
-    return setEnvironment(+act.split(':')[1]);
+    setEnvironment(Number(act.split(':')[1]));
+    return;
   }
 
   if(act.startsWith('go:')){
-    return go(act.split(':')[1]);
+    go(act.split(':')[1]);
+    return;
   }
 
-  if(act==='prev')return next(-1);
-  if(act==='next')return next(1);
+  if(act === 'prev') return next(-1);
+  if(act === 'next') return next(1);
+  if(act === 'favorite') return favorite();
+  if(act === 'finish') return finishExam();
 
-  if(act==='flip'){
+  if(act === 'flip'){
     if(state.session){
-      state.session.flip=!state.session.flip;
+      state.session.flip = !state.session.flip;
       safeStore();
       render();
     }
     return;
   }
 
-  if(act==='favorite')return favorite();
-  if(act==='finish')return finishExam();
-  if(act==='scrollUp')return scrollVR(-430);
-  if(act==='scrollDown')return scrollVR(430);
+  if(act === 'scrollUp'){
+    return scrollVR(-430);
+  }
 
-  if(act==='resetPanels'){
+  if(act === 'scrollDown'){
+    return scrollVR(430);
+  }
+
+  if(act === 'resetPanels'){
     return resetPanelPositions();
   }
 }
 
-// =====================================================
-// RAYCASTING
-// =====================================================
+
+// ============================================================
+// 19. RAYCASTING DOS PAINÉIS
+// ============================================================
 
 function intersectFrom(origin,direction){
   raycaster.set(origin,direction);
 
-  const hit=raycaster.intersectObjects(
-    panelMeshes,false
+  const hit = raycaster.intersectObjects(
+    panelMeshes,
+    false
   )[0];
 
-  if(!hit||hit.distance>10)return null;
+  if(!hit || hit.distance > 10){
+    return null;
+  }
 
-  const p=panels[hit.object.userData.id];
-  if(!p)return null;
+  const p = panels[hit.object.userData.id];
 
-  const x=hit.uv.x*WIDTH;
-  const y=(1-hit.uv.y)*HEIGHT;
+  if(!p) return null;
 
-  const region=[...p.regions].reverse().find(v=>
-    x>=v.x&&x<=v.x+v.w&&
-    y>=v.y&&y<=v.y+v.h
+  const x = hit.uv.x*WIDTH;
+  const y = (1-hit.uv.y)*HEIGHT;
+
+  const region = [...p.regions].reverse().find(r =>
+    x >= r.x &&
+    x <= r.x+r.w &&
+    y >= r.y &&
+    y <= r.y+r.h
   );
 
-  return {p,hit,region:region||null};
+  return {
+    p,
+    hit,
+    region:region || null
+  };
 }
 
 function rayFromController(controller){
@@ -2693,10 +3103,10 @@ function rayFromController(controller){
     controller.matrixWorld
   );
 
-  const origin=new THREE.Vector3()
+  const origin = new THREE.Vector3()
     .setFromMatrixPosition(controller.matrixWorld);
 
-  const direction=new THREE.Vector3(0,0,-1)
+  const direction = new THREE.Vector3(0,0,-1)
     .applyMatrix4(tmpMatrix)
     .normalize();
 
@@ -2704,58 +3114,67 @@ function rayFromController(controller){
 }
 
 function rayFromHand(hand){
-  const a=hand.joints?.['index-finger-tip'];
+  const tip = hand.joints?.['index-finger-tip'];
 
-  const b=
-    hand.joints?.['index-finger-phalanx-proximal']||
+  const base =
+    hand.joints?.['index-finger-phalanx-proximal'] ||
     hand.joints?.wrist;
 
-  if(!a||!b)return null;
+  if(!tip || !base){
+    return null;
+  }
 
-  a.updateWorldMatrix(true,false);
-  b.updateWorldMatrix(true,false);
+  tip.updateWorldMatrix(true,false);
+  base.updateWorldMatrix(true,false);
 
-  const origin=new THREE.Vector3()
-    .setFromMatrixPosition(a.matrixWorld);
+  const origin = new THREE.Vector3()
+    .setFromMatrixPosition(tip.matrixWorld);
 
-  const base=new THREE.Vector3()
-    .setFromMatrixPosition(b.matrixWorld);
+  const basePoint = new THREE.Vector3()
+    .setFromMatrixPosition(base.matrixWorld);
 
-  const direction=origin.clone()
-    .sub(base).normalize();
+  const direction = origin.clone()
+    .sub(basePoint)
+    .normalize();
 
   return {origin,direction};
 }
 
 function handTouchHit(hand){
-  const tip=hand.joints?.['index-finger-tip'];
-  if(!tip)return null;
+  const tip = hand.joints?.['index-finger-tip'];
 
-  const worldPoint=new THREE.Vector3();
+  if(!tip) return null;
+
+  const worldPoint = new THREE.Vector3();
+
   tip.getWorldPosition(worldPoint);
 
   for(const p of Object.values(panels)){
-    const local=p.group.worldToLocal(
+    const local = p.group.worldToLocal(
       worldPoint.clone()
     );
 
-    const px=
+    const px =
       local.x/(p.w*p.group.scale.x)+.5;
 
-    const py=
+    const py =
       .5-local.y/(p.h*p.group.scale.y);
 
     if(
-      Math.abs(local.z)<.18&&
-      px>=0&&px<=1&&
-      py>=0&&py<=1
+      Math.abs(local.z) < .18 &&
+      px >= 0 &&
+      px <= 1 &&
+      py >= 0 &&
+      py <= 1
     ){
-      const x=px*WIDTH;
-      const y=py*HEIGHT;
+      const x = px*WIDTH;
+      const y = py*HEIGHT;
 
-      const region=[...p.regions].reverse().find(r=>
-        x>=r.x&&x<=r.x+r.w&&
-        y>=r.y&&y<=r.y+r.h
+      const region = [...p.regions].reverse().find(r =>
+        x >= r.x &&
+        x <= r.x+r.w &&
+        y >= r.y &&
+        y <= r.y+r.h
       );
 
       return {p,region};
@@ -2765,71 +3184,81 @@ function handTouchHit(hand){
   return null;
 }
 
-// =====================================================
-// MÃOS, CONTROLES E MOVIMENTAÇÃO DOS PAINÉIS
-// =====================================================
 
-const controllerFactory=new XRControllerModelFactory();
-const handFactory=new XRHandModelFactory();
+// ============================================================
+// 20. ARRASTAR PAINÉIS COM CONTROLES OU MÃOS
+// ============================================================
 
-const controllers=[];
-const hands=[];
+const controllerFactory = new XRControllerModelFactory();
+const handFactory = new XRHandModelFactory();
 
-let dragging=null;
+const controllers = [];
+const hands = [];
+
+let dragging = null;
 
 function beginDrag(p,source,kind){
-  const start=new THREE.Vector3();
+  const start = new THREE.Vector3();
 
   source.getWorldPosition(start);
 
-  dragging={
-    p,source,kind,
+  dragging = {
+    p,
+    source,
+    kind,
+    index:-1,
     offset:p.group.position.clone().sub(start)
   };
 
-  note('Movendo painel: solte para fixar.');
+  note('Movendo painel. Solte para fixar.');
 }
 
 function endDrag(kind,index){
   if(
-    dragging?.kind===kind&&
-    dragging?.index===index
+    dragging?.kind === kind &&
+    dragging?.index === index
   ){
-    const p=dragging.p;
+    const p = dragging.p;
 
-    state.panels[p.id]=[
+    state.panels[p.id] = [
       p.group.position.x,
       p.group.position.y,
       p.group.position.z
     ];
 
-    dragging=null;
+    dragging = null;
     safeStore();
   }
 }
 
 function selectRay(
-  ray,source,kind,index,grab=false
+  ray,
+  source,
+  kind,
+  index,
+  grab=false
 ){
-  if(!ray)return;
+  if(!ray) return;
 
-  const hit=intersectFrom(
-    ray.origin,ray.direction
+  const hit = intersectFrom(
+    ray.origin,
+    ray.direction
   );
 
-  if(grab&&hit){
+  if(grab && hit){
     beginDrag(hit.p,source,kind);
 
     if(dragging){
-      dragging.index=index;
+      dragging.index = index;
     }
+
     return;
   }
 
   if(hit){
     if(
-      hit.region?.action&&
-      hit.region.action!=='drag'
+      hit.region?.action &&
+      hit.region.action !== 'drag'
     ){
       action(hit.region.action);
     }
@@ -2838,19 +3267,25 @@ function selectRay(
 
   raycaster.set(ray.origin,ray.direction);
 
-  const marks=raycaster.intersectObjects(
-    teleportMarkers,false
+  const marks = raycaster.intersectObjects(
+    teleportMarkers,
+    false
   );
 
-  if(marks.length&&marks[0].distance<12){
+  if(marks.length && marks[0].distance < 12){
     teleport(
       marks[0].object.userData.destination
     );
   }
 }
 
+
+// ============================================================
+// 21. CONTROLES E MODELOS DAS MÃOS
+// ============================================================
+
 for(let i=0;i<2;i++){
-  const controller=renderer.xr.getController(i);
+  const controller = renderer.xr.getController(i);
 
   rig.add(controller);
 
@@ -2866,7 +3301,9 @@ for(let i=0;i<2;i++){
       if(!dragging){
         selectRay(
           rayFromController(controller),
-          controller,'controller',i
+          controller,
+          'controller',
+          i
         );
       }
     }
@@ -2877,7 +3314,10 @@ for(let i=0;i<2;i++){
     ()=>{
       selectRay(
         rayFromController(controller),
-        controller,'controller',i,true
+        controller,
+        'controller',
+        i,
+        true
       );
     }
   );
@@ -2887,19 +3327,21 @@ for(let i=0;i<2;i++){
     ()=>endDrag('controller',i)
   );
 
-  const line=new THREE.Line(
+  const line = new THREE.Line(
     new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(),
       new THREE.Vector3(0,0,-8)
     ]),
     new THREE.LineBasicMaterial({
-      color:0x7cffbd
+      color:0x7cffbd,
+      transparent:true,
+      opacity:.75
     })
   );
 
   controller.add(line);
 
-  const grip=renderer.xr.getControllerGrip(i);
+  const grip = renderer.xr.getControllerGrip(i);
 
   grip.add(
     controllerFactory.createControllerModel(grip)
@@ -2907,7 +3349,8 @@ for(let i=0;i<2;i++){
 
   rig.add(grip);
 
-  const hand=renderer.xr.getHand(i);
+  const hand = renderer.xr.getHand(i);
+
   rig.add(hand);
 
   hand.add(
@@ -2915,7 +3358,9 @@ for(let i=0;i<2;i++){
   );
 
   hands.push({
-    object:hand,index:i,pinched:false
+    object:hand,
+    index:i,
+    pinched:false
   });
 
   hand.addEventListener(
@@ -2924,20 +3369,23 @@ for(let i=0;i<2;i++){
       if(!dragging){
         selectRay(
           rayFromHand(hand),
-          hand,'hand',i
+          hand,
+          'hand',
+          i
         );
       }
     }
   );
 }
 
-// =====================================================
-// TELETRANSPORTE
-// =====================================================
 
-const teleportMarkers=[];
+// ============================================================
+// 22. MARCADORES DE TELETRANSPORTE
+// ============================================================
 
-const destinations=[
+const teleportMarkers = [];
+
+const destinations = [
   [0,-1.3],
   [-3,-3],
   [3,-3],
@@ -2947,41 +3395,42 @@ const destinations=[
 ];
 
 for(const [x,z] of destinations){
-  const circle=new THREE.Mesh(
+  const marker = new THREE.Mesh(
     new THREE.CylinderGeometry(
-      .34,.34,.035,24
+      .34,.34,.035,28
     ),
     new THREE.MeshBasicMaterial({
       color:0x22cfff,
       transparent:true,
-      opacity:.8
+      opacity:.85,
+      fog:false
     })
   );
 
-  circle.position.set(x,.03,z);
-  circle.userData.destination=
+  marker.position.set(x,.03,z);
+
+  marker.userData.destination =
     new THREE.Vector3(x,0,z);
 
-  scene.add(circle);
-  teleportMarkers.push(circle);
+  scene.add(marker);
+  teleportMarkers.push(marker);
 }
 
 function teleport(pos){
-  const head=new THREE.Vector3();
+  const head = new THREE.Vector3();
 
   if(renderer.xr.isPresenting){
-    renderer.xr.getCamera()
-      .getWorldPosition(head);
+    renderer.xr.getCamera().getWorldPosition(head);
   }else{
     camera.getWorldPosition(head);
   }
 
-  rig.position.x=clamp(
+  rig.position.x = clamp(
     rig.position.x+pos.x-head.x,
     -9,9
   );
 
-  rig.position.z=clamp(
+  rig.position.z = clamp(
     rig.position.z+pos.z-head.z,
     -8,6
   );
@@ -2989,262 +3438,278 @@ function teleport(pos){
   note('Teletransporte realizado.');
 }
 
-// =====================================================
-// QUALIDADE GRÁFICA, FOVEATION E FRAMEBUFFER
-// =====================================================
+
+// ============================================================
+// 23. CONFIGURAÇÃO DOS AMBIENTES
+// ============================================================
 
 function setEnvironment(n){
-  state.settings.env=
+  state.settings.env =
     (n+environments.length)%environments.length;
 
-  $('environment').value=state.settings.env;
+  $('environment').value = state.settings.env;
 
   buildWorld(state.settings.env);
+
   safeStore();
   updateVR();
 }
 
 function configureQuality(){
-  const q=state.settings.quality;
+  const quality = state.settings.quality;
 
   renderer.setPixelRatio(
-    q==='low'
-      ?1
-      :q==='high'
-        ?Math.min(devicePixelRatio,2)
-        :Math.min(devicePixelRatio,1.5)
+    quality === 'low'
+      ? 1
+      : quality === 'high'
+        ? Math.min(devicePixelRatio,2)
+        : Math.min(devicePixelRatio,1.5)
   );
-
-  if(typeof renderer.xr.setFoveation==='function'){
-    renderer.xr.setFoveation(
-      q==='low'?.70:q==='high'?.35:.50
-    );
-  }
-
-  const res=
-    q==='low'?512:q==='high'?1536:1024;
-
-  if(sun.shadow.mapSize.x!==res){
-    if(sun.shadow.map){
-      sun.shadow.map.dispose();
-      sun.shadow.map=null;
-    }
-
-    sun.shadow.mapSize.set(res,res);
-    renderer.shadowMap.needsUpdate=true;
-  }
 
   if(!renderer.xr.isPresenting){
     renderer.xr.setFramebufferScaleFactor(
-      q==='low'?.9:q==='high'?1.2:1.05
+      quality === 'low'
+        ? .9
+        : quality === 'high'
+          ? 1.2
+          : 1.05
     );
   }
 }
 
 function syncSettings(){
-  for(const k of [
-    'lighting','quality','fontSize',
-    'distance','panelHeight',
-    'panelScale','speed','snap'
+  for(const key of [
+    'lighting',
+    'quality',
+    'fontSize',
+    'distance',
+    'panelHeight',
+    'panelScale',
+    'speed',
+    'snap'
   ]){
-    $(k).value=state.settings[k];
+    $(key).value = state.settings[key];
   }
 
-  $('environment').value=state.settings.env;
+  $('environment').value = state.settings.env;
 
   configureQuality();
   applyLight();
   panelPositionReset();
 
-  for(const [id,v] of Object.entries(
-    state.panels||{}
+  for(const [id,position] of Object.entries(
+    state.panels || {}
   )){
     if(
-      panels[id]&&
-      Array.isArray(v)&&
-      v.length===3&&
-      v.every(Number.isFinite)
+      panels[id] &&
+      Array.isArray(position) &&
+      position.length === 3 &&
+      position.every(Number.isFinite)
     ){
-      panels[id].group.position.set(...v);
+      panels[id].group.position.set(...position);
     }
   }
 }
 
-// =====================================================
-// LOOP DE RENDERIZAÇÃO WEBXR
-// =====================================================
 
-let lastSecond=0;
-const clock=new THREE.Clock();
+// ============================================================
+// 24. LOOP DE REALIDADE VIRTUAL
+// ============================================================
+
+let lastSecond = 0;
+
+const clock = new THREE.Clock();
 
 renderer.setAnimationLoop(()=>{
-  const dt=Math.min(clock.getDelta(),.05);
+  const dt = Math.min(clock.getDelta(),.05);
 
-  const w=$('scene').clientWidth;
-  const h=$('scene').clientHeight;
+  const w = $('scene').clientWidth;
+  const h = $('scene').clientHeight;
 
-  if(w&&h&&!renderer.xr.isPresenting){
-    const pr=renderer.getPixelRatio();
+  if(w && h && !renderer.xr.isPresenting){
+    const ratio = renderer.getPixelRatio();
 
     if(
-      renderer.domElement.width!==Math.round(w*pr)||
-      renderer.domElement.height!==Math.round(h*pr)
+      renderer.domElement.width !== Math.round(w*ratio) ||
+      renderer.domElement.height !== Math.round(h*ratio)
     ){
       renderer.setSize(w,h,false);
-      camera.aspect=w/h;
+
+      camera.aspect = w/h;
       camera.updateProjectionMatrix();
     }
   }
 
   if(renderer.xr.isPresenting){
-    const session=renderer.xr.getSession();
+    const session = renderer.xr.getSession();
 
-    for(const src of session.inputSources){
-      const gp=src.gamepad;
-      if(!gp)continue;
+    // Caminhada pelo analógico esquerdo.
+    // Rotação pelo analógico direito.
 
-      let ax=0,az=0;
+    for(const source of session.inputSources){
+      const gp = source.gamepad;
 
-      if(gp.axes.length>=4){
-        ax=gp.axes[2]||0;
-        az=gp.axes[3]||0;
+      if(!gp) continue;
+
+      let ax = 0;
+      let az = 0;
+
+      if(gp.axes.length >= 4){
+        ax = gp.axes[2] || 0;
+        az = gp.axes[3] || 0;
       }else{
-        ax=gp.axes[0]||0;
-        az=gp.axes[1]||0;
+        ax = gp.axes[0] || 0;
+        az = gp.axes[1] || 0;
       }
 
       if(
-        src.handedness==='left'&&
+        source.handedness === 'left' &&
         (
-          Math.abs(ax)>.18||
-          Math.abs(az)>.18
+          Math.abs(ax) > .18 ||
+          Math.abs(az) > .18
         )
       ){
-        const dir=new THREE.Vector3();
+        const dir = new THREE.Vector3();
 
         renderer.xr.getCamera()
           .getWorldDirection(dir);
 
-        dir.y=0;
+        dir.y = 0;
         dir.normalize();
 
-        const right=new THREE.Vector3()
+        const right = new THREE.Vector3()
           .crossVectors(
-            dir,new THREE.Vector3(0,1,0)
+            dir,
+            new THREE.Vector3(0,1,0)
           )
           .normalize();
 
-        const speed=Number(
+        const speed = Number(
           state.settings.speed
         );
 
         rig.position.addScaledVector(
-          dir,-az*dt*speed
+          dir,
+          -az*dt*speed
         );
 
         rig.position.addScaledVector(
-          right,ax*dt*speed
+          right,
+          ax*dt*speed
         );
 
-        rig.position.x=clamp(
+        rig.position.x = clamp(
           rig.position.x,-9,9
         );
 
-        rig.position.z=clamp(
+        rig.position.z = clamp(
           rig.position.z,-8,6
         );
       }
 
       if(
-        src.handedness==='right'&&
-        Math.abs(ax)>.7
+        source.handedness === 'right' &&
+        Math.abs(ax) > .7
       ){
-        const c=
-          controllers.find(o=>
-            o.object.userData.handedness==='right'
-          )||controllers[1];
+        const c = controllers[1];
 
-        const current=performance.now();
+        const currentTime = performance.now();
 
         if(
-          current-c.lastSnap>450&&
+          currentTime-c.lastSnap > 450 &&
           Number(state.settings.snap)
         ){
-          rig.rotation.y-=
+          rig.rotation.y -=
             Math.sign(ax)*
             THREE.MathUtils.degToRad(
-              +state.settings.snap
+              Number(state.settings.snap)
             );
 
-          c.lastSnap=current;
+          c.lastSnap = currentTime;
         }
       }
     }
 
-    for(const h of hands){
-      const hand=h.object;
+    // Rastrear pinça entre polegar e indicador.
 
-      const tip=
+    for(const h of hands){
+      const hand = h.object;
+
+      const tip =
         hand.joints?.['index-finger-tip'];
 
-      const thumb=
+      const thumb =
         hand.joints?.['thumb-tip'];
 
       if(
-        !tip||!thumb||
-        !tip.visible||!thumb.visible
+        !tip ||
+        !thumb ||
+        !tip.visible ||
+        !thumb.visible
       ){
-        h.pinched=false;
+        h.pinched = false;
         continue;
       }
 
       tip.updateWorldMatrix(true,false);
       thumb.updateWorldMatrix(true,false);
 
-      const v=new THREE.Vector3();
-      const u=new THREE.Vector3();
+      const p1 = new THREE.Vector3();
+      const p2 = new THREE.Vector3();
 
-      tip.getWorldPosition(v);
-      thumb.getWorldPosition(u);
+      tip.getWorldPosition(p1);
+      thumb.getWorldPosition(p2);
 
-      const pinched=v.distanceTo(u)<.033;
+      const pinched =
+        p1.distanceTo(p2) < .033;
 
-      if(pinched&&!h.pinched){
-        const ray=rayFromHand(hand);
+      if(pinched && !h.pinched){
+        const ray = rayFromHand(hand);
 
-        const hit=
-          handTouchHit(hand)||
+        const hit =
+          handTouchHit(hand) ||
           (
-            ray&&
-            intersectFrom(ray.origin,ray.direction)
+            ray &&
+            intersectFrom(
+              ray.origin,
+              ray.direction
+            )
           );
 
-        if(hit?.region?.action==='drag'){
+        if(hit?.region?.action === 'drag'){
           beginDrag(hit.p,tip,'hand');
-          dragging.index=h.index;
+
+          if(dragging){
+            dragging.index = h.index;
+          }
         }else if(!dragging){
           if(
-            hit?.region?.action&&
-            hit.region.action!=='drag'
+            hit?.region?.action &&
+            hit.region.action !== 'drag'
           ){
             action(hit.region.action);
           }else{
             selectRay(
-              ray,tip,'hand',h.index
+              ray,
+              tip,
+              'hand',
+              h.index
             );
           }
         }
       }
 
-      if(!pinched&&h.pinched){
+      if(!pinched && h.pinched){
         endDrag('hand',h.index);
       }
 
-      h.pinched=pinched;
+      h.pinched = pinched;
     }
 
+    // Atualizar posição dos painéis arrastados.
+
     if(dragging){
-      const position=new THREE.Vector3();
+      const position = new THREE.Vector3();
 
       dragging.source.getWorldPosition(position);
       position.add(dragging.offset);
@@ -3256,17 +3721,22 @@ renderer.setAnimationLoop(()=>{
       );
     }
 
-    let over=null;
+    // Realce ao apontar para um botão.
 
-    for(const o of controllers){
-      const ray=rayFromController(o.object);
+    let over = null;
 
-      const hit=intersectFrom(
-        ray.origin,ray.direction
+    for(const controller of controllers){
+      const ray = rayFromController(
+        controller.object
+      );
+
+      const hit = intersectFrom(
+        ray.origin,
+        ray.direction
       );
 
       if(hit?.region){
-        over={
+        over = {
           panel:hit.p.id,
           action:hit.region.action
         };
@@ -3275,29 +3745,32 @@ renderer.setAnimationLoop(()=>{
     }
 
     if(
-      over?.panel!==hovered?.panel||
-      over?.action!==hovered?.action
+      over?.panel !== hovered?.panel ||
+      over?.action !== hovered?.action
     ){
-      hovered=over;
+      hovered = over;
       updateVR();
     }
 
-    const t=Math.floor(Date.now()/1000);
+    // Verificar cronômetro do simulado.
 
-    if(t!==lastSecond){
-      lastSecond=t;
+    const second = Math.floor(
+      Date.now()/1000
+    );
 
-      const s=state.session;
+    if(second !== lastSecond){
+      lastSecond = second;
+
+      const s = state.session;
 
       if(
-        s?.mode==='exam'&&
-        !s.finished&&
-        s.minutes&&
-        Date.now()-s.start>=
-        s.minutes*60000
+        s?.mode === 'exam' &&
+        !s.finished &&
+        s.minutes &&
+        Date.now()-s.start >= s.minutes*60000
       ){
         finishExam();
-      }else if(s?.mode==='exam'){
+      }else if(s?.mode === 'exam'){
         drawMain();
       }
     }
@@ -3306,9 +3779,10 @@ renderer.setAnimationLoop(()=>{
   renderer.render(scene,camera);
 });
 
-// =====================================================
-// ENTRADA E SAÍDA DE REALIDADE VIRTUAL
-// =====================================================
+
+// ============================================================
+// 25. ENTRADA E SAÍDA DE VR
+// ============================================================
 
 async function enterVR(){
   try{
@@ -3317,53 +3791,62 @@ async function enterVR(){
       return;
     }
 
-    if(
-      !navigator.xr||
-      !await navigator.xr.isSessionSupported(
-        'immersive-vr'
-      )
-    ){
+    if(!navigator.xr){
       throw Error(
-        'WebXR imersivo não disponível neste navegador'
+        'WebXR não está disponível neste navegador.'
       );
     }
 
-    const session=await navigator.xr.requestSession(
-      'immersive-vr',
-      {
-        optionalFeatures:[
-          'local-floor',
-          'hand-tracking',
-          'bounded-floor'
-        ]
-      }
-    );
+    const supported =
+      await navigator.xr.isSessionSupported(
+        'immersive-vr'
+      );
+
+    if(!supported){
+      throw Error(
+        'Realidade virtual imersiva não suportada.'
+      );
+    }
+
+    const session =
+      await navigator.xr.requestSession(
+        'immersive-vr',
+        {
+          optionalFeatures:[
+            'local-floor',
+            'hand-tracking',
+            'bounded-floor'
+          ]
+        }
+      );
 
     await renderer.xr.setSession(session);
 
-    $('vrButton').textContent='SAIR DO VR';
+    $('vrButton').textContent = 'SAIR DO VR';
 
     session.addEventListener('end',()=>{
-      $('vrButton').textContent='ENTRAR EM VR';
-      dragging=null;
+      $('vrButton').textContent = 'ENTRAR EM VR';
+      dragging = null;
     });
 
   }catch(e){
-    note(
-      'Não foi possível entrar em VR: '+e.message
-    );
+    note('Erro ao entrar em VR: '+e.message);
   }
 }
 
-// =====================================================
-// EVENTOS DO APLICATIVO
-// =====================================================
 
-for(const [p,label] of pages){
-  const b=button(
-    label,()=>go(p),$('navigation')
+// ============================================================
+// 26. EVENTOS DA INTERFACE
+// ============================================================
+
+for(const [id,label] of pages){
+  const b = button(
+    label,
+    ()=>go(id),
+    $('navigation')
   );
-  b.dataset.page=p;
+
+  b.dataset.page = id;
 }
 
 environments.forEach((name,i)=>{
@@ -3372,33 +3855,44 @@ environments.forEach((name,i)=>{
   );
 });
 
-$('environment').onchange=()=>{
+$('environment').onchange = ()=>{
   setEnvironment(
-    +$('environment').value
+    Number($('environment').value)
   );
 };
 
-$('lighting').onchange=()=>{
-  state.settings.lighting=$('lighting').value;
+$('lighting').onchange = ()=>{
+  state.settings.lighting =
+    $('lighting').value;
+
   applyLight();
   safeStore();
 };
 
-$('quality').onchange=()=>{
-  state.settings.quality=$('quality').value;
+$('quality').onchange = ()=>{
+  state.settings.quality =
+    $('quality').value;
+
   configureQuality();
   safeStore();
 };
 
 for(const key of [
-  'fontSize','distance','panelHeight',
-  'panelScale','speed','snap'
+  'fontSize',
+  'distance',
+  'panelHeight',
+  'panelScale',
+  'speed',
+  'snap'
 ]){
-  $(key).oninput=()=>{
-    state.settings[key]=+$(key).value;
+  $(key).oninput = ()=>{
+    state.settings[key] =
+      Number($(key).value);
 
     if([
-      'distance','panelHeight','panelScale'
+      'distance',
+      'panelHeight',
+      'panelScale'
     ].includes(key)){
       panelPositionReset();
     }
@@ -3408,48 +3902,57 @@ for(const key of [
   };
 }
 
-$('resetPanels').onclick=resetPanelPositions;
-$('vrButton').onclick=enterVR;
-$('reload').onclick=loadBank;
+$('resetPanels').onclick = resetPanelPositions;
+$('vrButton').onclick = enterVR;
+$('reload').onclick = loadBank;
 
 for(const name of [
-  'subject','topic','difficulty'
+  'subject',
+  'topic',
+  'difficulty'
 ]){
-  $(name).onchange=()=>{
+  $(name).onchange = ()=>{
     newSession(
-      page==='exam'
-        ?'exam'
-        :page==='flash'
-          ?'flash'
-          :page==='review'
-            ?'review'
-            :'study'
+      page === 'exam'
+        ? 'exam'
+        : page === 'flash'
+          ? 'flash'
+          : page === 'review'
+            ? 'review'
+            : 'study'
     );
   };
 }
 
-$('search').oninput=()=>{
+$('search').oninput = ()=>{
   newSession('study');
 };
 
-$('examCount').onchange=()=>{
-  if(page==='exam')newSession('exam');
+$('examCount').onchange = ()=>{
+  if(page === 'exam'){
+    newSession('exam');
+  }
 };
 
-$('examTime').onchange=()=>{
-  if(page==='exam')newSession('exam');
+$('examTime').onchange = ()=>{
+  if(page === 'exam'){
+    newSession('exam');
+  }
 };
 
-$('examFeedback').onchange=()=>{
-  if(page==='exam')newSession('exam');
+$('examFeedback').onchange = ()=>{
+  if(page === 'exam'){
+    newSession('exam');
+  }
 };
 
-// =====================================================
-// DEMONSTRAÇÃO E IMPORTAÇÃO OPCIONAL
-// =====================================================
 
-$('demo').onclick=()=>{
-  const a=[
+// ============================================================
+// 27. DEMONSTRAÇÃO E IMPORTAÇÃO
+// ============================================================
+
+$('demo').onclick = ()=>{
+  const demonstration = [
     {
       id:'demo_1',
       disciplina:'Direito Constitucional',
@@ -3484,8 +3987,9 @@ $('demo').onclick=()=>{
     }
   ];
 
-  const result=merge(
-    extract({DEMONSTRACAO:a}),false
+  const result = merge(
+    extract({DEMONSTRACAO:demonstration}),
+    false
   );
 
   note(
@@ -3494,44 +3998,47 @@ $('demo').onclick=()=>{
   );
 };
 
-$('upload').onchange=async e=>{
-  const all=[];
+$('upload').onchange = async event=>{
+  const all = [];
 
-  for(const f of e.target.files){
+  for(const file of event.target.files){
     try{
-      if(f.size>10000000){
-        throw Error('Arquivo > 10 MB');
+      if(file.size > 10000000){
+        throw Error('Arquivo acima de 10 MB');
       }
 
-      all.push(
-        ...extract(
-          JSON.parse(await f.text())
-        )
+      const data = JSON.parse(
+        await file.text()
       );
+
+      all.push(...extract(data));
+
     }catch(err){
       note(
-        'Erro em '+f.name+': '+err.message
+        'Erro em '+file.name+': '+err.message
       );
     }
   }
 
-  const r=merge(all,false);
+  const result = merge(all,false);
 
   note(
-    `Importação: ${r.total} questões.`
+    `Importação: ${result.total} questões.`
   );
 };
 
-$('focus').onclick=()=>{
+$('focus').onclick = ()=>{
   document.body.classList.toggle('focus');
 };
 
-$('reading').onclick=()=>{
-  state.settings.fontSize=clamp(
-    +state.settings.fontSize+10,90,145
+$('reading').onclick = ()=>{
+  state.settings.fontSize = clamp(
+    Number(state.settings.fontSize)+10,
+    90,145
   );
 
-  $('fontSize').value=state.settings.fontSize;
+  $('fontSize').value =
+    state.settings.fontSize;
 
   safeStore();
   updateVR();
@@ -3539,32 +4046,34 @@ $('reading').onclick=()=>{
   document.body.classList.toggle('focus');
 };
 
-$('backup').onclick=exportBackup;
-$('csv').onclick=exportCSV;
+$('backup').onclick = exportBackup;
+$('csv').onclick = exportCSV;
 
-$('restore').onchange=async e=>{
+$('restore').onchange = async event=>{
   try{
-    const f=e.target.files[0];
+    const file = event.target.files[0];
 
-    if(!f||f.size>5000000){
+    if(!file || file.size > 5000000){
       throw Error(
-        'Backup inválido ou muito grande'
+        'Backup inválido ou muito grande.'
       );
     }
 
-    const obj=JSON.parse(await f.text());
+    const obj = JSON.parse(
+      await file.text()
+    );
 
     if(
-      !obj.state||
-      !Array.isArray(obj.state.history)||
+      !obj.state ||
+      !Array.isArray(obj.state.history) ||
       !Array.isArray(obj.state.favorites)
     ){
       throw Error(
-        'Estrutura do backup inválida'
+        'Estrutura do backup inválida.'
       );
     }
 
-    state={
+    state = {
       ...defaultState(),
       ...obj.state,
       settings:{
@@ -3575,28 +4084,31 @@ $('restore').onchange=async e=>{
 
     safeStore();
     syncSettings();
-    setEnvironment(+state.settings.env);
-    render();
 
+    setEnvironment(
+      Number(state.settings.env)
+    );
+
+    render();
     note('Backup restaurado.');
 
   }catch(err){
-    note(
-      'Falha no backup: '+err.message
-    );
+    note('Falha no backup: '+err.message);
   }
 };
 
-$('resetStats').onclick=()=>{
+$('resetStats').onclick = ()=>{
   if(!confirm(
     'Apagar histórico, revisões e simulados?'
-  ))return;
+  )){
+    return;
+  }
 
-  state.history=[];
-  state.reviews={};
-  state.favorites=[];
-  state.exams=[];
-  state.session=null;
+  state.history = [];
+  state.reviews = {};
+  state.favorites = [];
+  state.exams = [];
+  state.session = null;
 
   safeStore();
   newSession('study');
@@ -3604,20 +4116,24 @@ $('resetStats').onclick=()=>{
   note('Progresso zerado.');
 };
 
-// =====================================================
+
+// ============================================================
 // INICIALIZAÇÃO FINAL
-// =====================================================
+// ============================================================
 
 async function start(){
   restoreState();
 
-  db=await openDB();
+  db = await openDB();
 
   if(!state.history.length){
-    const saved=await idbGet('progress');
+    const saved = await idbGet('progress');
 
-    if(saved&&Array.isArray(saved.history)){
-      state={
+    if(
+      saved &&
+      Array.isArray(saved.history)
+    ){
+      state = {
         ...defaultState(),
         ...saved,
         settings:{
@@ -3629,13 +4145,17 @@ async function start(){
   }
 
   syncSettings();
-  buildWorld(+state.settings.env);
+
+  buildWorld(
+    Number(state.settings.env)
+  );
+
   fillFilters();
 
-  const cache=await idbGet('bank');
+  const cache = await idbGet('bank');
 
-  if(Array.isArray(cache)&&cache.length){
-    questions=cache;
+  if(Array.isArray(cache) && cache.length){
+    questions = cache;
     fillFilters();
   }
 
@@ -3648,10 +4168,12 @@ async function start(){
   await loadBank();
 }
 
-start().catch(e=>{
-  console.error(e);
+start().catch(error=>{
+  console.error(error);
+
   note(
-    'Erro de inicialização: '+e.message
+    'Erro de inicialização: '+
+    error.message
   );
 });
 
