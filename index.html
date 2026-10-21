@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#07150f">
-<title>PMSC 2026 — Academia Militar Imersiva (Quest 3S Realista)</title>
+<title>PMSC 2026 — Academia Militar Imersiva (Quest 3S 1832×1920)</title>
 
 <style>
 :root{--bg:#080e11;--card:#14231f;--input:#203b32;--text:#f7fff9;--line:#456c5d;--accent:#98f8bb;--muted:#d0e2d5}
@@ -72,7 +72,7 @@ label{display:block;font-size:13px;color:var(--muted);margin:12px 0 5px}
   <label>Iluminação</label>
   <select id="lighting"><option value="day">Dia</option><option value="night">Noite</option></select>
   <label>Qualidade gráfica</label>
-  <select id="quality"><option value="low">Econômica</option><option value="medium" selected>Equilibrada</option><option value="high">Alta (Quest 3S)</option></select>
+  <select id="quality"><option value="low">Econômica</option><option value="medium">Equilibrada</option><option value="high" selected>Alta (Quest 3S 1832×1920)</option></select>
   <label>Fonte no VR</label><input id="fontSize" type="range" min="90" max="145" value="115">
   <label>Distância do painel central</label><input id="distance" type="range" min="1.8" max="4" step=".1" value="2.5">
   <label>Altura do painel central</label><input id="panelHeight" type="range" min="1" max="2.5" step=".1" value="1.65">
@@ -310,7 +310,7 @@ function render(){
     el('p','Ajuste fontes, distância, ambiente e velocidade no menu lateral. Em VR, segure o botão grip apontando para um painel e mova a mão.',c);
     el('p','A pinça também pode mover o painel pela barra superior. Use o gatilho ou a pinça para selecionar.',c);
     el('p','Toques de corneta militares são reproduzidos ao entrar em VR, ao finalizar um simulado e nas respostas (fora do simulado). Ajuste o volume no menu lateral.',c);
-    el('p','Materiais PBR realistas, texturas 512–1024, sombras suaves e geometrias detalhadas otimizadas para Meta Quest 3S.',c);
+    el('p','Otimizado para Meta Quest 3S: 1832×1920 px/olho (~20 PPD), FOV 96°×90°, até 120 Hz, lentes Fresnel. Framebuffer nativo + leve supersampling na qualidade Alta. Geometrias multi-parte e materiais PBR.',c);
     button('Restaurar posição dos painéis',resetPanelPositions,c);
     button('Modo foco',()=>document.body.classList.toggle('focus'),c);
     button('Modo leitura',()=>document.body.classList.toggle('reading'),c);
@@ -446,7 +446,7 @@ const scene=new THREE.Scene();
 scene.background=new THREE.Color('#7a9aa8');
 scene.fog=new THREE.FogExp2(0x8aafb2,0.012);
 
-const camera=new THREE.PerspectiveCamera(70,1,.05,180);
+const camera=new THREE.PerspectiveCamera(82,1,.05,200);
 camera.position.set(0,1.65,0);
 const rig=new THREE.Group();rig.add(camera);scene.add(rig);
 
@@ -459,7 +459,7 @@ renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate=false;
 renderer.shadowMap.needsUpdate=true;
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setPixelRatio(Math.min(devicePixelRatio,2.5));
 $('scene').append(renderer.domElement);
 
 // Iluminação realista
@@ -2044,16 +2044,32 @@ function setEnvironment(n){
   safeStore();updateVR();
 }
 function configureQuality(){
+  // Otimizado para Meta Quest 3S: 1832×1920 por olho, ~20 PPD, FOV 96°H/90°V, até 120 Hz
   const q=state.settings.quality;
-  renderer.setPixelRatio(q==='low'?1:q==='high'?Math.min(devicePixelRatio,2):Math.min(devicePixelRatio,1.6));
-  if(typeof renderer.xr.setFoveation==='function')renderer.xr.setFoveation(q==='low'?0.7:q==='high'?0.3:0.48);
-  const res=q==='low'?512:q==='high'?2048:1024;
-  if(sun.shadow.mapSize.x!==res){
-    if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}
-    sun.shadow.mapSize.set(res,res);
-    renderer.shadowMap.needsUpdate=true;
+  // Pixel ratio: no headset o XR gerencia; no desktop limitar
+  const pr = q==='low' ? 1 : q==='high' ? Math.min(devicePixelRatio, 2.5) : Math.min(devicePixelRatio, 1.75);
+  renderer.setPixelRatio(pr);
+  // Foveated rendering: low foveation = mais nítido nas bordas (Quest 3S Fresnel já perde nas bordas)
+  if(typeof renderer.xr.setFoveation==='function'){
+    renderer.xr.setFoveation(q==='low' ? 0.75 : q==='high' ? 0.15 : 0.4);
   }
-  if(!renderer.xr.isPresenting)renderer.xr.setFramebufferScaleFactor(q==='low'?0.85:q==='high'?1.25:1.05);
+  // Shadow map: 2048 em Alta aproveita a densidade de ~20 PPD
+  const res = q==='low' ? 512 : q==='high' ? 2048 : 1024;
+  if(sun.shadow.mapSize.x !== res){
+    if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map = null; }
+    sun.shadow.mapSize.set(res, res);
+    renderer.shadowMap.needsUpdate = true;
+  }
+  // Framebuffer scale: 1.0 ≈ nativo 1832×1920; >1 supersampling (custa GPU)
+  // Alta: 1.15 leve supersampling para compensar lentes Fresnel
+  const fb = q==='low' ? 0.8 : q==='high' ? 1.15 : 1.0;
+  if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
+    renderer.xr.setFramebufferScaleFactor(fb);
+  }
+  // Prefer 90Hz+ quando disponível (Quest 3S até 120)
+  try {
+    if(renderer.xr.getSession){ /* session rate set on enter */ }
+  } catch(e){}
 }
 function syncSettings(){
   for(const k of ['lighting','quality','fontSize','distance','panelHeight','panelScale','speed','snap','volume'])$(k).value=state.settings[k];
@@ -2156,11 +2172,24 @@ async function enterVR(){
   try{
     if(renderer.xr.isPresenting){await renderer.xr.getSession().end();return;}
     if(!navigator.xr||!await navigator.xr.isSessionSupported('immersive-vr'))throw Error('WebXR imersivo não disponível neste navegador');
-    const session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','hand-tracking','bounded-floor']});
+    // Quest 3S: pedir taxa alta (90/120 Hz) e features de tracking
+    const session = await navigator.xr.requestSession('immersive-vr', {
+      optionalFeatures: ['local-floor', 'hand-tracking', 'bounded-floor', 'layers'],
+      // preferredRate quando suportado pelo runtime
+    });
+    // Preferir 90 ou 120 Hz se o headset reportar
+    if(session.updateTargetFrameRate){
+      const rates = session.supportedFrameRates || [90, 120, 72];
+      const prefer = rates.includes(120) ? 120 : rates.includes(90) ? 90 : rates[0];
+      try { await session.updateTargetFrameRate(prefer); } catch(e){}
+    }
     await renderer.xr.setSession(session);
+    // Reaplica escala de framebuffer nativa Quest 3S (1832×1920/olho)
+    configureQuality();
     $('vrButton').textContent='SAIR DO VR';
     session.addEventListener('end',()=>{$('vrButton').textContent='ENTRAR EM VR';dragging=null;});
     playFanfare();
+    note('VR ativo • Quest 3S 1832×1920 • qualidade '+state.settings.quality);
   }catch(e){note('Não foi possível entrar em VR: '+e.message);}
 }
 
