@@ -104,12 +104,10 @@ body.focus .layout{grid-template-columns:1fr}
 <aside>
  <nav id="menu"></nav>
  <hr>
-
  <div class="field">
   <label for="environment">Ambiente militar</label>
   <select id="environment"></select>
  </div>
-
  <div class="field">
   <label for="theme">Tema visual</label>
   <select id="theme">
@@ -120,7 +118,6 @@ body.focus .layout{grid-template-columns:1fr}
    <option value="contrast">Alto contraste</option>
   </select>
  </div>
-
  <div class="field">
   <label for="quality">Qualidade 3D</label>
   <select id="quality">
@@ -129,12 +126,10 @@ body.focus .layout{grid-template-columns:1fr}
    <option value="high">Alta</option>
   </select>
  </div>
-
  <div class="controls">
   <button id="refresh">Atualizar JSON</button>
   <button id="vr">Entrar em VR</button>
  </div>
-
  <div id="sidebarMetrics"></div>
 </aside>
 
@@ -148,7 +143,6 @@ body.focus .layout{grid-template-columns:1fr}
    <button id="resetView">Centralizar</button>
   </div>
  </section>
-
  <section id="content" class="card"></section>
 </main>
 </div>
@@ -168,7 +162,7 @@ import * as THREE from "three";
 import {VRButton} from "three/addons/webxr/VRButton.js";
 
 /* ═══════════════════════════════════════════════════════════════════
-   1. CONFIG
+   CONFIG
 ═══════════════════════════════════════════════════════════════════ */
 
 const APP={
@@ -204,10 +198,7 @@ let state,questions=[],page="Início",currentIndex=0,studyPool=[];
 let exam=null,examTimerId=null,finishingExam=false,flashBack=false,loadBusy=false;
 
 function status(m){ $("status").textContent=m; }
-function save(){
- try{ localStorage.setItem(APP.storageKey,JSON.stringify(state)); }catch(e){}
-}
-
+function save(){ try{ localStorage.setItem(APP.storageKey,JSON.stringify(state)); }catch(e){} }
 function cloneDefaults(){ return JSON.parse(JSON.stringify(defaults)); }
 
 const StorageManager={
@@ -239,20 +230,17 @@ const StorageManager={
 state=StorageManager.load();
 
 /* ═══════════════════════════════════════════════════════════════════
-   2. PARSER ULTRA-PERMISSIVO
+   PARSER
 ═══════════════════════════════════════════════════════════════════ */
 
 function looksLikeQuestion(obj){
  if(!obj||typeof obj!=="object"||Array.isArray(obj)) return false;
  const qKeys=["pergunta","enunciado","question","questao","texto","statement","title","text","descricao","wording","body"];
- const hasQ=qKeys.some(k=>obj[k]&&typeof obj[k]==="string"&&obj[k].trim().length>=3);
- if(!hasQ) return false;
+ if(!qKeys.some(k=>obj[k]&&typeof obj[k]==="string"&&obj[k].trim().length>=3)) return false;
  const oKeys=["alternativas","opcoes","options","choices","respostas","items","opcoes_resposta","alternatives","possibilidades","answers"];
- const hasO=oKeys.some(k=>obj[k]&&(Array.isArray(obj[k])||typeof obj[k]==="object"||typeof obj[k]==="string"));
- if(!hasO){
+ if(!oKeys.some(k=>obj[k]&&(Array.isArray(obj[k])||typeof obj[k]==="object"||typeof obj[k]==="string"))){
   const letters=["a","b","c","d","e","A","B","C","D","E"];
-  const c=letters.filter(l=>obj[l]!==undefined).length;
-  if(c<2) return false;
+  if(letters.filter(l=>obj[l]!==undefined).length<2) return false;
  }
  return true;
 }
@@ -370,31 +358,23 @@ function analyzeStructure(data){
  if(Array.isArray(data)){
   if(data.length===0) return "array vazio";
   const f=data[0];
-  if(typeof f==="object"&&f!==null){
-   return `array de ${data.length} · chaves: [${Object.keys(f).slice(0,6).join(", ")}]`;
-  }
-  return `array de ${data.length} item(ns)`;
+  if(typeof f==="object"&&f!==null) return `array[${data.length}] · chaves: [${Object.keys(f).slice(0,6).join(", ")}]`;
+  return `array[${data.length}]`;
  }
- if(typeof data==="object"){
-  return `objeto · chaves: [${Object.keys(data).slice(0,8).join(", ")}]`;
- }
+ if(typeof data==="object") return `objeto · chaves: [${Object.keys(data).slice(0,8).join(", ")}]`;
  return typeof data;
 }
 
 const QuestionManager={
  deduplicate(list){
   const ids=new Set();
-  return list.filter(q=>{
-   if(ids.has(q.id)) return false;
-   ids.add(q.id);
-   return true;
-  });
+  return list.filter(q=>{ if(ids.has(q.id)) return false; ids.add(q.id); return true; });
  },
  find(id){ return questions.find(q=>q.id===id); }
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   3. CARREGAMENTO DO BANCO
+   CARREGAMENTO
 ═══════════════════════════════════════════════════════════════════ */
 
 function fetchWithTimeout(url,opts={},ms=10000){
@@ -406,7 +386,6 @@ function fetchWithTimeout(url,opts={},ms=10000){
    .catch(e=>{clearTimeout(t);rej(e);});
  });
 }
-
 async function fetchJson(url){
  const r=await fetchWithTimeout(url,{},10000);
  if(!r.ok) throw Error(`HTTP ${r.status}`);
@@ -455,13 +434,12 @@ const ContentRepository={
       const r=await fetchWithTimeout(url,{headers:{Accept:"application/vnd.github+json"}},10000);
       if(!r.ok){
        if(r.status===404) err(`${branch}: repositório/branch inexistente`);
-       else if(r.status===403) err(`${branch}: rate limit API GitHub`);
+       else if(r.status===403) err(`${branch}: rate limit API`);
        else err(`${branch}: HTTP ${r.status}`);
        continue;
       }
       const list=await r.json();
       if(!Array.isArray(list)){ err("API não retornou lista"); continue; }
-
       const jsonFiles=list.filter(f=>
        f.type==="file"&&f.name.toLowerCase().endsWith(".json")&&
        !f.name.startsWith(".")&&f.name!=="manifest.json"&&
@@ -469,7 +447,6 @@ const ContentRepository={
       );
       debug.filesFound.push(...jsonFiles.map(f=>f.name));
       step(`${jsonFiles.length} .json em ${branch}: ${jsonFiles.map(f=>f.name).join(", ")}`);
-
       for(const file of jsonFiles){
        try{
         const json=await fetchJson(file.download_url);
@@ -481,12 +458,8 @@ const ContentRepository={
          if(q){ loaded.push(q); ok++; } else rej++;
         }
         debug.filesInfo.push({name:file.name,branch,structure:est,candidates:items.length,valid:ok,rejected:rej});
-        if(ok>0){
-         debug.filesLoaded.push(file.name);
-         step(`✓ ${file.name}: ${ok} válidas`);
-        } else {
-         step(`✗ ${file.name}: ${items.length} candidatos · 0 válidas`);
-        }
+        if(ok>0){ debug.filesLoaded.push(file.name); step(`✓ ${file.name}: ${ok} válidas`); }
+        else step(`✗ ${file.name}: ${items.length} candidatos · 0 válidas`);
        }catch(e){ err(`${file.name}: ${e.message}`); }
       }
       if(loaded.length) break;
@@ -535,7 +508,7 @@ const ContentRepository={
    if(loaded.length){
     questions=loaded;
     try{ localStorage.setItem(APP.storageKey+"_BANK",JSON.stringify(questions)); }catch{}
-    status(`✅ ${loaded.length} questões carregadas · ${debug.filesLoaded.length} arquivo(s)`);
+    status(`✅ ${loaded.length} questões · ${debug.filesLoaded.length} arquivo(s)`);
     if(vrManager && vrManager.isActive()) vrManager.showHome();
    }else{
     status("❌ 0 questões. Veja Banco de Questões.");
@@ -552,7 +525,7 @@ const ContentRepository={
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   4. STATS / REVIEW / SM-2
+   STATS / REVIEW / SM-2
 ═══════════════════════════════════════════════════════════════════ */
 
 const StatisticsManager={
@@ -600,8 +573,7 @@ const SpacedRepetition={
   let r=o.repetitions,i=o.interval,e=o.ease;
   if(quality<3){ r=0; i=1; } else {
    r++;
-   if(r===1) i=1;
-   else if(r===2) i=6;
+   if(r===1) i=1; else if(r===2) i=6;
    else i=Math.max(1,Math.round(i*e));
   }
   e=Math.max(1.3,e+(.1-(5-quality)*(.08+(5-quality)*.02)));
@@ -611,7 +583,7 @@ const SpacedRepetition={
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   5. UI 2D (helpers + telas)
+   UI 2D
 ═══════════════════════════════════════════════════════════════════ */
 
 function element(tag,text,parent,cls){
@@ -621,23 +593,14 @@ function element(tag,text,parent,cls){
  if(parent) parent.append(n);
  return n;
 }
-function button(text,cb,parent){
- const n=element("button",text,parent);
- n.addEventListener("click",cb);
- return n;
-}
-function clearContent(title){
- const r=$("content"); r.replaceChildren();
- element("h2",title,r);
- return r;
-}
+function button(text,cb,parent){ const n=element("button",text,parent); n.addEventListener("click",cb); return n; }
+function clearContent(title){ const r=$("content"); r.replaceChildren(); element("h2",title,r); return r; }
 function paragraph(t,p){ return element("p",t,p); }
 function sectionTitle(t,p){ return element("h3",t,p); }
 function field(label,type,value,parent){
  const w=element("div",null,parent,"field");
  element("label",label,w);
- const i=element("input",null,w);
- i.type=type; i.value=value;
+ const i=element("input",null,w); i.type=type; i.value=value;
  return i;
 }
 function selectField(label,values,parent){
@@ -645,9 +608,7 @@ function selectField(label,values,parent){
  element("label",label,w);
  const s=element("select",null,w);
  for(const v of values){
-  const o=document.createElement("option");
-  o.value=v; o.textContent=v;
-  s.append(o);
+  const o=document.createElement("option"); o.value=v; o.textContent=v; s.append(o);
  }
  return s;
 }
@@ -960,7 +921,7 @@ function renderBank(){
   const h=element("div",null,root,"notice");
   paragraph("1. Confirme que o repositório é público",h);
   paragraph("2. Verifique o nome exato do arquivo .json na raiz",h);
-  paragraph("3. Cole a URL raw funcionando em 'URL direta' acima",h);
+  paragraph("3. Cole a URL raw em 'URL direta' acima",h);
   const l=element("a","🔗 Abrir repositório",h);
   l.href="https://github.com/"+APP.repo; l.target="_blank";
   l.style.cssText="color:var(--accent);display:block;margin-top:8px";
@@ -994,19 +955,17 @@ function download(name,content,type){
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   6. ⭐ MOTOR VR — Painéis 3D interativos
+   ⭐ VR — Painéis 3D com texto auto-ajustado
 ═══════════════════════════════════════════════════════════════════ */
 
 let scene,camera,renderer,rig,room;
 const materials=new Map();
+const PX_PER_M = 400;
 
 function material(color){
- if(!materials.has(color)){
-  materials.set(color,new THREE.MeshStandardMaterial({color,roughness:.8}));
- }
+ if(!materials.has(color)) materials.set(color,new THREE.MeshStandardMaterial({color,roughness:.8}));
  return materials.get(color);
 }
-
 function cube(x,y,z,w,h,d,color){
  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(color));
  m.position.set(x,y,z); room.add(m); return m;
@@ -1031,7 +990,6 @@ function bed(x,z){
  cube(x,1.45,z,1.6,.18,2.2,"#667e77");
  for(const dx of [-.7,.7]) for(const dz of [-1,1]) cube(x+dx,1,z+dz,.09,2,.09,"#a3aaa7");
 }
-
 function disposeRoom(){
  if(!room) return;
  scene.remove(room);
@@ -1054,9 +1012,7 @@ function changeEnvironment(index){
  }
  if(index===1){
   cube(0,2.5,-10.7,7,2.5,.08,"#0e3024");
-  for(let x=-4;x<=4;x+=2) for(let z=-5;z<=2;z+=2){
-   cube(x,.75,z,1.4,.15,.8,"#3a2a1a");
-  }
+  for(let x=-4;x<=4;x+=2) for(let z=-5;z<=2;z+=2) cube(x,.75,z,1.4,.15,.8,"#3a2a1a");
   brazilFlag(-8,-9);
  }
  if(index===2){
@@ -1075,7 +1031,58 @@ function changeEnvironment(index){
  renderer.render(scene,camera);
 }
 
-/* ── Classe VRPanel ── */
+/* ── Helpers de texto com AUTO-FIT ── */
+
+/**
+ * Desenha texto em um canvas com auto-fit:
+ * - Tenta fontSizeMax, reduz até caber em (maxW × maxH)
+ * - Faz wrap por pixels medidos
+ * - Trunca com "…" só se fontSize chegar ao mínimo
+ */
+function drawFittedText(ctx,text,maxW,maxH,opts){
+ opts=opts||{};
+ const fontSizeMax=opts.fontSizeMax||64;
+ const fontSizeMin=opts.fontSizeMin||18;
+ const lineHeightFactor=opts.lineHeightFactor||1.2;
+ const bold=opts.bold!==false;
+ const maxLines=opts.maxLines||10;
+
+ let fs=fontSizeMax;
+ let lines=[];
+ let lh=0;
+
+ while(fs>=fontSizeMin){
+  ctx.font=`${bold?'bold ':''}${fs}px system-ui, Arial`;
+  lines=[];
+  let ln='';
+  for(const wd of String(text).split(/\s+/)){
+   const t=ln?ln+' '+wd:wd;
+   if(ctx.measureText(t).width>maxW&&ln){ lines.push(ln); ln=wd; }
+   else ln=t;
+  }
+  if(ln) lines.push(ln);
+  lh=fs*lineHeightFactor;
+  if(lines.length<=maxLines && lines.length*lh<=maxH) break;
+  fs-=2;
+ }
+
+ if(lines.length>maxLines){
+  lines=lines.slice(0,maxLines);
+  let last=lines[maxLines-1];
+  while(ctx.measureText(last+'…').width>maxW && last.length>0) last=last.slice(0,-1);
+  lines[maxLines-1]=last+'…';
+ } else if(lines.length*lh>maxH){
+  const maxL=Math.max(1,Math.floor(maxH/lh));
+  if(lines.length>maxL){
+   lines=lines.slice(0,maxL);
+   let last=lines[maxL-1];
+   while(ctx.measureText(last+'…').width>maxW && last.length>0) last=last.slice(0,-1);
+   lines[maxL-1]=last+'…';
+  }
+ }
+
+ return {lines,lh,fs};
+}
 
 class VRPanel {
  constructor(width,height,position,rotationY=0){
@@ -1085,94 +1092,82 @@ class VRPanel {
   this.width=width; this.height=height;
   this.clickables=[];
 
+  const cw=Math.round(width*PX_PER_M);
+  const ch=Math.round(height*PX_PER_M);
   const cv=document.createElement('canvas');
-  cv.width=2048;
-  cv.height=Math.round(2048*height/width);
+  cv.width=cw; cv.height=ch;
   const ctx=cv.getContext('2d');
-  const grad=ctx.createLinearGradient(0,0,0,cv.height);
-  grad.addColorStop(0,'#0e2519');
-  grad.addColorStop(1,'#071711');
-  ctx.fillStyle=grad;
-  ctx.fillRect(0,0,cv.width,cv.height);
-  ctx.strokeStyle='#54e5a0';
-  ctx.lineWidth=10;
-  ctx.strokeRect(5,5,cv.width-10,cv.height-10);
+  const grad=ctx.createLinearGradient(0,0,0,ch);
+  grad.addColorStop(0,'#0e2519'); grad.addColorStop(1,'#071711');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,cw,ch);
+  ctx.strokeStyle='#54e5a0'; ctx.lineWidth=10; ctx.strokeRect(5,5,cw-10,ch-10);
 
   const tex=new THREE.CanvasTexture(cv);
   tex.colorSpace=THREE.SRGBColorSpace;
-  tex.minFilter=THREE.LinearFilter;
-  tex.magFilter=THREE.LinearFilter;
+  tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter;
 
-  const bgMesh=new THREE.Mesh(
-   new THREE.PlaneGeometry(width,height),
-   new THREE.MeshBasicMaterial({map:tex})
-  );
-  this.group.add(bgMesh);
+  const bg=new THREE.Mesh(new THREE.PlaneGeometry(width,height),new THREE.MeshBasicMaterial({map:tex}));
+  this.group.add(bg);
   this.bgTexture=tex;
  }
 
  addButton(x,y,w,h,text,onClick,opts={}){
-  const cw=Math.round(w*350);
-  const ch=Math.round(h*350);
+  opts=opts||{};
+  const cw=Math.round(w*PX_PER_M);
+  const ch=Math.round(h*PX_PER_M);
   const cv=document.createElement('canvas');
   cv.width=cw; cv.height=ch;
   const ctx=cv.getContext('2d');
 
-  const bg=opts.bgColor||'#19362a';
-  const bd=opts.borderColor||'#54e5a0';
-  const tx=opts.textColor||'#f1f8f3';
+  // Fundo + borda
+  ctx.fillStyle=opts.bgColor||'#19362a'; ctx.fillRect(0,0,cw,ch);
+  ctx.strokeStyle=opts.borderColor||'#54e5a0'; ctx.lineWidth=4; ctx.strokeRect(2,2,cw-4,ch-4);
 
-  ctx.fillStyle=bg;
-  ctx.fillRect(0,0,cw,ch);
-  ctx.strokeStyle=bd;
-  ctx.lineWidth=6;
-  ctx.strokeRect(3,3,cw-6,ch-6);
+  // Texto com auto-fit
+  const padding=opts.padding||14;
+  const maxW=cw-padding*2;
+  const maxH=ch-padding*2;
+  const align=opts.align||'center';
 
-  ctx.fillStyle=tx;
-  const fs=opts.fontSize||Math.min(ch*0.42,cw*0.16);
+  const {lines,lh,fs}=drawFittedText(ctx,text,maxW,maxH,{
+   fontSizeMax:opts.fontSizeMax||Math.min(ch*0.42,cw*0.09),
+   fontSizeMin:opts.fontSizeMin||16,
+   maxLines:opts.maxLines||2,
+   bold:true,
+   lineHeightFactor:1.15
+  });
+
+  ctx.fillStyle=opts.textColor||'#f1f8f3';
   ctx.font=`bold ${fs}px system-ui, Arial`;
-  ctx.textAlign=opts.align==='left'?'left':'center';
   ctx.textBaseline='middle';
+  if(align==='left') ctx.textAlign='left';
+  else if(align==='right') ctx.textAlign='right';
+  else ctx.textAlign='center';
 
-  const maxW=cw-20;
-  const words=String(text).split(/\s+/);
-  const lines=[]; let ln='';
-  for(const wd of words){
-   const t=ln?ln+' '+wd:wd;
-   if(ctx.measureText(t).width>maxW&&ln){ lines.push(ln); ln=wd; }
-   else ln=t;
-  }
-  if(ln) lines.push(ln);
-
-  const lh=fs*1.2;
-  const startY=ch/2-((lines.length-1)*lh)/2;
-  const startX=opts.align==='left'?10:cw/2;
+  const totalH=lines.length*lh;
+  const startY=ch/2-totalH/2+lh/2;
+  const startX=align==='left'?padding:align==='right'?cw-padding:cw/2;
 
   lines.forEach((l,i)=>ctx.fillText(l,startX,startY+i*lh));
 
   const tex=new THREE.CanvasTexture(cv);
   tex.colorSpace=THREE.SRGBColorSpace;
-  tex.minFilter=THREE.LinearFilter;
-  tex.magFilter=THREE.LinearFilter;
+  tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter;
 
-  const mesh=new THREE.Mesh(
-   new THREE.PlaneGeometry(w,h),
-   new THREE.MeshBasicMaterial({map:tex,transparent:true})
-  );
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true}));
   mesh.position.set(x,y,0.01);
   mesh.userData.onClick=onClick;
   mesh.userData.isButton=true;
   this.group.add(mesh);
   this.clickables.push(mesh);
 
-  // Glow (hover)
+  // Glow
   const glow=new THREE.Mesh(
    new THREE.PlaneGeometry(w+0.03,h+0.03),
-   new THREE.MeshBasicMaterial({color:0x54e5a0,transparent:true,opacity:0.6,side:THREE.DoubleSide})
+   new THREE.MeshBasicMaterial({color:0x54e5a0,transparent:true,opacity:0.55,side:THREE.DoubleSide})
   );
   glow.position.set(x,y,0.005);
   glow.visible=false;
-  glow.userData.isGlow=true;
   this.group.add(glow);
   mesh.userData.glow=glow;
 
@@ -1180,49 +1175,47 @@ class VRPanel {
  }
 
  addText(x,y,w,h,text,opts={}){
-  const cw=Math.round(w*300);
-  const ch=Math.round(h*300);
+  opts=opts||{};
+  const cw=Math.round(w*PX_PER_M);
+  const ch=Math.round(h*PX_PER_M);
   const cv=document.createElement('canvas');
   cv.width=cw; cv.height=ch;
   const ctx=cv.getContext('2d');
 
-  const color=opts.color||'#f1f8f3';
-  const fs=opts.fontSize||42;
-  const bold=opts.bold!==false;
+  const padding=opts.padding||10;
+  const maxW=cw-padding*2;
+  const maxH=ch-padding*2;
   const align=opts.align||'left';
 
-  ctx.fillStyle=color;
-  ctx.font=`${bold?'bold ':''}${fs}px system-ui, Arial`;
+  const {lines,lh,fs}=drawFittedText(ctx,text,maxW,maxH,{
+   fontSizeMax:opts.fontSizeMax||Math.min(ch*0.6,cw*0.12),
+   fontSizeMin:opts.fontSizeMin||14,
+   maxLines:opts.maxLines||8,
+   bold:opts.bold!==false,
+   lineHeightFactor:1.25
+  });
+
+  ctx.fillStyle=opts.color||'#f1f8f3';
+  ctx.font=`${opts.bold!==false?'bold ':''}${fs}px system-ui, Arial`;
   ctx.textBaseline='top';
+  if(align==='left') ctx.textAlign='left';
+  else if(align==='right') ctx.textAlign='right';
+  else ctx.textAlign='center';
 
-  const maxW=cw-20;
-  const words=String(text).split(/\s+/);
-  const lines=[]; let ln='';
-  for(const wd of words){
-   const t=ln?ln+' '+wd:wd;
-   if(ctx.measureText(t).width>maxW&&ln){ lines.push(ln); ln=wd; }
-   else ln=t;
-  }
-  if(ln) lines.push(ln);
+  const totalH=lines.length*lh;
+  let startY=padding;
+  if(opts.valign==='middle') startY=ch/2-totalH/2;
+  else if(opts.valign==='bottom') startY=ch-totalH-padding;
 
-  let tx=10;
-  if(align==='center'){ ctx.textAlign='center'; tx=cw/2; }
-  else if(align==='right'){ ctx.textAlign='right'; tx=cw-10; }
-  else { ctx.textAlign='left'; }
+  const startX=align==='left'?padding:align==='right'?cw-padding:cw/2;
 
-  const lh=fs*1.3;
-  let ty=10;
-  for(const l of lines){ ctx.fillText(l,tx,ty); ty+=lh; }
+  lines.forEach((l,i)=>ctx.fillText(l,startX,startY+i*lh));
 
   const tex=new THREE.CanvasTexture(cv);
   tex.colorSpace=THREE.SRGBColorSpace;
-  tex.minFilter=THREE.LinearFilter;
-  tex.magFilter=THREE.LinearFilter;
+  tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter;
 
-  const mesh=new THREE.Mesh(
-   new THREE.PlaneGeometry(w,h),
-   new THREE.MeshBasicMaterial({map:tex,transparent:true})
-  );
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true}));
   mesh.position.set(x,y,0.01);
   this.group.add(mesh);
   return mesh;
@@ -1239,29 +1232,22 @@ class VRPanel {
  }
 }
 
-/* ── Gerenciador da cena VR ── */
+/* ── VR Manager ── */
 
 const vrManager = {
  panels: [],
  current: null,
  raycaster: new THREE.Raycaster(),
- hoveredButton: null,
- mode: 'home',
  lastHoverTime: 0,
 
  isActive(){ return renderer && renderer.xr.isPresenting; },
 
  clear(){
-  for(const p of this.panels){
-   scene.remove(p.group);
-   p.dispose();
-  }
-  this.panels=[];
-  this.current=null;
-  this.hoveredButton=null;
+  for(const p of this.panels){ scene.remove(p.group); p.dispose(); }
+  this.panels=[]; this.current=null;
  },
 
- createPanel(w,h,z=-1.8){
+ createPanel(w,h,z=-2.0){
   const panel=new VRPanel(w,h,new THREE.Vector3(0,1.6,z),0);
   scene.add(panel.group);
   this.panels.push(panel);
@@ -1271,12 +1257,14 @@ const vrManager = {
 
  showHome(){
   this.clear();
-  this.mode='home';
-  const p=this.createPanel(2.4,1.6);
-  p.addText(0,0.62,2.0,0.2,'PMSC Academy 2026',{bold:true,fontSize:70,align:'center',color:'#54e5a0'});
-  const s=StatisticsManager.summary();
-  p.addText(0,0.42,2.0,0.1,`Questões: ${s.total} · Acertos: ${s.correct} · ${s.rate}%`,{fontSize:38,align:'center'});
+  const p=this.createPanel(2.6,1.9);
 
+  // Cabeçalho
+  p.addText(0,0.74,2.3,0.14,'PMSC Academy 2026',{align:'center',color:'#54e5a0',fontSizeMax:70,valign:'middle'});
+  const s=StatisticsManager.summary();
+  p.addText(0,0.53,2.3,0.10,`Questões: ${s.total} · Acertos: ${s.correct} · ${s.rate}%`,{align:'center',fontSizeMax:38,valign:'middle'});
+
+  // 6 botões em 2 linhas de 3
   const buttons=[
    {l:'📚 Estudar',a:()=>this.showStudy()},
    {l:'📝 Simulado',a:()=>this.showExamMenu()},
@@ -1288,151 +1276,165 @@ const vrManager = {
   const cols=3;
   buttons.forEach((btn,i)=>{
    const r=Math.floor(i/cols), c=i%cols;
-   const x=(c-(cols-1)/2)*0.75;
-   const y=0.15-r*0.28;
-   p.addButton(x,y,0.7,0.22,btn.l,btn.a,{fontSize:55});
+   const x=(c-(cols-1)/2)*0.78;
+   const y=0.22-r*0.30;
+   p.addButton(x,y,0.72,0.24,btn.l,btn.a,{fontSizeMax:44,fontSizeMin:18,maxLines:2});
   });
 
-  p.addButton(-0.6,-0.65,0.8,0.18,'❌ Sair do VR',()=>{
+  // Botões de saída
+  p.addButton(-0.65,-0.68,0.9,0.18,'❌ Sair do VR',()=>{
    const s=renderer.xr.getSession(); if(s) s.end();
-  },{bgColor:'#4b2525',borderColor:'#ff7777',fontSize:42});
-  p.addButton(0.6,-0.65,0.8,0.18,'🏠 Desktop',()=>{
+  },{bgColor:'#4b2525',borderColor:'#ff7777',fontSizeMax:38});
+
+  p.addButton(0.65,-0.68,0.9,0.18,'🏠 Desktop',()=>{
    const s=renderer.xr.getSession(); if(s) s.end();
-  },{fontSize:42});
+  },{fontSizeMax:38});
  },
 
  showStudy(){
   this.clear();
-  this.mode='study';
   if(!questions.length){ this.showHome(); return; }
   const q=questions[currentIndex%questions.length];
   const answered=state.session?.answeredId===q.id;
   const chosen=state.session?.choice;
 
-  const p=this.createPanel(2.8,2.0);
-  p.addText(0,0.85,2.4,0.1,`${q.disciplina} · ${q.assunto}`,{fontSize:36,align:'center',color:'#54e5a0'});
-  p.addText(0,0.55,2.4,0.5,q.enunciado,{fontSize:44,align:'left'});
+  const p=this.createPanel(2.8,2.4);
 
+  // Cabeçalho
+  p.addText(0,1.02,2.5,0.12,`${q.disciplina} · ${q.assunto}`,{align:'center',color:'#54e5a0',fontSizeMax:34,valign:'middle'});
+
+  // Enunciado (com auto-shrink, até 4 linhas)
+  p.addText(0,0.65,2.5,0.55,q.enunciado,{align:'left',fontSizeMax:42,maxLines:4,valign:'top'});
+
+  // Alternativas (5 × 0.20, espaçamento 0.24)
   q.alternativas.forEach((alt,i)=>{
-   const y=0.05-i*0.19;
-   const text=`${String.fromCharCode(65+i)}. ${alt}`;
+   const y=0.25-i*0.24;
+   const text=`${String.fromCharCode(65+i)}) ${alt}`;
    let bg='#19362a', bd='#365b49';
    if(answered){
     if(i===q.correta){ bg='#174c32'; bd='#6affaa'; }
     else if(i===chosen){ bg='#4b2525'; bd='#ff7777'; }
    }
-   p.addButton(0,y,2.4,0.16,text,()=>{
+   p.addButton(0,y,2.6,0.20,text,()=>{
     if(answered) return;
     StatisticsManager.record(q,i,'study');
     state.session={id:q.id,answeredId:q.id,choice:i};
-    save();
-    this.showStudy();
-   },{bgColor:bg,borderColor:bd,fontSize:44,align:'left'});
+    save(); this.showStudy();
+   },{bgColor:bg,borderColor:bd,align:'left',fontSizeMax:28,maxLines:2});
   });
 
-  p.addButton(-0.9,-0.85,0.6,0.16,'◀ Anterior',()=>{
+  // Navegação
+  p.addButton(-0.9,-1.05,0.6,0.16,'◀ Anterior',()=>{
    currentIndex=Math.max(0,currentIndex-1);
    state.session={id:questions[currentIndex].id}; save();
    this.showStudy();
-  },{fontSize:40});
-  p.addButton(0,-0.85,0.6,0.16,'🏠 Menu',()=>this.showHome(),{fontSize:40});
-  p.addButton(0.9,-0.85,0.6,0.16,'Próxima ▶',()=>{
+  },{fontSizeMax:34});
+  p.addButton(0,-1.05,0.6,0.16,'🏠 Menu',()=>this.showHome(),{fontSizeMax:34});
+  p.addButton(0.9,-1.05,0.6,0.16,'Próxima ▶',()=>{
    currentIndex=Math.min(questions.length-1,currentIndex+1);
    state.session={id:questions[currentIndex].id}; save();
    this.showStudy();
-  },{fontSize:40});
+  },{fontSizeMax:34});
  },
 
  showFlashcard(){
   this.clear();
-  this.mode='flashcard';
   if(!questions.length){ this.showHome(); return; }
   const q=questions[currentIndex%questions.length];
-  const p=this.createPanel(2.6,2.0);
+  const p=this.createPanel(2.6,2.2);
 
   if(!flashBack){
-   p.addText(0,0.85,2.2,0.1,`${q.disciplina} · ${q.assunto}`,{fontSize:32,align:'center',color:'#54e5a0'});
-   p.addText(0,0.15,2.2,0.9,q.enunciado,{fontSize:46,align:'center'});
-   p.addButton(0,-0.7,1.2,0.2,'🔄 Virar cartão',()=>{ flashBack=true; this.showFlashcard(); },{fontSize:50});
+   // Frente
+   p.addText(0,0.92,2.3,0.12,`${q.disciplina} · ${q.assunto}`,{align:'center',color:'#54e5a0',fontSizeMax:32,valign:'middle'});
+   p.addText(0,0.15,2.3,1.2,q.enunciado,{align:'center',fontSizeMax:44,maxLines:8,valign:'middle'});
+   p.addButton(0,-0.82,1.4,0.20,'🔄 Virar cartão',()=>{ flashBack=true; this.showFlashcard(); },{fontSizeMax:44});
   } else {
-   p.addText(0,0.85,2.2,0.1,'RESPOSTA',{fontSize:32,align:'center',color:'#54e5a0'});
-   p.addText(0,0.45,2.2,0.3,q.alternativas[q.correta],{fontSize:55,align:'center',color:'#6affaa'});
-   p.addText(0,-0.1,2.2,0.5,q.explicacao||'Sem explicação',{fontSize:34,align:'center'});
+   // Verso
+   p.addText(0,0.90,2.3,0.12,'✓ RESPOSTA CORRETA',{align:'center',color:'#54e5a0',fontSizeMax:32,valign:'middle'});
 
+   // Alternativa correta (auto-fit, até 3 linhas)
+   const ansText=`${String.fromCharCode(65+q.correta)}) ${q.alternativas[q.correta]}`;
+   p.addText(0,0.60,2.3,0.28,ansText,{align:'center',color:'#6affaa',fontSizeMax:40,maxLines:3,valign:'middle'});
+
+   // Explicação (auto-fit, até 5 linhas)
+   p.addText(0,0.05,2.3,0.65,q.explicacao||'Sem explicação disponível.',{align:'center',fontSizeMax:28,maxLines:5,valign:'top'});
+
+   // Botões de avaliação
    const grades=[
-    {l:'Difícil',g:2,x:-0.7,bg:'#4b2525',bd:'#ff7777'},
-    {l:'Médio',g:4,x:0,bg:'#7a4a10',bd:'#ffaa00'},
-    {l:'Fácil',g:5,x:0.7,bg:'#174c32',bd:'#6affaa'},
+    {l:'😰 Difícil',g:2,x:-0.75,bg:'#4b2525',bd:'#ff7777'},
+    {l:'😊 Médio',g:4,x:0,bg:'#7a4a10',bd:'#ffaa00'},
+    {l:'😎 Fácil',g:5,x:0.75,bg:'#174c32',bd:'#6affaa'},
    ];
    grades.forEach(gr=>{
-    p.addButton(gr.x,-0.75,0.6,0.18,gr.l,()=>{
+    p.addButton(gr.x,-0.62,0.68,0.20,gr.l,()=>{
      SpacedRepetition.grade(q.id,gr.g);
      currentIndex=(currentIndex+1)%questions.length;
-     flashBack=false;
-     this.showFlashcard();
-    },{bgColor:gr.bg,borderColor:gr.bd,fontSize:42});
+     flashBack=false; this.showFlashcard();
+    },{bgColor:gr.bg,borderColor:gr.bd,fontSizeMax:32});
    });
   }
 
-  p.addButton(-1.0,-0.75,0.5,0.16,'🏠 Menu',()=>this.showHome(),{fontSize:38});
+  p.addButton(0,-0.92,0.9,0.16,'🏠 Menu',()=>this.showHome(),{fontSizeMax:34});
  },
 
  showExamMenu(){
   this.clear();
-  this.mode='exam-menu';
   const p=this.createPanel(2.4,1.8);
-  p.addText(0,0.7,2.0,0.15,'📝 Simulado',{fontSize:60,align:'center',color:'#54e5a0'});
-  p.addText(0,0.45,2.0,0.2,'Escolha a quantidade:',{fontSize:32,align:'center'});
+  p.addText(0,0.72,2.1,0.14,'📝 Simulado',{align:'center',color:'#54e5a0',fontSizeMax:60,valign:'middle'});
+  p.addText(0,0.45,2.1,0.10,'Escolha a quantidade:',{align:'center',fontSizeMax:32,valign:'middle'});
+
   [10,20,40,60].forEach((n,i)=>{
-   p.addButton(-0.9+i*0.6,0.1,0.5,0.2,`${n}q`,()=>{
+   p.addButton(-0.9+i*0.6,0.12,0.5,0.22,`${n}q`,()=>{
     if(!questions.length){ this.showHome(); return; }
     const sh=[...questions];
     for(let j=sh.length-1;j>0;j--){ const k=Math.floor(Math.random()*(j+1)); [sh[j],sh[k]]=[sh[k],sh[j]]; }
     exam={id:"e"+Date.now(),ids:sh.slice(0,Math.min(n,sh.length)).map(q=>q.id),answers:{},index:0,start:now(),duration:0};
-    state.activeExam=exam; save();
-    this.showExam();
-   },{fontSize:50});
+    state.activeExam=exam; save(); this.showExam();
+   },{fontSizeMax:44});
   });
+
   if(state.activeExam){
-   p.addButton(0,-0.4,1.2,0.2,'▶ Retomar simulado',()=>{
+   p.addButton(0,-0.30,1.4,0.22,'▶ Retomar simulado',()=>{
     exam=state.activeExam; this.showExam();
-   },{fontSize:44});
+   },{fontSizeMax:36});
   }
-  p.addButton(0,-0.75,0.8,0.16,'🏠 Menu',()=>this.showHome(),{fontSize:38});
+
+  p.addButton(0,-0.70,0.9,0.16,'🏠 Menu',()=>this.showHome(),{fontSizeMax:34});
  },
 
  showExam(){
   this.clear();
-  this.mode='exam';
   if(!exam){ this.showExamMenu(); return; }
   const pool=exam.ids.map(id=>QuestionManager.find(id)).filter(Boolean);
   if(!pool.length){ this.showExamMenu(); return; }
   exam.index=Math.max(0,Math.min(exam.index,pool.length-1));
   const q=pool[exam.index];
 
-  const p=this.createPanel(2.8,2.0);
-  p.addText(0,0.85,2.4,0.1,`Questão ${exam.index+1} de ${pool.length}`,{fontSize:34,align:'center',color:'#54e5a0'});
-  p.addText(0,0.55,2.4,0.5,q.enunciado,{fontSize:44,align:'left'});
+  const p=this.createPanel(2.8,2.4);
+  p.addText(0,1.02,2.5,0.12,`Questão ${exam.index+1} de ${pool.length}`,{align:'center',color:'#54e5a0',fontSizeMax:34,valign:'middle'});
+
+  p.addText(0,0.65,2.5,0.55,q.enunciado,{align:'left',fontSizeMax:42,maxLines:4,valign:'top'});
 
   q.alternativas.forEach((alt,i)=>{
-   const y=0.05-i*0.19;
-   const text=`${String.fromCharCode(65+i)}. ${alt}`;
+   const y=0.25-i*0.24;
+   const text=`${String.fromCharCode(65+i)}) ${alt}`;
    const selected=exam.answers[q.id]===i;
-   p.addButton(0,y,2.4,0.16,text,()=>{
+   p.addButton(0,y,2.6,0.20,text,()=>{
     exam.answers[q.id]=i;
     state.activeExam=exam; save();
     this.showExam();
    },{
     bgColor:selected?'#174c32':'#19362a',
     borderColor:selected?'#6affaa':'#365b49',
-    fontSize:44,align:'left'
+    align:'left',fontSizeMax:28,maxLines:2
    });
   });
 
-  p.addButton(-0.9,-0.85,0.6,0.16,'◀ Anterior',()=>{
+  p.addButton(-0.9,-1.05,0.6,0.16,'◀ Anterior',()=>{
    exam.index=Math.max(0,exam.index-1); state.activeExam=exam; save(); this.showExam();
-  },{fontSize:38});
-  p.addButton(0,-0.85,0.6,0.16,'Finalizar',()=>{
+  },{fontSizeMax:32});
+
+  p.addButton(0,-1.05,0.6,0.16,'Finalizar',()=>{
    const choices=Object.keys(exam.answers).length;
    if(!confirm(`Finalizar? ${choices}/${pool.length} respondidas`)) return;
    let c=0,w=0,b=0;
@@ -1445,61 +1447,71 @@ const vrManager = {
    state.exams.push({id:exam.id,date:now(),total:pool.length,correct:c,wrong:w,blank:b,duration:now()-exam.start});
    exam=null; state.activeExam=null; save();
    this.showHome();
-  },{fontSize:38,bgColor:'#7a4a10',borderColor:'#ffaa00'});
-  p.addButton(0.9,-0.85,0.6,0.16,'Próxima ▶',()=>{
+  },{fontSizeMax:32,bgColor:'#7a4a10',borderColor:'#ffaa00'});
+
+  p.addButton(0.9,-1.05,0.6,0.16,'Próxima ▶',()=>{
    exam.index=Math.min(pool.length-1,exam.index+1); state.activeExam=exam; save(); this.showExam();
-  },{fontSize:38});
+  },{fontSizeMax:32});
  },
 
  showStats(){
   this.clear();
-  this.mode='stats';
   const s=StatisticsManager.summary();
-  const p=this.createPanel(2.4,1.8);
-  p.addText(0,0.7,2.0,0.15,'📊 Desempenho',{fontSize:60,align:'center',color:'#54e5a0'});
-  p.addText(0,0.35,2.0,0.5,
-   `Respondidas: ${s.total}\nAcertos: ${s.correct}\nErros: ${s.wrong}\nAproveitamento: ${s.rate}%\nRevisões pendentes: ${s.pending}\nSimulados: ${s.exams}`,
-   {fontSize:44,align:'left'});
+  const p=this.createPanel(2.6,2.0);
+  p.addText(0,0.82,2.3,0.14,'📊 Desempenho',{align:'center',color:'#54e5a0',fontSizeMax:55,valign:'middle'});
 
+  const text=[
+   `Respondidas: ${s.total}`,
+   `Acertos: ${s.correct}`,
+   `Erros: ${s.wrong}`,
+   `Aproveitamento: ${s.rate}%`,
+   `Revisões pendentes: ${s.pending}`,
+   `Simulados: ${s.exams}`
+  ].join('\n');
+
+  p.addText(0,0.30,2.3,0.85,text,{align:'left',fontSizeMax:38,maxLines:6,valign:'top'});
+
+  // Por disciplina (até 4)
   const subs=StatisticsManager.bySubject();
-  let y=-0.2;
-  for(const [n,d] of Object.entries(subs).slice(0,4)){
+  let y=-0.10;
+  let count=0;
+  for(const [n,d] of Object.entries(subs)){
+   if(count>=4) break;
    const r=Math.round(d.correct/d.total*100);
-   p.addText(0,y,2.0,0.08,`${n.slice(0,20)}: ${r}% (${d.correct}/${d.total})`,{fontSize:32,align:'left',color:'#b4c7bb'});
-   y-=0.1;
+   p.addText(0,y,2.3,0.09,`${n.slice(0,22)}: ${r}% (${d.correct}/${d.total})`,{align:'left',color:'#b4c7bb',fontSizeMax:28,maxLines:1,valign:'middle'});
+   y-=0.10;
+   count++;
   }
 
-  p.addButton(0,-0.75,0.8,0.16,'🏠 Menu',()=>this.showHome(),{fontSize:38});
+  p.addButton(0,-0.82,0.9,0.16,'🏠 Menu',()=>this.showHome(),{fontSizeMax:34});
  },
 
  showReview(){
   this.clear();
-  this.mode='review';
   const due=ReviewManager.due();
   const all=ReviewManager.all();
-  const p=this.createPanel(2.4,1.6);
-  p.addText(0,0.6,2.0,0.15,'🔄 Revisão',{fontSize:60,align:'center',color:'#54e5a0'});
-  p.addText(0,0.3,2.0,0.3,`Pendentes: ${due.length}\nMarcadas: ${all.length}`,{fontSize:40,align:'center'});
+  const p=this.createPanel(2.4,1.8);
+  p.addText(0,0.68,2.1,0.14,'🔄 Revisão',{align:'center',color:'#54e5a0',fontSizeMax:55,valign:'middle'});
+  p.addText(0,0.38,2.1,0.20,`Pendentes: ${due.length}\nMarcadas: ${all.length}`,{align:'center',fontSizeMax:36,maxLines:2,valign:'middle'});
 
-  p.addButton(-0.7,0,0.6,0.2,'Revisar\npendentes',()=>{
+  p.addButton(-0.7,0.05,0.7,0.24,'Revisar\npendentes',()=>{
    if(!due.length){ alert('Nada pendente'); return; }
    studyPool=due; currentIndex=0; this.showStudy();
-  },{fontSize:38});
+  },{fontSizeMax:34,maxLines:2});
 
-  p.addButton(0.7,0,0.6,0.2,'Revisar\ntodas',()=>{
+  p.addButton(0.7,0.05,0.7,0.24,'Revisar\ntodas',()=>{
    if(!all.length){ alert('Nada marcado'); return; }
    studyPool=all; currentIndex=0; this.showStudy();
-  },{fontSize:38});
+  },{fontSizeMax:34,maxLines:2});
 
-  p.addButton(0,-0.6,0.8,0.16,'🏠 Menu',()=>this.showHome(),{fontSize:38});
+  p.addButton(0,-0.60,0.9,0.16,'🏠 Menu',()=>this.showHome(),{fontSizeMax:34});
  },
 
- // Hover: chamado a cada frame
  updateHover(controllers){
   if(!this.current) return;
-  const nowMs=performance.now();
-  if(nowMs-this.lastHoverTime<50) return;
-  this.lastHoverTime=nowMs;
+  const t=performance.now();
+  if(t-this.lastHoverTime<50) return;
+  this.lastHoverTime=t;
 
   for(const ctrl of controllers){
    if(!ctrl) continue;
@@ -1511,29 +1523,22 @@ const vrManager = {
 
    const hits=this.raycaster.intersectObjects(this.current.clickables,false);
 
-   // Atualiza laser
    if(ctrl.userData.laser){
     const dist=hits.length>0?Math.min(hits[0].distance,8):8;
     ctrl.userData.laser.scale.z=dist;
    }
 
-   // Reset de todos os glows
    this.current.clickables.forEach(b=>{
     if(b.userData.glow) b.userData.glow.visible=false;
    });
 
-   // Ativa glow no hover atual
    if(hits.length>0){
     const target=hits[0].object;
     if(target.userData.glow) target.userData.glow.visible=true;
-    this.hoveredButton=target;
-   } else {
-    this.hoveredButton=null;
    }
   }
  },
 
- // Clique: chamado no selectstart
  handleClick(controller){
   if(!this.current) return;
   controller.updateWorldMatrix(true,false);
@@ -1569,8 +1574,7 @@ function init3D(){
 
   scene.add(new THREE.HemisphereLight(0xffffff,0x405344,2.0));
   const sun=new THREE.DirectionalLight(0xffffff,1.5);
-  sun.position.set(5,10,5);
-  scene.add(sun);
+  sun.position.set(5,10,5); scene.add(sun);
 
   changeEnvironment(state.environment);
 
@@ -1588,18 +1592,17 @@ function init3D(){
   };
 
   renderer.xr.addEventListener("sessionstart",()=>{
-   status("🥽 VR iniciada — use os controles para interagir");
+   status("🥽 VR iniciada — use os controles");
    rig.position.set(0,0,0);
    vrManager.showHome();
   });
-
   renderer.xr.addEventListener("sessionend",()=>{
    status("VR encerrada");
    vrManager.clear();
    rig.position.set(0,1.65,3);
+   render();
   });
 
-  // Controllers
   const ctrls=[];
   for(let i=0;i<2;i++){
    const ctrl=renderer.xr.getController(i);
@@ -1607,17 +1610,14 @@ function init3D(){
    rig.add(ctrl);
    ctrls.push(ctrl);
 
-   // Laser
    const laserGeo=new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(0,0,0),
-    new THREE.Vector3(0,0,-8)
+    new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-8)
    ]);
    const laser=new THREE.Line(laserGeo,new THREE.LineBasicMaterial({color:0x54e5a0}));
    ctrl.add(laser);
    ctrl.userData.laser=laser;
   }
 
-  // Animation loop
   let lastW=0,lastH=0;
   renderer.setAnimationLoop(()=>{
    const c=$("scene");
@@ -1628,24 +1628,17 @@ function init3D(){
     camera.aspect=w/h;
     camera.updateProjectionMatrix();
    }
-   if(renderer.xr.isPresenting){
-    vrManager.updateHover(ctrls);
-   }
+   if(renderer.xr.isPresenting) vrManager.updateHover(ctrls);
    renderer.render(scene,camera);
   });
 
   $("rotateLeft").onclick=()=>{ rig.rotation.y+=Math.PI/8; };
   $("rotateRight").onclick=()=>{ rig.rotation.y-=Math.PI/8; };
   $("resetView").onclick=()=>{ rig.rotation.y=0; rig.position.set(0,1.65,3); };
- }catch(e){
-  console.error(e);
-  status("Falha WebGL: "+e.message);
- }
+ }catch(e){ console.error(e); status("Falha WebGL: "+e.message); }
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   7. CONFIG / INIT
-═══════════════════════════════════════════════════════════════════ */
+/* ── CONFIG / INIT ── */
 
 function applySettings(){
  const wasFocus=document.body.classList.contains("focus");
@@ -1661,8 +1654,7 @@ function applySettings(){
 function initializeMenus(){
  for(const n of pages) button(n,()=>navigate(n),$("menu"));
  environments.forEach((name,i)=>{
-  const o=document.createElement("option");
-  o.value=i; o.textContent=name;
+  const o=document.createElement("option"); o.value=i; o.textContent=name;
   $("environment").append(o);
  });
  $("environment").onchange=e=>changeEnvironment(Number(e.target.value));
@@ -1678,10 +1670,7 @@ function initializeMenus(){
   init3D();
   navigate("Início");
   await ContentRepository.load();
- }catch(e){
-  console.error(e);
-  status("Erro: "+e.message);
- }
+ }catch(e){ console.error(e); status("Erro: "+e.message); }
 })();
 
 </script>
