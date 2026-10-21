@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#07150f">
-<title>PMSC 2026 — Academia Militar Imersiva (Design VR · Conforto · Diegético)</title>
+<title>PMSC 2026 — Academia Militar Imersiva (Quest 3S Realista)</title>
 
 <style>
 :root{--bg:#080e11;--card:#14231f;--input:#203b32;--text:#f7fff9;--line:#456c5d;--accent:#98f8bb;--muted:#d0e2d5}
@@ -72,7 +72,7 @@ label{display:block;font-size:13px;color:var(--muted);margin:12px 0 5px}
   <label>Iluminação</label>
   <select id="lighting"><option value="day">Dia</option><option value="night">Noite</option></select>
   <label>Qualidade gráfica</label>
-  <select id="quality"><option value="low">Econômica</option><option value="medium">Equilibrada</option><option value="high" selected>Alta (Quest 3S 1832×1920)</option></select>
+  <select id="quality"><option value="low">Econômica</option><option value="medium" selected>Equilibrada</option><option value="high">Alta (Quest 3S)</option></select>
   <label>Fonte no VR</label><input id="fontSize" type="range" min="90" max="145" value="115">
   <label>Distância do painel central</label><input id="distance" type="range" min="1.8" max="4" step=".1" value="2.5">
   <label>Altura do painel central</label><input id="panelHeight" type="range" min="1" max="2.5" step=".1" value="1.65">
@@ -81,19 +81,11 @@ label{display:block;font-size:13px;color:var(--muted);margin:12px 0 5px}
   <label>Rotação por toque no analógico direito</label>
   <select id="snap"><option value="30">30 graus</option><option value="45">45 graus</option><option value="0">Desligada</option></select>
 
-  <label>Volume do som (espacial)</label>
+  <label>Volume do som (corneta)</label>
   <input id="volume" type="range" min="0" max="100" value="60">
 
-  <h3>Conforto VR (Quest 3S)</h3>
-  <label>Altura do avatar (sentado ↔ em pé)</label>
-  <input id="playerHeight" type="range" min="0.9" max="2.0" step=".05" value="1.65">
-  <label>Vinheta dinâmica (anti-enjoo)</label>
-  <input id="vignette" type="range" min="0" max="100" value="100">
-  <label>Modo conforto (reduz FOV ao andar)</label>
-  <select id="comfort"><option value="1">Ativado</option><option value="0">Desativado</option></select>
-
   <div class="row"><button id="resetPanels">Reposicionar painéis</button><button id="vrButton">ENTRAR EM VR</button></div>
-  <div class="note">Design diegético: painéis no ambiente 3D. Locomoção com vinheta dinâmica (visão de túnel) para reduzir motion sickness. Ajuste de altura para jogar sentado com POV em pé. Áudio espacial 3D. Em VR: analógico esquerdo caminha; direito gira; gatilho seleciona; grip/pinça arrasta painéis; círculos no piso = teletransporte.</div>
+  <div class="note">Em VR: analógico esquerdo caminha; analógico direito gira; gatilho seleciona; grip arrasta painéis; pinça na faixa superior também arrasta; círculos no piso fazem teletransporte.</div>
   <hr>
   <h3>Banco de questões</h3>
   <div id="bankStatus" class="note">Aguardando JSON…</div>
@@ -145,7 +137,7 @@ const subjectsBase = ['Língua Portuguesa','Informática','Direito Constituciona
 const pages = [['home','Início'],['study','Questões'],['exam','Simulado'],['flash','Flashcards'],['review','Revisões'],['stats','Desempenho'],['bank','Banco JSON'],['settings','Configurações']];
 
 const defaultState = () => ({
-  settings:{env:0,lighting:'day',quality:'high',fontSize:115,distance:2.5,panelHeight:1.65,panelScale:1,speed:1.4,snap:30,volume:60,playerHeight:1.65,vignette:1,comfort:1},
+  settings:{env:0,lighting:'day',quality:'high',fontSize:115,distance:2.5,panelHeight:1.65,panelScale:1,speed:1.4,snap:30,volume:60},
   history:[],favorites:[],reviews:{},exams:[],session:null,panels:{}
 });
 
@@ -318,7 +310,7 @@ function render(){
     el('p','Ajuste fontes, distância, ambiente e velocidade no menu lateral. Em VR, segure o botão grip apontando para um painel e mova a mão.',c);
     el('p','A pinça também pode mover o painel pela barra superior. Use o gatilho ou a pinça para selecionar.',c);
     el('p','Toques de corneta militares são reproduzidos ao entrar em VR, ao finalizar um simulado e nas respostas (fora do simulado). Ajuste o volume no menu lateral.',c);
-    el('p','Design VR: UI diegética (painéis no mundo 3D), vinheta dinâmica ao caminhar (anti motion-sickness), ajuste de altura sentado/em pé, áudio espacial HRTF, render otimizado Quest 3S (1832×1920, até 120 Hz).',c);
+    el('p','Materiais PBR realistas, texturas 512–1024, sombras suaves e geometrias detalhadas otimizadas para Meta Quest 3S.',c);
     button('Restaurar posição dos painéis',resetPanelPositions,c);
     button('Modo foco',()=>document.body.classList.toggle('focus'),c);
     button('Modo leitura',()=>document.body.classList.toggle('reading'),c);
@@ -420,18 +412,16 @@ function playFanfare(){
 }
 
 function playCorrect(){
-  initAudio();resumeAudio();ensureSpatialAudio();if(!audioCtx)return;
+  initAudio();resumeAudio();if(!audioCtx)return;
   const t0=audioCtx.currentTime+0.02;
-  const pos = panels.main ? panels.main.group.position.clone() : new THREE.Vector3(0,1.6,-2.5);
-  playSpatialNote(659.25,t0,0.15,0.16,pos);
-  playSpatialNote(1046.50,t0+0.10,0.24,0.16,pos);
+  playNote(659.25,t0,0.15,0.16);
+  playNote(1046.50,t0+0.10,0.24,0.16);
 }
 function playWrong(){
-  initAudio();resumeAudio();ensureSpatialAudio();if(!audioCtx)return;
+  initAudio();resumeAudio();if(!audioCtx)return;
   const t0=audioCtx.currentTime+0.02;
-  const pos = panels.main ? panels.main.group.position.clone() : new THREE.Vector3(0,1.6,-2.5);
-  playSpatialNote(523.25,t0,0.18,0.16,pos);
-  playSpatialNote(392.00,t0+0.15,0.28,0.16,pos);
+  playNote(523.25,t0,0.18,0.16);
+  playNote(392.00,t0+0.15,0.28,0.16);
 }
 function playTaps(){
   initAudio();resumeAudio();if(!audioCtx)return;
@@ -456,7 +446,7 @@ const scene=new THREE.Scene();
 scene.background=new THREE.Color('#7a9aa8');
 scene.fog=new THREE.FogExp2(0x8aafb2,0.012);
 
-const camera=new THREE.PerspectiveCamera(82,1,.05,200);
+const camera=new THREE.PerspectiveCamera(70,1,.05,180);
 camera.position.set(0,1.65,0);
 const rig=new THREE.Group();rig.add(camera);scene.add(rig);
 
@@ -469,7 +459,7 @@ renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate=false;
 renderer.shadowMap.needsUpdate=true;
-renderer.setPixelRatio(Math.min(devicePixelRatio,2.5));
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 $('scene').append(renderer.domElement);
 
 // Iluminação realista
@@ -494,116 +484,6 @@ rim.position.set(-5,8,-14);scene.add(rim);
 
 const bounce=new THREE.DirectionalLight(0xc8dcc8,0.22);
 bounce.position.set(0,-2,4);scene.add(bounce);
-
-
-// =====================================================
-// CONFORTO VR · VINHETA DINÂMICA · ALTURA · ÁUDIO ESPACIAL
-// Princípios: UI diegética, locomotion comfort, 6DoF, spatial audio
-// =====================================================
-const vignetteUniforms = {
-  uIntensity: { value: 0.0 },
-  uRadius: { value: 0.72 },
-  uSoftness: { value: 0.35 }
-};
-const vignetteMat = new THREE.ShaderMaterial({
-  transparent: true,
-  depthTest: false,
-  depthWrite: false,
-  uniforms: vignetteUniforms,
-  vertexShader: `
-    varying vec2 vUv;
-    void main(){
-      vUv = uv;
-      gl_Position = vec4(position.xy, 0.0, 1.0);
-    }
-  `,
-  fragmentShader: `
-    uniform float uIntensity, uRadius, uSoftness;
-    varying vec2 vUv;
-    void main(){
-      vec2 c = vUv - 0.5;
-      // aspect-ish oval for HMD
-      c.x *= 1.15;
-      float d = length(c) * 2.0;
-      float vig = smoothstep(uRadius, uRadius + uSoftness, d);
-      float a = vig * uIntensity;
-      gl_FragColor = vec4(0.0, 0.0, 0.0, a);
-    }
-  `
-});
-const vignetteMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), vignetteMat);
-vignetteMesh.frustumCulled = false;
-vignetteMesh.renderOrder = 999;
-camera.add(vignetteMesh);
-vignetteMesh.position.set(0, 0, -0.15);
-
-let moveVignetteTarget = 0;
-let moveVignetteCurrent = 0;
-let isLocomoting = false;
-
-function applyPlayerHeight(){
-  const h = Number(state.settings.playerHeight) || 1.65;
-  // offset vertical do rig: altura dos olhos relativa ao piso
-  // em WebXR local-floor o headset já define Y; usamos offset só no preview desktop
-  // e como ajuste fino de painéis/conforto sentado
-  if(!renderer.xr.isPresenting){
-    camera.position.y = h;
-  }
-  // painéis acompanham altura preferida se ainda não movidos
-  if(panels.main && !state.panels?.main){
-    state.settings.panelHeight = Math.min(2.4, Math.max(1.0, h));
-    if($('panelHeight')) $('panelHeight').value = state.settings.panelHeight;
-  }
-}
-
-// Áudio espacial: panner 3D ligado ao rig (origem do ouvinte = cabeça)
-let listenerNode = null;
-function ensureSpatialAudio(){
-  initAudio();
-  if(!audioCtx || listenerNode) return;
-  try {
-    listenerNode = audioCtx.listener;
-    if(listenerNode.positionX){
-      listenerNode.positionX.value = 0;
-      listenerNode.positionY.value = 1.6;
-      listenerNode.positionZ.value = 0;
-    }
-  } catch(e){}
-}
-function playSpatialNote(freq, when, dur, gain, worldPos){
-  if(!audioCtx) return;
-  ensureSpatialAudio();
-  const osc = audioCtx.createOscillator();
-  const env = audioCtx.createGain();
-  const filt = audioCtx.createBiquadFilter();
-  const panner = audioCtx.createPanner();
-  panner.panningModel = 'HRTF';
-  panner.distanceModel = 'inverse';
-  panner.refDistance = 1.2;
-  panner.maxDistance = 18;
-  panner.rolloffFactor = 1.4;
-  if(worldPos){
-    if(panner.positionX){
-      panner.positionX.value = worldPos.x;
-      panner.positionY.value = worldPos.y;
-      panner.positionZ.value = worldPos.z;
-    } else {
-      panner.setPosition(worldPos.x, worldPos.y, worldPos.z);
-    }
-  }
-  osc.type = 'sawtooth';
-  osc.frequency.value = freq;
-  filt.type = 'lowpass'; filt.frequency.value = 2400; filt.Q.value = 1.2;
-  env.gain.setValueAtTime(0, when);
-  env.gain.linearRampToValueAtTime(gain, when + 0.02);
-  env.gain.exponentialRampToValueAtTime(0.001, when + dur);
-  osc.connect(filt); filt.connect(env); env.connect(panner); panner.connect(masterGain);
-  if(convolver){ const send = audioCtx.createGain(); send.gain.value = 0.2; env.connect(send); send.connect(convolver); }
-  osc.start(when); osc.stop(when + dur + 0.05);
-}
-// override fanfare/taps to use spatial positions near flags
-const _playFanfare = typeof playFanfare === 'function' ? null : null;
-
 
 // Sky dome melhorado
 let skyMesh=null;
@@ -1893,7 +1773,7 @@ function applyLight(){
 // =====================================================
 // PAINÉIS VR
 // =====================================================
-const WIDTH=2048,HEIGHT=1536; // nítido em ~20 PPD (Quest 3S)
+const WIDTH=2048,HEIGHT=1536;
 const panels={};
 const panelMeshes=[];
 const raycaster=new THREE.Raycaster();
@@ -1911,7 +1791,7 @@ function makePanel(id,w,h,x,y,z){
   // borda sutil no painel
   const border=new THREE.Mesh(
     new THREE.PlaneGeometry(w+0.04,h+0.04),
-    new THREE.MeshBasicMaterial({color:0x0e2a1c,side:THREE.DoubleSide,toneMapped:false})
+    new THREE.MeshBasicMaterial({color:0x1a3a28,side:THREE.DoubleSide,toneMapped:false})
   );
   border.position.z=-0.008;group.add(border);
   const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,toneMapped:false}));
@@ -1942,266 +1822,93 @@ function wrapped(ctx,content,width,size){
 }
 function region(p,x,y,w,h,action){p.regions.push({x,y,w,h,action});}
 
-
 function background(p,title){
-  const c=p.ctx; p.regions=[];
-  c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
-  // fundo moderno: gradiente escuro + vinheta
-  const bg=c.createLinearGradient(0,0,0,HEIGHT);
-  bg.addColorStop(0,'#0a1612'); bg.addColorStop(0.45,'#0c1c17'); bg.addColorStop(1,'#081410');
-  c.fillStyle=bg; c.fillRect(0,0,WIDTH,HEIGHT);
-  // grade sutil (tech/military modern)
-  c.strokeStyle='rgba(80,140,110,0.06)'; c.lineWidth=1;
-  for(let x=0;x<WIDTH;x+=64){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,HEIGHT); c.stroke(); }
-  for(let y=0;y<HEIGHT;y+=64){ c.beginPath(); c.moveTo(0,y); c.lineTo(WIDTH,y); c.stroke(); }
-  // header bar
-  const hg=c.createLinearGradient(0,0,WIDTH,0);
-  hg.addColorStop(0,'#145a3a'); hg.addColorStop(0.5,'#1a7048'); hg.addColorStop(1,'#145a3a');
-  c.fillStyle=hg; round(c,20,18,WIDTH-40,128,20); c.fill();
-  // accent line under header
-  c.fillStyle='#7dffb0'; round(c,20,140,WIDTH-40,4,2); c.fill();
-  // title
-  text(c,title,48,78,52,'#f4fff8','700');
-  text(c,'☰  ARRASTE PELA BARRA SUPERIOR  ·  GATILHO SELECIONA',48,118,26,'#b8efd0','500');
-  // outer frame
-  c.strokeStyle='rgba(122,255,176,0.45)'; c.lineWidth=3;
-  round(c,12,12,WIDTH-24,HEIGHT-24,24); c.stroke();
-  // drag zone
-  region(p,0,0,WIDTH,160,'drag');
+  const c=p.ctx;p.regions=[];c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
+  const g=c.createLinearGradient(0,0,WIDTH,HEIGHT);
+  g.addColorStop(0,'#0e2a22');g.addColorStop(0.55,'#081c18');g.addColorStop(1,'#061410');
+  c.fillStyle=g;c.fillRect(0,0,WIDTH,HEIGHT);
+  const gh=c.createLinearGradient(0,14,0,164);
+  gh.addColorStop(0,'#2a6a4c');gh.addColorStop(1,'#164432');
+  c.fillStyle=gh;round(c,14,14,WIDTH-28,150,22);c.fill();
+  c.strokeStyle='#9af6bc';c.lineWidth=6;round(c,14,14,WIDTH-28,HEIGHT-28,25);c.stroke();
+  text(c,title,55,111,67);
+  text(c,'☰ SEGURE GRIP / PINÇA AQUI PARA MOVER',57,204,31,'#bbefd0');
+  region(p,0,0,WIDTH,220,'drag');
 }
-
-function vrButton(p,label,x,y,w,h,action,color='#1a5c3e',size=40){
-  const c=p.ctx;
-  const hot=hovered?.panel===p.id && hovered?.action===action;
-  // shadow
-  c.fillStyle='rgba(0,0,0,0.35)';
-  round(c,x+3,y+4,w,h,16); c.fill();
-  // body
-  const g=c.createLinearGradient(x,y,x,y+h);
-  if(hot){ g.addColorStop(0,'#3aa86a'); g.addColorStop(1,'#2a8050'); }
-  else {
-    // parse hex-ish solid
-    c.fillStyle=color;
-  }
-  if(hot){ c.fillStyle=g; }
-  else { c.fillStyle=color; }
-  round(c,x,y,w,h,16); c.fill();
-  // border
-  c.strokeStyle=hot?'#e8fff0':'rgba(100,180,140,0.55)';
-  c.lineWidth=hot?4:2.5;
-  round(c,x,y,w,h,16); c.stroke();
-  // top highlight
-  c.fillStyle=hot?'rgba(255,255,255,0.12)':'rgba(255,255,255,0.06)';
-  round(c,x+2,y+2,w-4,Math.min(h*0.35,28),12); c.fill();
-  const lines=wrapped(c,label,w-40,size);
-  lines.slice(0,2).forEach((line,i)=>text(c,line,x+20,y+Math.min(h-14, 42+i*(size+4)),size,'#f5fff8','700'));
-  region(p,x,y,w,h,action);
-}
-
-function drawOptionCard(p, letter, textContent, x, y, w, h, action, state){
-  // state: 'idle' | 'selected' | 'correct' | 'wrong'
-  const c=p.ctx;
-  const hot=hovered?.panel===p.id && hovered?.action===action;
-  let bg='#152a22', border='rgba(90,160,120,0.5)', letterBg='#1e5a3e', letterCol='#c8ffd8';
-  if(state==='selected'){ bg='#1a3a55'; border='#5eb0ff'; letterBg='#1e5a8a'; letterCol='#d0eaff'; }
-  if(state==='correct'){ bg='#0f3d28'; border='#50ff9d'; letterBg='#147a48'; letterCol='#e0ffe8'; }
-  if(state==='wrong'){ bg='#3a1a22'; border='#ff8e91'; letterBg='#8a3040'; letterCol='#ffd0d4'; }
-  if(hot && state==='idle'){ bg='#1a3a2e'; border='#9af6bc'; }
-  // card shadow
-  c.fillStyle='rgba(0,0,0,0.3)';
-  round(c,x+2,y+3,w,h,14); c.fill();
-  c.fillStyle=bg;
-  round(c,x,y,w,h,14); c.fill();
-  c.strokeStyle=border; c.lineWidth=hot?3.5:2.5;
-  round(c,x,y,w,h,14); c.stroke();
-  // letter badge
-  const bw=72, bh=Math.min(h-20,72);
-  c.fillStyle=letterBg;
-  round(c,x+14,y+(h-bh)/2,bw,bh,12); c.fill();
-  text(c,letter,x+14+bw/2-16,y+h/2+16,48,letterCol,'800');
-  // option text
-  const lines=wrapped(c,textContent,w-bw-55,38);
-  let ty=y+Math.max(36, (h - lines.length*44)/2 + 32);
-  for(const line of lines.slice(0,4)){
-    text(c,line,x+bw+30,ty,38,'#f2faf5','600');
-    ty+=44;
-  }
+function vrButton(p,label,x,y,w,h,action,color='#1e5a3e',size=42){
+  const c=p.ctx;const hot=hovered?.panel===p.id&&hovered?.action===action;
+  c.fillStyle=hot?'#358a5a':color;round(c,x,y,w,h,18);c.fill();
+  c.strokeStyle=hot?'#dcffea':'#5aa87a';c.lineWidth=4;round(c,x,y,w,h,18);c.stroke();
+  const lines=wrapped(c,label,w-45,size);
+  lines.slice(0,2).forEach((line,i)=>text(c,line,x+22,y+Math.min(h-16,51+i*(size+6)),size));
   region(p,x,y,w,h,action);
 }
 
 function drawMain(){
-  const p=panels.main, c=p.ctx, s=state.session, q=currentQuestion(), a=currentPool();
-  background(p,'PMSC 2026  ·  SALA DE ESTUDO');
-  if(!q){
-    text(c,'AGUARDANDO QUESTÕES',80,420,56,'#e8fff0','700');
-    text(c,'Atualize o banco JSON no menu lateral ou use Demonstração.',80,500,36,'#a8cbb8','500');
-    // empty state card
-    c.fillStyle='rgba(20,60,45,0.5)';
-    round(c,80,560,WIDTH-160,180,18); c.fill();
-    text(c,'Toque em “Atualizar JSON” ou “Demonstração” para começar.',100,650,34,'#b8efd0','500');
-    p.texture.needsUpdate=true; return;
-  }
-
-  // meta bar
-  const pct = Math.round(((s.index+1)/Math.max(1,a.length))*100);
-  c.fillStyle='rgba(15,40,30,0.85)';
-  round(c,40,168,WIDTH-80,88,14); c.fill();
-  text(c,`${s.index+1}  /  ${a.length}`,60,212,36,'#7dffb0','700');
-  text(c,q.subject,220,200,32,'#e8fff0','600');
-  text(c,q.topic,220,238,26,'#9ab8a8','500');
-  // progress bar
-  c.fillStyle='#1a3a2a'; round(c,WIDTH-420,198,340,18,9); c.fill();
-  c.fillStyle='#4dff9a'; round(c,WIDTH-420,198,Math.max(12,340*pct/100),18,9); c.fill();
-  text(c,pct+'%',WIDTH-70,214,24,'#c8ffd8','600');
-
-  const size=Math.round(42*Number(state.settings.fontSize)/115);
-  const lineH=size*1.42;
-  const blocks=[];
-  const addQ=(content)=>{
-    const lines=wrapped(c,content,WIDTH-140,size);
-    blocks.push({kind:'question',lines,height:Math.max(100, lines.length*(lineH+4)+36)});
-  };
-  const addNote=(content)=>{
-    const lines=wrapped(c,content,WIDTH-140,size-4);
-    blocks.push({kind:'note',lines,height:Math.max(70, lines.length*(lineH)+28)});
-  };
-  addQ(q.question);
-
-  const opts=[];
+  const p=panels.main,c=p.ctx,s=state.session,q=currentQuestion(),a=currentPool();
+  background(p,'PMSC 2026 • SALA DE ESTUDO');
+  if(!q){text(c,'AGUARDANDO QUESTÕES DO GITHUB',85,370,59);text(c,'Atualize o banco no painel lateral.',85,470,45);p.texture.needsUpdate=true;return;}
+  text(c,`${s.index+1} / ${a.length} • ${q.subject}`,78,304,46,'#a7f0c0');
+  text(c,q.topic,78,360,36,'#b7cbbd');
+  const size=Math.round(46*Number(state.settings.fontSize)/115),lineH=size*1.36,blocks=[];
+  const add=(kind,content,act,color)=>{const lines=wrapped(c,content,1760,kind==='question'?size:size-3);const height=Math.max(95,lines.length*(lineH+2)+25);blocks.push({kind,lines,act,color,height});};
+  add('question',q.question,null);
   if(s.mode==='flash'){
-    if(s.flip){
-      addNote('RESPOSTA: '+q.options[q.correct]);
-      if(q.explanation) addNote(q.explanation);
-    } else {
-      addNote('Toque em VIRAR para revelar a resposta do flashcard.');
-    }
-  } else {
+    if(s.flip){add('text','RESPOSTA: '+q.options[q.correct],null);if(q.explanation)add('text',q.explanation,null);}
+    else add('text','Vire o flashcard para revelar a resposta.',null);
+  }else{
     q.options.forEach((option,i)=>{
-      const chosen=s.answers[q.id];
-      const reveal=s.mode!=='exam'||s.feedback==='immediate'||s.finished;
-      let st='idle';
-      if(chosen!==undefined&&reveal){
-        if(i===q.correct) st='correct';
-        else if(i===chosen) st='wrong';
-      } else if(chosen===i) st='selected';
-      const lines=wrapped(c,option,WIDTH-280,38);
-      const oh=Math.max(96, lines.length*44+28);
-      opts.push({i,option,st,oh});
-      blocks.push({kind:'option',i,option,st,height:oh+12});
+      const chosen=s.answers[q.id];const reveal=s.mode!=='exam'||s.feedback==='immediate'||s.finished;let color='#1a543c';
+      if(chosen!==undefined&&reveal){if(i===q.correct)color='#126838';else if(i===chosen)color='#6e2e3a';}
+      else if(chosen===i)color='#1e5580';
+      add('option',String.fromCharCode(65+i)+') '+option,'answer:'+i,color);
     });
     const chosen=s.answers[q.id];
     if(chosen!==undefined&&(s.mode!=='exam'||s.feedback==='immediate'||s.finished)){
-      if(q.explanation) addNote('COMENTÁRIO: '+q.explanation);
-      if(q.reference) addNote('REFERÊNCIA: '+q.reference);
+      if(q.explanation)add('text','COMENTÁRIO: '+q.explanation,null);
+      if(q.reference)add('text','REFERÊNCIA: '+q.reference,null);
     }
   }
-
-  const viewTop=275, viewBottom=1280, viewH=viewBottom-viewTop;
-  const total=blocks.reduce((sum,b)=>sum+b.height+10,0);
+  const viewTop=390,viewBottom=1245,viewH=viewBottom-viewTop;
+  const total=blocks.reduce((sum,b)=>sum+b.height+12,0);
   s.scroll=clamp(s.scroll,0,Math.max(0,total-viewH));
-  c.save();
-  c.beginPath(); c.rect(36,viewTop,WIDTH-72,viewH); c.clip();
-
-  let y=viewTop - s.scroll;
+  c.save();c.beginPath();c.rect(56,viewTop,1935,viewH);c.clip();
+  let y=viewTop-s.scroll;
   for(const b of blocks){
-    if(y+b.height >= viewTop-20 && y <= viewBottom+20){
-      if(b.kind==='question'){
-        c.fillStyle='rgba(18,48,38,0.9)';
-        round(c,48,y,WIDTH-96,b.height-8,16); c.fill();
-        c.strokeStyle='rgba(120,220,160,0.25)'; c.lineWidth=2;
-        round(c,48,y,WIDTH-96,b.height-8,16); c.stroke();
-        // label
-        text(c,'ENUNCIADO',64,y+32,22,'#7dffb0','700');
-        let ty=y+70;
-        for(const line of b.lines){
-          text(c,line,64,ty,size,'#ffffff','600');
-          ty+=lineH+4;
-        }
-      } else if(b.kind==='option'){
-        const letter=String.fromCharCode(65+b.i);
-        drawOptionCard(p, letter, b.option, 48, y, WIDTH-96, b.height-10, 'answer:'+b.i, b.st);
-      } else if(b.kind==='note'){
-        c.fillStyle='rgba(20,50,40,0.7)';
-        round(c,48,y,WIDTH-96,b.height-8,12); c.fill();
-        let ty=y+40;
-        for(const line of b.lines){
-          text(c,line,64,ty,size-4,'#c8e8d4','500');
-          ty+=lineH;
-        }
-      }
+    if(y+b.height>=viewTop&&y<=viewBottom){
+      if(b.kind==='option'){c.fillStyle=b.color;round(c,66,y,1870,b.height-5,14);c.fill();region(p,66,Math.max(viewTop,y),1870,Math.min(viewBottom,y+b.height)-Math.max(viewTop,y),b.act);}
+      let ty=y+Math.max(58,lineH);
+      for(const line of b.lines){text(c,line,92,ty,b.kind==='question'?size:size-3,b.kind==='question'?'#ffffff':'#effcf3');ty+=lineH+2;}
     }
-    y += b.height+10;
+    y+=b.height+12;
   }
   c.restore();
-
-  // footer toolbar
-  c.fillStyle='rgba(8,20,16,0.95)';
-  c.fillRect(20,1295,WIDTH-40,220);
-  c.fillStyle='#7dffb0'; c.fillRect(20,1295,WIDTH-40,3);
-
-  const bw=300, bh=100, gap=18, baseY=1320;
-  let bx=50;
-  vrButton(p,'▲ SUBIR',bx,baseY,bw,bh,'scrollUp','#1a4a35',36); bx+=bw+gap;
-  vrButton(p,'▼ DESCER',bx,baseY,bw,bh,'scrollDown','#1a4a35',36); bx+=bw+gap;
-  vrButton(p,'◀ ANTERIOR',bx,baseY,bw,bh,'prev','#1e3a55',36); bx+=bw+gap;
-  vrButton(p,'PRÓXIMA ▶',bx,baseY,bw,bh,'next','#1e5540',36); bx+=bw+gap;
-  const lastLabel = s.mode==='flash' ? 'VIRAR' : s.mode==='exam' ? 'FINALIZAR' : '★ FAVORITO';
-  const lastAct = s.mode==='flash' ? 'flip' : s.mode==='exam' ? 'finish' : 'favorite';
-  vrButton(p,lastLabel,bx,baseY,WIDTH-bx-50,bh,lastAct,s.mode==='exam'?'#5a3020':'#1a5c3e',36);
-
-  const footer = s.mode==='exam'&&s.minutes
-    ? `TEMPO: ${Math.max(0,Math.ceil((s.minutes*60000-(Date.now()-s.start))/60000))} min  ·  SIMULADO`
-    : s.mode==='flash' ? 'MODO FLASHCARD' : s.mode==='exam' ? 'MODO SIMULADO' : 'MODO ESTUDO';
-  text(c,footer,55,1475,28,'#8ecfad','600');
+  vrButton(p,'▲ SUBIR',65,1288,270,99,'scrollUp');
+  vrButton(p,'▼ DESCER',350,1288,290,99,'scrollDown');
+  vrButton(p,'◀ ANTERIOR',660,1288,385,99,'prev');
+  vrButton(p,'PRÓXIMA ▶',1062,1288,396,99,'next');
+  vrButton(p,s.mode==='flash'?'VIRAR':s.mode==='exam'?'FINALIZAR':'★ FAVORITO',1477,1288,500,99,s.mode==='flash'?'flip':s.mode==='exam'?'finish':'favorite');
+  const footer=s.mode==='exam'&&s.minutes?`TEMPO: ${Math.max(0,Math.ceil((s.minutes*60000-(Date.now()-s.start))/60000))} MIN`:s.mode==='flash'?'FLASHCARD':s.mode==='exam'?'SIMULADO':'ESTUDO';
+  text(c,footer,85,1470,36,'#a5ffd2');
   p.texture.needsUpdate=true;
 }
 
 function drawSide(id){
-  const p=panels[id], c=p.ctx;
-  background(p, id==='left' ? 'AMBIENTES 3D' : 'DESEMPENHO');
+  const p=panels[id],c=p.ctx;
+  background(p,id==='left'?'AMBIENTES':'ESTATÍSTICAS');
   if(id==='left'){
-    let y=185;
-    environments.forEach((name,i)=>{
-      const active=i===state.settings.env;
-      vrButton(p, `${String(i+1).padStart(2,'0')}  ·  ${name}`, 40, y, WIDTH-80, 92, 'env:'+i, active?'#1e7048':'#152a22', 36);
-      y+=104;
-    });
-    vrButton(p,'REPOSICIONAR PAINÉIS',40,HEIGHT-130,WIDTH-80,90,'resetPanels','#1a3a55',36);
-  } else {
+    let y=280;
+    environments.forEach((name,i)=>{vrButton(p,`${i+1}. ${name}`,55,y,1935,95,'env:'+i,i===state.settings.env?'#1e6a42':'#1a4234',42);y+=110;});
+    vrButton(p,'REPOSICIONAR',55,1400,1935,94,'resetPanels');
+  }else{
     const z=stats();
-    const cards=[
-      ['QUESTÕES', String(questions.length)],
-      ['RESPONDIDAS', String(z.total)],
-      ['ACERTOS', String(z.ok)],
-      ['APROVEITAMENTO', z.pct+'%'],
-      ['REVISÕES', String(z.pending)],
-      ['SIMULADOS', String(z.exams)]
-    ];
-    let y=185;
-    for(let i=0;i<cards.length;i+=2){
-      for(let j=0;j<2;j++){
-        if(!cards[i+j]) continue;
-        const [lab,val]=cards[i+j];
-        const x=40+j*((WIDTH-100)/2+20);
-        const w=(WIDTH-100)/2;
-        c.fillStyle='rgba(18,48,38,0.9)';
-        round(c,x,y,w,130,16); c.fill();
-        c.strokeStyle='rgba(100,200,150,0.3)'; c.lineWidth=2;
-        round(c,x,y,w,130,16); c.stroke();
-        text(c,val,x+24,y+70,48,'#7dffb0','800');
-        text(c,lab,x+24,y+110,24,'#a8cbb8','500');
-      }
-      y+=150;
-    }
+    const lines=[`QUESTÕES: ${questions.length}`,`RESPONDIDAS: ${z.total}`,`ACERTOS: ${z.ok}`,`APROVEITAMENTO: ${z.pct}%`,`REVISÕES: ${z.pending}`,`SIMULADOS: ${z.exams}`];
+    lines.forEach((v,i)=>text(c,v,74,310+i*116,53));
     const modes=[['QUESTÕES','study'],['SIMULADO','exam'],['FLASHCARDS','flash'],['REVISÃO','review']];
-    y=HEIGHT-480;
-    modes.forEach(([name,mode],i)=>{
-      vrButton(p,name,40,y+i*105,WIDTH-80,92,'go:'+mode,'#1a4a35',36);
-    });
+    modes.forEach(([name,mode],i)=>vrButton(p,name,65,1010+i*105,1900,88,'go:'+mode));
   }
   p.texture.needsUpdate=true;
 }
-
 function updateVR(){if(!panels.main)return;drawMain();drawSide('left');drawSide('right');}
 function scrollVR(delta){const s=state.session;if(!s)return;s.scroll=Math.max(0,s.scroll+delta);updateVR();}
 
@@ -2337,35 +2044,19 @@ function setEnvironment(n){
   safeStore();updateVR();
 }
 function configureQuality(){
-  // Otimizado para Meta Quest 3S: 1832×1920 por olho, ~20 PPD, FOV 96°H/90°V, até 120 Hz
   const q=state.settings.quality;
-  // Pixel ratio: no headset o XR gerencia; no desktop limitar
-  const pr = q==='low' ? 1 : q==='high' ? Math.min(devicePixelRatio, 2.5) : Math.min(devicePixelRatio, 1.75);
-  renderer.setPixelRatio(pr);
-  // Foveated rendering: low foveation = mais nítido nas bordas (Quest 3S Fresnel já perde nas bordas)
-  if(typeof renderer.xr.setFoveation==='function'){
-    renderer.xr.setFoveation(q==='low' ? 0.75 : q==='high' ? 0.15 : 0.4);
+  renderer.setPixelRatio(q==='low'?1:q==='high'?Math.min(devicePixelRatio,2):Math.min(devicePixelRatio,1.6));
+  if(typeof renderer.xr.setFoveation==='function')renderer.xr.setFoveation(q==='low'?0.7:q==='high'?0.3:0.48);
+  const res=q==='low'?512:q==='high'?2048:1024;
+  if(sun.shadow.mapSize.x!==res){
+    if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}
+    sun.shadow.mapSize.set(res,res);
+    renderer.shadowMap.needsUpdate=true;
   }
-  // Shadow map: 2048 em Alta aproveita a densidade de ~20 PPD
-  const res = q==='low' ? 512 : q==='high' ? 2048 : 1024;
-  if(sun.shadow.mapSize.x !== res){
-    if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map = null; }
-    sun.shadow.mapSize.set(res, res);
-    renderer.shadowMap.needsUpdate = true;
-  }
-  // Framebuffer scale: 1.0 ≈ nativo 1832×1920; >1 supersampling (custa GPU)
-  // Alta: 1.15 leve supersampling para compensar lentes Fresnel
-  const fb = q==='low' ? 0.8 : q==='high' ? 1.15 : 1.0;
-  if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
-    renderer.xr.setFramebufferScaleFactor(fb);
-  }
-  // Prefer 90Hz+ quando disponível (Quest 3S até 120)
-  try {
-    if(renderer.xr.getSession){ /* session rate set on enter */ }
-  } catch(e){}
+  if(!renderer.xr.isPresenting)renderer.xr.setFramebufferScaleFactor(q==='low'?0.85:q==='high'?1.25:1.05);
 }
 function syncSettings(){
-  for(const k of ['lighting','quality','fontSize','distance','panelHeight','panelScale','speed','snap','volume','playerHeight','vignette','comfort']){ if($(k)) $(k).value=state.settings[k]; }
+  for(const k of ['lighting','quality','fontSize','distance','panelHeight','panelScale','speed','snap','volume'])$(k).value=state.settings[k];
   $('environment').value=state.settings.env;
   configureQuality();applyLight();panelPositionReset();
   for(const [id,v] of Object.entries(state.panels||{})){
@@ -2410,10 +2101,6 @@ renderer.setAnimationLoop(()=>{
         rig.position.addScaledVector(right,ax*dt*speed);
         rig.position.x=clamp(rig.position.x,-9,9);
         rig.position.z=clamp(rig.position.z,-8,6);
-        isLocomoting = true;
-        // intensidade proporcional à velocidade do stick (conforto)
-        const mag = Math.min(1, Math.hypot(ax, az));
-        moveVignetteTarget = (Number(state.settings.comfort) ? mag : 0) * (Number(state.settings.vignette)||100)/100 * 0.85;
       }
       if(src.handedness==='right'&&Math.abs(ax)>0.7){
         const c=controllers.find(o=>o.object.userData.handedness==='right')||controllers[1];
@@ -2462,40 +2149,6 @@ renderer.setAnimationLoop(()=>{
       else if(s?.mode==='exam')drawMain();
     }
   }
-  // Vinheta dinâmica: suaviza ao parar de andar (comfort locomotion)
-  if(!isLocomoting) moveVignetteTarget *= 0.0;
-  isLocomoting = false;
-  moveVignetteCurrent += (moveVignetteTarget - moveVignetteCurrent) * Math.min(1, dt * 8);
-  if(vignetteUniforms){
-    vignetteUniforms.uIntensity.value = moveVignetteCurrent;
-    vignetteUniforms.uRadius.value = 0.55 + (1 - moveVignetteCurrent) * 0.28;
-  }
-  // Áudio espacial: ouvinte segue a cabeça
-  if(audioCtx && listenerNode){
-    try {
-      const hp = new THREE.Vector3();
-      if(renderer.xr.isPresenting) renderer.xr.getCamera().getWorldPosition(hp);
-      else camera.getWorldPosition(hp);
-      if(listenerNode.positionX){
-        listenerNode.positionX.setValueAtTime(hp.x, audioCtx.currentTime);
-        listenerNode.positionY.setValueAtTime(hp.y, audioCtx.currentTime);
-        listenerNode.positionZ.setValueAtTime(hp.z, audioCtx.currentTime);
-      } else if(listenerNode.setPosition){
-        listenerNode.setPosition(hp.x, hp.y, hp.z);
-      }
-      const fwd = new THREE.Vector3();
-      if(renderer.xr.isPresenting) renderer.xr.getCamera().getWorldDirection(fwd);
-      else camera.getWorldDirection(fwd);
-      if(listenerNode.forwardX){
-        listenerNode.forwardX.setValueAtTime(fwd.x, audioCtx.currentTime);
-        listenerNode.forwardY.setValueAtTime(fwd.y, audioCtx.currentTime);
-        listenerNode.forwardZ.setValueAtTime(fwd.z, audioCtx.currentTime);
-        listenerNode.upX.setValueAtTime(0, audioCtx.currentTime);
-        listenerNode.upY.setValueAtTime(1, audioCtx.currentTime);
-        listenerNode.upZ.setValueAtTime(0, audioCtx.currentTime);
-      }
-    } catch(e){}
-  }
   renderer.render(scene,camera);
 });
 
@@ -2503,24 +2156,11 @@ async function enterVR(){
   try{
     if(renderer.xr.isPresenting){await renderer.xr.getSession().end();return;}
     if(!navigator.xr||!await navigator.xr.isSessionSupported('immersive-vr'))throw Error('WebXR imersivo não disponível neste navegador');
-    // Quest 3S: pedir taxa alta (90/120 Hz) e features de tracking
-    const session = await navigator.xr.requestSession('immersive-vr', {
-      optionalFeatures: ['local-floor', 'hand-tracking', 'bounded-floor', 'layers'],
-      // preferredRate quando suportado pelo runtime
-    });
-    // Preferir 90 ou 120 Hz se o headset reportar
-    if(session.updateTargetFrameRate){
-      const rates = session.supportedFrameRates || [90, 120, 72];
-      const prefer = rates.includes(120) ? 120 : rates.includes(90) ? 90 : rates[0];
-      try { await session.updateTargetFrameRate(prefer); } catch(e){}
-    }
+    const session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','hand-tracking','bounded-floor']});
     await renderer.xr.setSession(session);
-    // Reaplica escala de framebuffer nativa Quest 3S (1832×1920/olho)
-    configureQuality();
     $('vrButton').textContent='SAIR DO VR';
     session.addEventListener('end',()=>{$('vrButton').textContent='ENTRAR EM VR';dragging=null;});
     playFanfare();
-    note('VR ativo • Quest 3S 1832×1920 • qualidade '+state.settings.quality);
   }catch(e){note('Não foi possível entrar em VR: '+e.message);}
 }
 
@@ -2537,19 +2177,6 @@ $('volume').oninput=()=>{
   if(masterGain)masterGain.gain.value=state.settings.volume/100;
   safeStore();
 };
-if($('playerHeight')){
-  $('playerHeight').oninput=()=>{
-    state.settings.playerHeight=+$('playerHeight').value;
-    applyPlayerHeight();
-    safeStore();
-  };
-}
-if($('vignette')){
-  $('vignette').oninput=()=>{ state.settings.vignette=+$('vignette').value; safeStore(); };
-}
-if($('comfort')){
-  $('comfort').onchange=()=>{ state.settings.comfort=+$('comfort').value; safeStore(); };
-}
 $('resetPanels').onclick=resetPanelPositions;
 $('vrButton').onclick=enterVR;
 $('reload').onclick=loadBank;
@@ -2592,7 +2219,6 @@ async function start(){
   if(!state.history.length){const saved=await idbGet('progress');if(saved&&Array.isArray(saved.history))state={...defaultState(),...saved,settings:{...defaultState().settings,...saved.settings}};}
   initSky();
   syncSettings();
-  applyPlayerHeight();
   buildWorld(+state.settings.env);
   fillFilters();
   const cache=await idbGet('bank');
