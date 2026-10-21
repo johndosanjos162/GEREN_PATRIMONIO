@@ -7,7 +7,8 @@ import time
 from datetime import datetime
 from collections import defaultdict
 
-st.set_page_config(page_title="PMSC 2026 - Quest 3S MR", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="PMSC 2026 - Quest 3S Grab Livre",
+                   page_icon="🎯", layout="wide")
 
 DISTRIBUICAO = {
     "Legislação Institucional": 10,
@@ -122,16 +123,16 @@ if not banco:
         pass
     st.stop()
 
-st.title("🎯 PMSC 3D — Mixed Reality + Ambientes")
+st.title("🎯 PMSC 3D — Grab Livre no VR")
 st.caption(
-    f"✅ {info['arquivos']} arquivo(s) · {info['unicas']} questões únicas "
-    f"({info['removidas']} duplicatas) · Meta Quest 3S"
+    f"✅ {info['unicas']} questões únicas · Meta Quest 3S · "
+    f"Grip = agarrar · Trigger = responder"
 )
 
 with st.sidebar:
     st.success(f"📚 {info['unicas']}q únicas · {info['bruto']}q brutas")
     if info["removidas"]:
-        st.caption(f"🧹 {info['removidas']} duplicata(s) removida(s)")
+        st.caption(f"🧹 {info['removidas']} duplicata(s)")
     if st.button("🔄 Recarregar banco", use_container_width=True):
         load_banco.clear()
         st.rerun()
@@ -163,12 +164,12 @@ with st.sidebar:
 
 
 # ==================================================================
-# RENDERIZADOR VR/MR
+# RENDERIZADOR VR — GRAB LIVRE MELHORADO
 # ==================================================================
 def render_vr_tudo_movel(questoes, modo="ARENA", height=950):
     key = f"vr_{modo}"
     if not st.session_state.get(key, False):
-        st.info(f"{len(questoes)} questões prontas. Clique para carregar o VR com TUDO movível.")
+        st.info(f"{len(questoes)} questões prontas. Clique para carregar o VR.")
         if st.button(
             f"🥽 CARREGAR VR — {modo} ({min(len(questoes),18)} blocos)",
             key=f"btn_{key}", type="primary", use_container_width=True
@@ -197,24 +198,104 @@ def render_vr_tudo_movel(questoes, modo="ARENA", height=950):
 <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
 <script src="https://unpkg.com/super-hands@3.0.5/dist/super-hands.min.js"></script>
 <script>
-// ===== TUDO MOVÍVEL + AUTO-SAVE =====
+// ==================================================================
+// COMPONENTE: TUDO MOVÍVEL + ROTAÇÃO + FEEDBACK
+// ==================================================================
 AFRAME.registerComponent('tudo-movel', {
   init: function() {
     const el = this.el;
     el.setAttribute('hoverable', '');
     el.setAttribute('grabbable', '');
     el.setAttribute('draggable', '');
-    el.addEventListener('grab-start', () => {
-      el.object3D.scale.set(1.05, 1.05, 1.05);
+    el.setAttribute('stretchable', '');
+    el.setAttribute('droppable', '');
+
+    // Guarda a escala original da box filha para feedback
+    let origColor = '#13244a';
+
+    el.addEventListener('grab-start', (evt) => {
+      // Feedback: cresce e ilumina
+      el.object3D.scale.set(1.08, 1.08, 1.08);
+      const box = el.querySelector('a-box');
+      if (box) {
+        origColor = box.getAttribute('material').color || '#13244a';
+        box.setAttribute('material', 'emissive', '#ffaa00');
+        box.setAttribute('material', 'emissiveIntensity', 0.8);
+      }
+      // Guarda a mão que agarrou para rotação
+      if (evt.detail && evt.detail.hand) {
+        el.sceneEl.emit('block-grabbed', { block: el, hand: evt.detail.hand });
+      }
+      console.log('[GRAB-START]', el.id);
+      showToast('✋ Segurando ' + el.id);
     });
+
     el.addEventListener('grab-end', () => {
+      // Volta ao normal
       el.object3D.scale.set(1, 1, 1);
-      saveBlockPosition(el.id);
+      const box = el.querySelector('a-box');
+      if (box) {
+        box.setAttribute('material', 'emissive', '#000000');
+        box.setAttribute('material', 'emissiveIntensity', 0);
+      }
+      el.sceneEl.emit('block-released', { block: el });
+      // Salva posição após o frame atualizar
+      setTimeout(() => {
+        saveBlockPosition(el.id);
+        showToast('📍 ' + el.id + ' posicionado');
+      }, 80);
+      console.log('[GRAB-END]', el.id, el.getAttribute('position'));
+    });
+
+    el.addEventListener('stretch-start', () => {
+      el.object3D.scale.set(1.15, 1.15, 1.15);
+    });
+    el.addEventListener('stretch-end', () => {
+      el.object3D.scale.set(1, 1, 1);
     });
   }
 });
 
-// ===== CALIBRADOR MÃOS AO VIVO =====
+// ==================================================================
+// COMPONENTE: ROTAÇÃO COM THUMBSTICK ENQUANTO AGARRA
+// ==================================================================
+AFRAME.registerComponent('grab-rotator', {
+  init: function() {
+    const hand = this.el;
+    let grabbedBlock = null;
+
+    hand.sceneEl.addEventListener('block-grabbed', (evt) => {
+      grabbedBlock = evt.detail.block;
+    });
+    hand.sceneEl.addEventListener('block-released', () => {
+      grabbedBlock = null;
+    });
+
+    // Thumbstick nos controles
+    hand.addEventListener('thumbstickmoved', (evt) => {
+      if (!grabbedBlock) return;
+      const x = evt.detail.x;
+      const y = evt.detail.y;
+      if (Math.abs(x) > 0.15) grabbedBlock.object3D.rotation.y += x * 0.04;
+      if (Math.abs(y) > 0.15) grabbedBlock.object3D.rotation.x += y * 0.04;
+    });
+
+    // Axismove (fallback para hand tracking)
+    hand.addEventListener('axismove', (evt) => {
+      if (!grabbedBlock) return;
+      const axes = evt.detail.axis;
+      if (axes && axes.length >= 2) {
+        const x = axes[0], y = axes[1];
+        if (Math.abs(x) > 0.15) grabbedBlock.object3D.rotation.y += x * 0.04;
+        if (Math.abs(y) > 0.15) grabbedBlock.object3D.rotation.x += y * 0.04;
+      }
+    });
+  }
+});
+
+// ==================================================================
+// CALIBRADOR DE MÃOS AO VIVO
+// ==================================================================
 AFRAME.registerComponent('hand-calibrator-live', {
   schema: { hand: {type: 'string', default: 'left'} },
   init: function() {
@@ -230,21 +311,18 @@ AFRAME.registerComponent('hand-calibrator-live', {
     const tEl = document.getElementById(id);
     if (!tEl) return;
     const p = this.el.object3D.position;
-    const r = this.el.object3D.rotation;
-    const s = (this.el.getAttribute('scale') || {x: 1}).x;
-    const tracking = this.el.components['hand-tracking-controls'] ? 'TRACKING' : 'CONTROLE';
+    const tracking = this.el.components['hand-tracking-controls'] ? 'TRACK' : 'CTRL';
     tEl.setAttribute('value',
       this.data.hand.toUpperCase() + ': ' + tracking +
-      '\nPos ' + p.x.toFixed(2) + ' ' + p.y.toFixed(2) + ' ' + p.z.toFixed(2) +
-      '\nRot ' + (r.x * 57.3).toFixed(0) + '° ' + (r.y * 57.3).toFixed(0) + '° ' + (r.z * 57.3).toFixed(0) + '°' +
-      '\nScale ' + s.toFixed(2) +
-      ' | ' + (this.pinch ? 'PINCH' : 'ABERTA') +
-      ' ' + (this.grip ? 'GRIP' : '')
+      ' | ' + (this.pinch ? '🤏' : '✋') + (this.grip ? ' 👊' : '') +
+      '\nPos ' + p.x.toFixed(2) + ' ' + p.y.toFixed(2) + ' ' + p.z.toFixed(2)
     );
   }
 });
 
-// ===== SISTEMA DE CALIBRAÇÃO E AMBIENTES =====
+// ==================================================================
+// SISTEMA DE CALIBRAÇÃO + AMBIENTES
+// ==================================================================
 AFRAME.registerComponent('calibration-system', {
   init: function() {
     const rig = document.getElementById('rig');
@@ -257,8 +335,6 @@ AFRAME.registerComponent('calibration-system', {
     this.el.querySelectorAll('.calib-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const a = btn.getAttribute('data-action');
-
-        // --- Calibração ---
         if (a === 'resetPos')   rig.setAttribute('position', '0 0 8');
         if (a === 'resetRot')   rig.setAttribute('rotation', '0 0 0');
         if (a === 'handUp') {
@@ -276,31 +352,19 @@ AFRAME.registerComponent('calibration-system', {
         if (a === 'heightUp')  { headH += 0.1; head.setAttribute('position', '0 ' + headH + ' 0'); }
         if (a === 'heightDown'){ headH = Math.max(0.4, headH - 0.1); head.setAttribute('position', '0 ' + headH + ' 0'); }
         if (a === 'resetArena') window.initWorld();
-
-        // --- Organização ---
         if (a === 'organize')      window.organizeBlocks();
         if (a === 'organizeByMat') window.organizeBySubject();
         if (a === 'scatter')       window.scatterBlocks();
-
-        // --- Save/Load ---
-        if (a === 'saveLayout') window.saveLayout();
-        if (a === 'loadLayout') window.loadLayout();
-
-        // --- Ambientes ---
-        if (a === 'passthrough') window.setBackground('passthrough');
-        if (a === 'dark')        window.setBackground('dark');
-        if (a === 'beach')       window.setBackground('beach');
-        if (a === 'office')      window.setBackground('office');
-        if (a === 'library')     window.setBackground('library');
-        if (a === 'space')       window.setBackground('space');
-
-        // --- Sair ---
+        if (a === 'saveLayout')    window.saveLayout();
+        if (a === 'loadLayout')    window.loadLayout();
+        if (a === 'passthrough')   window.setBackground('passthrough');
+        if (a === 'dark')          window.setBackground('dark');
+        if (a === 'beach')         window.setBackground('beach');
+        if (a === 'space')         window.setBackground('space');
         if (a === 'exitVR') {
           const sess = document.querySelector('a-scene').renderer.xr.getSession();
           if (sess) sess.end();
         }
-
-        // Feedback visual no botão
         const orig = btn.getAttribute('material').color;
         btn.setAttribute('material', 'color', '#00ff88');
         setTimeout(() => btn.setAttribute('material', 'color', orig), 200);
@@ -317,33 +381,30 @@ html, body { margin:0; padding:0; width:100%; height:__HEIGHT__px; overflow:hidd
 #enter { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); z-index:99999;
   background:linear-gradient(90deg,#00d1ff,#7000ff); color:white; border:none;
   padding:14px 32px; border-radius:999px; font-weight:900; font-size:15px; cursor:pointer; }
-#toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:999999;
+#toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); z-index:999999;
   background:rgba(0,0,0,0.95); color:#00ff88; border:2px solid #00ff88;
-  padding:16px 28px; border-radius:12px; font-size:16px; font-weight:700;
+  padding:10px 22px; border-radius:10px; font-size:14px; font-weight:700;
   display:none; pointer-events:none; }
 </style>
 </head>
 <body>
 <div id="hud">
-  <div style="font-weight:900;color:white;font-size:14px;">__MODO__ — MR + AMBIENTES</div>
-  Grip/Pinch = mover · Trigger = responder<br>
+  <div style="font-weight:900;color:white;font-size:14px;">__MODO__ — GRAB LIVRE</div>
+  <b>Grip</b> = agarrar · <b>Trigger</b> = responder · <b>Thumbstick</b> = rotacionar<br>
   <div id="status" style="margin-top:6px;color:#00ff88;font-weight:700;">0/__LEN__ respondidas</div>
 </div>
-<button id="enter">🥽 ENTRAR VR — MOVER TUDO</button>
+<button id="enter">🥽 ENTRAR VR</button>
 <div id="toast"></div>
 
-<a-scene
-  id="scene"
+<a-scene id="scene"
   background="color: #050a14"
-  renderer="antialias:true; colorManagement:true; alpha:true; preserveDrawingBuffer:true"
+  renderer="antialias:true; colorManagement:true; alpha:true"
   webxr="optionalFeatures: hand-tracking, local-floor, bounded-floor, hit-test, passthrough"
-  vr-mode-ui="enabled:true"
-  embedded
+  vr-mode-ui="enabled:true" embedded
   style="width:100%;height:__HEIGHT__px;">
 
   <a-sky id="sky" color="#050a14"></a-sky>
   <a-entity id="stars" visible="false"></a-entity>
-
   <a-entity light="type:ambient; intensity:0.9"></a-entity>
   <a-entity light="type:directional; intensity:1.1" position="4 7 4"></a-entity>
   <a-plane rotation="-90 0 0" width="120" height="120" color="#0a1430" opacity="0.6"></a-plane>
@@ -357,73 +418,73 @@ html, body { margin:0; padding:0; width:100%; height:__HEIGHT__px; overflow:hidd
       </a-entity>
     </a-entity>
 
+    <!-- MÃO ESQUERDA — GRAB via grip/pinch -->
     <a-entity id="leftHand"
       hand-controls="hand: left; handModelStyle: lowPoly; color:#00d1ff"
       hand-tracking-controls="hand: left"
       hand-calibrator-live="hand: left"
+      grab-rotator
       laser-controls="hand: left"
-      raycaster="objects: .clickable, .grabbable, .ui; far: 25"
+      raycaster="objects: .grabbable, .clickable, .ui; far: 30"
       line="color:#00d1ff; opacity:0.9"
-      super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstart; grabEndButtons: gripup, pinchend"
-      sphere-collider="objects: .grabbable; radius:0.18">
+      super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstarted; grabEndButtons: gripup, pinchended"
+      sphere-collider="objects: .grabbable; radius:0.30">
     </a-entity>
 
+    <!-- MÃO DIREITA — GRAB via grip/pinch -->
     <a-entity id="rightHand"
       hand-controls="hand: right; handModelStyle: lowPoly; color:#ff8a00"
       hand-tracking-controls="hand: right"
       hand-calibrator-live="hand: right"
+      grab-rotator
       laser-controls="hand: right"
-      raycaster="objects: .clickable, .grabbable, .ui; far: 25"
+      raycaster="objects: .grabbable, .clickable, .ui; far: 30"
       line="color:#ff8a00; opacity:0.9"
-      super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstart; grabEndButtons: gripup, pinchend"
-      sphere-collider="objects: .grabbable; radius:0.18">
+      super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstarted; grabEndButtons: gripup, pinchended"
+      sphere-collider="objects: .grabbable; radius:0.30">
     </a-entity>
   </a-entity>
 
   <!-- ========== PAINEL PRINCIPAL ========== -->
-  <a-entity id="mainPanel" position="0 2.0 -2.6" tudo-movel calibration-system
-            hoverable grabbable draggable>
-    <a-box width="4.0" height="2.4" depth="0.06" color="#0a0a0a" opacity="0.94" class="grabbable"></a-box>
-    <a-text value="MIXED REALITY + AMBIENTES" color="#00e5ff" width="4.5" align="center" position="0 1.05 0.05"></a-text>
+  <a-entity id="mainPanel" position="0 2.2 -3.0" tudo-movel calibration-system
+            hoverable grabbable draggable class="grabbable">
+    <a-box width="4.0" height="2.2" depth="0.06" color="#0a0a0a" opacity="0.94" class="grabbable"></a-box>
+    <a-text value="GRAB LIVRE + AMBIENTES" color="#00e5ff" width="4.5" align="center" position="0 0.95 0.05" class="grabbable"></a-text>
 
-    <!-- Linha 1: Ambientes -->
-    <a-text value="AMBIENTE:" color="#00ff88" width="1.2" align="left" position="-1.9 0.75 0.05"></a-text>
-    <a-entity class="calib-btn clickable" data-action="passthrough" position="-0.8 0.75 0.05" geometry="primitive: plane; width:0.85; height:0.22" material="color:#7a1fa2"><a-text value="PASSTHROUGH" color="white" width="0.95" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="dark"    position="0.15 0.75 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a6a"><a-text value="ESCURO" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="beach"   position="1.0 0.75 0.05"  geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a5a6a"><a-text value="PRAIA" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="office"  position="1.75 0.75 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a5a"><a-text value="ESCRITÓRIO" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-text value="AMBIENTE:" color="#00ff88" width="1.2" align="left" position="-1.9 0.65 0.05" class="grabbable"></a-text>
+    <a-entity class="calib-btn clickable" data-action="passthrough" position="-0.8 0.65 0.05" geometry="primitive: plane; width:0.85; height:0.22" material="color:#7a1fa2"><a-text value="PASSTHROUGH" color="white" width="0.95" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="dark"   position="0.15 0.65 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a6a"><a-text value="ESCURO" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="beach"  position="0.9 0.65 0.05"  geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a5a6a"><a-text value="PRAIA" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="space"  position="1.65 0.65 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#2a0a5a"><a-text value="ESPAÇO" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
 
-    <!-- Linha 2: Ambientes 2 -->
-    <a-entity class="calib-btn clickable" data-action="library" position="-1.4 0.45 0.05" geometry="primitive: plane; width:0.7; height:0.22" material="color:#5a3a1a"><a-text value="BIBLIOTECA" color="white" width="0.8" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="space"   position="-0.55 0.45 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#2a0a5a"><a-text value="ESPAÇO" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-text value="|  ORGANIZAR:" color="#00ff88" width="1.2" align="left" position="0.15 0.45 0.05"></a-text>
-    <a-entity class="calib-btn clickable" data-action="organize"    position="1.05 0.45 0.05" geometry="primitive: plane; width:0.55; height:0.22" material="color:#1a3a6a"><a-text value="GRADE" color="white" width="0.6" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="organizeByMat" position="1.7 0.45 0.05" geometry="primitive: plane; width:0.7; height:0.22" material="color:#1a6a3a"><a-text value="POR MATÉRIA" color="white" width="0.75" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-text value="ORGANIZAR:" color="#00ff88" width="1.2" align="left" position="-1.9 0.35 0.05" class="grabbable"></a-text>
+    <a-entity class="calib-btn clickable" data-action="organize"      position="-1.0 0.35 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a6a"><a-text value="GRADE" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="organizeByMat" position="-0.2 0.35 0.05" geometry="primitive: plane; width:0.85; height:0.22" material="color:#1a6a3a"><a-text value="POR MATÉRIA" color="white" width="0.9" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="scatter"       position="0.65 0.35 0.05" geometry="primitive: plane; width:0.7; height:0.22" material="color:#6a1a1a"><a-text value="ESPALHAR" color="white" width="0.8" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="saveLayout"    position="1.5 0.35 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#00aa44"><a-text value="SALVAR" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
 
-    <!-- Linha 3: Save/Load + Scatter -->
-    <a-entity class="calib-btn clickable" data-action="scatter"    position="-1.4 0.15 0.05" geometry="primitive: plane; width:0.7; height:0.22" material="color:#6a1a1a"><a-text value="ESPALHAR" color="white" width="0.8" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="saveLayout" position="-0.55 0.15 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#00aa44"><a-text value="SALVAR" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="loadLayout" position="0.15 0.15 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#aa8800"><a-text value="CARREGAR" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="resetArena" position="0.85 0.15 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a6a"><a-text value="RESET" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="exitVR"     position="1.55 0.15 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#a00000"><a-text value="SAIR VR" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-text value="LAYOUT:" color="#00ff88" width="1.2" align="left" position="-1.9 0.05 0.05" class="grabbable"></a-text>
+    <a-entity class="calib-btn clickable" data-action="loadLayout" position="-1.0 0.05 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#aa8800"><a-text value="CARREGAR" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="resetArena" position="-0.2 0.05 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a6a"><a-text value="RESET" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="exitVR"     position="0.65 0.05 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#a00000"><a-text value="SAIR VR" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
 
-    <!-- Linha 4: Calibração mãos -->
-    <a-text value="CALIBRAR:" color="#00ff88" width="1.2" align="left" position="-1.9 -0.15 0.05"></a-text>
-    <a-entity class="calib-btn clickable" data-action="handUp"   position="-1.1 -0.15 0.05" geometry="primitive: plane; width:0.55; height:0.22" material="color:#2a5a1a"><a-text value="MÃO +" color="white" width="0.6" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="handDown" position="-0.45 -0.15 0.05" geometry="primitive: plane; width:0.55; height:0.22" material="color:#2a5a1a"><a-text value="MÃO -" color="white" width="0.6" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="heightUp" position="0.25 -0.15 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a6a"><a-text value="ALTURA +" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="heightDown" position="0.95 -0.15 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a6a"><a-text value="ALTURA -" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
-    <a-entity class="calib-btn clickable" data-action="resetPos" position="1.65 -0.15 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a6a"><a-text value="RESET POS" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-text value="CALIBRAR:" color="#00ff88" width="1.2" align="left" position="-1.9 -0.25 0.05" class="grabbable"></a-text>
+    <a-entity class="calib-btn clickable" data-action="handUp"     position="-1.1 -0.25 0.05" geometry="primitive: plane; width:0.55; height:0.22" material="color:#2a5a1a"><a-text value="MÃO +" color="white" width="0.6" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="handDown"   position="-0.45 -0.25 0.05" geometry="primitive: plane; width:0.55; height:0.22" material="color:#2a5a1a"><a-text value="MÃO -" color="white" width="0.6" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="heightUp"   position="0.25 -0.25 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a6a"><a-text value="ALT +" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="heightDown" position="0.95 -0.25 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a6a"><a-text value="ALT -" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
+    <a-entity class="calib-btn clickable" data-action="resetPos"   position="1.65 -0.25 0.05" geometry="primitive: plane; width:0.6; height:0.22" material="color:#1a3a6a"><a-text value="RESET POS" color="white" width="0.7" align="center" position="0 0 0.01"></a-text></a-entity>
 
-    <a-text value="Grip = mover bloco · Trigger = responder" color="#ffaa00" width="3.8" align="center" position="0 -1.0 0.05"></a-text>
+    <a-text value="🖐️ Grip/pinch = pegar · ⚡ Trigger = responder · 🕹️ Thumbstick = rotacionar"
+            color="#ffaa00" width="3.9" align="center" position="0 -0.85 0.05" class="grabbable"></a-text>
   </a-entity>
 
-  <!-- ========== DISPLAY CALIBRAÇÃO MÃOS ========== -->
-  <a-entity id="handCalibDisplay" position="3.2 2.0 -2.6" tudo-movel hoverable grabbable draggable>
+  <!-- PAINEL CALIBRADOR DE MÃOS (movível) -->
+  <a-entity id="handCalibDisplay" position="3.2 2.2 -3.0" tudo-movel hoverable grabbable draggable>
     <a-box width="1.8" height="1.4" depth="0.06" color="#111111" opacity="0.92" class="grabbable"></a-box>
-    <a-text value="CALIBRADOR MÃOS" color="#00ff88" width="2.4" align="center" position="0 0.55 0.05"></a-text>
-    <a-text id="leftHandData"  value="LEFT: aguardando"  color="#00d1ff" width="1.9" align="left" position="-0.75 0.15 0.05"  wrap-count="34"></a-text>
-    <a-text id="rightHandData" value="RIGHT: aguardando" color="#ff8a00" width="1.9" align="left" position="-0.75 -0.35 0.05" wrap-count="34"></a-text>
+    <a-text value="MÃOS AO VIVO" color="#00ff88" width="2.4" align="center" position="0 0.55 0.05" class="grabbable"></a-text>
+    <a-text id="leftHandData"  value="LEFT: aguardando"  color="#00d1ff" width="1.9" align="left" position="-0.75 0.15 0.05" wrap-count="34" class="grabbable"></a-text>
+    <a-text id="rightHandData" value="RIGHT: aguardando" color="#ff8a00" width="1.9" align="left" position="-0.75 -0.35 0.05" wrap-count="34" class="grabbable"></a-text>
   </a-entity>
 
   <a-entity id="world"></a-entity>
@@ -433,9 +494,7 @@ html, body { margin:0; padding:0; width:100%; height:__HEIGHT__px; overflow:hidd
 const QUESTIONS = __Q_JSON__;
 let answers = {};
 let blocks = [];
-let arSession = null;
 
-// ===== HUD =====
 function updateHUD() {
   const n = Object.keys(answers).length;
   const txt = n + '/' + QUESTIONS.length;
@@ -444,135 +503,92 @@ function updateHUD() {
   if (vrHud) vrHud.setAttribute('value', txt);
 }
 
-// ===== TOAST =====
 function showToast(msg, ms) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.style.display = 'block';
-  setTimeout(() => { t.style.display = 'none'; }, ms || 2000);
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => { t.style.display = 'none'; }, ms || 1600);
 }
 
-// ===== AMBIENTES =====
+// ============ AMBIENTES ============
 window.setBackground = function(mode) {
   const sky = document.getElementById('sky');
   const stars = document.getElementById('stars');
-
-  if (mode === 'passthrough') {
-    window.enablePassthrough();
-    return;
-  }
-
-  // Sai do AR se estiver nele
-  if (arSession) {
-    arSession.end();
-    arSession = null;
-  }
-
+  if (mode === 'passthrough') { window.enablePassthrough(); return; }
   stars.setAttribute('visible', 'false');
   sky.setAttribute('visible', 'true');
-
   if (mode === 'dark') {
     sky.setAttribute('color', '#050a14');
     sky.removeAttribute('src');
   } else if (mode === 'beach') {
     sky.setAttribute('src', 'url(https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg)');
     sky.removeAttribute('color');
-  } else if (mode === 'office') {
-    sky.setAttribute('color', '#1a2a4a');
-    sky.removeAttribute('src');
-  } else if (mode === 'library') {
-    sky.setAttribute('color', '#2a1808');
-    sky.removeAttribute('src');
   } else if (mode === 'space') {
     sky.setAttribute('color', '#000005');
     sky.removeAttribute('src');
     createStars();
     stars.setAttribute('visible', 'true');
   }
-
-  showToast('🌍 Ambiente: ' + mode.toUpperCase());
+  showToast('🌍 ' + mode.toUpperCase());
 };
 
-// ===== PASSTHROUGH (Mixed Reality) =====
 window.enablePassthrough = async function() {
-  if (!navigator.xr) {
-    showToast('❌ WebXR não suportado neste navegador');
-    return;
-  }
+  if (!navigator.xr) { showToast('❌ WebXR não suportado'); return; }
   try {
     const supported = await navigator.xr.isSessionSupported('immersive-ar');
-    if (!supported) {
-      showToast('❌ immersive-ar não suportado. Use o Meta Quest Browser no headset.', 4000);
-      return;
-    }
-
+    if (!supported) { showToast('❌ Use o Meta Quest Browser no headset', 4000); return; }
     const sceneEl = document.querySelector('a-scene');
     const renderer = sceneEl.renderer;
-
-    // Sai da sessão VR atual se existir
-    const currentSession = renderer.xr.getSession();
-    if (currentSession) {
-      await currentSession.end();
-      await new Promise(r => setTimeout(r, 400));
-    }
-
-    // Esconde a sky e deixa o fundo transparente
+    const current = renderer.xr.getSession();
+    if (current) { await current.end(); await new Promise(r => setTimeout(r, 400)); }
     document.getElementById('sky').setAttribute('visible', 'false');
     document.getElementById('stars').setAttribute('visible', 'false');
     sceneEl.object3D.background = null;
     renderer.setClearColor(0x000000, 0);
-
-    // Solicita sessão AR com passthrough
     const session = await navigator.xr.requestSession('immersive-ar', {
       requiredFeatures: ['local-floor'],
       optionalFeatures: ['passthrough', 'hand-tracking', 'hit-test', 'bounded-floor', 'anchors']
     });
-
     await renderer.xr.setSession(session);
-    arSession = session;
-
     session.addEventListener('end', () => {
-      arSession = null;
       sceneEl.object3D.background = new THREE.Color(0x050a14);
       renderer.setClearColor(0x050a14, 1);
       document.getElementById('sky').setAttribute('visible', 'true');
-      showToast('Saiu do modo passthrough');
+      showToast('Saiu do passthrough');
     });
-
-    showToast('👁️ PASSTHROUGH ATIVO — você vê o mundo real');
+    showToast('👁️ PASSTHROUGH ATIVO');
   } catch (err) {
-    showToast('❌ Falha no passthrough: ' + err.message, 4000);
-    console.error(err);
+    showToast('❌ ' + err.message, 4000);
   }
 };
 
-// ===== ESTRELAS (ESPAÇO) =====
 function createStars() {
-  const container = document.getElementById('stars');
-  container.innerHTML = '';
+  const c = document.getElementById('stars');
+  c.innerHTML = '';
   for (let i = 0; i < 400; i++) {
-    const star = document.createElement('a-sphere');
+    const s = document.createElement('a-sphere');
     const r = 25 + Math.random() * 15;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    star.setAttribute('position', {
-      x: r * Math.sin(phi) * Math.cos(theta),
-      y: r * Math.sin(phi) * Math.sin(theta),
-      z: r * Math.cos(phi)
+    const t = Math.random() * Math.PI * 2;
+    const p = Math.acos(2 * Math.random() - 1);
+    s.setAttribute('position', {
+      x: r * Math.sin(p) * Math.cos(t),
+      y: r * Math.sin(p) * Math.sin(t),
+      z: r * Math.cos(p)
     });
-    star.setAttribute('radius', 0.03 + Math.random() * 0.08);
-    star.setAttribute('color', '#ffffff');
-    star.setAttribute('material', 'shader: flat; opacity: 0.9');
-    container.appendChild(star);
+    s.setAttribute('radius', 0.03 + Math.random() * 0.08);
+    s.setAttribute('color', '#ffffff');
+    s.setAttribute('material', 'shader: flat; opacity: 0.9');
+    c.appendChild(s);
   }
 }
 
-// ===== CRIAR BLOCO DE QUESTÃO =====
+// ============ CRIAR BLOCO (todos os filhos grabbable) ============
 function createBlock(q, i) {
   const cols = 4, spacing = 3.0;
   const x = (i % cols) * spacing - ((cols - 1) * spacing / 2);
   const z = Math.floor(i / cols) * -3.4 - 1.5;
-  const y = 1.1 + Math.random() * 0.5;
+  const y = 1.2 + Math.random() * 0.5;
 
   const root = document.createElement('a-entity');
   root.setAttribute('id', 'block-' + i);
@@ -583,17 +599,19 @@ function createBlock(q, i) {
 
   const box = document.createElement('a-box');
   box.setAttribute('width', '2.4');
-  box.setAttribute('height', '2.1');
-  box.setAttribute('depth', '0.22');
+  box.setAttribute('height', '2.2');
+  box.setAttribute('depth', '0.24');
   box.setAttribute('color', '#13244a');
   box.setAttribute('class', 'grabbable');
+  box.setAttribute('material', 'emissive: #000000; emissiveIntensity: 0');
 
   const title = document.createElement('a-text');
   title.setAttribute('value', (i + 1) + '. ' + q.materia);
   title.setAttribute('color', '#00e5ff');
   title.setAttribute('width', '2.3');
   title.setAttribute('align', 'center');
-  title.setAttribute('position', '0 0.8 0.13');
+  title.setAttribute('position', '0 0.85 0.14');
+  title.setAttribute('class', 'grabbable');
 
   const qtext = document.createElement('a-text');
   const shortQ = q.pergunta.length > 150 ? q.pergunta.slice(0, 147) + '...' : q.pergunta;
@@ -601,17 +619,19 @@ function createBlock(q, i) {
   qtext.setAttribute('color', 'white');
   qtext.setAttribute('width', '2.2');
   qtext.setAttribute('align', 'center');
-  qtext.setAttribute('position', '0 0.42 0.13');
+  qtext.setAttribute('position', '0 0.45 0.14');
   qtext.setAttribute('wrap-count', '36');
+  qtext.setAttribute('class', 'grabbable');
 
   root.appendChild(box);
   root.appendChild(title);
   root.appendChild(qtext);
 
+  // Alternativas — CLICÁVEIS mas NÃO grabbable (não roubam o grab)
   q.alternativas.forEach((alt, idx) => {
     const letra = alt.trim().charAt(0).toUpperCase();
     const row = document.createElement('a-entity');
-    row.setAttribute('position', '0 ' + (-0.05 - idx * 0.28) + ' 0.14');
+    row.setAttribute('position', '0 ' + (-0.05 - idx * 0.28) + ' 0.15');
     row.setAttribute('class', 'clickable');
     row.setAttribute('data-i', i);
 
@@ -626,6 +646,7 @@ function createBlock(q, i) {
     txt.setAttribute('color', '#cfe0ff');
     txt.setAttribute('width', '1.9');
     txt.setAttribute('position', '-0.95 0 0.01');
+    txt.setAttribute('class', 'clickable');
 
     bg.appendChild(txt);
     row.appendChild(bg);
@@ -637,8 +658,6 @@ function createBlock(q, i) {
         .forEach(p => p.setAttribute('color', '#0a1933'));
       bg.setAttribute('color', letra === q.correta ? '#00c853' : '#d50000');
       if (navigator.vibrate) navigator.vibrate(letra === q.correta ? 40 : 90);
-      root.setAttribute('animation',
-        'property: scale; from:1 1 1; to:1.1 1.1 1.1; dur:120; dir:alternate; loop:1');
       updateHUD();
     });
 
@@ -649,8 +668,8 @@ function createBlock(q, i) {
   return root;
 }
 
-// ===== SAVE / LOAD (localStorage) =====
-const STORAGE_KEY = 'pmsc_layout_v2';
+// ============ SAVE/LOAD ============
+const STORAGE_KEY = 'pmsc_layout_grab_v3';
 
 function saveBlockPosition(blockId) {
   const el = document.getElementById(blockId);
@@ -663,7 +682,8 @@ function saveBlockPosition(blockId) {
       s: el.getAttribute('scale') || {x:1,y:1,z:1}
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts));
-  } catch (err) { console.warn('saveBlockPosition:', err); }
+    console.log('[SAVE]', blockId, layouts[blockId].p);
+  } catch (err) { console.warn(err); }
 }
 
 window.saveLayout = function() {
@@ -677,19 +697,14 @@ window.saveLayout = function() {
       };
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
-    showToast('💾 Layout salvo! (' + Object.keys(layout).length + ' blocos)');
-  } catch (err) {
-    showToast('❌ Erro ao salvar: ' + err.message);
-  }
+    showToast('💾 Salvo! ' + Object.keys(layout).length + ' blocos');
+  } catch (err) { showToast('❌ ' + err.message); }
 };
 
 window.loadLayout = function() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) {
-      showToast('⚠️ Nenhum layout salvo. Use SALVAR primeiro.');
-      return;
-    }
+    if (!saved) { showToast('⚠️ Nada salvo ainda'); return; }
     const layout = JSON.parse(saved);
     let count = 0;
     Object.entries(layout).forEach(([id, data]) => {
@@ -701,50 +716,42 @@ window.loadLayout = function() {
         count++;
       }
     });
-    showToast('📂 ' + count + ' blocos restaurados!');
-  } catch (err) {
-    showToast('❌ Erro ao carregar: ' + err.message);
-  }
+    showToast('📂 ' + count + ' blocos restaurados');
+  } catch (err) { showToast('❌ ' + err.message); }
 };
 
-// ===== ORGANIZAÇÃO =====
+// ============ ORGANIZAÇÃO ============
 window.organizeBlocks = function() {
   blocks.forEach((b, i) => {
     const cols = 4, spacing = 3.0;
     const x = (i % cols) * spacing - ((cols - 1) * spacing / 2);
     const z = Math.floor(i / cols) * -3.4 - 1.5;
-    const y = 1.1 + (i % 3) * 0.2;
+    const y = 1.2 + (i % 3) * 0.2;
     b.setAttribute('animation', 'property: position; to: ' + x + ' ' + y + ' ' + z + '; dur: 800');
   });
-  showToast('📐 Organizado em GRADE');
+  showToast('📐 GRADE');
 };
 
 window.organizeBySubject = function() {
-  const bySubject = {};
+  const by = {};
   blocks.forEach(b => {
-    const mat = b.getAttribute('data-materia') || 'Geral';
-    if (!bySubject[mat]) bySubject[mat] = [];
-    bySubject[mat].push(b);
+    const m = b.getAttribute('data-materia') || 'Geral';
+    if (!by[m]) by[m] = [];
+    by[m].push(b);
   });
-
-  const subjectNames = Object.keys(bySubject);
-  const total = subjectNames.length;
-  subjectNames.forEach((mat, sIdx) => {
-    const cluster = bySubject[mat];
-    const baseX = (sIdx - (total - 1) / 2) * 8;
-    const cols = 2;
+  const names = Object.keys(by);
+  names.forEach((mat, s) => {
+    const cluster = by[mat];
+    const baseX = (s - (names.length - 1) / 2) * 8;
     cluster.forEach((b, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
+      const col = i % 2;
+      const row = Math.floor(i / 2);
       const x = baseX + (col - 0.5) * 2.8;
       const z = -3 - row * 2.8;
-      const y = 1.5;
-      b.setAttribute('animation',
-        'property: position; to: ' + x + ' ' + y + ' ' + z + '; dur: 900');
+      b.setAttribute('animation', 'property: position; to: ' + x + ' 1.5 ' + z + '; dur: 900');
     });
   });
-
-  showToast('🎯 Organizado por ' + total + ' matéria(s)');
+  showToast('🎯 POR MATÉRIA (' + names.length + ')');
 };
 
 window.scatterBlocks = function() {
@@ -752,13 +759,11 @@ window.scatterBlocks = function() {
     const x = (Math.random() - 0.5) * 14;
     const z = (Math.random() - 0.5) * 14 - 2;
     const y = 0.8 + Math.random() * 2.5;
-    b.setAttribute('animation',
-      'property: position; to: ' + x + ' ' + y + ' ' + z + '; dur: 800');
+    b.setAttribute('animation', 'property: position; to: ' + x + ' ' + y + ' ' + z + '; dur: 800');
   });
-  showToast('🎲 Blocos espalhados');
+  showToast('🎲 ESPALHADO');
 };
 
-// ===== INIT =====
 window.initWorld = function() {
   const world = document.getElementById('world');
   world.innerHTML = '';
@@ -768,13 +773,8 @@ window.initWorld = function() {
 };
 
 document.addEventListener('DOMContentLoaded', () => window.initWorld());
-
 document.getElementById('enter').addEventListener('click', () => {
-  const scene = document.querySelector('a-scene');
-  scene.enterVR().catch(err => {
-    console.error(err);
-    showToast('❌ Erro ao entrar em VR: ' + err.message);
-  });
+  document.querySelector('a-scene').enterVR().catch(e => showToast('❌ ' + e.message));
 });
 </script>
 </body>
@@ -797,14 +797,14 @@ document.getElementById('enter').addEventListener('click', () => {
 # ==================================================================
 # TABS
 # ==================================================================
-tab1, tab2, tab3 = st.tabs(["🥽 MR + AMBIENTES", "📝 SIMULADO", "📚 TREINO"])
+tab1, tab2, tab3 = st.tabs(["🥽 GRAB LIVRE", "📝 SIMULADO", "📚 TREINO"])
 
 with tab1:
     todas = []
     for v in banco.values():
         todas.extend(v)
     random.shuffle(todas)
-    st.markdown("### Realidade Mista + Ambientes + Cada bloco independente")
+    st.markdown("### Agarre e mova blocos livremente no espaço 3D")
     render_vr_tudo_movel(todas, modo="TUDO MOVIVEL", height=950)
 
 with tab2:
@@ -814,7 +814,7 @@ with tab2:
         if not sim["finalizado"]:
             rest = max(0, 4 * 3600 - int(time.time() - sim["inicio"]))
             h, m, s = rest // 3600, (rest % 3600) // 60, rest % 60
-            st.warning(f"⏱️ {h:02d}:{m:02d}:{s:02d} · {len(qs)} questões")
+            st.warning(f"⏱️ {h:02d}:{m:02d}:{s:02d} · {len(qs)}q")
             render_vr_tudo_movel(qs, modo="SIMULADO", height=950)
             st.divider()
             with st.form("form_sim"):
@@ -836,8 +836,7 @@ with tab2:
                     for i, q in enumerate(qs):
                         r = resp.get(i, "")
                         ok = r == q["correta"].upper()
-                        if ok:
-                            ac += 1
+                        if ok: ac += 1
                         dets.append({"pergunta": q["pergunta"], "materia": q.get("materia",""),
                                      "resposta": r, "correta": q["correta"], "acertou": ok})
                     nota = (ac / len(qs)) * 100
@@ -857,11 +856,11 @@ with tab2:
                 c1.metric("📊 Nota", f"{ult['nota']}%")
                 c2.metric("✅ Acertos", f"{ult['acertos']}/{ult['total']}")
                 c3.metric("🏁 Status", "APROVADO ✅" if ult["aprovado"] else "REPROVADO ❌")
-                with st.expander("Ver gabarito"):
+                with st.expander("Gabarito"):
                     for i, d in enumerate(ult["detalhes"]):
                         ic = "✅" if d["acertou"] else "❌"
                         st.markdown(f"{ic} **{i+1}. [{d['materia']}]** {d['pergunta']}")
-                        st.caption(f"Sua: {d['resposta'] or '—'} · Gabarito: {d['correta']}")
+                        st.caption(f"Sua: {d['resposta'] or '—'} · Gab: {d['correta']}")
             if st.button("🔄 Novo simulado", type="primary"):
                 st.session_state.simulado = None
                 st.rerun()
