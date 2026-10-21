@@ -8,200 +8,80 @@
 
 <style>
 :root{
- --bg:#071711;
- --panel:#10251d;
- --panel2:#19362a;
- --text:#f1f8f3;
- --muted:#b4c7bb;
- --accent:#54e5a0;
- --border:#365b49;
- --danger:#ff7777;
- --gold:#e8c879;
- --font:16px;
+ --bg:#071711;--panel:#10251d;--panel2:#19362a;
+ --text:#f1f8f3;--muted:#b4c7bb;--accent:#54e5a0;
+ --border:#365b49;--danger:#ff7777;--gold:#e8c879;--font:16px;
 }
-
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{
- margin:0;
- background:var(--bg);
- color:var(--text);
- font-family:system-ui,Arial,sans-serif;
- font-size:var(--font);
-}
+body{margin:0;background:var(--bg);color:var(--text);
+ font-family:system-ui,Arial,sans-serif;font-size:var(--font)}
 button,input,select{font:inherit}
-button,select,input{
- background:var(--panel2);
- color:var(--text);
- border:1px solid var(--border);
- border-radius:9px;
- padding:10px;
-}
+button,select,input{background:var(--panel2);color:var(--text);
+ border:1px solid var(--border);border-radius:9px;padding:10px}
 button{cursor:pointer;transition:.15s}
 button:hover{border-color:var(--accent)}
-button:focus-visible,input:focus-visible,select:focus-visible{
- outline:3px solid var(--accent);
-}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent)}
 button:disabled{opacity:.5;cursor:not-allowed}
-
-header{
- background:#10261c;
- border-bottom:1px solid var(--border);
- padding:17px;
- display:flex;
- align-items:center;
- justify-content:space-between;
- gap:12px;
- flex-wrap:wrap;
-}
+header{background:#10261c;border-bottom:1px solid var(--border);
+ padding:17px;display:flex;align-items:center;justify-content:space-between;
+ gap:12px;flex-wrap:wrap}
 header h1{margin:0;font-size:1.25rem}
 header small{color:var(--muted)}
-
-.layout{
- display:grid;
- grid-template-columns:280px minmax(0,1fr);
- min-height:calc(100vh - 80px);
-}
-aside{
- background:var(--panel);
- border-right:1px solid var(--border);
- padding:16px;
-}
+.layout{display:grid;grid-template-columns:280px minmax(0,1fr);
+ min-height:calc(100vh - 80px)}
+aside{background:var(--panel);border-right:1px solid var(--border);padding:16px}
 nav{display:grid;gap:7px}
 nav button{text-align:left}
 nav button.active{background:#24563d;border-color:var(--accent)}
-
 main{padding:16px;min-width:0}
-
-.card{
- background:var(--panel);
- border:1px solid var(--border);
- border-radius:15px;
- padding:18px;
- margin-bottom:15px;
-}
+.card{background:var(--panel);border:1px solid var(--border);
+ border-radius:15px;padding:18px;margin-bottom:15px}
 .card h2{margin-top:0}
-
-.grid{
- display:grid;
- grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
- gap:12px;
-}
-.metric{
- background:var(--panel2);
- border-radius:12px;
- padding:15px;
-}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.metric{background:var(--panel2);border-radius:12px;padding:15px}
 .metric strong{display:block;font-size:1.7rem;color:var(--accent)}
 .metric span{color:var(--muted)}
-
 .controls{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
 .field{display:grid;gap:6px;margin:10px 0}
 .field label{color:var(--muted)}
-
-.question{
- font-size:1.13rem;
- line-height:1.7;
- white-space:pre-wrap;
- overflow-wrap:anywhere;
-}
-.option{
- display:block;
- width:100%;
- text-align:left;
- padding:15px;
- margin:9px 0;
- line-height:1.5;
- white-space:pre-wrap;
- overflow-wrap:anywhere;
-}
+.question{font-size:1.13rem;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.option{display:block;width:100%;text-align:left;padding:15px;margin:9px 0;
+ line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .option.selected{border:2px solid var(--accent)}
 .option.correct{border-color:#6affaa;background:#174c32}
 .option.wrong{border-color:var(--danger);background:#4b2525}
-
-.explanation{
- border-left:4px solid var(--accent);
- background:var(--panel2);
- padding:15px;
- margin-top:15px;
- line-height:1.6;
- white-space:pre-wrap;
-}
-
-#scene{
- width:100%;
- height:340px;
- overflow:hidden;
- border-radius:12px;
- background:#162b25;
- position:relative;
-}
+.explanation{border-left:4px solid var(--accent);background:var(--panel2);
+ padding:15px;margin-top:15px;line-height:1.6;white-space:pre-wrap}
+#scene{width:100%;height:340px;overflow:hidden;border-radius:12px;
+ background:#162b25;position:relative}
 #scene canvas{display:block}
-
 #status{color:var(--muted);font-size:.9rem}
-
 progress{width:100%;height:15px;accent-color:var(--accent)}
-
-.badge{
- display:inline-block;
- border:1px solid var(--border);
- padding:5px 9px;
- border-radius:20px;
- color:var(--muted);
- margin:3px;
-}
-
-.flashcard{
- min-height:240px;
- display:grid;
- place-items:center;
- text-align:center;
- padding:25px;
- background:linear-gradient(135deg,#174b36,#112c25);
- border:1px solid var(--accent);
- border-radius:16px;
- cursor:pointer;
- white-space:pre-wrap;
- line-height:1.7;
- font-size:1.15rem;
-}
-
-.bar{
- height:12px;
- background:#294536;
- border-radius:20px;
- overflow:hidden;
- margin:7px 0 15px;
-}
+.badge{display:inline-block;border:1px solid var(--border);
+ padding:5px 9px;border-radius:20px;color:var(--muted);margin:3px}
+.flashcard{min-height:240px;display:grid;place-items:center;text-align:center;
+ padding:25px;background:linear-gradient(135deg,#174b36,#112c25);
+ border:1px solid var(--accent);border-radius:16px;cursor:pointer;
+ white-space:pre-wrap;line-height:1.7;font-size:1.15rem}
+.bar{height:12px;background:#294536;border-radius:20px;
+ overflow:hidden;margin:7px 0 15px}
 .bar span{display:block;height:100%;background:var(--accent)}
-
-.notice{
- padding:12px;
- border:1px solid var(--border);
- border-radius:10px;
- margin:10px 0;
- color:var(--muted);
-}
-
-body.light{
- --bg:#edf4ef;--panel:#ffffff;--panel2:#e1eee5;
- --text:#16291e;--muted:#42604c;--accent:#087b47;--border:#9db9a6;
-}
-body.blue{
- --bg:#071323;--panel:#10243c;--panel2:#193856;
- --text:#f0f7ff;--muted:#b8d0e5;--accent:#64c8ff;--border:#345e80;
-}
-body.purple{
- --bg:#160d25;--panel:#281b3c;--panel2:#39264e;
- --text:#f8f2ff;--muted:#d2c2e8;--accent:#c69aff;--border:#6c4c89;
-}
-body.contrast{
- --bg:#000;--panel:#111;--panel2:#222;
- --text:#fff;--muted:#fff;--accent:#ffff00;--border:#fff;
-}
+.notice{padding:12px;border:1px solid var(--border);
+ border-radius:10px;margin:10px 0;color:var(--muted)}
+pre.debug{background:#0a1a12;border:1px solid var(--border);
+ padding:10px;border-radius:6px;font-size:.75rem;color:var(--muted);
+ overflow-x:auto;white-space:pre;max-height:200px;overflow-y:auto}
+body.light{--bg:#edf4ef;--panel:#ffffff;--panel2:#e1eee5;
+ --text:#16291e;--muted:#42604c;--accent:#087b47;--border:#9db9a6}
+body.blue{--bg:#071323;--panel:#10243c;--panel2:#193856;
+ --text:#f0f7ff;--muted:#b8d0e5;--accent:#64c8ff;--border:#345e80}
+body.purple{--bg:#160d25;--panel:#281b3c;--panel2:#39264e;
+ --text:#f8f2ff;--muted:#d2c2e8;--accent:#c69aff;--border:#6c4c89}
+body.contrast{--bg:#000;--panel:#111;--panel2:#222;
+ --text:#fff;--muted:#fff;--accent:#ffff00;--border:#fff}
 body.focus aside,body.focus #sceneCard{display:none}
 body.focus .layout{grid-template-columns:1fr}
-
 @media(max-width:850px){
  .layout{grid-template-columns:1fr}
  aside{border-right:0}
@@ -290,9 +170,9 @@ body.focus .layout{grid-template-columns:1fr}
 import * as THREE from "three";
 import {VRButton} from "three/addons/webxr/VRButton.js";
 
-/* ==================================================
-   1. CONFIGURAÇÃO PRINCIPAL
-================================================== */
+/* ═══════════════════════════════════════════════════════════════════
+   1. CONFIGURAÇÃO
+═══════════════════════════════════════════════════════════════════ */
 
 const APP={
  name:"PM-SC Immersive Academy 2026",
@@ -304,6 +184,8 @@ const APP={
 };
 
 const $=id=>document.getElementById(id);
+const now=()=>Date.now();
+const uid=()=>Math.random().toString(36).slice(2);
 
 const environments=[
  "Pátio de Formatura",
@@ -314,28 +196,14 @@ const environments=[
 ];
 
 const pages=[
- "Início",
- "Estudos",
- "Simulados",
- "Flashcards",
- "Revisões",
- "Desempenho",
- "Banco de Questões",
- "Configurações"
+ "Início","Estudos","Simulados","Flashcards",
+ "Revisões","Desempenho","Banco de Questões","Configurações"
 ];
 
 const defaults={
- environment:0,
- theme:"dark",
- quality:"medium",
- fontSize:16,
- history:[],
- favorites:[],
- reviews:{},
- exams:[],
- flashcards:{},
- session:null,
- activeExam:null
+ environment:0,theme:"dark",quality:"medium",fontSize:16,
+ history:[],favorites:[],reviews:{},exams:[],flashcards:{},
+ session:null,activeExam:null
 };
 
 const VALID_THEMES=["dark","blue","purple","light","contrast"];
@@ -352,28 +220,18 @@ let finishingExam=false;
 let flashBack=false;
 let loadBusy=false;
 
-const now=()=>Date.now();
-const uid=()=>Math.random().toString(36).slice(2);
-
-function status(message){
- $("status").textContent=message;
-}
+function status(m){ $("status").textContent=m; }
 
 function save(){
- try{
-  localStorage.setItem(APP.storageKey,JSON.stringify(state));
- }catch(e){
-  status("Não foi possível salvar os dados.");
- }
+ try{ localStorage.setItem(APP.storageKey,JSON.stringify(state)); }
+ catch(e){ status("Não foi possível salvar."); }
 }
 
-/* ==================================================
+/* ═══════════════════════════════════════════════════════════════════
    2. STORAGE MANAGER
-================================================== */
+═══════════════════════════════════════════════════════════════════ */
 
-function cloneDefaults(){
- return JSON.parse(JSON.stringify(defaults));
-}
+function cloneDefaults(){ return JSON.parse(JSON.stringify(defaults)); }
 
 const StorageManager={
  load(){
@@ -382,128 +240,287 @@ const StorageManager={
    const merged={...cloneDefaults(),...data};
    if(!VALID_THEMES.includes(merged.theme)) merged.theme="dark";
    if(!VALID_QUALITY.includes(merged.quality)) merged.quality="medium";
-   if(typeof merged.environment!=="number"||merged.environment<0||merged.environment>=environments.length){
-    merged.environment=0;
-   }
-   if(typeof merged.fontSize!=="number"||merged.fontSize<10||merged.fontSize>40){
-    merged.fontSize=16;
-   }
+   if(typeof merged.environment!=="number"||merged.environment<0||
+      merged.environment>=environments.length) merged.environment=0;
+   if(typeof merged.fontSize!=="number"||merged.fontSize<10||
+      merged.fontSize>40) merged.fontSize=16;
    if(!merged.session) merged.session=null;
    if(!merged.activeExam) merged.activeExam=null;
    return merged;
-  }catch{
-   return cloneDefaults();
-  }
+  }catch{ return cloneDefaults(); }
  },
-
- export(){
-  download("backup-pmsc.json",JSON.stringify(state,null,2),"application/json");
- },
-
+ export(){ download("backup-pmsc.json",JSON.stringify(state,null,2),"application/json"); },
  async restore(file){
-  if(!file||file.size>3000000){
-   throw Error("Arquivo inválido ou muito grande.");
-  }
+  if(!file||file.size>3000000) throw Error("Arquivo inválido ou muito grande.");
   const data=JSON.parse(await file.text());
-  if(
-   !data||
-   !Array.isArray(data.history)||
-   !Array.isArray(data.favorites)||
-   typeof data.reviews!=="object"
-  ){
-   throw Error("Estrutura de backup incompatível.");
-  }
+  if(!data||!Array.isArray(data.history)||!Array.isArray(data.favorites)||
+     typeof data.reviews!=="object") throw Error("Backup incompatível.");
   if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
   exam=null;
   state={...cloneDefaults(),...data};
   state.activeExam=null;
-  save();
-  applySettings();
-  render();
+  save(); applySettings(); render();
  }
 };
-
 state=StorageManager.load();
 
-/* ==================================================
-   3. GERENCIADOR DE QUESTÕES
-================================================== */
+/* ═══════════════════════════════════════════════════════════════════
+   3. ⭐ PARSER ULTRA-PERMISSIVO — aceita QUALQUER formato
+═══════════════════════════════════════════════════════════════════ */
 
-const QuestionManager={
- normalize(raw){
-  if(!raw||typeof raw!=="object")return null;
-  const statement=raw.enunciado??raw.pergunta??raw.question;
-  let options=raw.alternativas??raw.opcoes??raw.options;
-  if(options&&!Array.isArray(options)&&typeof options==="object"){
-   options=Object.values(options);
+// Detecta se um objeto parece uma questão (mesmo em formato "estranho")
+function looksLikeQuestion(obj){
+ if(!obj||typeof obj!=="object"||Array.isArray(obj)) return false;
+
+ // Deve ter algum campo de texto (pergunta/enunciado/question)
+ const questionKeys=[
+  "pergunta","enunciado","question","questao","texto","statement","title",
+  "text","descricao","descricao_questao","pergunta_titulo","wording","body"
+ ];
+ const hasQuestion=questionKeys.some(k=>obj[k]&&typeof obj[k]==="string"&&obj[k].trim().length>=3);
+ if(!hasQuestion) return false;
+
+ // Deve ter algum campo de alternativas
+ const optionKeys=[
+  "alternativas","opcoes","options","choices","respostas","items",
+  "opcoes_resposta","alternatives","possibilidades","answers"
+ ];
+ const hasOptions=optionKeys.some(k=>obj[k]&&
+  (Array.isArray(obj[k])||typeof obj[k]==="object"||typeof obj[k]==="string"));
+ if(!hasOptions){
+  // Ou ter chaves a, b, c, d, e soltas
+  const letters=["a","b","c","d","e","A","B","C","D","E"];
+  const count=letters.filter(l=>obj[l]!==undefined).length;
+  if(count<2) return false;
+ }
+
+ return true;
+}
+
+// Busca questões em QUALQUER nível do JSON
+function deepFindQuestions(data,depth=0){
+ if(depth>6) return [];
+ if(!data) return [];
+
+ // Array?
+ if(Array.isArray(data)){
+  // O array em si contém questões?
+  if(data.length>0 && data.every(item=>looksLikeQuestion(item))){
+   return data;
   }
-  if(!Array.isArray(options))return null;
-  options=options.map(x=>
-   typeof x==="string"?x:x?.texto??x?.text??""
-  );
-  let correct=raw.correta??raw.gabarito??raw.correct;
-  if(typeof correct==="string"){
-   const letter=correct.trim().toUpperCase();
-   if(/^[A-Z]$/.test(letter)){
-    correct=letter.charCodeAt(0)-65;
-   }else{
-    correct=Number(letter);
+  // Ou contém sub-arrays/objetos com questões?
+  let found=[];
+  for(const item of data){
+   found.push(...deepFindQuestions(item,depth+1));
+  }
+  return found;
+ }
+
+ // Objeto?
+ if(typeof data==="object"){
+  // Se o objeto em si já é uma questão, retorna
+  if(looksLikeQuestion(data)) return [data];
+
+  // Senão, busca por chaves conhecidas
+  const keys=["questoes","questions","perguntas","dados","data",
+              "items","banco","bank","lista","list","conteudo",
+              "content","exercicios","exercises","problemas","problems"];
+  for(const key of keys){
+   if(data[key]){
+    const found=deepFindQuestions(data[key],depth+1);
+    if(found.length>0) return found;
    }
   }
-  if(
-   typeof statement!=="string"||
-   !statement.trim()||
-   options.length<2||
-   options.some(x=>!String(x).trim())||
-   !Number.isInteger(correct)||
-   correct<0||
-   correct>=options.length
-  ){
-   return null;
+
+  // Senão, busca em TODOS os valores do objeto
+  let found=[];
+  for(const value of Object.values(data)){
+   found.push(...deepFindQuestions(value,depth+1));
   }
-  const id=String(
-   raw.id||raw.codigo||`${raw.disciplina||"Geral"}:${statement}`
-  );
-  return {
-   id,
-   disciplina:String(raw.disciplina||"Geral"),
-   assunto:String(raw.assunto||"Geral"),
-   dificuldade:String(raw.dificuldade||"media"),
-   enunciado:statement,
-   alternativas:options.map(String),
-   correta:correct,
-   explicacao:String(raw.explicacao??raw.comentario??""),
-   referencia:String(raw.referencia||""),
-   banca:String(raw.banca||""),
-   ano:raw.ano||""
-  };
- },
+  return found;
+ }
+
+ return [];
+}
+
+// Normaliza uma questão em qualquer formato para o formato interno
+function normalizeQuestion(raw,fallbackSubject){
+ fallbackSubject=fallbackSubject||"Geral";
+ if(!raw||typeof raw!=="object") return null;
+
+ // ── Texto da pergunta ──
+ const questionKeys=[
+  "pergunta","enunciado","question","questao","texto","statement",
+  "title","text","descricao","wording","body"
+ ];
+ let texto="";
+ for(const k of questionKeys){
+  if(raw[k]&&typeof raw[k]==="string"&&raw[k].trim().length>=3){
+   texto=raw[k].trim();
+   break;
+  }
+ }
+ if(!texto) return null;
+
+ // ── Alternativas ──
+ const optionKeys=[
+  "alternativas","opcoes","options","choices","respostas","items",
+  "opcoes_resposta","alternatives","possibilidades","answers"
+ ];
+ let optsRaw=null;
+ for(const k of optionKeys){
+  if(raw[k]){ optsRaw=raw[k]; break; }
+ }
+
+ let alternativas=[];
+
+ if(Array.isArray(optsRaw)){
+  alternativas=optsRaw.map(o=>{
+   if(typeof o==="string") return o.trim();
+   if(typeof o==="number") return String(o);
+   if(typeof o==="object"&&o!==null){
+    return String(o.texto??o.text??o.valor??o.value??o.label??o.opcao??o.option??o.resposta??"").trim();
+   }
+   return "";
+  }).filter(a=>a.length>0);
+ }else if(typeof optsRaw==="string"){
+  // String única → separa por \n ou |
+  let parts=optsRaw.split(/\n|\|/).map(s=>s.trim()).filter(Boolean);
+  if(parts.length<2){
+   parts=optsRaw.split(/(?=[A-Ea-e]\s*[\)\.\-\:])/).map(s=>s.trim()).filter(Boolean);
+  }
+  alternativas=parts;
+ }else if(optsRaw&&typeof optsRaw==="object"){
+  alternativas=Object.values(optsRaw).map(o=>{
+   if(typeof o==="string") return o.trim();
+   if(typeof o==="number") return String(o);
+   if(typeof o==="object"&&o!==null) return String(o.texto??o.text??o.valor??o.value??"").trim();
+   return "";
+  }).filter(a=>a.length>0);
+ }
+
+ // Se ainda nada, tenta chaves a, b, c, d, e soltas
+ if(alternativas.length<2){
+  const letters=["a","b","c","d","e","A","B","C","D","E"];
+  const found=[];
+  for(const l of letters){
+   if(raw[l]!==undefined) found.push(String(raw[l]).trim());
+  }
+  if(found.length>=2) alternativas=found;
+ }
+
+ if(alternativas.length<2) return null;
+
+ // Remove prefixo A) B) C) se TODAS tiverem
+ const prefixPattern=/^([A-Ea-e])\s*[\)\.\-\:]\s*/;
+ const allHavePrefix=alternativas.every((a,i)=>{
+  const m=String(a).match(prefixPattern);
+  return m&&m[1].toUpperCase()==="ABCDE"[i];
+ });
+ if(allHavePrefix){
+  alternativas=alternativas.map(a=>a.replace(prefixPattern,"").trim());
+ }
+
+ if(alternativas.length<2) return null;
+
+ // ── Correta ──
+ const answerKeys=["correta","correct","gabarito","answer","resposta","right","answerIndex","resposta_correta"];
+ let correctRaw=null;
+ for(const k of answerKeys){
+  if(raw[k]!==undefined){ correctRaw=raw[k]; break; }
+ }
+
+ let correct=-1;
+
+ if(typeof correctRaw==="number"){
+  correct=correctRaw;
+ }else if(typeof correctRaw==="string"){
+  const v=correctRaw.trim().toUpperCase();
+  if(/^[A-E]$/.test(v)){
+   correct=v.charCodeAt(0)-65;
+  }else if(/^\d+$/.test(v)){
+   correct=Number(v);
+  }else{
+   // Tenta encontrar alternativa que bate com o texto
+   const idx=alternativas.findIndex(a=>a.toLowerCase()===correctRaw.toLowerCase().trim());
+   if(idx>=0) correct=idx;
+  }
+ }
+
+ if(!Number.isInteger(correct)||correct<0||correct>=alternativas.length){
+  return null;
+ }
+
+ // ── Metadados ──
+ const subjectKeys=["disciplina","materia","subject","area","category","topic","assunto"];
+ let disciplina=fallbackSubject;
+ for(const k of subjectKeys){
+  if(raw[k]&&typeof raw[k]==="string"&&raw[k].trim()){
+   disciplina=raw[k].trim();
+   break;
+  }
+ }
+
+ const id=String(raw.id??raw.codigo??raw.code??`${disciplina}:${texto.slice(0,60)}`);
+
+ return {
+  id,
+  disciplina,
+  assunto:String(raw.assunto??raw.topic??raw.subtopic??"Geral"),
+  dificuldade:String(raw.dificuldade??raw.difficulty??raw.level??"media"),
+  enunciado:texto,
+  alternativas:alternativas.map(String),
+  correta:correct,
+  explicacao:String(raw.explicacao??raw.explanation??raw.comentario??raw.comment??raw.solucao??""),
+  referencia:String(raw.referencia??raw.reference??raw.fonte??raw.source??""),
+  banca:String(raw.banca??raw.board??""),
+  ano:raw.ano??raw.year??""
+ };
+}
+
+// Analisa estrutura de um JSON para diagnóstico
+function analyzeStructure(data){
+ if(data===null) return "null";
+ if(data===undefined) return "undefined";
+ if(Array.isArray(data)){
+  if(data.length===0) return "array vazio";
+  const first=data[0];
+  if(typeof first==="object"&&first!==null){
+   const keys=Object.keys(first).slice(0,8).join(", ");
+   return `array de ${data.length} objeto(s) · chaves: [${keys}]`;
+  }
+  return `array de ${data.length} item(ns)`;
+ }
+ if(typeof data==="object"){
+  const keys=Object.keys(data).slice(0,8).join(", ");
+  return `objeto · chaves: [${keys}]`;
+ }
+ return typeof data;
+}
+
+const QuestionManager={
+ normalize(raw,fb){ return normalizeQuestion(raw,fb); },
 
  deduplicate(list){
   const ids=new Set();
   return list.filter(q=>{
-   if(ids.has(q.id))return false;
+   if(ids.has(q.id)) return false;
    ids.add(q.id);
    return true;
   });
  },
 
- find(id){
-  return questions.find(q=>q.id===id);
- }
+ find(id){ return questions.find(q=>q.id===id); }
 };
 
-/* ==================================================
-   4. REPOSITÓRIO DE CONTEÚDO COM DIAGNÓSTICO
-================================================== */
+/* ═══════════════════════════════════════════════════════════════════
+   4. ⭐ CONTENT REPOSITORY — tenta TODOS os arquivos
+═══════════════════════════════════════════════════════════════════ */
 
 function fetchWithTimeout(url,options={},ms=10000){
  return new Promise((resolve,reject)=>{
   const controller=new AbortController();
-  const timer=setTimeout(()=>{
-   controller.abort();
-   reject(Error("Timeout após "+ms+"ms"));
-  },ms);
+  const timer=setTimeout(()=>{controller.abort();reject(Error("Timeout"));},ms);
   fetch(url,{...options,signal:controller.signal})
    .then(r=>{clearTimeout(timer);resolve(r);})
    .catch(e=>{clearTimeout(timer);reject(e);});
@@ -512,29 +529,30 @@ function fetchWithTimeout(url,options={},ms=10000){
 
 async function fetchJson(url){
  const r=await fetchWithTimeout(url,{},10000);
- if(!r.ok)throw Error(`HTTP ${r.status} — ${url}`);
+ if(!r.ok) throw Error(`HTTP ${r.status}`);
  const text=await r.text();
- if(text.length>5000000)throw Error("JSON >5MB");
- try{return JSON.parse(text);}
- catch(e){throw Error("JSON inválido: "+url+" — "+e.message);}
+ if(text.length>5000000) throw Error("JSON >5MB");
+ if(!text.trim()) throw Error("Arquivo vazio");
+ try{ return JSON.parse(text); }
+ catch(e){ throw Error("JSON inválido: "+e.message); }
 }
 
 const ContentRepository={
- _lastDebug:{steps:[],errors:[],urlTried:[],filesFound:[],filesLoaded:[],questionsLoaded:0,questionsRejected:0},
- _rejected:0,
- _loaded:0,
+ _lastDebug:{steps:[],errors:[],urlTried:[],filesFound:[],
+  filesLoaded:[],filesInfo:[],questionsLoaded:0,questionsRejected:0},
 
  async load(){
-  if(loadBusy)return;
+  if(loadBusy) return;
   loadBusy=true;
 
   const debug={
    steps:[],errors:[],urlTried:[],filesFound:[],
-   filesLoaded:[],questionsLoaded:0,questionsRejected:0
+   filesLoaded:[],filesInfo:[],
+   questionsLoaded:0,questionsRejected:0
   };
 
-  function step(msg){debug.steps.push(msg);status(msg);console.log("[REPO]",msg);}
-  function err(msg){debug.errors.push(msg);console.warn("[REPO-ERR]",msg);}
+  function step(m){ debug.steps.push(m); status(m); console.log("[REPO]",m); }
+  function err(m){ debug.errors.push(m); console.warn("[REPO-ERR]",m); }
 
   try{
    step("Iniciando busca do banco...");
@@ -545,18 +563,30 @@ const ContentRepository={
     step("Tentando URL direta configurada...");
     try{
      const json=await fetchJson(APP.directJsonUrl);
-     const items=Array.isArray(json)?json
-      :Array.isArray(json.questoes)?json.questoes
-      :Array.isArray(json.questions)?json.questions:[];
+     const estrutura=analyzeStructure(json);
+     step(`URL direta · estrutura: ${estrutura}`);
+
+     const items=deepFindQuestions(json);
+     step(`URL direta: ${items.length} candidato(s)`);
+
+     let ok=0,rej=0;
      for(const item of items){
-      const q=QuestionManager.normalize(item);
-      if(q)loaded.push(q);
-      else debug.questionsRejected++;
+      const q=normalizeQuestion(item);
+      if(q){ loaded.push(q); ok++; }
+      else rej++;
      }
+     debug.questionsRejected+=rej;
      debug.urlTried.push(APP.directJsonUrl);
      debug.filesLoaded.push(APP.directJsonUrl);
-     step(`URL direta: ${loaded.length} questões`);
-    }catch(e){err("URL direta: "+e.message);}
+     debug.filesInfo.push({
+      name:"URL direta",
+      structure:estrutura,
+      candidates:items.length,
+      valid:ok,
+      rejected:rej
+     });
+     step(`URL direta: ${ok} válidas, ${rej} rejeitadas`);
+    }catch(e){ err("URL direta: "+e.message); }
    }
 
    // ── ESTRATÉGIA 1: API GitHub contents ──
@@ -571,117 +601,134 @@ const ContentRepository={
       },10000);
 
       if(!r.ok){
-       if(r.status===404)err("Repo não existe ou é privado (404)");
-       else if(r.status===403)err("Rate limit da API GitHub atingido (403)");
-       else err(`API retornou HTTP ${r.status}`);
+       if(r.status===404) err(`Branch ${branch}: repositório ou branch inexistente`);
+       else if(r.status===403) err(`Branch ${branch}: rate limit da API GitHub`);
+       else err(`Branch ${branch}: HTTP ${r.status}`);
        continue;
       }
 
       const listing=await r.json();
-      if(!Array.isArray(listing)){err("Resposta não é lista");continue;}
+      if(!Array.isArray(listing)){ err("API não retornou lista"); continue; }
 
       const jsonFiles=listing.filter(f=>
-       f.type==="file"&&
-       f.name.toLowerCase().endsWith(".json")&&
-       !f.name.startsWith(".")&&
-       f.name!=="manifest.json"&&
-       f.name!=="package.json"&&
+       f.type==="file" &&
+       f.name.toLowerCase().endsWith(".json") &&
+       !f.name.startsWith(".") &&
+       f.name!=="manifest.json" &&
+       f.name!=="package.json" &&
        f.name!=="package-lock.json"
       );
 
       debug.filesFound.push(...jsonFiles.map(f=>f.name));
-      step(`${jsonFiles.length} arquivo(s) .json na raiz de ${branch}`);
+      step(`${jsonFiles.length} arquivo(s) .json em ${branch}: ${jsonFiles.map(f=>f.name).join(", ")}`);
 
+      // ⭐ Tenta TODOS os arquivos, não para no primeiro
       for(const file of jsonFiles){
        step(`Baixando ${file.name}...`);
        try{
         const json=await fetchJson(file.download_url);
-        const items=Array.isArray(json)?json
-         :Array.isArray(json.questoes)?json.questoes
-         :Array.isArray(json.questions)?json.questions:[];
-        let okCount=0,rejCount=0;
+        const estrutura=analyzeStructure(json);
+        step(`${file.name} · ${estrutura}`);
+
+        const items=deepFindQuestions(json);
+        let ok=0,rej=0;
         for(const item of items){
-         const q=QuestionManager.normalize(item);
-         if(q){loaded.push(q);okCount++;}
-         else rejCount++;
+         const q=normalizeQuestion(item);
+         if(q){ loaded.push(q); ok++; }
+         else rej++;
         }
-        debug.questionsRejected+=rejCount;
-        debug.filesLoaded.push(file.name);
-        step(`${file.name}: ${okCount} válidas, ${rejCount} rejeitadas`);
-       }catch(e){err(`${file.name}: ${e.message}`);}
+        debug.questionsRejected+=rej;
+        debug.filesInfo.push({
+         name:file.name,branch,structure:estrutura,
+         candidates:items.length,valid:ok,rejected:rej
+        });
+
+        if(ok>0){
+         debug.filesLoaded.push(file.name);
+         step(`✓ ${file.name}: ${ok} válidas, ${rej} rejeitadas`);
+        }else{
+         step(`✗ ${file.name}: 0 válidas (${items.length} candidatos, ${rej} rejeitados)`);
+        }
+       }catch(e){
+        err(`${file.name}: ${e.message}`);
+        debug.filesInfo.push({
+         name:file.name,branch,error:e.message
+        });
+       }
       }
-      if(loaded.length)break;
-     }catch(e){err(`API GitHub (${branch}): ${e.message}`);}
+
+      if(loaded.length) break;
+     }catch(e){ err(`API (${branch}): ${e.message}`); }
     }
    }
 
-   // ── ESTRATÉGIA 2: raw.githubusercontent com nomes comuns ──
+   // ── ESTRATÉGIA 2: raw com nomes comuns ──
    if(!loaded.length){
-    const commonNames=[
-     "questoes.json","json.json","questions.json","banco.json",
-     "pmsc.json","concurso.json","dados.json","data.json"
+    const names=[
+     "json.json","questoes.json","questions.json","banco.json",
+     "pmsc.json","concurso.json","dados.json","data.json","questoes-pmsc.json"
     ];
     for(const branch of APP.branches){
-     if(loaded.length)break;
-     step(`Testando raw.githubusercontent (${branch})...`);
-     for(const name of commonNames){
+     if(loaded.length) break;
+     step(`Testando nomes comuns em ${branch}...`);
+     for(const name of names){
       const url=`https://raw.githubusercontent.com/${APP.repo}/${branch}/${name}`;
       debug.urlTried.push(url);
       try{
        const json=await fetchJson(url);
-       const items=Array.isArray(json)?json
-        :Array.isArray(json.questoes)?json.questoes
-        :Array.isArray(json.questions)?json.questions:[];
-       let okCount=0,rejCount=0;
+       const estrutura=analyzeStructure(json);
+       const items=deepFindQuestions(json);
+       let ok=0,rej=0;
        for(const item of items){
-        const q=QuestionManager.normalize(item);
-        if(q){loaded.push(q);okCount++;}
-        else rejCount++;
+        const q=normalizeQuestion(item);
+        if(q){ loaded.push(q); ok++; }
+        else rej++;
        }
-       debug.questionsRejected+=rejCount;
-       if(okCount>0){
+       if(ok>0){
         debug.filesLoaded.push(name);
-        step(`✓ ${name}: ${okCount} questões (${branch})`);
+        debug.filesInfo.push({
+         name,branch,structure:estrutura,
+         candidates:items.length,valid:ok,rejected:rej
+        });
+        debug.questionsRejected+=rej;
+        step(`✓ ${name}: ${ok} válidas (${estrutura})`);
         break;
        }
-      }catch(e){/* silencioso */}
+      }catch(e){/*silencioso*/}
      }
     }
    }
 
-   // ── ESTRATÉGIA 3: manifest.json ──
+   // ── ESTRATÉGIA 3: manifest ──
    if(!loaded.length){
     for(const branch of APP.branches){
-     if(loaded.length)break;
+     if(loaded.length) break;
      const url=`https://raw.githubusercontent.com/${APP.repo}/${branch}/manifest.json`;
      debug.urlTried.push(url);
-     step(`Testando manifest.json (${branch})...`);
+     step(`Testando manifest.json em ${branch}...`);
      try{
       const manifest=await fetchJson(url);
       const names=Array.isArray(manifest)?manifest:manifest.files||[];
-      step(`manifest.json: ${names.length} arquivo(s) listado(s)`);
+      step(`manifest: ${names.length} arquivo(s)`);
       for(const name of names){
-       if(typeof name!=="string")continue;
-       if(!/^[\w.-]+\.json$/i.test(name))continue;
+       if(typeof name!=="string"||!/^[\w.-]+\.json$/i.test(name)) continue;
        const fileUrl=`https://raw.githubusercontent.com/${APP.repo}/${branch}/${name}`;
        debug.urlTried.push(fileUrl);
        try{
         const json=await fetchJson(fileUrl);
-        const items=Array.isArray(json)?json
-         :Array.isArray(json.questoes)?json.questoes
-         :Array.isArray(json.questions)?json.questions:[];
-        let okCount=0;
+        const items=deepFindQuestions(json);
+        let ok=0;
         for(const item of items){
-         const q=QuestionManager.normalize(item);
-         if(q){loaded.push(q);okCount++;}
+         const q=normalizeQuestion(item);
+         if(q){ loaded.push(q); ok++; }
         }
-        if(okCount>0){
+        if(ok>0){
          debug.filesLoaded.push(name);
-         step(`${name}: ${okCount} questões`);
+         step(`${name}: ${ok} válidas`);
         }
-       }catch(e){err(`${name}: ${e.message}`);}
+       }catch(e){ err(`${name}: ${e.message}`); }
       }
-     }catch(e){/* silencioso */}
+     }catch(e){/*silencioso*/}
     }
    }
 
@@ -694,41 +741,34 @@ const ContentRepository={
       loaded=cached;
       step(`Cache: ${cached.length} questões recuperadas`);
      }
-    }catch(e){err("Cache: "+e.message);}
+    }catch(e){ err("Cache: "+e.message); }
    }
 
    loaded=QuestionManager.deduplicate(loaded);
    debug.questionsLoaded=loaded.length;
    this._lastDebug=debug;
-   this._loaded=loaded.length;
-   this._rejected=debug.questionsRejected;
 
    if(loaded.length){
     questions=loaded;
-    try{localStorage.setItem(APP.storageKey+"_BANK",JSON.stringify(questions));}catch{}
-    status(
-     `✅ ${loaded.length} questões carregadas`+
-     (debug.questionsRejected>0?` · ${debug.questionsRejected} rejeitadas`:"")+
-     ` · ${debug.filesLoaded.length} arquivo(s)`
-    );
+    try{ localStorage.setItem(APP.storageKey+"_BANK",JSON.stringify(questions)); }catch{}
+    status(`✅ ${loaded.length} questões carregadas · ${debug.filesLoaded.length} arquivo(s)`);
    }else{
-    console.error("[REPO] FALHA TOTAL",debug);
-    status("❌ Nenhuma questão carregada. Veja o painel abaixo.");
+    status("❌ Nenhuma questão carregada. Veja o diagnóstico abaixo.");
    }
 
-   if(page==="Estudos")studyPool=[];
+   if(page==="Estudos") studyPool=[];
    render();
   }finally{
    loadBusy=false;
   }
  },
 
- getDebug(){return this._lastDebug;}
+ getDebug(){ return this._lastDebug; }
 };
 
-/* ==================================================
+/* ═══════════════════════════════════════════════════════════════════
    5. ESTATÍSTICAS
-================================================== */
+═══════════════════════════════════════════════════════════════════ */
 
 const StatisticsManager={
  summary(){
@@ -743,125 +783,97 @@ const StatisticsManager={
    pending:Object.values(state.reviews).filter(x=>x.due<=now()).length
   };
  },
-
  bySubject(){
   const data={};
   for(const item of state.history){
    const key=item.disciplina||"Geral";
-   if(!data[key])data[key]={total:0,correct:0};
+   if(!data[key]) data[key]={total:0,correct:0};
    data[key].total++;
-   if(item.correct)data[key].correct++;
+   if(item.correct) data[key].correct++;
   }
   return data;
  },
-
  record(question,choice,mode){
   state.history.push({
-   id:question.id,
-   disciplina:question.disciplina,
-   assunto:question.assunto,
-   choice,
-   correct:choice===question.correta,
-   mode,
-   date:now()
+   id:question.id,disciplina:question.disciplina,assunto:question.assunto,
+   choice,correct:choice===question.correta,mode,date:now()
   });
-  if(state.history.length>10000)state.history=state.history.slice(-10000);
-  if(choice!==question.correta)ReviewManager.mark(question.id);
+  if(state.history.length>10000) state.history=state.history.slice(-10000);
+  if(choice!==question.correta) ReviewManager.mark(question.id);
   save();
  }
 };
 
-/* ==================================================
-   6. REVISÃO INTELIGENTE
-================================================== */
+/* ═══════════════════════════════════════════════════════════════════
+   6. REVISÃO / SM-2
+═══════════════════════════════════════════════════════════════════ */
 
 const ReviewManager={
- mark(id){
-  state.reviews[id]={due:now(),interval:1,repetitions:0,ease:2.5};
-  save();
- },
- remove(id){delete state.reviews[id];save();},
- due(){return questions.filter(q=>state.reviews[q.id]&&state.reviews[q.id].due<=now());},
- all(){return questions.filter(q=>state.reviews[q.id]);}
+ mark(id){ state.reviews[id]={due:now(),interval:1,repetitions:0,ease:2.5}; save(); },
+ remove(id){ delete state.reviews[id]; save(); },
+ due(){ return questions.filter(q=>state.reviews[q.id]&&state.reviews[q.id].due<=now()); },
+ all(){ return questions.filter(q=>state.reviews[q.id]); }
 };
-
-/* ==================================================
-   7. REPETIÇÃO ESPAÇADA
-================================================== */
 
 const SpacedRepetition={
  grade(id,quality){
   const old=state.reviews[id]||{interval:1,repetitions:0,ease:2.5};
-  let repetitions=old.repetitions;
-  let interval=old.interval;
-  let ease=old.ease;
-
-  if(quality<3){
-   repetitions=0;
-   interval=1;
-  }else{
+  let repetitions=old.repetitions,interval=old.interval,ease=old.ease;
+  if(quality<3){ repetitions=0; interval=1; }
+  else{
    repetitions++;
-   if(repetitions===1)interval=1;
-   else if(repetitions===2)interval=6;
+   if(repetitions===1) interval=1;
+   else if(repetitions===2) interval=6;
    else interval=Math.max(1,Math.round(interval*ease));
   }
-
   ease=Math.max(1.3,ease+(.1-(5-quality)*(.08+(5-quality)*.02)));
   state.reviews[id]={repetitions,interval,ease,due:now()+interval*86400000};
   save();
  }
 };
 
-/* ==================================================
-   8. INTERFACE HELPERS
-================================================== */
+/* ═══════════════════════════════════════════════════════════════════
+   7. HELPERS DE UI
+═══════════════════════════════════════════════════════════════════ */
 
 function element(tag,text,parent,className){
  const node=document.createElement(tag);
- if(text!==undefined&&text!==null)node.textContent=String(text);
- if(className)node.className=className;
- if(parent)parent.append(node);
+ if(text!==undefined&&text!==null) node.textContent=String(text);
+ if(className) node.className=className;
+ if(parent) parent.append(node);
  return node;
 }
-
-function button(text,callback,parent){
- const node=element("button",text,parent);
- node.addEventListener("click",callback);
- return node;
+function button(text,cb,parent){
+ const n=element("button",text,parent);
+ n.addEventListener("click",cb);
+ return n;
 }
-
 function clearContent(title){
  const root=$("content");
  root.replaceChildren();
  element("h2",title,root);
  return root;
 }
-
-function paragraph(text,parent){return element("p",text,parent);}
-function sectionTitle(text,parent){return element("h3",text,parent);}
-
+function paragraph(text,parent){ return element("p",text,parent); }
+function sectionTitle(text,parent){ return element("h3",text,parent); }
 function field(label,type,value,parent){
  const wrap=element("div",null,parent,"field");
  element("label",label,wrap);
  const input=element("input",null,wrap);
- input.type=type;
- input.value=value;
+ input.type=type; input.value=value;
  return input;
 }
-
 function selectField(label,values,parent){
  const wrap=element("div",null,parent,"field");
  element("label",label,wrap);
  const select=element("select",null,wrap);
  for(const value of values){
-  const option=document.createElement("option");
-  option.value=value;
-  option.textContent=value;
-  select.append(option);
+  const o=document.createElement("option");
+  o.value=value; o.textContent=value;
+  select.append(o);
  }
  return select;
 }
-
 function metric(label,value,parent){
  const card=element("div",null,parent,"metric");
  element("strong",value,card);
@@ -882,8 +894,7 @@ function renderSidebar(){
 
 function navigate(destination){
  if(destination!=="Simulados"&&examTimerId){
-  clearInterval(examTimerId);
-  examTimerId=null;
+  clearInterval(examTimerId); examTimerId=null;
  }
  page=destination;
  document.querySelectorAll("#menu button").forEach(b=>{
@@ -895,20 +906,20 @@ function navigate(destination){
 function render(){
  renderSidebar();
  switch(page){
-  case "Início":renderHome();break;
-  case "Estudos":renderStudies();break;
-  case "Simulados":renderExams();break;
-  case "Flashcards":renderFlashcards();break;
-  case "Revisões":renderReviews();break;
-  case "Desempenho":renderStatistics();break;
-  case "Banco de Questões":renderBank();break;
-  case "Configurações":renderSettings();break;
+  case "Início": renderHome(); break;
+  case "Estudos": renderStudies(); break;
+  case "Simulados": renderExams(); break;
+  case "Flashcards": renderFlashcards(); break;
+  case "Revisões": renderReviews(); break;
+  case "Desempenho": renderStatistics(); break;
+  case "Banco de Questões": renderBank(); break;
+  case "Configurações": renderSettings(); break;
  }
 }
 
-/* ==================================================
-   9. CENTRAL INTELIGENTE
-================================================== */
+/* ═══════════════════════════════════════════════════════════════════
+   8. TELAS
+═══════════════════════════════════════════════════════════════════ */
 
 function renderHome(){
  const root=clearContent("Central Inteligente de Estudos");
@@ -924,12 +935,8 @@ function renderHome(){
  const ranking=Object.entries(subjects)
   .filter(([,v])=>v.total>0)
   .sort((a,b)=>a[1].correct/a[1].total-b[1].correct/b[1].total);
-
- if(ranking.length){
-  paragraph("Disciplina para reforçar: "+ranking[0][0],root);
- }else{
-  paragraph("Comece respondendo questões para gerar recomendações.",root);
- }
+ if(ranking.length) paragraph("Disciplina para reforçar: "+ranking[0][0],root);
+ else paragraph("Comece respondendo questões para gerar recomendações.",root);
 
  paragraph(`Banco disponível: ${questions.length} questões.`,root);
 
@@ -946,10 +953,6 @@ function renderHome(){
   },actions);
  }
 }
-
-/* ==================================================
-   10. ESTUDO DE QUESTÕES
-================================================== */
 
 function getFilteredQuestions(subject,topic,difficulty,search){
  const term=(search||"").toLowerCase();
@@ -979,27 +982,22 @@ function renderStudies(){
 
  const area=element("div",null,root);
  area.id="studyArea";
-
- if(!studyPool.length)studyPool=[...questions];
+ if(!studyPool.length) studyPool=[...questions];
  showStudyQuestion();
 }
 
 function showStudyQuestion(){
  const area=$("studyArea");
- if(!area)return;
+ if(!area) return;
  area.replaceChildren();
-
  if(!studyPool.length){
   paragraph("Nenhuma questão encontrada. Atualize o banco.",area);
   return;
  }
-
  currentIndex=Math.max(0,Math.min(currentIndex,studyPool.length-1));
  const q=studyPool[currentIndex];
-
  state.session={id:q.id,index:currentIndex};
  save();
-
  renderQuestion(q,area,currentIndex+1,studyPool.length,"study");
 
  const controls=element("div",null,area,"controls");
@@ -1007,26 +1005,19 @@ function showStudyQuestion(){
   currentIndex=Math.max(0,currentIndex-1);
   showStudyQuestion();
  },controls);
-
  button("Próxima ▶",()=>{
   currentIndex=Math.min(studyPool.length-1,currentIndex+1);
   showStudyQuestion();
  },controls);
-
- button(
-  state.favorites.includes(q.id)?"★ Remover favorito":"☆ Favoritar",
-  ()=>{
-   if(state.favorites.includes(q.id)){
-    state.favorites=state.favorites.filter(id=>id!==q.id);
-   }else{
-    state.favorites.push(q.id);
-   }
-   save();
-   showStudyQuestion();
-  },
-  controls
- );
-
+ button(state.favorites.includes(q.id)?"★ Remover favorito":"☆ Favoritar",()=>{
+  if(state.favorites.includes(q.id)){
+   state.favorites=state.favorites.filter(id=>id!==q.id);
+  }else{
+   state.favorites.push(q.id);
+  }
+  save();
+  showStudyQuestion();
+ },controls);
  button("Marcar para revisão",()=>{
   ReviewManager.mark(q.id);
   status("Questão marcada para revisão.");
@@ -1041,8 +1032,7 @@ function renderQuestion(q,parent,number,total,mode,answers){
 
  paragraph(`Questão ${number} de ${total}`,parent);
  const progress=element("progress",null,parent);
- progress.max=total;
- progress.value=number;
+ progress.max=total; progress.value=number;
 
  element("div",q.enunciado,parent,"question");
 
@@ -1063,48 +1053,40 @@ function renderQuestion(q,parent,number,total,mode,answers){
      });
      return;
     }
-    if(answered)return;
+    if(answered) return;
     answered=true;
     StatisticsManager.record(q,i,mode);
     options.querySelectorAll("button").forEach((b,j)=>{
      b.disabled=true;
-     if(j===q.correta)b.classList.add("correct");
-     if(j===i&&i!==q.correta)b.classList.add("wrong");
+     if(j===q.correta) b.classList.add("correct");
+     if(j===i&&i!==q.correta) b.classList.add("wrong");
     });
-    const explanation=element("div",null,parent,"explanation");
-    paragraph(i===q.correta?"Resposta correta!":"Resposta incorreta.",explanation);
-    paragraph("Gabarito: "+String.fromCharCode(65+q.correta),explanation);
-    paragraph(q.explicacao||"Explicação não disponível no banco.",explanation);
-    if(q.referencia)paragraph("Referência: "+q.referencia,explanation);
+    const exp=element("div",null,parent,"explanation");
+    paragraph(i===q.correta?"Resposta correta!":"Resposta incorreta.",exp);
+    paragraph("Gabarito: "+String.fromCharCode(65+q.correta),exp);
+    paragraph(q.explicacao||"Explicação não disponível.",exp);
+    if(q.referencia) paragraph("Referência: "+q.referencia,exp);
     renderSidebar();
    },
    options
   );
   option.classList.add("option");
-  if(existing===i)option.classList.add("selected");
+  if(existing===i) option.classList.add("selected");
  });
 }
 
-/* ==================================================
-   11. SIMULADOS
-================================================== */
-
 function renderExams(){
  const root=clearContent("Simulados");
- if(exam){showExam(root);return;}
+ if(exam){ showExam(root); return; }
 
- const count=field("Quantidade de questões","number",20,root);
- count.min=1;
-
- const minutes=field("Tempo em minutos (0 = livre)","number",60,root);
- minutes.min=0;
-
+ const count=field("Quantidade de questões","number",20,root); count.min=1;
+ const minutes=field("Tempo em minutos (0 = livre)","number",60,root); minutes.min=0;
  const subjects=["",...new Set(questions.map(q=>q.disciplina))];
  const subject=selectField("Disciplina",subjects,root);
 
  button("Iniciar simulado",()=>{
   const pool=questions.filter(q=>!subject.value||q.disciplina===subject.value);
-  if(!pool.length){status("Nenhuma questão disponível.");return;}
+  if(!pool.length){ status("Nenhuma questão disponível."); return; }
   const shuffled=[...pool];
   for(let i=shuffled.length-1;i>0;i--){
    const j=Math.floor(Math.random()*(i+1));
@@ -1114,14 +1096,11 @@ function renderExams(){
   exam={
    id:uid(),
    ids:shuffled.slice(0,amount).map(q=>q.id),
-   answers:{},
-   index:0,
-   start:now(),
+   answers:{},index:0,start:now(),
    duration:Math.max(0,Number(minutes.value)||0)*60000
   };
   state.activeExam=exam;
-  save();
-  render();
+  save(); render();
  },root);
 
  if(state.activeExam){
@@ -1133,52 +1112,36 @@ function renderExams(){
 }
 
 function showExam(root){
- if(examTimerId){clearInterval(examTimerId);examTimerId=null;}
-
+ if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
  const pool=exam.ids.map(id=>QuestionManager.find(id)).filter(Boolean);
 
  if(!pool.length){
-  paragraph("As questões deste simulado não estão disponíveis.",root);
+  paragraph("Questões indisponíveis.",root);
   button("Encerrar",()=>{
-   exam=null;
-   state.activeExam=null;
-   save();
-   render();
+   exam=null; state.activeExam=null; save(); render();
   },root);
   return;
  }
-
  if(pool.length!==exam.ids.length){
-  exam.ids=pool.map(q=>q.id);
-  state.activeExam=exam;
-  save();
+  exam.ids=pool.map(q=>q.id); state.activeExam=exam; save();
  }
-
  exam.index=Math.max(0,Math.min(exam.index,pool.length-1));
  const q=pool[exam.index];
 
  const timer=element("p","",root);
-
  function updateTimer(){
-  if(!exam||!timer.isConnected)return;
-  if(!exam.duration){
-   timer.textContent="Simulado sem limite de tempo.";
-   return;
-  }
-  const remaining=Math.max(0,exam.duration-(now()-exam.start));
-  const seconds=Math.ceil(remaining/1000);
-  timer.textContent="Tempo restante: "+Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0");
-  if(remaining<=0)finishExam();
+  if(!exam||!timer.isConnected) return;
+  if(!exam.duration){ timer.textContent="Simulado sem limite."; return; }
+  const r=Math.max(0,exam.duration-(now()-exam.start));
+  const s=Math.ceil(r/1000);
+  timer.textContent="Tempo: "+Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+  if(r<=0) finishExam();
  }
-
  updateTimer();
-
  if(exam.duration){
   examTimerId=setInterval(()=>{
    if(!timer.isConnected||!exam){
-    clearInterval(examTimerId);
-    examTimerId=null;
-    return;
+    clearInterval(examTimerId); examTimerId=null; return;
    }
    updateTimer();
   },1000);
@@ -1189,156 +1152,100 @@ function showExam(root){
  const controls=element("div",null,root,"controls");
  button("◀ Anterior",()=>{
   exam.index=Math.max(0,exam.index-1);
-  state.activeExam=exam;
-  save();
-  render();
+  state.activeExam=exam; save(); render();
  },controls);
-
  button("Próxima ▶",()=>{
   exam.index=Math.min(pool.length-1,exam.index+1);
-  state.activeExam=exam;
-  save();
-  render();
+  state.activeExam=exam; save(); render();
  },controls);
-
  paragraph(`Respondidas: ${Object.keys(exam.answers).length}/${pool.length}`,root);
  button("Finalizar simulado",finishExam,root);
 }
 
 function finishExam(){
- if(!exam||finishingExam)return;
+ if(!exam||finishingExam) return;
  finishingExam=true;
-
  try{
-  if(examTimerId){clearInterval(examTimerId);examTimerId=null;}
-
+  if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
   const pool=exam.ids.map(id=>QuestionManager.find(id)).filter(Boolean);
   let correct=0,wrong=0,blank=0;
   const bySubject={};
-
   for(const q of pool){
    const choice=exam.answers[q.id];
-   if(!bySubject[q.disciplina])bySubject[q.disciplina]={total:0,correct:0};
+   if(!bySubject[q.disciplina]) bySubject[q.disciplina]={total:0,correct:0};
    bySubject[q.disciplina].total++;
-   if(choice===undefined){blank++;continue;}
+   if(choice===undefined){ blank++; continue; }
    if(choice===q.correta){
-    correct++;
-    bySubject[q.disciplina].correct++;
+    correct++; bySubject[q.disciplina].correct++;
    }else{
     wrong++;
    }
    StatisticsManager.record(q,choice,"Simulado");
   }
-
-  const result={
+  state.exams.push({
    id:exam.id,date:now(),total:pool.length,
    correct,wrong,blank,duration:now()-exam.start,bySubject
-  };
-
-  state.exams.push(result);
-  exam=null;
-  state.activeExam=null;
-  save();
-
-  page="Desempenho";
-  render();
-  status(`Simulado finalizado: ${correct} acertos, ${wrong} erros e ${blank} em branco.`);
+  });
+  exam=null; state.activeExam=null; save();
+  page="Desempenho"; render();
+  status(`Simulado: ${correct} acertos, ${wrong} erros, ${blank} em branco.`);
  }finally{
   finishingExam=false;
  }
 }
 
-/* ==================================================
-   12. FLASHCARDS
-================================================== */
-
 function renderFlashcards(){
  const root=clearContent("Flashcards Inteligentes");
- if(!questions.length){
-  paragraph("Banco de questões vazio.",root);
-  return;
- }
-
+ if(!questions.length){ paragraph("Banco vazio.",root); return; }
  currentIndex=Math.max(0,Math.min(currentIndex,questions.length-1));
  const q=questions[currentIndex];
-
  paragraph(`${currentIndex+1} de ${questions.length}`,root);
  const card=element("div","",root,"flashcard");
-
- function updateCard(){
+ function update(){
   card.textContent=flashBack?q.alternativas[q.correta]+"\n\n"+q.explicacao:q.enunciado;
  }
- updateCard();
-
- card.onclick=()=>{
-  flashBack=!flashBack;
-  updateCard();
- };
+ update();
+ card.onclick=()=>{ flashBack=!flashBack; update(); };
 
  const controls=element("div",null,root,"controls");
- button("Virar cartão",()=>{
-  flashBack=!flashBack;
-  updateCard();
- },controls);
-
+ button("Virar cartão",()=>{ flashBack=!flashBack; update(); },controls);
  for(const [label,grade] of [["Difícil",2],["Bom",4],["Fácil",5]]){
   button(label,()=>{
    SpacedRepetition.grade(q.id,grade);
    currentIndex=(currentIndex+1)%questions.length;
-   flashBack=false;
-   render();
+   flashBack=false; render();
   },controls);
  }
-
  button("◀ Anterior",()=>{
   currentIndex=Math.max(0,currentIndex-1);
-  flashBack=false;
-  render();
+  flashBack=false; render();
  },controls);
-
  button("Próximo ▶",()=>{
   currentIndex=Math.min(questions.length-1,currentIndex+1);
-  flashBack=false;
-  render();
+  flashBack=false; render();
  },controls);
 }
-
-/* ==================================================
-   13. REVISÕES
-================================================== */
 
 function renderReviews(){
  const root=clearContent("Revisão Inteligente");
  const due=ReviewManager.due();
  const all=ReviewManager.all();
-
  paragraph(`Revisões pendentes: ${due.length}`,root);
  paragraph(`Questões marcadas: ${all.length}`,root);
 
  const controls=element("div",null,root,"controls");
  button("Revisar pendentes",()=>{
-  studyPool=due;
-  currentIndex=0;
-  navigate("Estudos");
+  studyPool=due; currentIndex=0; navigate("Estudos");
  },controls);
-
  button("Revisar todas",()=>{
-  studyPool=all;
-  currentIndex=0;
-  navigate("Estudos");
+  studyPool=all; currentIndex=0; navigate("Estudos");
  },controls);
-
  button("Caderno de erros",()=>{
   const ids=new Set(state.history.filter(x=>!x.correct).map(x=>x.id));
   studyPool=questions.filter(q=>ids.has(q.id));
-  currentIndex=0;
-  navigate("Estudos");
+  currentIndex=0; navigate("Estudos");
  },controls);
 }
-
-/* ==================================================
-   14. DESEMPENHO
-================================================== */
 
 function renderStatistics(){
  const root=clearContent("Desempenho");
@@ -1349,7 +1256,7 @@ function renderStatistics(){
  metric("Erros",s.wrong,grid);
  metric("Aproveitamento",s.rate+"%",grid);
 
- sectionTitle("Desempenho por disciplina",root);
+ sectionTitle("Por disciplina",root);
  const subjects=StatisticsManager.bySubject();
  for(const [name,data] of Object.entries(subjects)){
   const rate=Math.round(data.correct/data.total*100);
@@ -1360,12 +1267,8 @@ function renderStatistics(){
  }
 
  sectionTitle("Histórico de simulados",root);
- for(const examResult of state.exams.slice(-10).reverse()){
-  paragraph(
-   `${new Date(examResult.date).toLocaleDateString("pt-BR")} — `+
-   `${examResult.correct}/${examResult.total} acertos`,
-   root
-  );
+ for(const r of state.exams.slice(-10).reverse()){
+  paragraph(`${new Date(r.date).toLocaleDateString("pt-BR")} — ${r.correct}/${r.total}`,root);
  }
 
  button("Exportar estatísticas JSON",()=>{
@@ -1373,7 +1276,6 @@ function renderStatistics(){
    JSON.stringify({summary:s,subjects,exams:state.exams},null,2),
    "application/json");
  },root);
-
  button("Exportar histórico CSV",()=>{
   const rows=["id,disciplina,assunto,acerto,modo,data"];
   for(const x of state.history){
@@ -1384,57 +1286,63 @@ function renderStatistics(){
  },root);
 }
 
-/* ==================================================
-   15. BANCO DE QUESTÕES — com painel de diagnóstico
-================================================== */
-
 function renderBank(){
  const root=clearContent("Banco de Questões");
 
- // ── CONFIGURAÇÃO ──
  sectionTitle("Configuração do repositório",root);
-
  const repoField=field("Repositório GitHub (owner/repo)","text",APP.repo,root);
-
  button("Aplicar e recarregar",()=>{
-  const val=repoField.value.trim();
-  if(!val||!val.includes("/")){
-   status("Formato inválido. Use: usuario/repositorio");
-   return;
-  }
-  APP.repo=val;
+  const v=repoField.value.trim();
+  if(!v||!v.includes("/")){ status("Use: usuario/repositorio"); return; }
+  APP.repo=v;
   ContentRepository.load();
  },root);
 
  const urlField=field("URL direta do JSON (opcional)","text",APP.directJsonUrl||"",root);
-
  button("Testar URL direta",()=>{
-  const val=urlField.value.trim();
-  if(!val){status("Cole a URL raw completa do JSON");return;}
-  APP.directJsonUrl=val;
+  const v=urlField.value.trim();
+  if(!v){ status("Cole a URL raw do JSON"); return; }
+  APP.directJsonUrl=v;
   ContentRepository.load();
  },root);
 
- // ── STATUS ATUAL ──
  sectionTitle("Status atual",root);
- if(questions.length){
-  paragraph(`✅ ${questions.length} questões carregadas`,root);
- }else{
-  paragraph(`❌ 0 questões carregadas`,root);
+ paragraph(questions.length?`✅ ${questions.length} questões carregadas`:"❌ 0 questões carregadas",root);
+
+ const debug=ContentRepository.getDebug();
+
+ // Mostra info de cada arquivo tentado
+ if(debug.filesInfo&&debug.filesInfo.length){
+  sectionTitle("Análise dos arquivos",root);
+  for(const info of debug.filesInfo){
+   const box=element("div",null,root,"notice");
+   element("strong",info.name+(info.branch?` (${info.branch})`:""),box);
+   if(info.error){
+    const p=element("div","⚠️ "+info.error,box);
+    p.style.cssText="color:var(--danger);font-size:.85rem;margin-top:6px";
+   }else{
+    if(info.structure){
+     const p=element("div","📄 Estrutura: "+info.structure,box);
+     p.style.cssText="color:var(--muted);font-size:.85rem;margin-top:6px;font-family:monospace";
+    }
+    if(info.candidates!==undefined){
+     const p=element("div",
+      `🔍 ${info.candidates} candidato(s) · ${info.valid||0} válida(s) · ${info.rejected||0} rejeitada(s)`,box);
+     p.style.cssText="font-size:.85rem;margin-top:4px;color:"+(info.valid>0?"var(--accent)":"var(--muted)");
+    }
+   }
+  }
  }
 
- // ── DIAGNÓSTICO ──
- const debug=ContentRepository.getDebug();
+ // Diagnóstico completo
  if(debug.steps&&debug.steps.length){
   sectionTitle("Diagnóstico da última tentativa",root);
   const box=element("div",null,root,"notice");
-
   paragraph("Etapas executadas:",box);
   for(const s of debug.steps){
    const p=element("div",s,box);
    p.style.cssText="font-size:.85rem;padding:2px 0;color:var(--muted)";
   }
-
   if(debug.errors&&debug.errors.length){
    paragraph("Erros encontrados:",box);
    for(const e of debug.errors){
@@ -1442,50 +1350,35 @@ function renderBank(){
     p.style.cssText="font-size:.85rem;padding:2px 0;color:var(--danger)";
    }
   }
-
   if(debug.urlTried&&debug.urlTried.length){
    paragraph(`URLs tentadas: ${debug.urlTried.length}`,box);
   }
-  if(debug.filesFound&&debug.filesFound.length){
-   paragraph(`Arquivos .json encontrados: ${debug.filesFound.join(", ")}`,box);
-  }
-  if(debug.filesLoaded&&debug.filesLoaded.length){
-   paragraph(`Arquivos carregados: ${debug.filesLoaded.join(", ")}`,box);
-  }
-  if(debug.questionsRejected>0){
-   paragraph(`Questões rejeitadas por formato: ${debug.questionsRejected}`,box);
-  }
  }
 
- // ── INSTRUÇÕES SE VAZIO ──
+ // Instruções se vazio
  if(!questions.length){
   sectionTitle("Como resolver",root);
   const help=element("div",null,root,"notice");
   const steps=[
-   "1. Verifique se o repositório existe e é público",
-   "2. Confirme que o arquivo .json está na RAIZ (não em subpasta)",
-   "3. Verifique o nome exato do arquivo (questoes.json ou json.json)",
-   "4. Teste a URL raw diretamente no navegador:",
-   `   https://raw.githubusercontent.com/${APP.repo}/main/questoes.json`,
-   "5. Se usar branch 'master', troque /main/ por /master/",
-   "6. Cole a URL raw funcionando no campo acima e clique 'Testar URL direta'"
+   "1. Confirme que o repositório é PÚBLICO",
+   "2. Verifique o nome exato do arquivo .json na raiz",
+   "3. Teste a URL raw no navegador:",
+   `   https://raw.githubusercontent.com/${APP.repo}/main/SEU_ARQUIVO.json`,
+   "4. Cole a URL raw funcionando em 'URL direta' acima",
+   "5. Clique em 'Testar URL direta'"
   ];
-  for(const s of steps)paragraph(s,help);
+  for(const s of steps) paragraph(s,help);
 
-  const testLink=`https://raw.githubusercontent.com/${APP.repo}/main/questoes.json`;
-  const link=element("a","🔗 Testar no navegador: "+testLink,help);
-  link.href=testLink;
-  link.target="_blank";
-  link.style.cssText="color:var(--accent);text-decoration:underline;display:block;margin-top:8px;font-size:.85rem;word-break:break-all";
+  const testLink=`https://github.com/${APP.repo}`;
+  const link=element("a","🔗 Abrir repositório no GitHub",help);
+  link.href=testLink; link.target="_blank";
+  link.style.cssText="color:var(--accent);text-decoration:underline;display:block;margin-top:8px;font-size:.85rem";
  }
 
- // ── LISTA DE DISCIPLINAS ──
  if(questions.length){
   sectionTitle("Disciplinas disponíveis",root);
   const counts={};
-  for(const q of questions){
-   counts[q.disciplina]=(counts[q.disciplina]||0)+1;
-  }
+  for(const q of questions) counts[q.disciplina]=(counts[q.disciplina]||0)+1;
   for(const [name,total] of Object.entries(counts)){
    paragraph(`${name}: ${total} questões`,root);
   }
@@ -1494,21 +1387,15 @@ function renderBank(){
  button("🔄 Recarregar agora",()=>ContentRepository.load(),root);
 }
 
-/* ==================================================
-   16. CONFIGURAÇÕES
-================================================== */
-
 function renderSettings(){
  const root=clearContent("Configurações");
 
- const font=field("Tamanho da fonte em pixels","number",state.fontSize||16,root);
- font.min=14;
- font.max=30;
+ const font=field("Tamanho da fonte (px)","number",state.fontSize||16,root);
+ font.min=14; font.max=30;
 
  button("Aplicar tamanho",()=>{
   const size=Math.max(14,Math.min(30,Number(font.value)||16));
-  state.fontSize=size;
-  save();
+  state.fontSize=size; save();
   document.documentElement.style.setProperty("--font",size+"px");
  },root);
 
@@ -1519,8 +1406,7 @@ function renderSettings(){
  button("Exportar backup completo",()=>StorageManager.export(),root);
 
  const upload=element("input",null,root);
- upload.type="file";
- upload.accept=".json";
+ upload.type="file"; upload.accept=".json";
  upload.onchange=async()=>{
   try{
    await StorageManager.restore(upload.files[0]);
@@ -1531,36 +1417,27 @@ function renderSettings(){
  };
 }
 
-/* ==================================================
-   17. DOWNLOAD / CSV
-================================================== */
+/* ═══════════════════════════════════════════════════════════════════
+   9. DOWNLOAD
+═══════════════════════════════════════════════════════════════════ */
 
-function csv(value){
- return '"'+String(value??"").replace(/"/g,'""')+'"';
-}
+function csv(v){ return '"'+String(v??"").replace(/"/g,'""')+'"'; }
 
 function download(name,content,type){
  const blob=new Blob([content],{type});
  const url=URL.createObjectURL(blob);
- const link=document.createElement("a");
- link.href=url;
- link.download=name;
- document.body.append(link);
- link.click();
- link.remove();
+ const a=document.createElement("a");
+ a.href=url; a.download=name;
+ document.body.append(a);
+ a.click(); a.remove();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
-/* ==================================================
-   18. MOTOR TRIDIMENSIONAL
-================================================== */
+/* ═══════════════════════════════════════════════════════════════════
+   10. MOTOR 3D (inalterado)
+═══════════════════════════════════════════════════════════════════ */
 
-let scene;
-let camera;
-let renderer;
-let rig;
-let room;
-
+let scene,camera,renderer,rig,room;
 const materials=new Map();
 
 function material(color){
@@ -1569,263 +1446,175 @@ function material(color){
  }
  return materials.get(color);
 }
-
 function cube(x,y,z,w,h,d,color){
- const geometry=new THREE.BoxGeometry(w,h,d);
- const mesh=new THREE.Mesh(geometry,material(color));
- mesh.position.set(x,y,z);
- room.add(mesh);
- return mesh;
+ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(color));
+ m.position.set(x,y,z); room.add(m); return m;
 }
-
 function cylinder(x,y,z,r,h,color){
- const geometry=new THREE.CylinderGeometry(r,r,h,12);
- const mesh=new THREE.Mesh(geometry,material(color));
- mesh.position.set(x,y,z);
- room.add(mesh);
- return mesh;
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),material(color));
+ m.position.set(x,y,z); room.add(m); return m;
 }
-
 function brazilFlag(x,z){
  cylinder(x,2,z,.045,4,"#cccccc");
  cube(x+.7,3.25,z,1.4,.9,.04,"#169b45");
- const diamond=cube(x+.7,3.25,z+.04,.75,.6,.025,"#ffdf00");
- diamond.rotation.z=Math.PI/4;
- const sphere=new THREE.Mesh(
-  new THREE.SphereGeometry(.25,16,12),
-  material("#002776")
- );
- sphere.scale.z=.12;
- sphere.position.set(x+.7,3.25,z+.09);
- room.add(sphere);
+ const d=cube(x+.7,3.25,z+.04,.75,.6,.025,"#ffdf00");
+ d.rotation.z=Math.PI/4;
+ const s=new THREE.Mesh(new THREE.SphereGeometry(.25,16,12),material("#002776"));
+ s.scale.z=.12; s.position.set(x+.7,3.25,z+.09);
+ room.add(s);
 }
-
 function tree(x,z){
  cylinder(x,.9,z,.14,1.8,"#725333");
- const crown=new THREE.Mesh(
-  new THREE.ConeGeometry(1.1,3,8),
-  material("#315e36")
- );
- crown.position.set(x,3,z);
- room.add(crown);
+ const c=new THREE.Mesh(new THREE.ConeGeometry(1.1,3,8),material("#315e36"));
+ c.position.set(x,3,z); room.add(c);
 }
-
 function bed(x,z){
  cube(x,.45,z,1.6,.18,2.2,"#667e77");
  cube(x,1.45,z,1.6,.18,2.2,"#667e77");
- for(const dx of [-.7,.7]){
-  for(const dz of [-1,1]){
-   cube(x+dx,1,z+dz,.09,2,.09,"#a3aaa7");
-  }
+ for(const dx of [-.7,.7]) for(const dz of [-1,1]){
+  cube(x+dx,1,z+dz,.09,2,.09,"#a3aaa7");
  }
 }
-
 function disposeRoom(){
- if(!room)return;
+ if(!room) return;
  scene.remove(room);
- room.traverse(object=>{
-  if(object.geometry)object.geometry.dispose();
- });
+ room.traverse(o=>{ if(o.geometry) o.geometry.dispose(); });
  room=null;
 }
 
-/* ==================================================
-   19. AMBIENTES MILITARES
-================================================== */
-
 function changeEnvironment(index){
  index=Math.max(0,Math.min(environments.length-1,Number(index)||0));
- state.environment=index;
- save();
- if(!scene||!renderer)return;
-
+ state.environment=index; save();
+ if(!scene||!renderer) return;
  disposeRoom();
- room=new THREE.Group();
- scene.add(room);
-
+ room=new THREE.Group(); scene.add(room);
  scene.background=new THREE.Color(index===3?"#8bb9d3":"#7e9da9");
-
  cube(0,-.12,0,30,.24,30,index===3?"#607b47":"#7a8177");
- if(index!==3)cube(0,3,-11,26,6,.35,"#a5aaa1");
-
+ if(index!==3) cube(0,3,-11,26,6,.35,"#a5aaa1");
  if(index===0){
   cube(0,2,-10.5,10,4,.5,"#586d61");
-  for(let x=-4;x<=4;x+=2)cube(x,.015,-2,.1,.03,6,"#e2dfca");
-  brazilFlag(-7,-9);brazilFlag(7,-9);
-  for(let x=-9;x<=9;x+=3)cylinder(x,.7,-7,.2,1.4,"#788b7c");
+  for(let x=-4;x<=4;x+=2) cube(x,.015,-2,.1,.03,6,"#e2dfca");
+  brazilFlag(-7,-9); brazilFlag(7,-9);
+  for(let x=-9;x<=9;x+=3) cylinder(x,.7,-7,.2,1.4,"#788b7c");
  }
-
  if(index===1){
   cube(0,2.5,-10.7,7,2.5,.08,"#1e4c37");
-  for(let x=-4;x<=4;x+=2){
-   for(let z=-5;z<=2;z+=2){
-    cube(x,.75,z,1.4,.15,.8,"#765a3e");
-    cube(x,.38,z,.1,.7,.1,"#596b65");
-   }
+  for(let x=-4;x<=4;x+=2) for(let z=-5;z<=2;z+=2){
+   cube(x,.75,z,1.4,.15,.8,"#765a3e");
+   cube(x,.38,z,.1,.7,.1,"#596b65");
   }
   brazilFlag(-8,-9);
  }
-
  if(index===2){
   cube(-5,1.6,-7,3,3.2,3,"#c4b9a4");
   cube(-5,3.35,-7,3.7,.3,3.7,"#596a5e");
-  for(let x=-2;x<=7;x+=.8)cube(x,1.4,-8,.09,2.8,.09,"#43574e");
+  for(let x=-2;x<=7;x+=.8) cube(x,1.4,-8,.09,2.8,.09,"#43574e");
   brazilFlag(8,-7);
  }
-
  if(index===3){
-  for(let x=-8;x<=8;x+=4){
-   cube(x,.55,-5,2,1.1,1,"#9a8057");
-   tree(x+1.8,-9);
-  }
-  for(let z=-2;z<=5;z+=2)cube(-5,.15,z,3,.3,.18,"#92734d");
+  for(let x=-8;x<=8;x+=4){ cube(x,.55,-5,2,1.1,1,"#9a8057"); tree(x+1.8,-9); }
+  for(let z=-2;z<=5;z+=2) cube(-5,.15,z,3,.3,.18,"#92734d");
   brazilFlag(7,-8);
  }
-
  if(index===4){
-  for(let x=-6;x<=6;x+=3){bed(x,-5);bed(x,1);}
+  for(let x=-6;x<=6;x+=3){ bed(x,-5); bed(x,1); }
   cube(0,2.5,-10.7,4,1.5,.1,"#345849");
   brazilFlag(8,-9);
  }
-
  renderer.render(scene,camera);
 }
-
-/* ==================================================
-   20. THREE.JS E WEBXR
-================================================== */
 
 function init3D(){
  try{
   scene=new THREE.Scene();
   camera=new THREE.PerspectiveCamera(70,1,.1,100);
-  rig=new THREE.Group();
-  rig.position.set(0,1.65,7);
-  rig.add(camera);
-  scene.add(rig);
+  rig=new THREE.Group(); rig.position.set(0,1.65,7);
+  rig.add(camera); scene.add(rig);
 
-  renderer=new THREE.WebGLRenderer({
-   antialias:true,
-   powerPreference:"high-performance"
-  });
+  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
   renderer.xr.enabled=true;
-
-  const quality=state.quality;
-  renderer.setPixelRatio(
-   quality==="low"?1
-    :quality==="high"?Math.min(devicePixelRatio,2)
-    :Math.min(devicePixelRatio,1.5)
-  );
-
+  const q=state.quality;
+  renderer.setPixelRatio(q==="low"?1:q==="high"?Math.min(devicePixelRatio,2):Math.min(devicePixelRatio,1.5));
   $("scene").append(renderer.domElement);
 
-  const ambient=new THREE.HemisphereLight(0xffffff,0x405344,2.2);
-  scene.add(ambient);
-
-  const sunlight=new THREE.DirectionalLight(0xffffff,2);
-  sunlight.position.set(5,10,5);
-  scene.add(sunlight);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x405344,2.2));
+  const sun=new THREE.DirectionalLight(0xffffff,2);
+  sun.position.set(5,10,5); scene.add(sun);
 
   changeEnvironment(state.environment);
 
-  const vrButton=VRButton.createButton(renderer);
-  vrButton.style.display="none";
-  document.body.append(vrButton);
+  const vrBtn=VRButton.createButton(renderer);
+  vrBtn.style.display="none";
+  document.body.append(vrBtn);
 
   $("vr").onclick=async()=>{
-   if(!navigator.xr){
-    status("WebXR não está disponível neste navegador.");
-    return;
-   }
+   if(!navigator.xr){ status("WebXR não disponível."); return; }
    try{
-    const supported=await navigator.xr.isSessionSupported("immersive-vr");
-    if(!supported){
-     status("Realidade virtual não é suportada neste dispositivo.");
-     return;
-    }
-    vrButton.click();
-   }catch(e){
-    status("Erro ao iniciar VR: "+e.message);
-   }
+    const ok=await navigator.xr.isSessionSupported("immersive-vr");
+    if(!ok){ status("VR não suportada."); return; }
+    vrBtn.click();
+   }catch(e){ status("Erro VR: "+e.message); }
   };
 
-  renderer.xr.addEventListener("sessionstart",()=>status("Sessão VR iniciada."));
-  renderer.xr.addEventListener("sessionend",()=>status("Sessão VR encerrada."));
+  renderer.xr.addEventListener("sessionstart",()=>status("VR iniciada."));
+  renderer.xr.addEventListener("sessionend",()=>status("VR encerrada."));
 
   let lastW=0,lastH=0;
-
   renderer.setAnimationLoop(()=>{
-   const container=$("scene");
-   const width=container.clientWidth;
-   const height=container.clientHeight;
-
-   if(width&&height&&(width!==lastW||height!==lastH)){
-    lastW=width;
-    lastH=height;
-    renderer.setSize(width,height,false);
-    camera.aspect=width/height;
+   const c=$("scene");
+   const w=c.clientWidth, h=c.clientHeight;
+   if(w&&h&&(w!==lastW||h!==lastH)){
+    lastW=w; lastH=h;
+    renderer.setSize(w,h,false);
+    camera.aspect=w/h;
     camera.updateProjectionMatrix();
    }
-
    renderer.render(scene,camera);
   });
 
-  $("rotateLeft").onclick=()=>{rig.rotation.y+=Math.PI/8;};
-  $("rotateRight").onclick=()=>{rig.rotation.y-=Math.PI/8;};
-  $("resetView").onclick=()=>{
-   rig.rotation.y=0;
-   rig.position.set(0,1.65,7);
-  };
- }catch(error){
-  console.error(error);
-  status("Falha ao iniciar WebGL: "+error.message);
+  $("rotateLeft").onclick=()=>{ rig.rotation.y+=Math.PI/8; };
+  $("rotateRight").onclick=()=>{ rig.rotation.y-=Math.PI/8; };
+  $("resetView").onclick=()=>{ rig.rotation.y=0; rig.position.set(0,1.65,7); };
+ }catch(e){
+  console.error(e);
+  status("Falha WebGL: "+e.message);
  }
 }
 
-/* ==================================================
-   21. CONFIG MANAGER
-================================================== */
+/* ═══════════════════════════════════════════════════════════════════
+   11. CONFIG / MENUS
+═══════════════════════════════════════════════════════════════════ */
 
 function applySettings(){
  const wasFocus=document.body.classList.contains("focus");
  document.body.className="";
- if(state.theme!=="dark")document.body.classList.add(state.theme);
- if(wasFocus)document.body.classList.add("focus");
-
- document.documentElement.style.setProperty(
-  "--font",(state.fontSize||16)+"px"
- );
-
+ if(state.theme!=="dark") document.body.classList.add(state.theme);
+ if(wasFocus) document.body.classList.add("focus");
+ document.documentElement.style.setProperty("--font",(state.fontSize||16)+"px");
  $("theme").value=state.theme;
  $("environment").value=state.environment;
  $("quality").value=state.quality;
 }
 
 function initializeMenus(){
- for(const name of pages){
-  button(name,()=>navigate(name),$("menu"));
- }
-
+ for(const name of pages) button(name,()=>navigate(name),$("menu"));
  environments.forEach((name,i)=>{
-  const option=document.createElement("option");
-  option.value=i;
-  option.textContent=name;
-  $("environment").append(option);
+  const o=document.createElement("option");
+  o.value=i; o.textContent=name;
+  $("environment").append(o);
  });
-
  $("environment").onchange=e=>changeEnvironment(Number(e.target.value));
- $("theme").onchange=e=>{state.theme=e.target.value;save();applySettings();};
+ $("theme").onchange=e=>{ state.theme=e.target.value; save(); applySettings(); };
  $("quality").onchange=e=>{
-  state.quality=e.target.value;
-  save();
-  status("Qualidade salva. Recarregue a página para aplicar.");
+  state.quality=e.target.value; save();
+  status("Qualidade salva. Recarregue para aplicar.");
  };
  $("refresh").onclick=()=>ContentRepository.load();
 }
 
-/* ==================================================
-   22. APP CORE
-================================================== */
+/* ═══════════════════════════════════════════════════════════════════
+   12. APP CORE
+═══════════════════════════════════════════════════════════════════ */
 
 const AppCore={
  async start(){
@@ -1835,9 +1624,9 @@ const AppCore={
    init3D();
    navigate("Início");
    await ContentRepository.load();
-  }catch(error){
-   console.error(error);
-   status("Falha na inicialização: "+error.message);
+  }catch(e){
+   console.error(e);
+   status("Erro: "+e.message);
   }
  }
 };
