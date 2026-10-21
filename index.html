@@ -3,1510 +3,3895 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PM-SC Academia Imersiva</title>
+<meta name="theme-color" content="#07150f">
+<title>PMSC 2026 — Academia Militar Imersiva</title>
 
 <style>
-:root {
-  --bg:#081710;
-  --panel:#122b20;
-  --accent:#72ecaa;
-  --fg:#effcf3;
-  --soft:#b5d4c1;
-  --line:#416950;
+:root{
+  --bg:#06140e;
+  --card:#12291e;
+  --input:#204b34;
+  --text:#eefaf1;
+  --line:#39734e;
+  --accent:#7cffac;
+  --muted:#c2d6c7;
 }
-* {box-sizing:border-box}
-body {
+*{box-sizing:border-box}
+body{
   margin:0;
-  font:16px system-ui,Arial;
   background:var(--bg);
-  color:var(--fg);
+  color:var(--text);
+  font:15px system-ui,Arial,sans-serif;
 }
-header {
-  padding:16px;
-  background:#10291d;
-  border-bottom:1px solid var(--line);
+button,input,select{font:inherit;color:inherit}
+button,select,input{
+  border:1px solid var(--line);
+  background:var(--input);
+  padding:10px;
+  border-radius:9px;
+}
+button{cursor:pointer}
+button:hover,button:focus-visible{
+  border-color:var(--accent);
+  outline:1px solid var(--accent);
+}
+button:disabled{opacity:.55}
+select,input[type=search],input[type=number]{width:100%}
+input[type=range]{width:100%;accent-color:var(--accent)}
+header{
   display:flex;
   justify-content:space-between;
+  align-items:center;
   gap:10px;
+  padding:14px 20px;
+  background:#0c271a;
+  border-bottom:1px solid var(--line);
   flex-wrap:wrap;
 }
-.layout {
+header strong{font-size:19px}
+small,.muted{color:var(--muted)}
+.layout{
   display:grid;
-  grid-template-columns:235px minmax(0,1fr);
-  gap:12px;
-  padding:12px;
+  grid-template-columns:320px minmax(0,1fr);
+  min-height:calc(100vh - 65px);
 }
-aside,.box {
-  background:var(--panel);
-  padding:15px;
+aside{
+  padding:14px;
+  background:var(--card);
+  border-right:1px solid var(--line);
+  max-height:calc(100vh - 65px);
+  overflow:auto;
+}
+main{min-width:0;padding:14px}
+.panel{
+  background:var(--card);
   border:1px solid var(--line);
   border-radius:12px;
+  padding:16px;
+  margin-bottom:12px;
 }
-nav {display:grid;gap:7px}
-button,select,input {
-  background:#244232;
-  color:var(--fg);
-  border:1px solid #5a896c;
-  padding:10px;
-  border-radius:8px;
-  font:inherit;
-  max-width:100%;
+h2{font-size:19px;margin:0 0 12px}
+h3{font-size:15px;color:var(--accent)}
+label{
+  display:block;
+  font-size:13px;
+  color:var(--muted);
+  margin:12px 0 5px;
 }
-button {cursor:pointer}
-button:hover,button:focus-visible {
-  outline:2px solid var(--accent);
+.row{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+.row>*{flex:1}
+.nav{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
 }
-button.active {
-  border-color:var(--accent);
-  background:#276142;
-}
-label {display:block;margin:12px 0 5px}
-select,input {width:100%}
-.row {
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin:12px 0;
-}
-.row button {flex:1 1 auto}
-#scene {
-  width:100%;
-  height:340px;
-  background:#172b24;
+.nav button{font-size:13px}
+#scene{
+  height:360px;
   border-radius:10px;
   overflow:hidden;
+  background:#101f19;
 }
-#scene canvas {display:block}
-#content {
-  margin-top:12px;
-  line-height:1.55;
-  min-height:240px;
-}
-h1 {font-size:1.3rem;margin:0}
-h2 {margin-top:0}
-p {overflow-wrap:anywhere}
-.muted {color:var(--soft)}
-.question {
-  font-size:1.1rem;
-  white-space:pre-wrap;
-}
-.option {
+#scene canvas{display:block}
+.answer{
   display:block;
   width:100%;
-  text-align:left;
-  margin:8px 0;
   white-space:pre-wrap;
+  text-align:left;
+  line-height:1.55;
+  margin:7px 0;
 }
-.correct {
-  border:2px solid #70ffaa;
-  background:#215b3b;
+.selected{outline:2px solid #72d6ff}
+.correct{border-color:#50ff9d;background:#136439}
+.wrong{border-color:#ff8e91;background:#66333d}
+#question{
+  font-size:18px;
+  line-height:1.7;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
 }
-.wrong {
-  border:2px solid #ff8b8b;
-  background:#572c2c;
-}
-.stat {
+.metric{
   display:inline-block;
-  background:#244232;
-  padding:12px;
+  background:#244e35;
   border-radius:9px;
-  margin:5px;
+  padding:12px;
+  margin:4px;
 }
-hr {
-  border:0;
-  border-top:1px solid var(--line);
+.metric strong{
+  display:block;
+  font-size:22px;
+  color:var(--accent);
 }
-body.light {
-  --bg:#eaf4eb;
-  --panel:#fff;
-  --fg:#17251b;
-  --soft:#486c55;
-  --line:#abc7b1;
-  --accent:#12794e;
+#status{font-size:12px;color:var(--muted)}
+.focus aside,.focus #sceneSection{display:none}
+.focus .layout{grid-template-columns:1fr}
+.note{
+  font-size:12px;
+  line-height:1.6;
+  color:var(--muted);
 }
-body.light button,
-body.light select,
-body.light input {
-  background:#e1efe3;
-  color:#17251b;
+.bar{
+  width:100%;
+  height:10px;
+  background:#264b35;
+  border-radius:6px;
+  overflow:hidden;
 }
-@media(max-width:800px) {
-  .layout {grid-template-columns:1fr}
-  nav {grid-template-columns:repeat(3,1fr)}
-  nav button {font-size:.85rem;padding:7px}
-  #scene {height:270px}
+.bar span{
+  display:block;
+  height:100%;
+  background:var(--accent);
+}
+@media(max-width:850px){
+  .layout{display:block}
+  aside{max-height:none;border-right:0}
+  main{padding:9px}
+  #scene{height:260px}
 }
 </style>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+  }
+}
+</script>
 </head>
 
 <body>
 
 <header>
-  <h1>🇧🇷 PM-SC • Academia Imersiva de Estudos</h1>
-  <span id="status" role="status">Iniciando...</span>
+  <strong>🇧🇷 PMSC 2026 • Academia Militar Imersiva</strong>
+  <span id="status">Inicializando…</span>
 </header>
 
 <div class="layout">
-  <aside>
-    <nav id="nav"></nav>
+<aside>
 
-    <label for="env">Ambiente 3D</label>
-    <select id="env"></select>
+<div class="nav" id="navigation"></div>
 
-    <label for="subject">Disciplina</label>
-    <select id="subject">
-      <option value="">Todas</option>
-    </select>
+<h3>Ambiente e realidade virtual</h3>
 
-    <label for="search">Buscar questão</label>
-    <input id="search" placeholder="Digite uma palavra">
+<label>Ambiente</label>
+<select id="environment"></select>
 
-    <div class="row">
-      <button id="reload">Atualizar JSON</button>
-      <button id="enterVR">Entrar em VR</button>
-    </div>
+<label>Iluminação</label>
+<select id="lighting">
+  <option value="day">Dia</option>
+  <option value="night">Noite</option>
+</select>
 
-    <small class="muted">
-      Na RV: aponte e aperte o gatilho, ou use a pinça
-      das mãos (se disponível). Para se deslocar,
-      aponte ao chão e aperte o gatilho.
-    </small>
-  </aside>
+<label>Qualidade gráfica</label>
+<select id="quality">
+  <option value="low">Econômica</option>
+  <option value="medium">Equilibrada</option>
+  <option value="high">Alta</option>
+</select>
 
-  <main>
-    <section class="box">
-      <div id="scene"></div>
-    </section>
-    <section class="box" id="content"></section>
-  </main>
+<label>Fonte no VR</label>
+<input id="fontSize" type="range" min="90" max="145" value="115">
+
+<label>Distância do painel central</label>
+<input id="distance" type="range" min="1.8" max="4" step=".1" value="2.5">
+
+<label>Altura do painel central</label>
+<input id="panelHeight" type="range" min="1" max="2.5" step=".1" value="1.65">
+
+<label>Escala do painel central</label>
+<input id="panelScale" type="range" min=".85" max="1.45" step=".05" value="1">
+
+<label>Velocidade de caminhada</label>
+<input id="speed" type="range" min=".5" max="2.5" step=".1" value="1.4">
+
+<label>Rotação pelo analógico direito</label>
+<select id="snap">
+  <option value="30">30 graus</option>
+  <option value="45">45 graus</option>
+  <option value="0">Desligada</option>
+</select>
+
+<div class="row">
+  <button id="resetPanels">Reposicionar painéis</button>
+  <button id="vrButton">ENTRAR EM VR</button>
 </div>
 
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
-  }
-}
-</script>
+<div class="note">
+  No Meta Quest 3S:
+  analógico esquerdo para caminhar;
+  analógico direito para girar;
+  gatilho para selecionar;
+  grip para arrastar painéis;
+  pinça das mãos para selecionar ou arrastar.
+  Os círculos luminosos no chão são destinos de teletransporte.
+</div>
+
+<hr>
+<h3>Banco de questões</h3>
+<div id="bankStatus" class="note">Aguardando JSON…</div>
+
+<div class="row">
+  <button id="reload">Atualizar JSON do GitHub</button>
+  <button id="demo">Demonstração</button>
+</div>
+
+<label>Importar JSON (opcional)</label>
+<input id="upload" type="file" accept=".json,application/json" multiple>
+
+<hr>
+<h3>Filtros</h3>
+
+<label>Disciplina</label>
+<select id="subject">
+  <option value="">Todas</option>
+</select>
+
+<label>Assunto</label>
+<select id="topic">
+  <option value="">Todos</option>
+</select>
+
+<label>Dificuldade</label>
+<select id="difficulty">
+  <option value="">Todas</option>
+  <option value="facil">Fácil</option>
+  <option value="media">Média</option>
+  <option value="dificil">Difícil</option>
+</select>
+
+<label>Pesquisar</label>
+<input id="search" type="search" placeholder="Palavra ou artigo">
+
+<hr>
+<h3>Simulado</h3>
+
+<label>Quantidade</label>
+<select id="examCount">
+  <option>10</option>
+  <option>20</option>
+  <option>40</option>
+  <option>60</option>
+  <option value="all">Todas</option>
+</select>
+
+<label>Tempo em minutos (0 = livre)</label>
+<input id="examTime" type="number" min="0" max="300" value="60">
+
+<label>Correção</label>
+<select id="examFeedback">
+  <option value="end">Ao finalizar</option>
+  <option value="immediate">Imediata</option>
+</select>
+
+<hr>
+<h3>Dados e acessibilidade</h3>
+
+<div class="row">
+  <button id="focus">Modo foco</button>
+  <button id="reading">Modo leitura</button>
+</div>
+
+<div class="row">
+  <button id="backup">Exportar backup</button>
+  <button id="csv">Histórico CSV</button>
+</div>
+
+<label>Restaurar backup</label>
+<input id="restore" type="file" accept=".json">
+
+<div class="row">
+  <button id="resetStats">Zerar progresso</button>
+</div>
+
+</aside>
+
+<main>
+  <section id="sceneSection" class="panel">
+    <h2>Ambiente 3D • Meta Quest 3S</h2>
+    <div id="scene"></div>
+    <p class="note">
+      No computador, utilize a interface de estudo abaixo.
+      No Quest, selecione ENTRAR EM VR.
+    </p>
+  </section>
+
+  <section class="panel">
+    <div id="content"></div>
+  </section>
+</main>
+</div>
 
 <script type="module">
 
 import * as THREE from 'three';
-import {VRButton} from 'three/addons/webxr/VRButton.js';
-import {XRControllerModelFactory} from 'three/addons/webxr/XRControllerModelFactory.js';
-import {XRHandModelFactory} from 'three/addons/webxr/XRHandModelFactory.js';
 
-const REPO='johndosanjos162/PMSC';
-const STORE='pmsc-imersiva-v5';
+import {
+  XRControllerModelFactory
+} from 'three/addons/webxr/XRControllerModelFactory.js';
 
-const $=id=>document.getElementById(id);
-const now=()=>Date.now();
+import {
+  XRHandModelFactory
+} from 'three/addons/webxr/XRHandModelFactory.js';
 
-const pages=[
-  ['inicio','Início'],
-  ['aulas','Aulas'],
-  ['questoes','Questões'],
-  ['simulado','Simulado'],
-  ['flashcards','Flashcards'],
-  ['revisoes','Revisões'],
-  ['estatisticas','Estatísticas'],
-  ['banco','Banco JSON'],
-  ['config','Configurações']
-];
 
-const envs=[
+// ============================================================
+// 1. APP CORE E CONFIGURAÇÕES
+// ============================================================
+
+const $ = id => document.getElementById(id);
+
+const KEY = 'pmsc_quest_complete_v8';
+const REPO = 'johndosanjos162/PMSC';
+
+const environments = [
   'Pátio de formatura',
   'Sala de instrução',
   'Entrada do quartel',
   'Campo de treinamento',
-  'Alojamento',
-  'Biblioteca',
-  'Auditório',
+  'Alojamento militar',
+  'Biblioteca militar',
+  'Auditório do quartel',
   'Sala de estudos',
-  'Praça central',
+  'Praça do quartel',
   'Centro de operações'
 ];
 
-const initial={
+const subjectsBase = [
+  'Língua Portuguesa',
+  'Informática',
+  'Direito Constitucional',
+  'Constituição de Santa Catarina',
+  'Direito Penal Comum',
+  'Direito Processual Penal Comum',
+  'Direito Penal Militar',
+  'Legislação Especial',
+  'Legislação de Trânsito',
+  'Legislação Institucional'
+];
+
+const pages = [
+  ['home','Início'],
+  ['study','Questões'],
+  ['exam','Simulado'],
+  ['flash','Flashcards'],
+  ['review','Revisões'],
+  ['stats','Desempenho'],
+  ['bank','Banco JSON'],
+  ['settings','Configurações']
+];
+
+const defaultState = () => ({
+  settings:{
+    env:0,
+    lighting:'day',
+    quality:'medium',
+    fontSize:115,
+    distance:2.5,
+    panelHeight:1.65,
+    panelScale:1,
+    speed:1.4,
+    snap:30
+  },
   history:[],
   favorites:[],
   reviews:{},
   exams:[],
-  answer:null,
-  exam:null,
-  theme:'dark',
-  env:0
-};
+  session:null,
+  panels:{}
+});
 
-let state={...initial};
-let questions=[];
-let page='inicio';
-let qIndex=0;
-let activePool=[];
-let flipped=false;
-let db=null;
-let loadDetails='Ainda não carregado';
+let state = defaultState();
+let db = null;
+let questions = [];
+let page = 'home';
+let busy = false;
 
-try {
-  state={
-    ...initial,
-    ...JSON.parse(localStorage.getItem(STORE)||'{}')
-  };
-} catch {}
+function note(msg){
+  $('status').textContent = msg;
+}
 
-if(!Array.isArray(state.history))state.history=[];
-if(!Array.isArray(state.favorites))state.favorites=[];
-if(!state.reviews||typeof state.reviews!=='object')state.reviews={};
-if(!Array.isArray(state.exams))state.exams=[];
-
-function save() {
-  try {
-    localStorage.setItem(STORE,JSON.stringify(state));
-  } catch(e) {
-    setStatus('Não foi possível salvar: '+e.message);
+function safeStore(){
+  try{
+    localStorage.setItem(KEY,JSON.stringify(state));
+  }catch(e){
+    console.warn(e);
   }
-  idbSet('progress',state).catch(()=>{});
+  idbPut('progress',state);
 }
 
-function setStatus(t) {
-  $('status').textContent=t;
+function restoreState(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(KEY));
+    if(saved && typeof saved === 'object'){
+      state = {
+        ...defaultState(),
+        ...saved,
+        settings:{
+          ...defaultState().settings,
+          ...saved.settings
+        }
+      };
+    }
+  }catch(e){
+    console.warn(e);
+  }
 }
 
-function el(tag,txt,parent) {
-  const e=document.createElement(tag);
-  if(txt!==null&&txt!==undefined)e.textContent=String(txt);
-  if(parent)parent.append(e);
-  return e;
+function el(tag,text,parent,cls){
+  const n = document.createElement(tag);
+  if(text !== undefined && text !== null){
+    n.textContent = String(text);
+  }
+  if(cls) n.className = cls;
+  if(parent) parent.append(n);
+  return n;
 }
 
-function btn(txt,fn,parent) {
-  const b=el('button',txt,parent);
-  b.addEventListener('click',fn);
+function button(text,callback,parent){
+  const b = el('button',text,parent);
+  b.onclick = callback;
   return b;
 }
 
-function byId(id) {
-  return questions.find(q=>q.id===id);
+function dateText(ms){
+  return new Date(ms).toLocaleDateString('pt-BR');
 }
 
-function shuffle(arr) {
-  const a=[...arr];
-  for(let i=a.length-1;i>0;i--) {
-    const j=Math.floor(Math.random()*(i+1));
-    [a[i],a[j]]=[a[j],a[i]];
-  }
-  return a;
+function download(name,content,type){
+  const url = URL.createObjectURL(
+    new Blob([content],{type})
+  );
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+
+  document.body.append(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url),1500);
 }
 
-function dbOpen() {
-  return new Promise(resolve=>{
+function csv(v){
+  return '"' + String(v ?? '').replace(/"/g,'""') + '"';
+}
+
+function clamp(v,a,b){
+  return Math.max(a,Math.min(b,v));
+}
+
+
+// ============================================================
+// 2. INDEXEDDB
+// ============================================================
+
+async function openDB(){
+  return new Promise(resolve => {
     if(!('indexedDB' in window)){
       resolve(null);
       return;
     }
-    try {
-      const r=indexedDB.open('PMSCAcademia',1);
-      r.onupgradeneeded=()=>{
-        r.result.createObjectStore('data');
+
+    try{
+      const r = indexedDB.open('PMSC_QUEST_V8',1);
+
+      r.onupgradeneeded = () => {
+        r.result.createObjectStore('kv');
       };
-      r.onsuccess=()=>resolve(r.result);
-      r.onerror=()=>resolve(null);
-    } catch {
+
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => resolve(null);
+    }catch{
       resolve(null);
     }
   });
 }
 
-async function idbGet(key) {
-  if(!db)return null;
-  return new Promise(resolve=>{
-    try {
-      const r=db.transaction('data')
-        .objectStore('data').get(key);
-      r.onsuccess=()=>resolve(r.result??null);
-      r.onerror=()=>resolve(null);
-    } catch {
+function idbGet(key){
+  return new Promise(resolve => {
+    if(!db){
+      resolve(null);
+      return;
+    }
+
+    try{
+      const r = db.transaction('kv')
+        .objectStore('kv')
+        .get(key);
+
+      r.onsuccess = () => resolve(r.result ?? null);
+      r.onerror = () => resolve(null);
+    }catch{
       resolve(null);
     }
   });
 }
 
-async function idbSet(key,value) {
-  if(!db)return;
-  return new Promise(resolve=>{
-    try {
-      const r=db.transaction('data','readwrite')
-        .objectStore('data').put(value,key);
-      r.onsuccess=()=>resolve();
-      r.onerror=()=>resolve();
-    } catch {
-      resolve();
-    }
-  });
+function idbPut(key,value){
+  if(!db) return;
+
+  try{
+    db.transaction('kv','readwrite')
+      .objectStore('kv')
+      .put(value,key);
+  }catch(e){
+    console.warn(e);
+  }
 }
 
-/* NORMALIZAR QUESTÕES */
 
-function normalize(raw,disc) {
-  if(!raw||typeof raw!=='object')return null;
+// ============================================================
+// 3. NORMALIZADOR DE QUESTÕES JSON
+// ============================================================
 
-  const text=raw.pergunta??raw.enunciado??raw.question;
-  let opts=raw.alternativas??raw.opcoes??raw.options;
+function normalize(raw,disc){
+  if(!raw || typeof raw !== 'object') return null;
 
-  if(opts&&!Array.isArray(opts)&&typeof opts==='object') {
-    opts=Object.values(opts);
+  const text =
+    raw.enunciado ??
+    raw.pergunta ??
+    raw.questao ??
+    raw.question ??
+    raw.texto;
+
+  let src =
+    raw.alternativas ??
+    raw.opcoes ??
+    raw.options ??
+    raw.respostas;
+
+  if(typeof text !== 'string' || !text.trim() || !src){
+    return null;
   }
 
-  if(!Array.isArray(opts)||typeof text!=='string'||
-     !text.trim()||opts.length<2)return null;
+  let options = [];
+  let keys = null;
 
-  opts=opts.map(x=>typeof x==='string'
-    ?x:String(x?.texto??x?.text??''));
-
-  let key=raw.correta??raw.gabarito??raw.correct??raw.resposta;
-
-  if(typeof key==='string') {
-    const s=key.trim().toUpperCase();
-    key=/^[A-Z]$/.test(s)
-      ?s.charCodeAt(0)-65
-      :Number(s);
+  if(Array.isArray(src)){
+    options = src.map(v =>
+      typeof v === 'string'
+        ? v
+        : String(v?.texto ?? v?.text ?? v?.alternativa ?? '')
+    );
+  }else if(typeof src === 'object'){
+    keys = Object.keys(src);
+    options = keys.map(k =>
+      String(src[k]?.texto ?? src[k]?.text ?? src[k])
+    );
   }
 
-  if(!Number.isInteger(key)||key<0||
-     key>=opts.length||opts.some(x=>!x.trim()))return null;
+  if(
+    options.length < 2 ||
+    options.length > 5 ||
+    options.some(t => !t.trim())
+  ){
+    return null;
+  }
 
-  const materia=String(raw.disciplina||disc||'Geral');
+  let answer =
+    raw.correta ??
+    raw.gabarito ??
+    raw.correct ??
+    raw.resposta_correta ??
+    raw.alternativa_correta ??
+    raw.resposta;
+
+  let correct = -1;
+
+  if(typeof answer === 'number'){
+    correct = answer;
+  }else if(typeof answer === 'string'){
+    const a = answer.trim();
+
+    const match = a.match(
+      /^(?:letra\s*)?([A-E])(?:\)|\.|\s|$)/i
+    );
+
+    if(match){
+      correct = match[1].toUpperCase().charCodeAt(0)-65;
+    }else if(keys && keys.includes(a)){
+      correct = keys.indexOf(a);
+    }else if(/^\d+$/.test(a)){
+      correct = Number(a);
+    }else{
+      correct = options.indexOf(a);
+    }
+  }
+
+  if(
+    !Number.isInteger(correct) ||
+    correct < 0 ||
+    correct >= options.length
+  ){
+    return null;
+  }
+
+  const subject = String(
+    raw.disciplina ??
+    raw.materia ??
+    raw.subject ??
+    disc ??
+    'Geral'
+  );
+
+  const question = text.trim();
 
   return {
-    id:String(raw.id||raw.codigo||materia+':'+text.trim()),
-    disciplina:materia,
-    assunto:String(raw.assunto||raw.topico||'Geral'),
-    dificuldade:String(raw.dificuldade||'Não informada'),
-    pergunta:text,
-    alternativas:opts,
-    correta:key,
-    explicacao:String(raw.explicacao||raw.comentario||''),
-    referencia:String(raw.referencia||'')
+    id:String(
+      raw.id ??
+      raw.codigo ??
+      subject+'|'+question
+    ),
+    subject,
+    topic:String(
+      raw.assunto ??
+      raw.topico ??
+      raw.topic ??
+      'Geral'
+    ),
+    difficulty:String(
+      raw.dificuldade ?? 'media'
+    ).toLowerCase(),
+    question,
+    options,
+    correct,
+    explanation:String(
+      raw.explicacao ??
+      raw.comentario ??
+      raw.justificativa ??
+      ''
+    ),
+    reference:String(raw.referencia ?? ''),
+    tags:Array.isArray(raw.tags) ? raw.tags : []
   };
 }
 
-function extract(data,disc='Geral',out=[]) {
-  if(Array.isArray(data)) {
-    for(const row of data)extract(row,disc,out);
+function extract(
+  data,
+  subject='Geral',
+  out=[],
+  seen=new WeakSet()
+){
+  if(
+    !data ||
+    typeof data !== 'object' ||
+    seen.has(data)
+  ){
     return out;
   }
-  if(!data||typeof data!=='object')return out;
 
-  if('pergunta' in data||'enunciado' in data||'question' in data) {
-    const q=normalize(data,disc);
-    if(q)out.push(q);
+  seen.add(data);
+
+  if(Array.isArray(data)){
+    for(const item of data){
+      extract(item,subject,out,seen);
+    }
     return out;
   }
 
-  for(const [name,val] of Object.entries(data)) {
-    if(!val||typeof val!=='object')continue;
-    const generic=[
-      'questoes','questions','dados','data','disciplinas','items'
-    ];
-    extract(
-      val,
-      generic.includes(name.toLowerCase())?disc:name,
-      out
-    );
+  const question = normalize(data,subject);
+
+  if(question){
+    out.push(question);
+    return out;
   }
+
+  const generic = new Set([
+    'questoes',
+    'questions',
+    'data',
+    'dados',
+    'items',
+    'disciplinas',
+    'banco',
+    'perguntas',
+    'lista'
+  ]);
+
+  for(const [key,val] of Object.entries(data)){
+    if(val && typeof val === 'object'){
+      extract(
+        val,
+        generic.has(key.toLowerCase()) ? subject : key,
+        out,
+        seen
+      );
+    }
+  }
+
   return out;
 }
 
-/* CARREGAR JSON DO GITHUB */
 
-async function loadBank() {
-  setStatus('Lendo arquivos JSON da raiz...');
+// ============================================================
+// 4. GERENCIAMENTO DO BANCO
+// ============================================================
 
-  let urls=new Set(['./json.json']);
-  let checked=0;
-  let rejected=0;
-  let errors=[];
+function merge(list,replace=true){
+  const map = new Map(
+    replace ? [] : questions.map(q => [q.id,q])
+  );
 
-  try {
-    const r=await fetch(
+  let rejected = 0;
+
+  for(const item of list){
+    const q =
+      item?.options &&
+      item?.question &&
+      typeof item?.correct === 'number'
+        ? item
+        : normalize(item,'Geral');
+
+    if(q){
+      map.set(q.id,q);
+    }else{
+      rejected++;
+    }
+  }
+
+  questions = [...map.values()];
+
+  idbPut('bank',questions);
+
+  fillFilters();
+
+  if(!state.session || !state.session.ids?.length){
+    newSession(page === 'exam' ? 'exam' : 'study',false);
+  }
+
+  render();
+
+  return {
+    rejected,
+    total:questions.length
+  };
+}
+
+async function loadBank(){
+  if(busy) return;
+  busy = true;
+
+  note('Lendo arquivos JSON da raiz…');
+
+  $('bankStatus').textContent = 'Procurando arquivos JSON…';
+
+  const urls = new Set([
+    new URL('json.json',location.href).href
+  ]);
+
+  let fileCount = 0;
+  let failed = 0;
+
+  try{
+    const r = await fetch(
       `https://api.github.com/repos/${REPO}/contents/`,
-      {cache:'no-store'}
+      {
+        cache:'no-store',
+        headers:{
+          Accept:'application/vnd.github+json'
+        }
+      }
     );
-    if(r.ok) {
-      const contents=await r.json();
-      if(Array.isArray(contents)) {
-        for(const f of contents) {
-          if(f.type==='file'&&
-             /\.json$/i.test(f.name)&&f.download_url) {
+
+    if(r.ok){
+      const files = await r.json();
+
+      if(Array.isArray(files)){
+        for(const f of files){
+          if(
+            f.type === 'file' &&
+            /\.json$/i.test(f.name) &&
+            f.download_url &&
+            !/package|config|manifest|lock/i.test(f.name)
+          ){
             urls.add(f.download_url);
           }
         }
       }
-    } else {
-      errors.push('API GitHub: '+r.status);
     }
-  } catch(e) {
-    errors.push('API: '+e.message);
+  }catch(e){
+    console.warn('GitHub API:',e);
   }
 
-  const map=new Map();
+  const map = new Map();
 
-  for(const url of urls) {
-    try {
-      const r=await fetch(url,{cache:'no-store'});
-      if(!r.ok)throw Error(String(r.status));
+  for(const uri of [...urls].slice(0,45)){
+    try{
+      const r = await fetch(uri,{cache:'no-store'});
 
-      const raw=await r.text();
-      if(raw.length>15000000)throw Error('arquivo muito grande');
-
-      const json=JSON.parse(raw);
-      const list=extract(json);
-
-      for(const q of list) {
-        if(!map.has(q.id))map.set(q.id,q);
+      if(!r.ok){
+        throw Error('HTTP '+r.status);
       }
-      checked++;
-    } catch(e) {
-      rejected++;
-      errors.push(url.split('/').pop()+': '+e.message);
+
+      const txt = await r.text();
+
+      if(txt.length > 10000000){
+        throw Error('Arquivo acima de 10 MB');
+      }
+
+      const list = extract(JSON.parse(txt));
+
+      if(list.length){
+        fileCount++;
+      }
+
+      for(const q of list){
+        map.set(q.id,q);
+      }
+
+    }catch(e){
+      failed++;
+      console.warn('JSON não carregado:',uri,e);
     }
   }
 
-  if(map.size) {
-    questions=[...map.values()];
-    await idbSet('bank',questions);
-    loadDetails=`${questions.length} questões de ${checked} arquivo(s) JSON. ${rejected} arquivo(s) ignorado(s).`;
-    setStatus(loadDetails);
-  } else {
-    const cached=await idbGet('bank');
-    questions=Array.isArray(cached)?cached:[];
-    loadDetails=questions.length
-      ?`GitHub indisponível: ${questions.length} questões recuperadas do cache.`
-      :'Não encontrei questões válidas. '+errors.join('; ');
-    setStatus(loadDetails);
+  if(map.size){
+    merge([...map.values()]);
+
+    $('bankStatus').textContent =
+      `${questions.length} questões • `+
+      `${fileCount} arquivo(s) • `+
+      `${failed} falha(s)`;
+
+    note('Questões atualizadas automaticamente.');
+  }else{
+    const cached = await idbGet('bank');
+
+    if(Array.isArray(cached) && cached.length){
+      merge(cached);
+    }
+
+    $('bankStatus').textContent = questions.length
+      ? `Usando ${questions.length} questões do cache.`
+      : 'Nenhuma questão válida encontrada no JSON.';
+
+    note(
+      questions.length
+        ? 'Banco local recuperado.'
+        : 'Falha ao carregar JSON.'
+    );
   }
 
-  activePool=[];
-  qIndex=0;
-  populateSubjects();
+  busy = false;
   render();
-  updateVR();
 }
 
-function subjects() {
-  return [...new Set(questions.map(q=>q.disciplina))]
-    .sort((a,b)=>a.localeCompare(b,'pt-BR'));
-}
 
-function populateSubjects() {
-  const node=$('subject');
-  const old=node.value;
-  node.replaceChildren(new Option('Todas',''));
-  for(const name of subjects())node.add(new Option(name,name));
-  node.value=[...node.options].some(x=>x.value===old)?old:'';
-}
+// ============================================================
+// 5. FILTROS E DISCIPLINAS
+// ============================================================
 
-function filtered() {
-  const s=$('subject').value;
-  const term=$('search').value.trim().toLowerCase();
-  return questions.filter(q=>
-    (!s||q.disciplina===s)&&
-    (!term||(q.pergunta+' '+q.assunto+' '+q.disciplina)
-      .toLowerCase().includes(term))
+function filtered(){
+  const s = $('subject').value;
+  const t = $('topic').value;
+  const d = $('difficulty').value;
+  const k = $('search').value.toLowerCase();
+
+  return questions.filter(q =>
+    (!s || q.subject === s) &&
+    (!t || q.topic === t) &&
+    (!d || q.difficulty === d) &&
+    (
+      !k ||
+      (
+        q.question+' '+
+        q.subject+' '+
+        q.topic+' '+
+        q.reference
+      ).toLowerCase().includes(k)
+    )
   );
 }
 
-function pool() {
-  if(page==='simulado'&&state.exam)
-    return state.exam.ids.map(byId).filter(Boolean);
-  if(page==='revisoes')return activePool;
-  return activePool.length?activePool:filtered();
+function fillFilters(){
+  const groups = [
+    [
+      'subject',
+      [...new Set([
+        ...subjectsBase,
+        ...questions.map(q => q.subject)
+      ])]
+    ],
+    [
+      'topic',
+      [...new Set(questions.map(q => q.topic))]
+    ]
+  ];
+
+  for(const [id,values] of groups){
+    const node = $(id);
+    const previous = node.value;
+
+    node.replaceChildren(
+      new Option(
+        id === 'subject'
+          ? 'Todas as disciplinas'
+          : 'Todos os assuntos',
+        ''
+      )
+    );
+
+    for(const value of values.sort(
+      (a,b) => a.localeCompare(b,'pt-BR')
+    )){
+      node.add(new Option(value,value));
+    }
+
+    node.value = [...node.options].some(
+      o => o.value === previous
+    ) ? previous : '';
+  }
 }
 
-function current() {
-  const a=pool();
-  qIndex=Math.max(0,Math.min(qIndex,a.length-1));
-  return a[qIndex];
+function shuffle(array){
+  const a = [...array];
+
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+
+  return a;
 }
 
-function go(p) {
-  page=p;
-  qIndex=0;
-  flipped=false;
-  activePool=[];
+
+// ============================================================
+// 6. ESTUDOS E SIMULADOS
+// ============================================================
+
+function newSession(mode=page,persist=true){
+  let items = filtered();
+
+  if(mode === 'review'){
+    items = items.filter(q => state.reviews[q.id]);
+  }
+
+  if(mode === 'exam'){
+    items = shuffle(items);
+
+    const n = $('examCount').value;
+
+    if(n !== 'all'){
+      items = items.slice(0,Number(n));
+    }
+  }
+
+  state.session = {
+    mode,
+    ids:items.map(q => q.id),
+    index:0,
+    answers:{},
+    graded:{},
+    start:Date.now(),
+    minutes:mode === 'exam'
+      ? Math.max(0,Number($('examTime').value)||0)
+      : 0,
+    feedback:$('examFeedback').value,
+    finished:false,
+    flip:false,
+    scroll:0,
+    report:null
+  };
+
+  if(persist){
+    safeStore();
+  }
+
   render();
 }
 
-function count() {
-  const n=state.history.length;
-  const ok=state.history.filter(x=>x.correct).length;
-  return {n,ok,pct:n?Math.round(ok/n*100):0};
+function currentPool(){
+  if(!state.session) return [];
+
+  return state.session.ids
+    .map(id => questions.find(q => q.id === id))
+    .filter(Boolean);
 }
 
-function answered(q,choice,mode) {
+function currentQuestion(){
+  const pool = currentPool();
+
+  if(!pool.length) return null;
+
+  state.session.index = Math.max(
+    0,
+    Math.min(state.session.index,pool.length-1)
+  );
+
+  return pool[state.session.index];
+}
+
+function record(q,choice,mode){
+  const correct = choice === q.correct;
+
   state.history.push({
     id:q.id,
-    disciplina:q.disciplina,
-    assunto:q.assunto,
+    subject:q.subject,
+    topic:q.topic,
+    correct,
     choice,
-    correct:choice===q.correta,
     mode,
-    time:now()
+    date:Date.now()
   });
-  if(state.history.length>15000)
-    state.history=state.history.slice(-15000);
-  if(choice!==q.correta)
-    state.reviews[q.id]={due:now(),interval:1};
-  save();
+
+  if(state.history.length > 12000){
+    state.history = state.history.slice(-12000);
+  }
+
+  if(!correct){
+    gradeReview(q.id,1);
+  }else if(state.reviews[q.id]){
+    gradeReview(q.id,4);
+  }
 }
 
-function reviewGrade(id,grade) {
-  const prev=state.reviews[id]||{interval:1};
-  const days=grade===1?1:
-    grade===3?Math.max(3,prev.interval*2):
-    Math.max(7,prev.interval*3);
-  state.reviews[id]={
-    interval:days,
-    due:now()+days*86400000
+function gradeReview(id,quality){
+  const old = state.reviews[id] || {
+    interval:0,
+    repetitions:0,
+    ease:2.5
   };
-  save();
+
+  let repetitions = old.repetitions;
+  let interval = old.interval;
+  let ease = old.ease;
+
+  if(quality < 3){
+    repetitions = 0;
+    interval = 1;
+  }else{
+    repetitions++;
+
+    if(repetitions === 1){
+      interval = 1;
+    }else if(repetitions === 2){
+      interval = 6;
+    }else{
+      interval = Math.max(
+        1,
+        Math.round(interval*ease)
+      );
+    }
+  }
+
+  ease = Math.max(
+    1.3,
+    ease+.1-(5-quality)*(.08+(5-quality)*.02)
+  );
+
+  state.reviews[id] = {
+    interval,
+    repetitions,
+    ease,
+    due:Date.now()+interval*86400000
+  };
 }
 
-function examStart(n) {
-  const list=shuffle(filtered()).slice(0,n);
-  if(!list.length) {
-    setStatus('Banco vazio. Atualize os JSONs.');
+function choose(index){
+  const q = currentQuestion();
+  const s = state.session;
+
+  if(!q || s.finished || s.mode === 'flash'){
     return;
   }
-  state.exam={
-    ids:list.map(q=>q.id),
-    answers:{},
-    index:0,
-    start:now(),
-    minutes:Math.max(0,Number($('examMinutes')?.value)||45)
-  };
-  page='simulado';
-  qIndex=0;
-  save();
-  render();
-}
 
-function examFinish() {
-  if(!state.exam)return;
-  const e=state.exam;
-  let ok=0,wrong=0;
-  for(const id of e.ids) {
-    const q=byId(id),a=e.answers[id];
-    if(!q||a===undefined)continue;
-    answered(q,a,'simulado');
-    if(a===q.correta)ok++;
-    else wrong++;
+  if(s.mode === 'exam'){
+    s.answers[q.id] = index;
+
+    if(
+      s.feedback === 'immediate' &&
+      !s.graded[q.id]
+    ){
+      s.graded[q.id] = true;
+      record(q,index,'exam');
+    }
+  }else if(!s.graded[q.id]){
+    s.answers[q.id] = index;
+    s.graded[q.id] = true;
+    record(q,index,s.mode);
   }
-  const total=e.ids.length;
-  state.exams.push({
-    date:now(),total,ok,wrong,
-    blank:total-ok-wrong
-  });
-  state.exam=null;
-  save();
-  go('estatisticas');
-  setStatus(`Simulado: ${ok} acertos, ${wrong} erros, ${total-ok-wrong} em branco.`);
-}
 
-function changeQuestion(d) {
-  const a=pool();
-  qIndex=Math.max(0,Math.min(a.length-1,qIndex+d));
-  if(state.exam)state.exam.index=qIndex;
-  state.answer=null;
-  flipped=false;
-  save();
+  safeStore();
   render();
 }
 
-function choose(i) {
-  const q=current();
-  if(!q)return;
-  if(page==='simulado'&&state.exam) {
-    state.exam.answers[q.id]=i;
-    save();
-  } else if(state.answer?.id!==q.id) {
-    state.answer={id:q.id,choice:i};
-    answered(q,i,page);
+function next(delta){
+  const s = state.session;
+  const a = currentPool();
+
+  if(!s || !a.length) return;
+
+  if(
+    s.mode === 'exam' &&
+    delta > 0 &&
+    s.index === a.length-1
+  ){
+    finishExam();
+    return;
   }
-  render();
-}
 
-function favorite() {
-  const q=current();
-  if(!q)return;
-  state.favorites=state.favorites.includes(q.id)
-    ?state.favorites.filter(id=>id!==q.id)
-    :[...state.favorites,q.id];
-  save();
-  render();
-}
-
-function beginReviews(type) {
-  const ids=type==='errors'
-    ?new Set(state.history.filter(h=>!h.correct).map(h=>h.id))
-    :null;
-  activePool=type==='errors'
-    ?questions.filter(q=>ids.has(q.id))
-    :questions.filter(q=>
-      state.reviews[q.id]&&state.reviews[q.id].due<=now());
-  page='revisoes';
-  qIndex=0;
-  render();
-}
-
-function download(name,data,type='application/json') {
-  const url=URL.createObjectURL(new Blob([data],{type}));
-  const a=el('a','',document.body);
-  a.href=url;
-  a.download=name;
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-
-/* INTERFACE HTML */
-
-function render() {
-  document.querySelectorAll('#nav button').forEach(b=>
-    b.classList.toggle('active',b.dataset.page===page)
+  s.index = Math.max(
+    0,
+    Math.min(a.length-1,s.index+delta)
   );
-  const root=$('content');
-  root.replaceChildren();
-  el('h2',pages.find(x=>x[0]===page)?.[1]||page,root);
 
-  if(page==='inicio') {
-    const s=count();
-    el('p',`Banco: ${questions.length} questões | Respondidas: ${s.n} | Aproveitamento: ${s.pct}%`,root);
-    el('p','No Meta Quest 3S, entre em VR para visualizar o painel e selecionar com controle ou mãos.',root);
-    const row=el('div',null,root);
-    row.className='row';
-    btn('Estudar questões',()=>go('questoes'),row);
-    btn('Aulas guiadas',()=>go('aulas'),row);
-    btn('Criar simulado',()=>go('simulado'),row);
-    btn('Revisões',()=>go('revisoes'),row);
+  s.flip = false;
+  s.scroll = 0;
+
+  safeStore();
+  render();
+}
+
+function finishExam(){
+  const s = state.session;
+
+  if(!s || s.mode !== 'exam' || s.finished){
+    return;
   }
 
-  if(page==='banco') {
-    el('p',loadDetails,root);
-    el('p',`Repositório: ${REPO}. Os JSONs são buscados na raiz.`,root);
-    for(const s of subjects()) {
-      el('p',`${s}: ${questions.filter(q=>q.disciplina===s).length} questões`,root);
+  let correct = 0;
+  let wrong = 0;
+  let blank = 0;
+
+  const bySubject = {};
+
+  for(const q of currentPool()){
+    const v = s.answers[q.id];
+
+    if(!bySubject[q.subject]){
+      bySubject[q.subject] = {
+        total:0,
+        correct:0
+      };
     }
-    btn('Atualizar agora',loadBank,root);
+
+    bySubject[q.subject].total++;
+
+    if(v === undefined){
+      blank++;
+      continue;
+    }
+
+    if(v === q.correct){
+      correct++;
+      bySubject[q.subject].correct++;
+    }else{
+      wrong++;
+    }
+
+    if(!s.graded[q.id]){
+      s.graded[q.id] = true;
+      record(q,v,'exam');
+    }
   }
 
-  if(page==='questoes'||page==='aulas'||
-     page==='revisoes'||(page==='simulado'&&state.exam)) {
-    renderQuestion(root);
+  s.finished = true;
+
+  s.report = {
+    date:Date.now(),
+    total:currentPool().length,
+    correct,
+    wrong,
+    blank,
+    ms:Date.now()-s.start,
+    bySubject
+  };
+
+  state.exams.push(s.report);
+
+  safeStore();
+  render();
+}
+
+function gradeCard(level){
+  const q = currentQuestion();
+
+  if(!q) return;
+
+  gradeReview(q.id,level);
+
+  state.session.flip = false;
+
+  safeStore();
+  next(1);
+}
+
+function favorite(){
+  const q = currentQuestion();
+
+  if(!q) return;
+
+  state.favorites = state.favorites.includes(q.id)
+    ? state.favorites.filter(id => id !== q.id)
+    : [...state.favorites,q.id];
+
+  safeStore();
+  render();
+}
+
+function stats(){
+  const h = state.history;
+  const ok = h.filter(v => v.correct).length;
+
+  return {
+    total:h.length,
+    ok,
+    pct:h.length
+      ? Math.round(100*ok/h.length)
+      : 0,
+    pending:Object.values(state.reviews)
+      .filter(r => r.due <= Date.now()).length,
+    exams:state.exams.length
+  };
+}
+
+function recommend(){
+  const bucket = {};
+
+  for(const v of state.history){
+    if(!bucket[v.subject]){
+      bucket[v.subject] = {
+        total:0,
+        ok:0
+      };
+    }
+
+    bucket[v.subject].total++;
+
+    if(v.correct){
+      bucket[v.subject].ok++;
+    }
   }
 
-  if(page==='simulado'&&!state.exam) {
-    el('p','Escolha quantas questões deseja responder. O simulado registra acertos, erros e questões em branco.',root);
-    el('label','Tempo em minutos',root);
-    const inp=el('input',null,root);
-    inp.id='examMinutes';
-    inp.type='number';
-    inp.value='45';
-    inp.min='0';
-    const row=el('div',null,root);
-    row.className='row';
-    for(const n of [10,20,50,100])
-      btn(`${n} questões`,()=>examStart(n),row);
+  return Object.entries(bucket)
+    .filter(([,z]) => z.total >= 2)
+    .sort(
+      (a,b) =>
+        a[1].ok/a[1].total -
+        b[1].ok/b[1].total
+    )[0]?.[0] || 'Comece respondendo algumas questões';
+}
+
+function go(p){
+  page = p;
+
+  if(['exam','study','flash','review'].includes(p)){
+    if(!state.session || state.session.mode !== p){
+      newSession(p);
+    }else{
+      render();
+    }
+  }else{
+    render();
+  }
+}
+
+
+// ============================================================
+// 7. INTERFACE DESKTOP
+// ============================================================
+
+function render(){
+  const c = $('content');
+  c.replaceChildren();
+
+  for(const b of document.querySelectorAll(
+    '#navigation button'
+  )){
+    b.style.borderColor =
+      b.dataset.page === page ? '#7cffac' : '';
   }
 
-  if(page==='flashcards') {
-    const list=filtered();
-    const q=list[qIndex%Math.max(list.length,1)];
-    if(!q) {
-      el('p','Nenhuma questão disponível.',root);
-    } else {
-      el('p',`${qIndex+1}/${list.length} — ${q.disciplina}`,root);
-      el('div',flipped
-        ?`Resposta: ${q.alternativas[q.correta]}\n${q.explicacao}`
-        :q.pergunta,root).className='question';
-      const row=el('div',null,root);
-      row.className='row';
-      btn(flipped?'Ocultar resposta':'Virar cartão',()=>{
-        flipped=!flipped;render();
-      },row);
-      for(const [t,v] of [['Difícil',1],['Bom',3],['Fácil',5]]) {
-        btn(t,()=>{
-          reviewGrade(q.id,v);
-          qIndex=(qIndex+1)%list.length;
-          flipped=false;
+  const s = stats();
+
+  if(page === 'home'){
+    el('h2','Central Inteligente de Estudos',c);
+
+    el(
+      'p',
+      `Questões: ${questions.length} • `+
+      `Respondidas: ${s.total} • `+
+      `Aproveitamento: ${s.pct}% • `+
+      `Revisões: ${s.pending}`,
+      c
+    );
+
+    el('p','Recomendação: '+recommend(),c);
+
+    const row = el('div',null,c,'row');
+
+    button('Estudar questões',()=>go('study'),row);
+    button('Simulado',()=>go('exam'),row);
+    button('Flashcards',()=>go('flash'),row);
+    button('Revisões',()=>go('review'),row);
+
+    if(state.session?.ids?.length){
+      button(
+        'Continuar última sessão',
+        ()=>{
+          page = state.session.mode;
           render();
-        },row);
+        },
+        c
+      );
+    }
+  }
+
+  else if(page === 'bank'){
+    el('h2','Banco de Questões do GitHub',c);
+
+    el('p',$('bankStatus').textContent,c);
+
+    el(
+      'p',
+      `Repositório: ${REPO} • `+
+      `json.json e demais arquivos JSON da raiz`,
+      c
+    );
+
+    const counts = {};
+
+    for(const q of questions){
+      counts[q.subject] = (counts[q.subject]||0)+1;
+    }
+
+    for(const [name,total] of Object.entries(counts)){
+      el('p',name+': '+total,c);
+    }
+
+    button('Atualizar',loadBank,c);
+  }
+
+  else if(page === 'stats'){
+    el('h2','Evolução e Desempenho',c);
+
+    for(const [name,value] of [
+      ['Respondidas',s.total],
+      ['Acertos',s.ok],
+      ['Aproveitamento',s.pct+'%'],
+      ['Simulados',s.exams],
+      ['Revisões pendentes',s.pending]
+    ]){
+      const m = el('div',null,c,'metric');
+      el('strong',value,m);
+      el('small',name,m);
+    }
+
+    const groups = {};
+
+    for(const v of state.history){
+      if(!groups[v.subject]){
+        groups[v.subject] = {n:0,ok:0};
       }
-      btn('Próximo',()=>{
-        qIndex=(qIndex+1)%list.length;
-        flipped=false;
-        render();
-      },row);
+
+      groups[v.subject].n++;
+
+      if(v.correct){
+        groups[v.subject].ok++;
+      }
+    }
+
+    el('h2','Por disciplina',c);
+
+    for(const [name,g] of Object.entries(groups)){
+      el('p',`${name}: ${g.ok}/${g.n}`,c);
+
+      const bar = el('div',null,c,'bar');
+      const fill = el('span',null,bar);
+
+      fill.style.width = (g.ok/g.n*100)+'%';
+    }
+
+    el('h2','Simulados recentes',c);
+
+    for(const r of state.exams.slice(-8).reverse()){
+      el(
+        'p',
+        `${dateText(r.date)} — `+
+        `${r.correct}/${r.total}, `+
+        `${r.blank} em branco`,
+        c
+      );
     }
   }
 
-  if(page==='revisoes'&&!pool().length) {
-    el('p','Sem revisões nesta seleção.',root);
+  else if(page === 'settings'){
+    el('h2','Configurações e Controles',c);
+
+    el(
+      'p',
+      'Ajuste fonte, distância, altura e tamanho '+
+      'dos painéis no menu lateral.',
+      c
+    );
+
+    el(
+      'p',
+      'Em VR, segure o botão grip apontando para '+
+      'um painel e mova o controle. '+
+      'Solte para fixar. Com as mãos, faça pinça '+
+      'sobre a faixa superior do painel.',
+      c
+    );
+
+    button(
+      'Restaurar posição dos painéis',
+      resetPanelPositions,
+      c
+    );
+
+    button(
+      'Modo foco',
+      ()=>document.body.classList.toggle('focus'),
+      c
+    );
   }
 
-  if(page==='estatisticas') {
-    const s=count();
-    el('p',`Respondidas: ${s.n} | Acertos: ${s.ok} | Erros: ${s.n-s.ok} | Aproveitamento: ${s.pct}%`,root);
-    for(const subj of subjects()) {
-      const a=state.history.filter(h=>h.disciplina===subj);
-      if(a.length)el('p',`${subj}: ${a.filter(h=>h.correct).length}/${a.length}`,root);
+  else{
+    const q = currentQuestion();
+    const pool = currentPool();
+    const session = state.session;
+
+    el(
+      'h2',
+      ({
+        study:'Questões',
+        exam:'Simulado',
+        flash:'Flashcards',
+        review:'Revisão de Erros'
+      })[page] || 'Estudos',
+      c
+    );
+
+    if(!q){
+      el(
+        'p',
+        'Nenhuma questão disponível. Atualize os JSONs '+
+        'ou escolha outra disciplina.',
+        c
+      );
     }
-    el('h3','Últimos simulados',root);
-    for(const e of state.exams.slice(-10).reverse()) {
-      el('p',`${new Date(e.date).toLocaleDateString('pt-BR')}: ${e.ok}/${e.total} | ${e.blank} em branco`,root);
+
+    else if(session.finished && session.report){
+      const r = session.report;
+
+      el(
+        'p',
+        `Simulado finalizado: ${r.correct} acertos, `+
+        `${r.wrong} erros e ${r.blank} em branco.`,
+        c
+      );
+
+      button(
+        'Novo simulado',
+        ()=>newSession('exam'),
+        c
+      );
     }
-    btn('Exportar histórico CSV',()=>{
-      const rows=['disciplina,assunto,correta,data'];
-      for(const h of state.history) {
-        rows.push(
-          [h.disciplina,h.assunto,h.correct,new Date(h.time).toISOString()]
-          .map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')
+
+    else{
+      el(
+        'p',
+        `${session.index+1}/${pool.length} • `+
+        `${q.subject} • ${q.topic}`,
+        c,
+        'muted'
+      );
+
+      el('div',q.question,c,'question');
+
+      if(page === 'flash'){
+        const card = el(
+          'div',
+          session.flip
+            ? 'RESPOSTA: '+q.options[q.correct]+
+              '\n'+q.explanation
+            : 'Toque em Virar para revelar a resposta',
+          c,
+          'question'
+        );
+
+        card.style.padding = '20px';
+
+        button(
+          'Virar flashcard',
+          ()=>{
+            session.flip = !session.flip;
+            safeStore();
+            render();
+          },
+          c
+        );
+
+        if(session.flip){
+          const r = el('div',null,c,'row');
+
+          for(const [name,value] of [
+            ['Difícil',1],
+            ['Bom',4],
+            ['Fácil',5]
+          ]){
+            button(name,()=>gradeCard(value),r);
+          }
+        }
+      }else{
+        q.options.forEach((option,i)=>{
+          const b = button(
+            String.fromCharCode(65+i)+') '+option,
+            ()=>choose(i),
+            c
+          );
+
+          b.className = 'answer';
+
+          const answer = session.answers[q.id];
+
+          const reveal =
+            page !== 'exam' ||
+            session.feedback === 'immediate';
+
+          if(answer === i){
+            b.classList.add('selected');
+          }
+
+          if(answer !== undefined && reveal){
+            if(i === q.correct){
+              b.classList.add('correct');
+            }else if(i === answer){
+              b.classList.add('wrong');
+            }
+          }
+        });
+
+        const answer = session.answers[q.id];
+
+        if(
+          answer !== undefined &&
+          (
+            page !== 'exam' ||
+            session.feedback === 'immediate'
+          )
+        ){
+          el(
+            'p',
+            (answer === q.correct ? 'Correto. ' : 'Incorreto. ')+
+            (q.explanation||'')+
+            (q.reference
+              ? ' Referência: '+q.reference
+              : ''),
+            c,
+            'note'
+          );
+        }
+      }
+
+      const row = el('div',null,c,'row');
+
+      button('◀ Anterior',()=>next(-1),row);
+      button('Próxima ▶',()=>next(1),row);
+
+      button(
+        state.favorites.includes(q.id)
+          ? '★ Favorita'
+          : '☆ Favoritar',
+        favorite,
+        row
+      );
+
+      if(page === 'exam'){
+        button('Finalizar simulado',finishExam,c);
+
+        const seconds = session.minutes
+          ? Math.max(
+              0,
+              Math.ceil(
+                (
+                  session.minutes*60000 -
+                  (Date.now()-session.start)
+                )/1000
+              )
+            )
+          : 0;
+
+        el(
+          'p',
+          session.minutes
+            ? `Tempo: ${Math.floor(seconds/60)}m `+
+              `${seconds%60}s`
+            : 'Sem limite de tempo',
+          c
         );
       }
-      download('pmsc-historico.csv',rows.join('\n'),'text/csv');
-    },root);
-  }
-
-  if(page==='config') {
-    el('p','Os dados de desempenho são guardados neste navegador. Faça backup para transferir de aparelho.',root);
-    const row=el('div',null,root);
-    row.className='row';
-    btn('Tema claro/escuro',()=>{
-      state.theme=state.theme==='light'?'dark':'light';
-      document.body.classList.toggle('light',state.theme==='light');
-      save();render();
-    },row);
-    btn('Exportar backup JSON',()=>
-      download('pmsc-backup.json',JSON.stringify(state,null,2)),row);
-    const f=el('input',null,root);
-    f.type='file';
-    f.accept='.json';
-    f.onchange=async()=>{
-      try {
-        if(f.files[0].size>5000000)throw Error('Arquivo grande demais');
-        const o=JSON.parse(await f.files[0].text());
-        if(!Array.isArray(o.history)||!Array.isArray(o.favorites))
-          throw Error('Backup inválido');
-        state={...initial,...o};
-        save();render();
-        setStatus('Backup restaurado');
-      } catch(e) {
-        setStatus(e.message);
-      }
-    };
-    el('p','Selecione um backup JSON acima para restaurar.',root);
-  }
-
-  if(page==='revisoes') {
-    const row=el('div',null,root);
-    row.className='row';
-    btn('Revisões vencidas',()=>beginReviews('due'),row);
-    btn('Caderno de erros',()=>beginReviews('errors'),row);
+    }
   }
 
   updateVR();
 }
 
-function renderQuestion(root) {
-  const list=pool();
-  const q=current();
-  if(!q) {
-    el('p','Nenhuma questão encontrada. Selecione outra disciplina ou atualize o JSON.',root);
-    return;
-  }
-  const exam=page==='simulado'&&state.exam;
-  el('p',`${qIndex+1} de ${list.length} • ${q.disciplina} • ${q.assunto}`,root);
-  if(exam&&state.exam.minutes) {
-    const remain=Math.max(0,state.exam.minutes*60000-(now()-state.exam.start));
-    el('p',`Tempo restante: ${Math.ceil(remain/60000)} minuto(s)`,root);
-  }
-  el('div',q.pergunta,root).className='question';
-  const ans=exam
-    ?state.exam.answers[q.id]
-    :state.answer?.id===q.id?state.answer.choice:undefined;
 
-  if(page==='aulas') {
-    el('p','Aula guiada: leia a questão, consulte o gabarito e a explicação disponível no arquivo JSON.',root);
-    el('p',`Resposta: ${q.alternativas[q.correta]}`,root);
-    if(q.explicacao)el('p',q.explicacao,root);
-  } else {
-    for(let i=0;i<q.alternativas.length;i++) {
-      const b=btn(q.alternativas[i],()=>choose(i),root);
-      b.className='option';
-      if(ans!==undefined) {
-        if(exam&&ans===i)b.classList.add('active');
-        if(!exam) {
-          if(i===q.correta)b.classList.add('correct');
-          if(ans===i&&i!==q.correta)b.classList.add('wrong');
-        }
-      }
+// ============================================================
+// 8. EXPORTAÇÃO E BACKUP
+// ============================================================
+
+function exportBackup(){
+  download(
+    'pmsc-backup.json',
+    JSON.stringify({version:8,state},null,2),
+    'application/json'
+  );
+}
+
+function exportCSV(){
+  const rows = [
+    'id,disciplina,assunto,acerto,modo,data',
+    ...state.history.map(x =>
+      [
+        x.id,
+        x.subject,
+        x.topic,
+        x.correct,
+        x.mode,
+        new Date(x.date).toISOString()
+      ].map(csv).join(',')
+    )
+  ];
+
+  download(
+    'pmsc-historico.csv',
+    rows.join('\n'),
+    'text/csv'
+  );
+}
+
+
+// ============================================================
+// 9. THREE.JS - CENA PRINCIPAL
+// ============================================================
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#8aafb2');
+
+const camera = new THREE.PerspectiveCamera(
+  70,1,.05,180
+);
+
+camera.position.set(0,1.65,0);
+
+const rig = new THREE.Group();
+rig.add(camera);
+scene.add(rig);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias:true,
+  powerPreference:'high-performance'
+});
+
+renderer.xr.enabled = true;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+renderer.setPixelRatio(
+  Math.min(devicePixelRatio,1.6)
+);
+
+$('scene').append(renderer.domElement);
+
+const ambient = new THREE.HemisphereLight(
+  0xffffff,
+  0x465446,
+  2.1
+);
+scene.add(ambient);
+
+const sun = new THREE.DirectionalLight(
+  0xffffff,
+  1.9
+);
+sun.position.set(5,9,4);
+scene.add(sun);
+
+const world = new THREE.Group();
+scene.add(world);
+
+const mats = new Map();
+
+function mat(color){
+  if(!mats.has(color)){
+    mats.set(
+      color,
+      new THREE.MeshStandardMaterial({
+        color,
+        roughness:.78
+      })
+    );
+  }
+
+  return mats.get(color);
+}
+
+function box(x,y,z,w,h,d,color){
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
+    mat(color)
+  );
+
+  mesh.position.set(x,y,z);
+  world.add(mesh);
+
+  return mesh;
+}
+
+function cyl(x,y,z,r,h,color){
+  const mesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(r,r,h,12),
+    mat(color)
+  );
+
+  mesh.position.set(x,y,z);
+  world.add(mesh);
+
+  return mesh;
+}
+
+function ball(x,y,z,r,color){
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(r,12,10),
+    mat(color)
+  );
+
+  mesh.position.set(x,y,z);
+  world.add(mesh);
+
+  return mesh;
+}
+
+
+// ============================================================
+// 10. BANDEIRA DO BRASIL EM 3D
+// ============================================================
+
+function flagTexture(){
+  const canvas = document.createElement('canvas');
+
+  canvas.width = 512;
+  canvas.height = 340;
+
+  const c = canvas.getContext('2d');
+
+  c.fillStyle = '#169b62';
+  c.fillRect(0,0,512,340);
+
+  c.fillStyle = '#ffdf00';
+  c.beginPath();
+  c.moveTo(256,32);
+  c.lineTo(481,170);
+  c.lineTo(256,308);
+  c.lineTo(31,170);
+  c.closePath();
+  c.fill();
+
+  c.fillStyle = '#002776';
+  c.beginPath();
+  c.arc(256,170,96,0,Math.PI*2);
+  c.fill();
+
+  c.save();
+  c.translate(256,170);
+  c.rotate(-.16);
+
+  c.fillStyle = '#ffffff';
+  c.fillRect(-100,-10,200,21);
+
+  c.fillStyle = '#072a58';
+  c.font = 'bold 16px Arial';
+  c.textAlign = 'center';
+
+  c.fillText('ORDEM E PROGRESSO',0,6);
+  c.restore();
+
+  c.fillStyle = 'white';
+
+  for(let i=0;i<19;i++){
+    const x = 190+(i*37)%132;
+    const y = 108+(i*53)%127;
+
+    c.beginPath();
+    c.arc(x,y,2.4,0,Math.PI*2);
+    c.fill();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+
+  return texture;
+}
+
+const flagTex = flagTexture();
+
+const flagMaterial = new THREE.MeshBasicMaterial({
+  map:flagTex,
+  side:THREE.DoubleSide
+});
+
+function flag(x,z){
+  cyl(x,2,z,.045,4,'#cccccc');
+
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.65,1.07),
+    flagMaterial
+  );
+
+  mesh.position.set(x+.9,3.25,z);
+  world.add(mesh);
+}
+
+
+// ============================================================
+// 11. OBJETOS DOS QUARTÉIS
+// ============================================================
+
+function building(x,z){
+  box(x,2,z,5,4,3,'#89968e');
+
+  box(x,4.2,z,5.6,.35,3.6,'#57665d');
+
+  for(let i=-1;i<=1;i++){
+    box(
+      x+i*1.3,
+      2.2,
+      z+1.53,
+      .8,1.1,.07,
+      '#204552'
+    );
+  }
+}
+
+function table(x,z){
+  box(x,.8,z,1.6,.13,.85,'#7a6547');
+
+  for(const dx of [-.6,.6]){
+    for(const dz of [-.3,.3]){
+      box(
+        x+dx,.4,z+dz,
+        .08,.75,.08,
+        '#59675c'
+      );
     }
   }
-  if(ans!==undefined&&!exam) {
-    el('p',ans===q.correta?'Resposta correta!':'Resposta incorreta.',root);
-    if(q.explicacao)el('p',q.explicacao,root);
-    if(q.referencia)el('p',`Referência: ${q.referencia}`,root);
-  }
-  const row=el('div',null,root);
-  row.className='row';
-  btn('◀ Anterior',()=>changeQuestion(-1),row);
-  btn('Próxima ▶',()=>changeQuestion(1),row);
-  btn(state.favorites.includes(q.id)?'★ Favorita':'☆ Favoritar',favorite,row);
-  if(exam)btn('Finalizar simulado',examFinish,row);
 }
 
-/* AÇÕES WEBXR */
+function tree(x,z){
+  cyl(x,1,z,.16,2,'#6b4b32');
 
-function perform(action) {
-  if(action.startsWith('go:'))return go(action.slice(3));
-  if(action.startsWith('answer:'))return choose(Number(action.slice(7)));
-  if(action.startsWith('exam:'))return examStart(Number(action.slice(5)));
-  if(action.startsWith('grade:')) {
-    const q=filtered()[qIndex];
-    if(q)reviewGrade(q.id,Number(action.slice(6)));
-    qIndex++;
-    flipped=false;
-    return render();
+  const crown = new THREE.Mesh(
+    new THREE.ConeGeometry(1.05,2.5,8),
+    mat('#315b3c')
+  );
+
+  crown.position.set(x,3.1,z);
+  world.add(crown);
+}
+
+function bunk(x,z){
+  for(const y of [.5,1.5]){
+    box(
+      x,y,z,
+      1.7,.17,2.15,
+      '#677b77'
+    );
   }
-  switch(action) {
-    case 'next':return changeQuestion(1);
-    case 'prev':return changeQuestion(-1);
-    case 'favorite':return favorite();
-    case 'flip':flipped=!flipped;return render();
-    case 'finish':return examFinish();
-    case 'refresh':return loadBank();
-    case 'reviewDue':return beginReviews('due');
-    case 'reviewErrors':return beginReviews('errors');
-    case 'sceneNext':
-      $('env').value=(Number($('env').value)+1)%envs.length;
-      return changeEnv(Number($('env').value));
-    case 'scenePrev':
-      $('env').value=(Number($('env').value)+envs.length-1)%envs.length;
-      return changeEnv(Number($('env').value));
-    case 'theme':
-      state.theme=state.theme==='light'?'dark':'light';
-      document.body.classList.toggle('light',state.theme==='light');
-      save();
-      return render();
+
+  for(const dx of [-.73,.73]){
+    for(const dz of [-.95,.95]){
+      box(
+        x+dx,1,z+dz,
+        .08,2,.08,
+        '#a3aaa3'
+      );
+    }
   }
 }
 
-/* PAINEL VR */
+function makeRoom(){
+  box(0,-.13,-1,25,.22,27,'#7c857b');
+  box(0,2.9,-11,24,5.8,.25,'#a4b2a3');
+  box(-11.8,2.9,-1,.25,5.8,22,'#a6b5a5');
+  box(11.8,2.9,-1,.25,5.8,22,'#a6b5a5');
+  box(0,5.85,-1,24,.23,22,'#788a7e');
+}
 
-const W=1200,H=1000;
-const board=document.createElement('canvas');
-board.width=W;
-board.height=H;
 
-const ctx=board.getContext('2d');
-const hotspots=[];
+// ============================================================
+// 12. AMBIENTES MILITARES
+// ============================================================
 
-let hovered=-1;
-let texture,panel,renderer,scene,camera,rig,room,floor;
-let controllers=[],hands=[];
-let lastSelect=0,lastSecond=-1;
+function buildWorld(n){
+  world.traverse(object=>{
+    if(object.isMesh){
+      object.geometry.dispose();
+    }
+  });
 
-function rect(x,y,w,h,r=12) {
+  world.clear();
+
+  scene.background = new THREE.Color(
+    n === 3 ? '#a6cee1' : '#7899a6'
+  );
+
+  if(n !== 3){
+    makeRoom();
+  }else{
+    box(0,-.13,-1,70,.2,70,'#547d47');
+  }
+
+  flag(-8,-9);
+  flag(8,-9);
+
+  if(n === 0){
+    building(0,-8);
+
+    for(let x=-6;x<=6;x+=2){
+      box(
+        x,.025,-2,
+        .1,.02,6,
+        '#e7e3d2'
+      );
+    }
+
+    cyl(0,.3,-6,1,.6,'#8b9288');
+  }
+
+  if(n === 1){
+    for(let x=-5;x<=5;x+=2.5){
+      for(let z=-6;z<=0;z+=2){
+        table(x,z);
+      }
+    }
+
+    box(0,2.7,-10.7,6.2,2,.09,'#1f4935');
+  }
+
+  if(n === 2){
+    building(-5,-7);
+
+    for(let x=-1;x<=7;x+=.75){
+      box(
+        x,1.5,-7.4,
+        .09,3,.1,
+        '#435b4e'
+      );
+    }
+
+    box(1,3.8,-8,8,.5,1,'#4f6858');
+  }
+
+  if(n === 3){
+    for(let x=-8;x<=8;x+=4){
+      box(
+        x,.65,-5,
+        2,1.3,1.2,
+        '#947d56'
+      );
+
+      tree(x+1.5,-9);
+    }
+
+    for(let z=-1;z<=5;z+=2){
+      box(
+        -5,.25,z,
+        2.8,.3,.2,
+        '#8a6949'
+      );
+    }
+  }
+
+  if(n === 4){
+    for(let x=-6;x<=6;x+=3){
+      bunk(x,-6);
+      bunk(x,0);
+    }
+
+    box(
+      0,2.7,-10.7,
+      5,1.6,.08,
+      '#284e3b'
+    );
+  }
+
+  if(n === 5){
+    for(let x=-7;x<=7;x+=2.7){
+      box(
+        x,2,-8,
+        2.15,4,.7,
+        '#725a3f'
+      );
+    }
+
+    table(0,-2);
+    table(3,-3);
+  }
+
+  if(n === 6){
+    for(let z=-6;z<=1;z+=2.2){
+      for(let x=-5;x<=5;x+=2.2){
+        box(
+          x,.6,z,
+          1.5,.6,.75,
+          '#606f5b'
+        );
+      }
+    }
+
+    box(
+      0,2.8,-10.7,
+      7.5,2,.07,
+      '#245344'
+    );
+  }
+
+  if(n === 7){
+    table(-4,-5);
+    table(4,-5);
+
+    box(
+      0,2.5,-10.7,
+      7,2,.09,
+      '#294c3c'
+    );
+
+    for(let x=-6;x<=6;x+=4){
+      ball(x,1.3,-8,.48,'#548a6b');
+    }
+  }
+
+  if(n === 8){
+    for(let x=-8;x<=8;x+=4){
+      cyl(
+        x,1.5,-7,
+        .24,3,
+        '#9ba99d'
+      );
+
+      tree(x,-9);
+    }
+
+    box(
+      0,.3,-6,
+      5,.6,2,
+      '#949b8d'
+    );
+  }
+
+  if(n === 9){
+    for(let x=-5;x<=5;x+=3){
+      box(
+        x,1,-7,
+        2,.4,.9,
+        '#3b5351'
+      );
+
+      box(
+        x,2.3,-9,
+        1.8,1.2,.1,
+        '#24556b'
+      );
+    }
+
+    box(
+      0,3.9,-10.7,
+      7,.17,.15,
+      '#4cc5ab'
+    );
+  }
+
+  applyLight();
+}
+
+function applyLight(){
+  const night = state.settings.lighting === 'night';
+
+  ambient.intensity = night ? 1.1 : 2.1;
+  sun.intensity = night ? .65 : 1.9;
+}
+
+
+// ============================================================
+// 13. PAINÉIS VR EM ALTA RESOLUÇÃO
+// ============================================================
+
+const WIDTH = 2048;
+const HEIGHT = 1536;
+
+const panels = {};
+const panelMeshes = [];
+
+const raycaster = new THREE.Raycaster();
+const tmpMatrix = new THREE.Matrix4();
+
+let hovered = null;
+
+function makePanel(id,w,h,x,y,z){
+  const canvas = document.createElement('canvas');
+
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+
+  const ctx = canvas.getContext('2d');
+
+  const texture = new THREE.CanvasTexture(canvas);
+
+  texture.colorSpace = THREE.SRGBColorSpace;
+
+  texture.anisotropy = Math.min(
+    8,
+    renderer.capabilities.getMaxAnisotropy()
+  );
+
+  const group = new THREE.Group();
+
+  group.position.set(x,y,z);
+  scene.add(group);
+
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(w,h),
+    new THREE.MeshBasicMaterial({
+      map:texture,
+      side:THREE.DoubleSide,
+      toneMapped:false
+    })
+  );
+
+  group.add(mesh);
+
+  panels[id] = {
+    id,
+    canvas,
+    ctx,
+    texture,
+    group,
+    mesh,
+    regions:[],
+    w,
+    h
+  };
+
+  panelMeshes.push(mesh);
+  mesh.userData.id = id;
+}
+
+makePanel('main',3.2,2.4,0,1.65,-2.5);
+makePanel('left',1.6,2,-3.15,1.6,-2.9);
+makePanel('right',1.6,2,3.15,1.6,-2.9);
+
+
+// ============================================================
+// 14. POSICIONAMENTO DOS PAINÉIS
+// ============================================================
+
+function panelPositionReset(){
+  panels.main.group.position.set(
+    0,
+    Number(state.settings.panelHeight),
+    -Number(state.settings.distance)
+  );
+
+  panels.main.group.scale.setScalar(
+    Number(state.settings.panelScale)
+  );
+
+  panels.left.group.position.set(-3.15,1.6,-2.9);
+  panels.right.group.position.set(3.15,1.6,-2.9);
+
+  for(const p of Object.values(panels)){
+    p.group.rotation.set(0,0,0);
+  }
+}
+
+function resetPanelPositions(){
+  state.panels = {};
+
+  panelPositionReset();
+  safeStore();
+  updateVR();
+}
+
+
+// ============================================================
+// 15. DESENHO DE TEXTO NÍTIDO
+// ============================================================
+
+function round(ctx,x,y,w,h,r=16){
   ctx.beginPath();
   ctx.roundRect(x,y,w,h,r);
 }
 
-function wordLines(text,width,font='25px Arial') {
-  ctx.font=font;
-  const lines=[];
-  for(const piece of String(text).split('\n')) {
-    let line='';
-    for(const word of piece.split(/\s+/)) {
-      const trial=line?line+' '+word:word;
-      if(ctx.measureText(trial).width>width&&line) {
+function text(
+  ctx,
+  value,
+  x,y,
+  size=46,
+  color='#f3fff4',
+  weight='600'
+){
+  ctx.font = `${weight} ${size}px Arial`;
+  ctx.fillStyle = color;
+  ctx.fillText(String(value),x,y);
+}
+
+function wrapped(ctx,content,width,size){
+  ctx.font = `600 ${size}px Arial`;
+
+  const lines = [];
+
+  for(const paragraph of String(content).split('\n')){
+    let line = '';
+
+    for(const word of paragraph.split(/\s+/)){
+      const candidate = line
+        ? line+' '+word
+        : word;
+
+      if(
+        ctx.measureText(candidate).width > width &&
+        line
+      ){
         lines.push(line);
-        line=word;
-      } else {
-        line=trial;
+        line = word;
+      }else{
+        line = candidate;
       }
     }
+
     lines.push(line);
   }
+
   return lines;
 }
 
-function drawText(text,x,y,width,limit=5,size=28,color='#efffe9',gap=35) {
-  ctx.fillStyle=color;
-  ctx.font=`${size}px Arial`;
-  let lines=wordLines(text,width,`${size}px Arial`);
-  const cut=lines.length>limit;
-  lines=lines.slice(0,limit);
-  if(cut) {
-    lines[limit-1]=lines[limit-1]
-      .slice(0,Math.max(0,lines[limit-1].length-4))+'...';
-  }
-  for(const line of lines) {
-    ctx.fillText(line,x,y);
-    y+=gap;
-  }
-  return y;
+function region(p,x,y,w,h,action){
+  p.regions.push({x,y,w,h,action});
 }
 
-function vrButton(label,x,y,w,h,action,tone='normal') {
-  const n=hotspots.length;
-  hotspots.push({x,y,w,h,action});
-  ctx.fillStyle=n===hovered
-    ?'#28684c':tone==='danger'?'#633331':'#244e3d';
-  rect(x,y,w,h,12);
-  ctx.fill();
-  ctx.strokeStyle=n===hovered?'#8fffc0':'#547c67';
-  ctx.lineWidth=3;
-  ctx.stroke();
-  drawText(label,x+14,y+h/2+9,w-24,1,22,'#fff',29);
+function background(p,title){
+  const c = p.ctx;
+
+  p.regions = [];
+
+  c.fillStyle = '#061c14';
+  c.fillRect(0,0,WIDTH,HEIGHT);
+
+  c.fillStyle = '#154833';
+  round(c,14,14,WIDTH-28,150,22);
+  c.fill();
+
+  c.strokeStyle = '#73e6a0';
+  c.lineWidth = 6;
+  round(c,14,14,WIDTH-28,HEIGHT-28,25);
+  c.stroke();
+
+  text(c,title,55,111,67);
+
+  text(
+    c,
+    'SEGURE GRIP / PINÇA AQUI PARA MOVER',
+    57,204,31,'#bbefd0'
+  );
+
+  region(p,0,0,WIDTH,220,'drag');
 }
 
-function vrDraw() {
-  if(!texture)return;
-  hotspots.length=0;
-  ctx.fillStyle='#071911';
-  ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#113526';
-  ctx.fillRect(0,0,W,76);
-  drawText('PM-SC | ACADEMIA IMERSIVA',32,49,1050,1,34,'#8dfac0');
+function vrButton(
+  p,label,x,y,w,h,action,
+  color='#205c41',
+  size=42
+){
+  const c = p.ctx;
 
-  let i=0;
-  for(const [key,name] of pages) {
-    const col=i%5,row=Math.floor(i/5);
-    vrButton(name,22+col*234,96+row*66,222,56,'go:'+key);
-    i++;
-  }
+  const hot =
+    hovered?.panel === p.id &&
+    hovered?.action === action;
 
-  drawText(pages.find(x=>x[0]===page)?.[1]||page,40,260,1080,1,36,'#a9ffcf');
+  c.fillStyle = hot ? '#378a5e' : color;
 
-  if(page==='inicio') {
-    drawText(`Questões carregadas: ${questions.length}`,42,330,1100);
-    const s=count();
-    drawText(`Respondidas: ${s.n} | Acertos: ${s.ok} | Aproveitamento: ${s.pct}%`,42,382,1100);
-    vrButton('INICIAR ESTUDOS',60,460,500,90,'go:questoes');
-    vrButton('AULAS GUIADAS',630,460,500,90,'go:aulas');
-    vrButton('SIMULADO',60,590,500,90,'go:simulado');
-    vrButton('REVISAR',630,590,500,90,'go:revisoes');
-  }
-  else if(page==='questoes'||page==='aulas'||
-          (page==='revisoes'&&activePool.length)||
-          (page==='simulado'&&state.exam)) {
-    const q=current(),list=pool();
-    if(!q) {
-      drawText('Nenhuma questão. Atualize o banco ou mude o filtro na página comum.',45,360,1070,4);
-    } else {
-      drawText(`${qIndex+1}/${list.length} • ${q.disciplina}`,43,320,1090,2,23,'#bddec8');
-      drawText(q.pergunta,43,363,1080,4,25,'#fff',33);
-      const exam=page==='simulado'&&state.exam;
+  round(c,x,y,w,h,18);
+  c.fill();
 
-      if(page==='aulas') {
-        drawText('Gabarito: '+q.alternativas[q.correta],46,575,1100,4,27,'#88f8b6',35);
-        drawText(q.explicacao||'Sem explicação cadastrada neste JSON.',46,720,1100,3,24);
-      } else {
-        const chosen=exam
-          ?state.exam.answers[q.id]
-          :state.answer?.id===q.id?state.answer.choice:undefined;
-        let y=498;
-        for(let j=0;j<q.alternativas.length&&j<5;j++) {
-          const b=q.alternativas[j];
-          vrButton(b.slice(0,140),42,y,1115,73,'answer:'+j,
-            chosen===j?'chosen':'normal');
-          y+=78;
-        }
-        if(chosen!==undefined&&!exam) {
-          drawText(chosen===q.correta
-            ?'CORRETO'
-            :'INCORRETO — Gabarito '+String.fromCharCode(65+q.correta),
-            45,924,1060,1,23,'#afffbd');
-        }
-      }
+  c.strokeStyle = hot ? '#dcffea' : '#64a983';
+  c.lineWidth = 4;
 
-      vrButton('◀ ANTERIOR',42,936,230,52,'prev');
-      vrButton('PRÓXIMA ▶',286,936,230,52,'next');
-      vrButton(exam?'FINALIZAR':'★ FAVORITA',540,936,270,52,
-        exam?'finish':'favorite');
-      vrButton('AMBIENTE ▶',828,936,330,52,'sceneNext');
-    }
-  }
-  else if(page==='simulado') {
-    drawText('Escolha a quantidade de questões:',46,360,1100);
-    [10,20,50,100].forEach((n,i)=>
-      vrButton(n+' QUESTÕES',60+(i%2)*575,
-        430+Math.floor(i/2)*110,525,85,'exam:'+n));
-  }
-  else if(page==='flashcards') {
-    const arr=filtered();
-    const q=arr[qIndex%Math.max(1,arr.length)];
-    if(q) {
-      drawText(`${qIndex+1}/${arr.length} — ${q.disciplina}`,43,320,1080,1,24);
-      drawText(flipped
-        ?`RESPOSTA: ${q.alternativas[q.correta]} ${q.explicacao}`
-        :q.pergunta,43,394,1100,8,30,'#fff',42);
-      vrButton('VIRAR CARTÃO',40,756,350,80,'flip');
-      vrButton('DIFÍCIL',410,756,235,80,'grade:1');
-      vrButton('BOM',660,756,230,80,'grade:3');
-      vrButton('FÁCIL',905,756,245,80,'grade:5');
-      vrButton('PRÓXIMO',440,876,330,70,'grade:3');
-    } else {
-      drawText('Banco vazio.',40,380,1000);
-    }
-  }
-  else if(page==='revisoes') {
-    vrButton('REVISÕES VENCIDAS',50,450,510,95,'reviewDue');
-    vrButton('CADERNO DE ERROS',620,450,510,95,'reviewErrors');
-  }
-  else if(page==='estatisticas') {
-    const s=count();
-    drawText(`Respondidas: ${s.n} | Acertos: ${s.ok} | Aproveitamento: ${s.pct}%`,45,365,1080,3,30);
-    let y=435;
-    for(const name of subjects().slice(0,9)) {
-      const a=state.history.filter(h=>h.disciplina===name);
-      if(a.length) {
-        drawText(`${name}: ${a.filter(h=>h.correct).length}/${a.length}`,55,y,1060,1,25);
-        y+=45;
-      }
-    }
-  }
-  else if(page==='banco') {
-    drawText(loadDetails,45,370,1090,5,27);
-    drawText(`Repositório público: ${REPO}`,45,580,1100,2,25);
-    vrButton('ATUALIZAR JSON',50,700,490,85,'refresh');
-  }
-  else if(page==='config') {
-    drawText(`Ambiente: ${envs[state.env]}`,45,365,1100,2,27);
-    vrButton('◀ AMBIENTE',45,460,505,90,'scenePrev');
-    vrButton('AMBIENTE ▶',610,460,505,90,'sceneNext');
-    vrButton('TEMA CLARO / ESCURO',285,620,620,100,'theme');
-    drawText('Gatilho: selecionar. Apontar ao piso: teletransporte. Pinça: selecionar.',45,828,1080,3,24);
-  }
+  round(c,x,y,w,h,18);
+  c.stroke();
 
-  ctx.fillStyle='#b2d7c0';
-  ctx.font='20px Arial';
-  ctx.fillText('Projeto independente • Questões dos JSONs do repositório • Meta Quest 3S',30,996);
-  texture.needsUpdate=true;
+  const lines = wrapped(c,label,w-45,size);
+
+  lines.slice(0,2).forEach((line,i)=>{
+    text(
+      c,line,
+      x+22,
+      y+Math.min(h-16,51+i*(size+6)),
+      size
+    );
+  });
+
+  region(p,x,y,w,h,action);
 }
 
-function hitUV(uv) {
-  const x=uv.x*W,y=(1-uv.y)*H;
-  return hotspots.findIndex(h=>
-    x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
-}
 
-function doHit(hit) {
-  if(now()-lastSelect<450)return false;
-  const ix=hitUV(hit.uv);
-  if(ix<0)return false;
-  lastSelect=now();
-  perform(hotspots[ix].action);
-  return true;
-}
+// ============================================================
+// 16. PAINEL PRINCIPAL COM ROLAGEM
+// ============================================================
 
-/* CONTROLES E MÃOS */
+function drawMain(){
+  const p = panels.main;
+  const c = p.ctx;
 
-const raycaster=new THREE.Raycaster();
-const mat4=new THREE.Matrix4();
-const orig=new THREE.Vector3();
-const direction=new THREE.Vector3();
+  const s = state.session;
+  const q = currentQuestion();
+  const pool = currentPool();
 
-function rayFrom(obj) {
-  obj.updateWorldMatrix(true,false);
-  mat4.identity().extractRotation(obj.matrixWorld);
-  orig.setFromMatrixPosition(obj.matrixWorld);
-  direction.set(0,0,-1).applyMatrix4(mat4).normalize();
-  raycaster.set(orig,direction);
-}
+  background(p,'PMSC 2026 • SALA DE ESTUDO');
 
-function selectFrom(obj) {
-  rayFrom(obj);
-  const panelHit=raycaster.intersectObject(panel)[0];
-  if(panelHit&&doHit(panelHit))return;
+  if(!q){
+    text(
+      c,
+      'AGUARDANDO QUESTÕES DO GITHUB',
+      85,370,59
+    );
 
-  const floorHit=raycaster.intersectObject(floor)[0];
-  if(floorHit&&floorHit.distance<12) {
-    const p=floorHit.point;
-    if(Math.abs(p.x)<11&&Math.abs(p.z)<11) {
-      rig.position.x=p.x;
-      rig.position.z=p.z;
-      setStatus('Posição alterada pelo teletransporte.');
-    }
-  }
-}
+    text(
+      c,
+      'Atualize o banco no painel lateral.',
+      85,470,45
+    );
 
-function handSelect(hand) {
-  if(!renderer.xr.isPresenting)return;
-
-  const tip=hand.joints?.['index-finger-tip'];
-  const wrist=hand.joints?.wrist;
-  if(!tip)return;
-
-  tip.updateWorldMatrix(true,false);
-  const p=new THREE.Vector3().setFromMatrixPosition(tip.matrixWorld);
-  const local=panel.worldToLocal(p.clone());
-
-  if(Math.abs(local.z)<.12&&Math.abs(local.x)<1.4&&Math.abs(local.y)<1.16) {
-    const u=local.x/2.8+.5;
-    const v=local.y/2.33+.5;
-    doHit({uv:{x:u,y:v}});
+    p.texture.needsUpdate = true;
     return;
   }
 
-  if(wrist) {
-    wrist.updateWorldMatrix(true,false);
-    const w=new THREE.Vector3().setFromMatrixPosition(wrist.matrixWorld);
-    const dir=p.clone().sub(w).normalize();
-    raycaster.set(p,dir);
-    const hit=raycaster.intersectObject(panel)[0];
-    if(hit)doHit(hit);
-  }
-}
-
-/* MOTOR THREE.JS */
-
-function init3D() {
-  scene=new THREE.Scene();
-  scene.background=new THREE.Color('#8eb1bf');
-  scene.add(new THREE.HemisphereLight(0xffffff,0x345342,2.2));
-
-  const sun=new THREE.DirectionalLight(0xffffff,1.8);
-  sun.position.set(4,9,4);
-  scene.add(sun);
-
-  rig=new THREE.Group();
-  scene.add(rig);
-
-  camera=new THREE.PerspectiveCamera(65,1,.1,120);
-  camera.position.set(0,1.65,7);
-  rig.add(camera);
-
-  renderer=new THREE.WebGLRenderer({
-    antialias:true,
-    powerPreference:'high-performance'
-  });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
-  renderer.xr.enabled=true;
-  $('scene').append(renderer.domElement);
-
-  texture=new THREE.CanvasTexture(board);
-  texture.colorSpace=THREE.SRGBColorSpace;
-
-  panel=new THREE.Mesh(
-    new THREE.PlaneGeometry(2.8,2.33),
-    new THREE.MeshBasicMaterial({
-      map:texture,
-      side:THREE.DoubleSide
-    })
+  text(
+    c,
+    `${s.index+1} / ${pool.length} • ${q.subject}`,
+    78,304,46,'#a7f0c0'
   );
-  panel.position.set(0,1.67,-2.5);
-  rig.add(panel);
-  panel.visible=false;
 
-  for(let i=0;i<2;i++) {
-    const c=renderer.xr.getController(i);
-    c.addEventListener('select',()=>selectFrom(c));
-    const points=[
-      new THREE.Vector3(0,0,0),
-      new THREE.Vector3(0,0,-7)
-    ];
-    c.add(new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(points),
-      new THREE.LineBasicMaterial({color:0x8affba})
-    ));
-    rig.add(c);
-    controllers.push(c);
+  text(c,q.topic,78,360,36,'#b7cbbd');
 
-    const grip=renderer.xr.getControllerGrip(i);
-    try {
-      grip.add(new XRControllerModelFactory().createControllerModel(grip));
-    } catch {}
-    rig.add(grip);
-
-    const hand=renderer.xr.getHand(i);
-    try {
-      hand.add(new XRHandModelFactory().createHandModel(hand,'spheres'));
-    } catch {}
-    rig.add(hand);
-    hand.addEventListener('select',()=>handSelect(hand));
-    hands.push({hand,pinched:false});
-  }
-
-  const vrBtn=VRButton.createButton(renderer,{
-    optionalFeatures:[
-      'hand-tracking',
-      'local-floor',
-      'bounded-floor'
-    ]
-  });
-  vrBtn.style.display='none';
-  document.body.append(vrBtn);
-
-  $('enterVR').onclick=()=>{
-    if(!navigator.xr) {
-      setStatus('WebXR indisponível. Abra pelo navegador do Meta Quest.');
-      return;
-    }
-    vrBtn.click();
-  };
-
-  renderer.xr.addEventListener('sessionstart',()=>{
-    panel.visible=true;
-    updateVR();
-    setStatus('VR iniciada. Use controle ou pinça.');
-  });
-
-  renderer.xr.addEventListener('sessionend',()=>{
-    panel.visible=false;
-    setStatus('VR encerrada.');
-  });
-
-  changeEnv(state.env);
-
-  renderer.setAnimationLoop(()=>{
-    const dom=$('scene');
-    const w=dom.clientWidth,h=dom.clientHeight;
-
-    if(w&&h) {
-      const ratio=renderer.getPixelRatio();
-      if(renderer.domElement.width!==Math.round(w*ratio)||
-         renderer.domElement.height!==Math.round(h*ratio)) {
-        renderer.setSize(w,h,false);
-        camera.aspect=w/h;
-        camera.updateProjectionMatrix();
-      }
-    }
-
-    if(renderer.xr.isPresenting) {
-      const tick=Math.floor(now()/1000);
-      if(state.exam?.minutes&&tick!==lastSecond) {
-        lastSecond=tick;
-        if(now()-state.exam.start>=state.exam.minutes*60000)
-          examFinish();
-        else updateVR();
-      }
-
-      for(const o of hands) {
-        const hand=o.hand;
-        const t=hand.joints?.['thumb-tip'];
-        const f=hand.joints?.['index-finger-tip'];
-
-        if(t&&f&&hand.visible) {
-          t.updateWorldMatrix(true,false);
-          f.updateWorldMatrix(true,false);
-          const a=new THREE.Vector3().setFromMatrixPosition(t.matrixWorld);
-          const b=new THREE.Vector3().setFromMatrixPosition(f.matrixWorld);
-          const near=a.distanceTo(b)<.027;
-          if(near&&!o.pinched)handSelect(hand);
-          o.pinched=near;
-        }
-      }
-
-      let over=-1;
-      for(const c of controllers) {
-        rayFrom(c);
-        const hit=raycaster.intersectObject(panel)[0];
-        if(hit) {
-          over=hitUV(hit.uv);
-          if(over>=0)break;
-        }
-      }
-      if(over!==hovered) {
-        hovered=over;
-        vrDraw();
-      }
-    }
-
-    renderer.render(scene,camera);
-  });
-}
-
-function updateVR() {
-  if(texture)vrDraw();
-}
-
-/* OBJETOS 3D */
-
-function cube(parent,x,y,z,w,h,d,color) {
-  const mesh=new THREE.Mesh(
-    new THREE.BoxGeometry(w,h,d),
-    new THREE.MeshStandardMaterial({color})
+  const size = Math.round(
+    46*Number(state.settings.fontSize)/115
   );
-  mesh.position.set(x,y,z);
-  parent.add(mesh);
-  return mesh;
-}
 
-function column(parent,x,z) {
-  cube(parent,x,1.5,z,.26,3,.26,'#718076');
-}
+  const lineH = size*1.36;
 
-function flag(parent,x,z) {
-  cube(parent,x,2,z,.06,4,.06,'#b0bdb3');
-  cube(parent,x+.7,3.25,z,1.4,.85,.05,'#159a4b');
-  const dia=cube(parent,x+.7,3.25,z+.04,.62,.62,.045,'#efd336');
-  dia.rotation.z=Math.PI/4;
-  const ball=new THREE.Mesh(
-    new THREE.SphereGeometry(.23,16,12),
-    new THREE.MeshStandardMaterial({color:'#16429b'})
-  );
-  ball.position.set(x+.7,3.25,z+.08);
-  ball.scale.z=.12;
-  parent.add(ball);
-}
+  const blocks = [];
 
-/* DEZ AMBIENTES */
+  function add(kind,content,act,color){
+    const fontSize = kind === 'question'
+      ? size
+      : size-3;
 
-function changeEnv(n) {
-  state.env=(n+envs.length)%envs.length;
-  save();
+    const lines = wrapped(
+      c,
+      content,
+      1760,
+      fontSize
+    );
 
-  if(room) {
-    scene.remove(room);
-    room.traverse(o=>{
-      o.geometry?.dispose();
-      if(o.material) {
-        const mats=Array.isArray(o.material)?o.material:[o.material];
-        mats.forEach(m=>m.dispose());
-      }
+    const height = Math.max(
+      95,
+      lines.length*(lineH+2)+25
+    );
+
+    blocks.push({
+      kind,
+      lines,
+      act,
+      color,
+      height
     });
   }
 
-  room=new THREE.Group();
-  scene.add(room);
+  add('question',q.question,null);
 
-  floor=cube(room,0,-.12,0,26,.24,26,
-    n===3?'#527d43':'#74847b');
+  if(s.mode === 'flash'){
+    if(s.flip){
+      add(
+        'text',
+        'RESPOSTA: '+q.options[q.correct],
+        null
+      );
 
-  if(n!==3)
-    cube(room,0,3,-10,23,6,.3,'#a3b1aa');
+      if(q.explanation){
+        add('text',q.explanation,null);
+      }
+    }else{
+      add(
+        'text',
+        'Vire o flashcard para revelar a resposta.',
+        null
+      );
+    }
+  }else{
+    q.options.forEach((option,i)=>{
+      const chosen = s.answers[q.id];
 
-  flag(room,-8,-8);
+      const reveal =
+        s.mode !== 'exam' ||
+        s.feedback === 'immediate' ||
+        s.finished;
 
-  switch(n) {
-    case 0:
-      for(let x=-4;x<=4;x+=2)
-        cube(room,x,.01,-2,.12,.03,6,'#eadfba');
-      cube(room,0,1.8,-9,7,3,.4,'#52695e');
-      break;
+      let color = '#1d5941';
 
-    case 1:
-    case 7:
-      for(let x=-4;x<=4;x+=2) {
-        for(let z=-5;z<=2;z+=2) {
-          cube(room,x,.7,z,1.4,.14,.7,'#786043');
-          cube(room,x,.3,z,.12,.6,.1,'#56645c');
+      if(chosen !== undefined && reveal){
+        if(i === q.correct){
+          color = '#146c40';
+        }else if(i === chosen){
+          color = '#773641';
         }
+      }else if(chosen === i){
+        color = '#215b86';
       }
-      cube(room,0,2.4,-9.6,6,2,.08,'#21513e');
-      break;
 
-    case 2:
-      cube(room,-4,1.7,-7,4,3.4,3,'#c0b7a8');
-      for(let x=-1;x<=7;x+=.9)column(room,x,-8);
-      break;
+      add(
+        'option',
+        String.fromCharCode(65+i)+') '+option,
+        'answer:'+i,
+        color
+      );
+    });
 
-    case 3:
-      for(let x=-8;x<=8;x+=4)
-        cube(room,x,.6,-5,2,1.2,1.1,'#988160');
-      for(let z=-3;z<=3;z+=2)
-        cube(room,-5,.3,z,3,.5,.25,'#8a7052');
-      break;
+    const chosen = s.answers[q.id];
 
-    case 4:
-      for(let x=-6;x<=6;x+=3) {
-        for(const z of [-5,1]) {
-          cube(room,x,.5,z,1.5,.17,2.2,'#778987');
-          cube(room,x,1.5,z,1.5,.17,2.2,'#778987');
-          column(room,x-.7,z-1);
-        }
+    if(
+      chosen !== undefined &&
+      (
+        s.mode !== 'exam' ||
+        s.feedback === 'immediate' ||
+        s.finished
+      )
+    ){
+      if(q.explanation){
+        add(
+          'text',
+          'COMENTÁRIO: '+q.explanation,
+          null
+        );
       }
-      break;
 
-    case 5:
-      for(let x=-5;x<=5;x+=2.5)
-        cube(room,x,1.3,-7,2.1,2.6,.65,'#755d47');
-      break;
-
-    case 6:
-      for(let z=-6;z<=1;z+=2) {
-        for(let x=-5;x<=5;x+=2)
-          cube(room,x,.65,z,1.4,.8,.7,'#6c6256');
+      if(q.reference){
+        add(
+          'text',
+          'REFERÊNCIA: '+q.reference,
+          null
+        );
       }
-      cube(room,0,.5,-9,7,1,2,'#75694b');
-      break;
-
-    case 8:
-      for(let x=-8;x<=8;x+=4)column(room,x,-7);
-      cube(room,0,.5,-7,6,1,2,'#839e8d');
-      break;
-
-    case 9:
-      for(let x=-6;x<=6;x+=3)
-        cube(room,x,.8,-5,2.3,.2,.8,'#4b6861');
-      cube(room,0,2.4,-9.6,8,2,.1,'#1c3d39');
-      break;
+    }
   }
 
-  $('env').value=String(state.env);
+  const viewTop = 390;
+  const viewBottom = 1245;
+  const viewH = viewBottom-viewTop;
+
+  const total = blocks.reduce(
+    (sum,b) => sum+b.height+12,
+    0
+  );
+
+  s.scroll = clamp(
+    s.scroll,
+    0,
+    Math.max(0,total-viewH)
+  );
+
+  c.save();
+  c.beginPath();
+  c.rect(56,viewTop,1935,viewH);
+  c.clip();
+
+  let y = viewTop-s.scroll;
+
+  for(const b of blocks){
+    if(
+      y+b.height >= viewTop &&
+      y <= viewBottom
+    ){
+      if(b.kind === 'option'){
+        c.fillStyle = b.color;
+
+        round(c,66,y,1870,b.height-5,14);
+        c.fill();
+
+        region(
+          p,
+          66,
+          Math.max(viewTop,y),
+          1870,
+          Math.min(viewBottom,y+b.height)-
+            Math.max(viewTop,y),
+          b.act
+        );
+      }
+
+      let ty = y+Math.max(58,lineH);
+
+      for(const line of b.lines){
+        text(
+          c,
+          line,
+          92,ty,
+          b.kind === 'question' ? size : size-3,
+          b.kind === 'question'
+            ? '#ffffff'
+            : '#effcf3'
+        );
+
+        ty += lineH+2;
+      }
+    }
+
+    y += b.height+12;
+  }
+
+  c.restore();
+
+  vrButton(
+    p,'▲ SUBIR',
+    65,1288,270,99,
+    'scrollUp'
+  );
+
+  vrButton(
+    p,'▼ DESCER',
+    350,1288,290,99,
+    'scrollDown'
+  );
+
+  vrButton(
+    p,'◀ ANTERIOR',
+    660,1288,385,99,
+    'prev'
+  );
+
+  vrButton(
+    p,'PRÓXIMA ▶',
+    1062,1288,396,99,
+    'next'
+  );
+
+  vrButton(
+    p,
+    s.mode === 'flash'
+      ? 'VIRAR'
+      : s.mode === 'exam'
+        ? 'FINALIZAR'
+        : '★ FAVORITO',
+    1477,1288,500,99,
+    s.mode === 'flash'
+      ? 'flip'
+      : s.mode === 'exam'
+        ? 'finish'
+        : 'favorite'
+  );
+
+  let footer = 'ESTUDO';
+
+  if(s.mode === 'flash'){
+    footer = 'FLASHCARD';
+  }else if(s.mode === 'exam'){
+    footer = 'SIMULADO';
+
+    if(s.minutes){
+      const left = Math.max(
+        0,
+        Math.ceil(
+          (
+            s.minutes*60000 -
+            (Date.now()-s.start)
+          )/60000
+        )
+      );
+
+      footer = `TEMPO: ${left} MIN`;
+    }
+  }
+
+  text(c,footer,85,1470,36,'#a5ffd2');
+
+  p.texture.needsUpdate = true;
+}
+
+
+// ============================================================
+// 17. PAINÉIS LATERAIS
+// ============================================================
+
+function drawSide(id){
+  const p = panels[id];
+  const c = p.ctx;
+
+  background(
+    p,
+    id === 'left' ? 'AMBIENTES' : 'ESTATÍSTICAS'
+  );
+
+  if(id === 'left'){
+    let y = 280;
+
+    environments.forEach((name,i)=>{
+      vrButton(
+        p,
+        `${i+1}. ${name}`,
+        55,y,1935,95,
+        'env:'+i,
+        i === state.settings.env
+          ? '#226e47'
+          : '#214b38',
+        42
+      );
+
+      y += 110;
+    });
+
+    vrButton(
+      p,
+      'REPOSICIONAR',
+      55,1400,1935,94,
+      'resetPanels'
+    );
+
+  }else{
+    const z = stats();
+
+    const lines = [
+      `QUESTÕES: ${questions.length}`,
+      `RESPONDIDAS: ${z.total}`,
+      `ACERTOS: ${z.ok}`,
+      `APROVEITAMENTO: ${z.pct}%`,
+      `REVISÕES: ${z.pending}`,
+      `SIMULADOS: ${z.exams}`
+    ];
+
+    lines.forEach((value,i)=>{
+      text(c,value,74,310+i*116,53);
+    });
+
+    const modes = [
+      ['QUESTÕES','study'],
+      ['SIMULADO','exam'],
+      ['FLASHCARDS','flash'],
+      ['REVISÃO','review']
+    ];
+
+    modes.forEach(([name,mode],i)=>{
+      vrButton(
+        p,
+        name,
+        65,1010+i*105,1900,88,
+        'go:'+mode
+      );
+    });
+  }
+
+  p.texture.needsUpdate = true;
+}
+
+function updateVR(){
+  drawMain();
+  drawSide('left');
+  drawSide('right');
+}
+
+function scrollVR(delta){
+  const s = state.session;
+
+  if(!s) return;
+
+  s.scroll = Math.max(0,s.scroll+delta);
+
   updateVR();
 }
 
-/* EVENTOS E INICIALIZAÇÃO */
 
-for(const [id,label] of pages) {
-  const b=btn(label,()=>go(id),$('nav'));
-  b.dataset.page=id;
-}
+// ============================================================
+// 18. AÇÕES DOS BOTÕES NO VR
+// ============================================================
 
-for(let i=0;i<envs.length;i++)
-  $('env').add(new Option(envs[i],String(i)));
+let lastActionTime = 0;
+let lastActionName = '';
 
-$('env').onchange=()=>changeEnv(Number($('env').value));
+function action(act){
+  if(!act) return;
 
-$('subject').onchange=()=>{
-  qIndex=0;
-  activePool=[];
-  render();
-};
+  const t = performance.now();
 
-$('search').oninput=()=>{
-  qIndex=0;
-  activePool=[];
-  render();
-};
-
-$('reload').onclick=loadBank;
-
-(async()=>{
-  db=await dbOpen();
-
-  const backed=await idbGet('progress');
-  if(backed&&!state.history.length&&Array.isArray(backed.history)) {
-    state={...initial,...backed};
+  if(
+    lastActionName === act &&
+    t-lastActionTime < 270
+  ){
+    return;
   }
 
-  document.body.classList.toggle(
-    'light',
-    state.theme==='light'
+  lastActionTime = t;
+  lastActionName = act;
+
+  if(act === 'drag') return;
+
+  if(act.startsWith('answer:')){
+    choose(Number(act.split(':')[1]));
+    return;
+  }
+
+  if(act.startsWith('env:')){
+    setEnvironment(Number(act.split(':')[1]));
+    return;
+  }
+
+  if(act.startsWith('go:')){
+    go(act.split(':')[1]);
+    return;
+  }
+
+  if(act === 'prev') return next(-1);
+  if(act === 'next') return next(1);
+  if(act === 'favorite') return favorite();
+  if(act === 'finish') return finishExam();
+
+  if(act === 'flip'){
+    if(state.session){
+      state.session.flip = !state.session.flip;
+      safeStore();
+      render();
+    }
+    return;
+  }
+
+  if(act === 'scrollUp'){
+    return scrollVR(-430);
+  }
+
+  if(act === 'scrollDown'){
+    return scrollVR(430);
+  }
+
+  if(act === 'resetPanels'){
+    return resetPanelPositions();
+  }
+}
+
+
+// ============================================================
+// 19. RAYCASTING DOS PAINÉIS
+// ============================================================
+
+function intersectFrom(origin,direction){
+  raycaster.set(origin,direction);
+
+  const hit = raycaster.intersectObjects(
+    panelMeshes,
+    false
+  )[0];
+
+  if(!hit || hit.distance > 10){
+    return null;
+  }
+
+  const p = panels[hit.object.userData.id];
+
+  if(!p) return null;
+
+  const x = hit.uv.x*WIDTH;
+  const y = (1-hit.uv.y)*HEIGHT;
+
+  const region = [...p.regions].reverse().find(r =>
+    x >= r.x &&
+    x <= r.x+r.w &&
+    y >= r.y &&
+    y <= r.y+r.h
   );
 
-  init3D();
-  populateSubjects();
-  render();
+  return {
+    p,
+    hit,
+    region:region || null
+  };
+}
+
+function rayFromController(controller){
+  controller.updateWorldMatrix(true,false);
+
+  tmpMatrix.extractRotation(
+    controller.matrixWorld
+  );
+
+  const origin = new THREE.Vector3()
+    .setFromMatrixPosition(controller.matrixWorld);
+
+  const direction = new THREE.Vector3(0,0,-1)
+    .applyMatrix4(tmpMatrix)
+    .normalize();
+
+  return {origin,direction};
+}
+
+function rayFromHand(hand){
+  const tip = hand.joints?.['index-finger-tip'];
+
+  const base =
+    hand.joints?.['index-finger-phalanx-proximal'] ||
+    hand.joints?.wrist;
+
+  if(!tip || !base){
+    return null;
+  }
+
+  tip.updateWorldMatrix(true,false);
+  base.updateWorldMatrix(true,false);
+
+  const origin = new THREE.Vector3()
+    .setFromMatrixPosition(tip.matrixWorld);
+
+  const basePoint = new THREE.Vector3()
+    .setFromMatrixPosition(base.matrixWorld);
+
+  const direction = origin.clone()
+    .sub(basePoint)
+    .normalize();
+
+  return {origin,direction};
+}
+
+function handTouchHit(hand){
+  const tip = hand.joints?.['index-finger-tip'];
+
+  if(!tip) return null;
+
+  const worldPoint = new THREE.Vector3();
+
+  tip.getWorldPosition(worldPoint);
+
+  for(const p of Object.values(panels)){
+    const local = p.group.worldToLocal(
+      worldPoint.clone()
+    );
+
+    const px =
+      local.x/(p.w*p.group.scale.x)+.5;
+
+    const py =
+      .5-local.y/(p.h*p.group.scale.y);
+
+    if(
+      Math.abs(local.z) < .18 &&
+      px >= 0 &&
+      px <= 1 &&
+      py >= 0 &&
+      py <= 1
+    ){
+      const x = px*WIDTH;
+      const y = py*HEIGHT;
+
+      const region = [...p.regions].reverse().find(r =>
+        x >= r.x &&
+        x <= r.x+r.w &&
+        y >= r.y &&
+        y <= r.y+r.h
+      );
+
+      return {p,region};
+    }
+  }
+
+  return null;
+}
+
+
+// ============================================================
+// 20. ARRASTAR PAINÉIS COM CONTROLES OU MÃOS
+// ============================================================
+
+const controllerFactory = new XRControllerModelFactory();
+const handFactory = new XRHandModelFactory();
+
+const controllers = [];
+const hands = [];
+
+let dragging = null;
+
+function beginDrag(p,source,kind){
+  const start = new THREE.Vector3();
+
+  source.getWorldPosition(start);
+
+  dragging = {
+    p,
+    source,
+    kind,
+    index:-1,
+    offset:p.group.position.clone().sub(start)
+  };
+
+  note('Movendo painel. Solte para fixar.');
+}
+
+function endDrag(kind,index){
+  if(
+    dragging?.kind === kind &&
+    dragging?.index === index
+  ){
+    const p = dragging.p;
+
+    state.panels[p.id] = [
+      p.group.position.x,
+      p.group.position.y,
+      p.group.position.z
+    ];
+
+    dragging = null;
+    safeStore();
+  }
+}
+
+function selectRay(
+  ray,
+  source,
+  kind,
+  index,
+  grab=false
+){
+  if(!ray) return;
+
+  const hit = intersectFrom(
+    ray.origin,
+    ray.direction
+  );
+
+  if(grab && hit){
+    beginDrag(hit.p,source,kind);
+
+    if(dragging){
+      dragging.index = index;
+    }
+
+    return;
+  }
+
+  if(hit){
+    if(
+      hit.region?.action &&
+      hit.region.action !== 'drag'
+    ){
+      action(hit.region.action);
+    }
+    return;
+  }
+
+  raycaster.set(ray.origin,ray.direction);
+
+  const marks = raycaster.intersectObjects(
+    teleportMarkers,
+    false
+  );
+
+  if(marks.length && marks[0].distance < 12){
+    teleport(
+      marks[0].object.userData.destination
+    );
+  }
+}
+
+
+// ============================================================
+// 21. CONTROLES E MODELOS DAS MÃOS
+// ============================================================
+
+for(let i=0;i<2;i++){
+  const controller = renderer.xr.getController(i);
+
+  rig.add(controller);
+
+  controllers.push({
+    object:controller,
+    index:i,
+    lastSnap:0
+  });
+
+  controller.addEventListener(
+    'selectstart',
+    ()=>{
+      if(!dragging){
+        selectRay(
+          rayFromController(controller),
+          controller,
+          'controller',
+          i
+        );
+      }
+    }
+  );
+
+  controller.addEventListener(
+    'squeezestart',
+    ()=>{
+      selectRay(
+        rayFromController(controller),
+        controller,
+        'controller',
+        i,
+        true
+      );
+    }
+  );
+
+  controller.addEventListener(
+    'squeezeend',
+    ()=>endDrag('controller',i)
+  );
+
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(),
+      new THREE.Vector3(0,0,-8)
+    ]),
+    new THREE.LineBasicMaterial({
+      color:0x7cffbd
+    })
+  );
+
+  controller.add(line);
+
+  const grip = renderer.xr.getControllerGrip(i);
+
+  grip.add(
+    controllerFactory.createControllerModel(grip)
+  );
+
+  rig.add(grip);
+
+  const hand = renderer.xr.getHand(i);
+
+  rig.add(hand);
+
+  hand.add(
+    handFactory.createHandModel(hand,'spheres')
+  );
+
+  hands.push({
+    object:hand,
+    index:i,
+    pinched:false
+  });
+
+  hand.addEventListener(
+    'selectstart',
+    ()=>{
+      if(!dragging){
+        selectRay(
+          rayFromHand(hand),
+          hand,
+          'hand',
+          i
+        );
+      }
+    }
+  );
+}
+
+
+// ============================================================
+// 22. MARCADORES DE TELETRANSPORTE
+// ============================================================
+
+const teleportMarkers = [];
+
+const destinations = [
+  [0,-1.3],
+  [-3,-3],
+  [3,-3],
+  [0,-5],
+  [-5,-6],
+  [5,-6]
+];
+
+for(const [x,z] of destinations){
+  const marker = new THREE.Mesh(
+    new THREE.CylinderGeometry(
+      .34,.34,.035,24
+    ),
+    new THREE.MeshBasicMaterial({
+      color:0x22cfff,
+      transparent:true,
+      opacity:.8
+    })
+  );
+
+  marker.position.set(x,.03,z);
+
+  marker.userData.destination =
+    new THREE.Vector3(x,0,z);
+
+  scene.add(marker);
+  teleportMarkers.push(marker);
+}
+
+function teleport(pos){
+  const head = new THREE.Vector3();
+
+  if(renderer.xr.isPresenting){
+    renderer.xr.getCamera().getWorldPosition(head);
+  }else{
+    camera.getWorldPosition(head);
+  }
+
+  rig.position.x = clamp(
+    rig.position.x+pos.x-head.x,
+    -9,9
+  );
+
+  rig.position.z = clamp(
+    rig.position.z+pos.z-head.z,
+    -8,6
+  );
+
+  note('Teletransporte realizado.');
+}
+
+
+// ============================================================
+// 23. CONFIGURAÇÃO DOS AMBIENTES
+// ============================================================
+
+function setEnvironment(n){
+  state.settings.env =
+    (n+environments.length)%environments.length;
+
+  $('environment').value = state.settings.env;
+
+  buildWorld(state.settings.env);
+
+  safeStore();
+  updateVR();
+}
+
+function configureQuality(){
+  const quality = state.settings.quality;
+
+  renderer.setPixelRatio(
+    quality === 'low'
+      ? 1
+      : quality === 'high'
+        ? Math.min(devicePixelRatio,2)
+        : Math.min(devicePixelRatio,1.5)
+  );
+
+  if(!renderer.xr.isPresenting){
+    renderer.xr.setFramebufferScaleFactor(
+      quality === 'low'
+        ? .9
+        : quality === 'high'
+          ? 1.2
+          : 1.05
+    );
+  }
+}
+
+function syncSettings(){
+  for(const key of [
+    'lighting',
+    'quality',
+    'fontSize',
+    'distance',
+    'panelHeight',
+    'panelScale',
+    'speed',
+    'snap'
+  ]){
+    $(key).value = state.settings[key];
+  }
+
+  $('environment').value = state.settings.env;
+
+  configureQuality();
+  applyLight();
+  panelPositionReset();
+
+  for(const [id,position] of Object.entries(
+    state.panels || {}
+  )){
+    if(
+      panels[id] &&
+      Array.isArray(position) &&
+      position.length === 3 &&
+      position.every(Number.isFinite)
+    ){
+      panels[id].group.position.set(...position);
+    }
+  }
+}
+
+
+// ============================================================
+// 24. LOOP DE REALIDADE VIRTUAL
+// ============================================================
+
+let lastSecond = 0;
+
+const clock = new THREE.Clock();
+
+renderer.setAnimationLoop(()=>{
+  const dt = Math.min(clock.getDelta(),.05);
+
+  const w = $('scene').clientWidth;
+  const h = $('scene').clientHeight;
+
+  if(w && h && !renderer.xr.isPresenting){
+    const ratio = renderer.getPixelRatio();
+
+    if(
+      renderer.domElement.width !== Math.round(w*ratio) ||
+      renderer.domElement.height !== Math.round(h*ratio)
+    ){
+      renderer.setSize(w,h,false);
+
+      camera.aspect = w/h;
+      camera.updateProjectionMatrix();
+    }
+  }
+
+  if(renderer.xr.isPresenting){
+    const session = renderer.xr.getSession();
+
+    // Caminhada pelo analógico esquerdo.
+    // Rotação pelo analógico direito.
+
+    for(const source of session.inputSources){
+      const gp = source.gamepad;
+
+      if(!gp) continue;
+
+      let ax = 0;
+      let az = 0;
+
+      if(gp.axes.length >= 4){
+        ax = gp.axes[2] || 0;
+        az = gp.axes[3] || 0;
+      }else{
+        ax = gp.axes[0] || 0;
+        az = gp.axes[1] || 0;
+      }
+
+      if(
+        source.handedness === 'left' &&
+        (
+          Math.abs(ax) > .18 ||
+          Math.abs(az) > .18
+        )
+      ){
+        const dir = new THREE.Vector3();
+
+        renderer.xr.getCamera()
+          .getWorldDirection(dir);
+
+        dir.y = 0;
+        dir.normalize();
+
+        const right = new THREE.Vector3()
+          .crossVectors(
+            dir,
+            new THREE.Vector3(0,1,0)
+          )
+          .normalize();
+
+        const speed = Number(
+          state.settings.speed
+        );
+
+        rig.position.addScaledVector(
+          dir,
+          -az*dt*speed
+        );
+
+        rig.position.addScaledVector(
+          right,
+          ax*dt*speed
+        );
+
+        rig.position.x = clamp(
+          rig.position.x,-9,9
+        );
+
+        rig.position.z = clamp(
+          rig.position.z,-8,6
+        );
+      }
+
+      if(
+        source.handedness === 'right' &&
+        Math.abs(ax) > .7
+      ){
+        const c = controllers[1];
+
+        const currentTime = performance.now();
+
+        if(
+          currentTime-c.lastSnap > 450 &&
+          Number(state.settings.snap)
+        ){
+          rig.rotation.y -=
+            Math.sign(ax)*
+            THREE.MathUtils.degToRad(
+              Number(state.settings.snap)
+            );
+
+          c.lastSnap = currentTime;
+        }
+      }
+    }
+
+    // Rastrear pinça entre polegar e indicador.
+
+    for(const h of hands){
+      const hand = h.object;
+
+      const tip =
+        hand.joints?.['index-finger-tip'];
+
+      const thumb =
+        hand.joints?.['thumb-tip'];
+
+      if(
+        !tip ||
+        !thumb ||
+        !tip.visible ||
+        !thumb.visible
+      ){
+        h.pinched = false;
+        continue;
+      }
+
+      tip.updateWorldMatrix(true,false);
+      thumb.updateWorldMatrix(true,false);
+
+      const p1 = new THREE.Vector3();
+      const p2 = new THREE.Vector3();
+
+      tip.getWorldPosition(p1);
+      thumb.getWorldPosition(p2);
+
+      const pinched =
+        p1.distanceTo(p2) < .033;
+
+      if(pinched && !h.pinched){
+        const ray = rayFromHand(hand);
+
+        const hit =
+          handTouchHit(hand) ||
+          (
+            ray &&
+            intersectFrom(
+              ray.origin,
+              ray.direction
+            )
+          );
+
+        if(hit?.region?.action === 'drag'){
+          beginDrag(hit.p,tip,'hand');
+
+          if(dragging){
+            dragging.index = h.index;
+          }
+        }else if(!dragging){
+          if(
+            hit?.region?.action &&
+            hit.region.action !== 'drag'
+          ){
+            action(hit.region.action);
+          }else{
+            selectRay(
+              ray,
+              tip,
+              'hand',
+              h.index
+            );
+          }
+        }
+      }
+
+      if(!pinched && h.pinched){
+        endDrag('hand',h.index);
+      }
+
+      h.pinched = pinched;
+    }
+
+    // Atualizar posição dos painéis arrastados.
+
+    if(dragging){
+      const position = new THREE.Vector3();
+
+      dragging.source.getWorldPosition(position);
+      position.add(dragging.offset);
+
+      dragging.p.group.position.set(
+        clamp(position.x,-8,8),
+        clamp(position.y,.5,4),
+        clamp(position.z,-7,-.6)
+      );
+    }
+
+    // Realce ao apontar para um botão.
+
+    let over = null;
+
+    for(const controller of controllers){
+      const ray = rayFromController(
+        controller.object
+      );
+
+      const hit = intersectFrom(
+        ray.origin,
+        ray.direction
+      );
+
+      if(hit?.region){
+        over = {
+          panel:hit.p.id,
+          action:hit.region.action
+        };
+        break;
+      }
+    }
+
+    if(
+      over?.panel !== hovered?.panel ||
+      over?.action !== hovered?.action
+    ){
+      hovered = over;
+      updateVR();
+    }
+
+    // Verificar cronômetro do simulado.
+
+    const second = Math.floor(
+      Date.now()/1000
+    );
+
+    if(second !== lastSecond){
+      lastSecond = second;
+
+      const s = state.session;
+
+      if(
+        s?.mode === 'exam' &&
+        !s.finished &&
+        s.minutes &&
+        Date.now()-s.start >= s.minutes*60000
+      ){
+        finishExam();
+      }else if(s?.mode === 'exam'){
+        drawMain();
+      }
+    }
+  }
+
+  renderer.render(scene,camera);
+});
+
+
+// ============================================================
+// 25. ENTRADA E SAÍDA DE VR
+// ============================================================
+
+async function enterVR(){
+  try{
+    if(renderer.xr.isPresenting){
+      await renderer.xr.getSession().end();
+      return;
+    }
+
+    if(!navigator.xr){
+      throw Error(
+        'WebXR não está disponível neste navegador.'
+      );
+    }
+
+    const supported =
+      await navigator.xr.isSessionSupported(
+        'immersive-vr'
+      );
+
+    if(!supported){
+      throw Error(
+        'Realidade virtual imersiva não suportada.'
+      );
+    }
+
+    const session =
+      await navigator.xr.requestSession(
+        'immersive-vr',
+        {
+          optionalFeatures:[
+            'local-floor',
+            'hand-tracking',
+            'bounded-floor'
+          ]
+        }
+      );
+
+    await renderer.xr.setSession(session);
+
+    $('vrButton').textContent = 'SAIR DO VR';
+
+    session.addEventListener('end',()=>{
+      $('vrButton').textContent = 'ENTRAR EM VR';
+      dragging = null;
+    });
+
+  }catch(e){
+    note('Erro ao entrar em VR: '+e.message);
+  }
+}
+
+
+// ============================================================
+// 26. EVENTOS DA INTERFACE
+// ============================================================
+
+for(const [id,label] of pages){
+  const b = button(
+    label,
+    ()=>go(id),
+    $('navigation')
+  );
+
+  b.dataset.page = id;
+}
+
+environments.forEach((name,i)=>{
+  $('environment').add(
+    new Option(name,String(i))
+  );
+});
+
+$('environment').onchange = ()=>{
+  setEnvironment(
+    Number($('environment').value)
+  );
+};
+
+$('lighting').onchange = ()=>{
+  state.settings.lighting =
+    $('lighting').value;
+
+  applyLight();
+  safeStore();
+};
+
+$('quality').onchange = ()=>{
+  state.settings.quality =
+    $('quality').value;
+
+  configureQuality();
+  safeStore();
+};
+
+for(const key of [
+  'fontSize',
+  'distance',
+  'panelHeight',
+  'panelScale',
+  'speed',
+  'snap'
+]){
+  $(key).oninput = ()=>{
+    state.settings[key] =
+      Number($(key).value);
+
+    if([
+      'distance',
+      'panelHeight',
+      'panelScale'
+    ].includes(key)){
+      panelPositionReset();
+    }
+
+    safeStore();
+    updateVR();
+  };
+}
+
+$('resetPanels').onclick = resetPanelPositions;
+$('vrButton').onclick = enterVR;
+$('reload').onclick = loadBank;
+
+for(const name of [
+  'subject',
+  'topic',
+  'difficulty'
+]){
+  $(name).onchange = ()=>{
+    newSession(
+      page === 'exam'
+        ? 'exam'
+        : page === 'flash'
+          ? 'flash'
+          : page === 'review'
+            ? 'review'
+            : 'study'
+    );
+  };
+}
+
+$('search').oninput = ()=>{
+  newSession('study');
+};
+
+$('examCount').onchange = ()=>{
+  if(page === 'exam'){
+    newSession('exam');
+  }
+};
+
+$('examTime').onchange = ()=>{
+  if(page === 'exam'){
+    newSession('exam');
+  }
+};
+
+$('examFeedback').onchange = ()=>{
+  if(page === 'exam'){
+    newSession('exam');
+  }
+};
+
+
+// ============================================================
+// 27. DEMONSTRAÇÃO E IMPORTAÇÃO
+// ============================================================
+
+$('demo').onclick = ()=>{
+  const demonstration = [
+    {
+      id:'demo_1',
+      disciplina:'Direito Constitucional',
+      assunto:'Constituição Federal',
+      enunciado:
+        'Qual é a Constituição Federal atualmente vigente no Brasil?',
+      alternativas:[
+        'Constituição de 1967',
+        'Constituição de 1988',
+        'Constituição de 1946',
+        'Constituição de 1937'
+      ],
+      gabarito:'B',
+      explicacao:
+        'A Constituição Federal vigente foi promulgada em 1988.'
+    },
+    {
+      id:'demo_2',
+      disciplina:'Direito Penal Comum',
+      assunto:'Patrimônio',
+      enunciado:
+        'Qual artigo do Código Penal trata do furto?',
+      alternativas:[
+        'Art. 121',
+        'Art. 155',
+        'Art. 157',
+        'Art. 171'
+      ],
+      gabarito:'B',
+      explicacao:
+        'O furto está previsto no artigo 155 do Código Penal.'
+    }
+  ];
+
+  const result = merge(
+    extract({DEMONSTRACAO:demonstration}),
+    false
+  );
+
+  note(
+    'Demonstração adicionada: '+
+    result.total+' questões.'
+  );
+};
+
+$('upload').onchange = async event=>{
+  const all = [];
+
+  for(const file of event.target.files){
+    try{
+      if(file.size > 10000000){
+        throw Error('Arquivo acima de 10 MB');
+      }
+
+      const data = JSON.parse(
+        await file.text()
+      );
+
+      all.push(...extract(data));
+
+    }catch(err){
+      note(
+        'Erro em '+file.name+': '+err.message
+      );
+    }
+  }
+
+  const result = merge(all,false);
+
+  note(
+    `Importação: ${result.total} questões.`
+  );
+};
+
+$('focus').onclick = ()=>{
+  document.body.classList.toggle('focus');
+};
+
+$('reading').onclick = ()=>{
+  state.settings.fontSize = clamp(
+    Number(state.settings.fontSize)+10,
+    90,145
+  );
+
+  $('fontSize').value =
+    state.settings.fontSize;
+
+  safeStore();
+  updateVR();
+
+  document.body.classList.toggle('focus');
+};
+
+$('backup').onclick = exportBackup;
+$('csv').onclick = exportCSV;
+
+$('restore').onchange = async event=>{
+  try{
+    const file = event.target.files[0];
+
+    if(!file || file.size > 5000000){
+      throw Error(
+        'Backup inválido ou muito grande.'
+      );
+    }
+
+    const obj = JSON.parse(
+      await file.text()
+    );
+
+    if(
+      !obj.state ||
+      !Array.isArray(obj.state.history) ||
+      !Array.isArray(obj.state.favorites)
+    ){
+      throw Error(
+        'Estrutura do backup inválida.'
+      );
+    }
+
+    state = {
+      ...defaultState(),
+      ...obj.state,
+      settings:{
+        ...defaultState().settings,
+        ...obj.state.settings
+      }
+    };
+
+    safeStore();
+    syncSettings();
+
+    setEnvironment(
+      Number(state.settings.env)
+    );
+
+    render();
+    note('Backup restaurado.');
+
+  }catch(err){
+    note('Falha no backup: '+err.message);
+  }
+};
+
+$('resetStats').onclick = ()=>{
+  if(!confirm(
+    'Apagar histórico, revisões e simulados?'
+  )){
+    return;
+  }
+
+  state.history = [];
+  state.reviews = {};
+  state.favorites = [];
+  state.exams = [];
+  state.session = null;
+
+  safeStore();
+  newSession('study');
+
+  note('Progresso zerado.');
+};
+
+
+// ============================================================
+// INICIALIZAÇÃO FINAL
+// ============================================================
+
+async function start(){
+  restoreState();
+
+  db = await openDB();
+
+  if(!state.history.length){
+    const saved = await idbGet('progress');
+
+    if(
+      saved &&
+      Array.isArray(saved.history)
+    ){
+      state = {
+        ...defaultState(),
+        ...saved,
+        settings:{
+          ...defaultState().settings,
+          ...saved.settings
+        }
+      };
+    }
+  }
+
+  syncSettings();
+
+  buildWorld(
+    Number(state.settings.env)
+  );
+
+  fillFilters();
+
+  const cache = await idbGet('bank');
+
+  if(Array.isArray(cache) && cache.length){
+    questions = cache;
+    fillFilters();
+  }
+
+  if(!state.session?.ids?.length){
+    newSession('study');
+  }else{
+    render();
+  }
 
   await loadBank();
+}
 
-})().catch(e=>{
-  console.error(e);
-  setStatus('Erro ao iniciar: '+e.message);
+start().catch(error=>{
+  console.error(error);
+
+  note(
+    'Erro de inicialização: '+
+    error.message
+  );
 });
 
 </script>
