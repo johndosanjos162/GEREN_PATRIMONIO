@@ -69,9 +69,6 @@ progress{width:100%;height:15px;accent-color:var(--accent)}
 .bar span{display:block;height:100%;background:var(--accent)}
 .notice{padding:12px;border:1px solid var(--border);
  border-radius:10px;margin:10px 0;color:var(--muted)}
-pre.debug{background:#0a1a12;border:1px solid var(--border);
- padding:10px;border-radius:6px;font-size:.75rem;color:var(--muted);
- overflow-x:auto;white-space:pre;max-height:200px;overflow-y:auto}
 body.light{--bg:#edf4ef;--panel:#ffffff;--panel2:#e1eee5;
  --text:#16291e;--muted:#42604c;--accent:#087b47;--border:#9db9a6}
 body.blue{--bg:#071323;--panel:#10243c;--panel2:#193856;
@@ -171,28 +168,22 @@ import * as THREE from "three";
 import {VRButton} from "three/addons/webxr/VRButton.js";
 
 /* ═══════════════════════════════════════════════════════════════════
-   1. CONFIGURAÇÃO
+   1. CONFIG
 ═══════════════════════════════════════════════════════════════════ */
 
 const APP={
- name:"PM-SC Immersive Academy 2026",
  repo:"johndosanjos162/PMSC",
  branches:["main","master"],
- version:3,
  storageKey:"PMSC_ACADEMY_V3",
  directJsonUrl:""
 };
 
 const $=id=>document.getElementById(id);
 const now=()=>Date.now();
-const uid=()=>Math.random().toString(36).slice(2);
 
 const environments=[
- "Pátio de Formatura",
- "Sala de Instrução Militar",
- "Entrada do Quartel",
- "Campo de Treinamento",
- "Alojamento Militar"
+ "Pátio de Formatura","Sala de Instrução Militar","Entrada do Quartel",
+ "Campo de Treinamento","Alojamento Militar"
 ];
 
 const pages=[
@@ -209,27 +200,13 @@ const defaults={
 const VALID_THEMES=["dark","blue","purple","light","contrast"];
 const VALID_QUALITY=["low","medium","high"];
 
-let state;
-let questions=[];
-let page="Início";
-let currentIndex=0;
-let studyPool=[];
-let exam=null;
-let examTimerId=null;
-let finishingExam=false;
-let flashBack=false;
-let loadBusy=false;
+let state,questions=[],page="Início",currentIndex=0,studyPool=[];
+let exam=null,examTimerId=null,finishingExam=false,flashBack=false,loadBusy=false;
 
 function status(m){ $("status").textContent=m; }
-
 function save(){
- try{ localStorage.setItem(APP.storageKey,JSON.stringify(state)); }
- catch(e){ status("Não foi possível salvar."); }
+ try{ localStorage.setItem(APP.storageKey,JSON.stringify(state)); }catch(e){}
 }
-
-/* ═══════════════════════════════════════════════════════════════════
-   2. STORAGE MANAGER
-═══════════════════════════════════════════════════════════════════ */
 
 function cloneDefaults(){ return JSON.parse(JSON.stringify(defaults)); }
 
@@ -237,24 +214,21 @@ const StorageManager={
  load(){
   try{
    const data=JSON.parse(localStorage.getItem(APP.storageKey)||"{}");
-   const merged={...cloneDefaults(),...data};
-   if(!VALID_THEMES.includes(merged.theme)) merged.theme="dark";
-   if(!VALID_QUALITY.includes(merged.quality)) merged.quality="medium";
-   if(typeof merged.environment!=="number"||merged.environment<0||
-      merged.environment>=environments.length) merged.environment=0;
-   if(typeof merged.fontSize!=="number"||merged.fontSize<10||
-      merged.fontSize>40) merged.fontSize=16;
-   if(!merged.session) merged.session=null;
-   if(!merged.activeExam) merged.activeExam=null;
-   return merged;
+   const m={...cloneDefaults(),...data};
+   if(!VALID_THEMES.includes(m.theme)) m.theme="dark";
+   if(!VALID_QUALITY.includes(m.quality)) m.quality="medium";
+   if(typeof m.environment!=="number"||m.environment<0||m.environment>=environments.length) m.environment=0;
+   if(typeof m.fontSize!=="number"||m.fontSize<10||m.fontSize>40) m.fontSize=16;
+   if(!m.session) m.session=null;
+   if(!m.activeExam) m.activeExam=null;
+   return m;
   }catch{ return cloneDefaults(); }
  },
  export(){ download("backup-pmsc.json",JSON.stringify(state,null,2),"application/json"); },
  async restore(file){
-  if(!file||file.size>3000000) throw Error("Arquivo inválido ou muito grande.");
+  if(!file||file.size>3000000) throw Error("Arquivo inválido.");
   const data=JSON.parse(await file.text());
-  if(!data||!Array.isArray(data.history)||!Array.isArray(data.favorites)||
-     typeof data.reviews!=="object") throw Error("Backup incompatível.");
+  if(!data||!Array.isArray(data.history)||!Array.isArray(data.favorites)) throw Error("Backup incompatível.");
   if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
   exam=null;
   state={...cloneDefaults(),...data};
@@ -265,242 +239,149 @@ const StorageManager={
 state=StorageManager.load();
 
 /* ═══════════════════════════════════════════════════════════════════
-   3. ⭐ PARSER ULTRA-PERMISSIVO — aceita QUALQUER formato
+   2. PARSER ULTRA-PERMISSIVO
 ═══════════════════════════════════════════════════════════════════ */
 
-// Detecta se um objeto parece uma questão (mesmo em formato "estranho")
 function looksLikeQuestion(obj){
  if(!obj||typeof obj!=="object"||Array.isArray(obj)) return false;
-
- // Deve ter algum campo de texto (pergunta/enunciado/question)
- const questionKeys=[
-  "pergunta","enunciado","question","questao","texto","statement","title",
-  "text","descricao","descricao_questao","pergunta_titulo","wording","body"
- ];
- const hasQuestion=questionKeys.some(k=>obj[k]&&typeof obj[k]==="string"&&obj[k].trim().length>=3);
- if(!hasQuestion) return false;
-
- // Deve ter algum campo de alternativas
- const optionKeys=[
-  "alternativas","opcoes","options","choices","respostas","items",
-  "opcoes_resposta","alternatives","possibilidades","answers"
- ];
- const hasOptions=optionKeys.some(k=>obj[k]&&
-  (Array.isArray(obj[k])||typeof obj[k]==="object"||typeof obj[k]==="string"));
- if(!hasOptions){
-  // Ou ter chaves a, b, c, d, e soltas
+ const qKeys=["pergunta","enunciado","question","questao","texto","statement","title","text","descricao","wording","body"];
+ const hasQ=qKeys.some(k=>obj[k]&&typeof obj[k]==="string"&&obj[k].trim().length>=3);
+ if(!hasQ) return false;
+ const oKeys=["alternativas","opcoes","options","choices","respostas","items","opcoes_resposta","alternatives","possibilidades","answers"];
+ const hasO=oKeys.some(k=>obj[k]&&(Array.isArray(obj[k])||typeof obj[k]==="object"||typeof obj[k]==="string"));
+ if(!hasO){
   const letters=["a","b","c","d","e","A","B","C","D","E"];
-  const count=letters.filter(l=>obj[l]!==undefined).length;
-  if(count<2) return false;
+  const c=letters.filter(l=>obj[l]!==undefined).length;
+  if(c<2) return false;
  }
-
  return true;
 }
 
-// Busca questões em QUALQUER nível do JSON
 function deepFindQuestions(data,depth=0){
- if(depth>6) return [];
- if(!data) return [];
-
- // Array?
+ if(depth>6||!data) return [];
  if(Array.isArray(data)){
-  // O array em si contém questões?
-  if(data.length>0 && data.every(item=>looksLikeQuestion(item))){
-   return data;
-  }
-  // Ou contém sub-arrays/objetos com questões?
+  if(data.length>0 && data.every(item=>looksLikeQuestion(item))) return data;
   let found=[];
-  for(const item of data){
-   found.push(...deepFindQuestions(item,depth+1));
-  }
+  for(const item of data) found.push(...deepFindQuestions(item,depth+1));
   return found;
  }
-
- // Objeto?
  if(typeof data==="object"){
-  // Se o objeto em si já é uma questão, retorna
   if(looksLikeQuestion(data)) return [data];
-
-  // Senão, busca por chaves conhecidas
-  const keys=["questoes","questions","perguntas","dados","data",
-              "items","banco","bank","lista","list","conteudo",
-              "content","exercicios","exercises","problemas","problems"];
+  const keys=["questoes","questions","perguntas","dados","data","items","banco","bank","lista","list","conteudo","content","exercicios","exercises","problemas","problems"];
   for(const key of keys){
    if(data[key]){
     const found=deepFindQuestions(data[key],depth+1);
     if(found.length>0) return found;
    }
   }
-
-  // Senão, busca em TODOS os valores do objeto
   let found=[];
-  for(const value of Object.values(data)){
-   found.push(...deepFindQuestions(value,depth+1));
-  }
+  for(const v of Object.values(data)) found.push(...deepFindQuestions(v,depth+1));
   return found;
  }
-
  return [];
 }
 
-// Normaliza uma questão em qualquer formato para o formato interno
-function normalizeQuestion(raw,fallbackSubject){
- fallbackSubject=fallbackSubject||"Geral";
+function normalizeQuestion(raw,fb){
+ fb=fb||"Geral";
  if(!raw||typeof raw!=="object") return null;
-
- // ── Texto da pergunta ──
- const questionKeys=[
-  "pergunta","enunciado","question","questao","texto","statement",
-  "title","text","descricao","wording","body"
- ];
+ const qKeys=["pergunta","enunciado","question","questao","texto","statement","title","text","descricao","wording","body"];
  let texto="";
- for(const k of questionKeys){
-  if(raw[k]&&typeof raw[k]==="string"&&raw[k].trim().length>=3){
-   texto=raw[k].trim();
-   break;
-  }
+ for(const k of qKeys){
+  if(raw[k]&&typeof raw[k]==="string"&&raw[k].trim().length>=3){ texto=raw[k].trim(); break; }
  }
  if(!texto) return null;
 
- // ── Alternativas ──
- const optionKeys=[
-  "alternativas","opcoes","options","choices","respostas","items",
-  "opcoes_resposta","alternatives","possibilidades","answers"
- ];
+ const oKeys=["alternativas","opcoes","options","choices","respostas","items","opcoes_resposta","alternatives","possibilidades","answers"];
  let optsRaw=null;
- for(const k of optionKeys){
-  if(raw[k]){ optsRaw=raw[k]; break; }
- }
+ for(const k of oKeys){ if(raw[k]){ optsRaw=raw[k]; break; } }
 
- let alternativas=[];
-
+ let alts=[];
  if(Array.isArray(optsRaw)){
-  alternativas=optsRaw.map(o=>{
+  alts=optsRaw.map(o=>{
    if(typeof o==="string") return o.trim();
    if(typeof o==="number") return String(o);
-   if(typeof o==="object"&&o!==null){
-    return String(o.texto??o.text??o.valor??o.value??o.label??o.opcao??o.option??o.resposta??"").trim();
-   }
+   if(typeof o==="object"&&o!==null) return String(o.texto??o.text??o.valor??o.value??o.label??"").trim();
    return "";
   }).filter(a=>a.length>0);
  }else if(typeof optsRaw==="string"){
-  // String única → separa por \n ou |
   let parts=optsRaw.split(/\n|\|/).map(s=>s.trim()).filter(Boolean);
-  if(parts.length<2){
-   parts=optsRaw.split(/(?=[A-Ea-e]\s*[\)\.\-\:])/).map(s=>s.trim()).filter(Boolean);
-  }
-  alternativas=parts;
+  if(parts.length<2) parts=optsRaw.split(/(?=[A-Ea-e]\s*[\)\.\-\:])/).map(s=>s.trim()).filter(Boolean);
+  alts=parts;
  }else if(optsRaw&&typeof optsRaw==="object"){
-  alternativas=Object.values(optsRaw).map(o=>{
+  alts=Object.values(optsRaw).map(o=>{
    if(typeof o==="string") return o.trim();
    if(typeof o==="number") return String(o);
    if(typeof o==="object"&&o!==null) return String(o.texto??o.text??o.valor??o.value??"").trim();
    return "";
   }).filter(a=>a.length>0);
  }
-
- // Se ainda nada, tenta chaves a, b, c, d, e soltas
- if(alternativas.length<2){
+ if(alts.length<2){
   const letters=["a","b","c","d","e","A","B","C","D","E"];
   const found=[];
-  for(const l of letters){
-   if(raw[l]!==undefined) found.push(String(raw[l]).trim());
-  }
-  if(found.length>=2) alternativas=found;
+  for(const l of letters) if(raw[l]!==undefined) found.push(String(raw[l]).trim());
+  if(found.length>=2) alts=found;
  }
+ if(alts.length<2) return null;
 
- if(alternativas.length<2) return null;
-
- // Remove prefixo A) B) C) se TODAS tiverem
- const prefixPattern=/^([A-Ea-e])\s*[\)\.\-\:]\s*/;
- const allHavePrefix=alternativas.every((a,i)=>{
-  const m=String(a).match(prefixPattern);
-  return m&&m[1].toUpperCase()==="ABCDE"[i];
- });
- if(allHavePrefix){
-  alternativas=alternativas.map(a=>a.replace(prefixPattern,"").trim());
+ const prefix=/^([A-Ea-e])\s*[\)\.\-\:]\s*/;
+ if(alts.every((a,i)=>{ const m=String(a).match(prefix); return m&&m[1].toUpperCase()==="ABCDE"[i]; })){
+  alts=alts.map(a=>a.replace(prefix,"").trim());
  }
+ if(alts.length<2) return null;
 
- if(alternativas.length<2) return null;
-
- // ── Correta ──
- const answerKeys=["correta","correct","gabarito","answer","resposta","right","answerIndex","resposta_correta"];
- let correctRaw=null;
- for(const k of answerKeys){
-  if(raw[k]!==undefined){ correctRaw=raw[k]; break; }
- }
+ const aKeys=["correta","correct","gabarito","answer","resposta","right","answerIndex"];
+ let cRaw=null;
+ for(const k of aKeys){ if(raw[k]!==undefined){ cRaw=raw[k]; break; } }
 
  let correct=-1;
-
- if(typeof correctRaw==="number"){
-  correct=correctRaw;
- }else if(typeof correctRaw==="string"){
-  const v=correctRaw.trim().toUpperCase();
-  if(/^[A-E]$/.test(v)){
-   correct=v.charCodeAt(0)-65;
-  }else if(/^\d+$/.test(v)){
-   correct=Number(v);
-  }else{
-   // Tenta encontrar alternativa que bate com o texto
-   const idx=alternativas.findIndex(a=>a.toLowerCase()===correctRaw.toLowerCase().trim());
+ if(typeof cRaw==="number") correct=cRaw;
+ else if(typeof cRaw==="string"){
+  const v=cRaw.trim().toUpperCase();
+  if(/^[A-E]$/.test(v)) correct=v.charCodeAt(0)-65;
+  else if(/^\d+$/.test(v)) correct=Number(v);
+  else {
+   const idx=alts.findIndex(a=>a.toLowerCase()===cRaw.toLowerCase().trim());
    if(idx>=0) correct=idx;
   }
  }
+ if(!Number.isInteger(correct)||correct<0||correct>=alts.length) return null;
 
- if(!Number.isInteger(correct)||correct<0||correct>=alternativas.length){
-  return null;
+ const sKeys=["disciplina","materia","subject","area","category","topic","assunto"];
+ let disc=fb;
+ for(const k of sKeys){
+  if(raw[k]&&typeof raw[k]==="string"&&raw[k].trim()){ disc=raw[k].trim(); break; }
  }
-
- // ── Metadados ──
- const subjectKeys=["disciplina","materia","subject","area","category","topic","assunto"];
- let disciplina=fallbackSubject;
- for(const k of subjectKeys){
-  if(raw[k]&&typeof raw[k]==="string"&&raw[k].trim()){
-   disciplina=raw[k].trim();
-   break;
-  }
- }
-
- const id=String(raw.id??raw.codigo??raw.code??`${disciplina}:${texto.slice(0,60)}`);
 
  return {
-  id,
-  disciplina,
-  assunto:String(raw.assunto??raw.topic??raw.subtopic??"Geral"),
-  dificuldade:String(raw.dificuldade??raw.difficulty??raw.level??"media"),
+  id:String(raw.id??raw.codigo??`${disc}:${texto.slice(0,60)}`),
+  disciplina:disc,
+  assunto:String(raw.assunto??raw.topic??"Geral"),
+  dificuldade:String(raw.dificuldade??raw.difficulty??"media"),
   enunciado:texto,
-  alternativas:alternativas.map(String),
+  alternativas:alts.map(String),
   correta:correct,
-  explicacao:String(raw.explicacao??raw.explanation??raw.comentario??raw.comment??raw.solucao??""),
-  referencia:String(raw.referencia??raw.reference??raw.fonte??raw.source??""),
-  banca:String(raw.banca??raw.board??""),
-  ano:raw.ano??raw.year??""
+  explicacao:String(raw.explicacao??raw.explanation??raw.comentario??""),
+  referencia:String(raw.referencia??raw.reference??"")
  };
 }
 
-// Analisa estrutura de um JSON para diagnóstico
 function analyzeStructure(data){
  if(data===null) return "null";
- if(data===undefined) return "undefined";
  if(Array.isArray(data)){
   if(data.length===0) return "array vazio";
-  const first=data[0];
-  if(typeof first==="object"&&first!==null){
-   const keys=Object.keys(first).slice(0,8).join(", ");
-   return `array de ${data.length} objeto(s) · chaves: [${keys}]`;
+  const f=data[0];
+  if(typeof f==="object"&&f!==null){
+   return `array de ${data.length} · chaves: [${Object.keys(f).slice(0,6).join(", ")}]`;
   }
   return `array de ${data.length} item(ns)`;
  }
  if(typeof data==="object"){
-  const keys=Object.keys(data).slice(0,8).join(", ");
-  return `objeto · chaves: [${keys}]`;
+  return `objeto · chaves: [${Object.keys(data).slice(0,8).join(", ")}]`;
  }
  return typeof data;
 }
 
 const QuestionManager={
- normalize(raw,fb){ return normalizeQuestion(raw,fb); },
-
  deduplicate(list){
   const ids=new Set();
   return list.filter(q=>{
@@ -509,21 +390,20 @@ const QuestionManager={
    return true;
   });
  },
-
  find(id){ return questions.find(q=>q.id===id); }
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   4. ⭐ CONTENT REPOSITORY — tenta TODOS os arquivos
+   3. CARREGAMENTO DO BANCO
 ═══════════════════════════════════════════════════════════════════ */
 
-function fetchWithTimeout(url,options={},ms=10000){
- return new Promise((resolve,reject)=>{
-  const controller=new AbortController();
-  const timer=setTimeout(()=>{controller.abort();reject(Error("Timeout"));},ms);
-  fetch(url,{...options,signal:controller.signal})
-   .then(r=>{clearTimeout(timer);resolve(r);})
-   .catch(e=>{clearTimeout(timer);reject(e);});
+function fetchWithTimeout(url,opts={},ms=10000){
+ return new Promise((res,rej)=>{
+  const c=new AbortController();
+  const t=setTimeout(()=>{c.abort();rej(Error("Timeout"));},ms);
+  fetch(url,{...opts,signal:c.signal})
+   .then(r=>{clearTimeout(t);res(r);})
+   .catch(e=>{clearTimeout(t);rej(e);});
  });
 }
 
@@ -533,24 +413,16 @@ async function fetchJson(url){
  const text=await r.text();
  if(text.length>5000000) throw Error("JSON >5MB");
  if(!text.trim()) throw Error("Arquivo vazio");
- try{ return JSON.parse(text); }
- catch(e){ throw Error("JSON inválido: "+e.message); }
+ try{ return JSON.parse(text); }catch(e){ throw Error("JSON inválido"); }
 }
 
 const ContentRepository={
- _lastDebug:{steps:[],errors:[],urlTried:[],filesFound:[],
-  filesLoaded:[],filesInfo:[],questionsLoaded:0,questionsRejected:0},
+ _lastDebug:{steps:[],errors:[],filesInfo:[],filesLoaded:[]},
 
  async load(){
   if(loadBusy) return;
   loadBusy=true;
-
-  const debug={
-   steps:[],errors:[],urlTried:[],filesFound:[],
-   filesLoaded:[],filesInfo:[],
-   questionsLoaded:0,questionsRejected:0
-  };
-
+  const debug={steps:[],errors:[],filesInfo:[],filesLoaded:[],urlTried:[],filesFound:[]};
   function step(m){ debug.steps.push(m); status(m); console.log("[REPO]",m); }
   function err(m){ debug.errors.push(m); console.warn("[REPO-ERR]",m); }
 
@@ -558,202 +430,115 @@ const ContentRepository={
    step("Iniciando busca do banco...");
    let loaded=[];
 
-   // ── ESTRATÉGIA 0: URL direta ──
    if(APP.directJsonUrl){
-    step("Tentando URL direta configurada...");
+    step("Testando URL direta...");
     try{
      const json=await fetchJson(APP.directJsonUrl);
-     const estrutura=analyzeStructure(json);
-     step(`URL direta · estrutura: ${estrutura}`);
-
+     const est=analyzeStructure(json);
      const items=deepFindQuestions(json);
-     step(`URL direta: ${items.length} candidato(s)`);
-
      let ok=0,rej=0;
      for(const item of items){
       const q=normalizeQuestion(item);
-      if(q){ loaded.push(q); ok++; }
-      else rej++;
+      if(q){ loaded.push(q); ok++; } else rej++;
      }
-     debug.questionsRejected+=rej;
-     debug.urlTried.push(APP.directJsonUrl);
+     debug.filesInfo.push({name:"URL direta",structure:est,candidates:items.length,valid:ok,rejected:rej});
      debug.filesLoaded.push(APP.directJsonUrl);
-     debug.filesInfo.push({
-      name:"URL direta",
-      structure:estrutura,
-      candidates:items.length,
-      valid:ok,
-      rejected:rej
-     });
-     step(`URL direta: ${ok} válidas, ${rej} rejeitadas`);
+     step(`URL direta: ${ok} válidas · ${est}`);
     }catch(e){ err("URL direta: "+e.message); }
    }
 
-   // ── ESTRATÉGIA 1: API GitHub contents ──
    if(!loaded.length){
     for(const branch of APP.branches){
-     step(`Consultando API GitHub (${APP.repo} / ${branch})...`);
+     step(`API GitHub (${APP.repo} / ${branch})...`);
      try{
       const url=`https://api.github.com/repos/${APP.repo}/contents/?ref=${branch}`;
-      debug.urlTried.push(url);
-      const r=await fetchWithTimeout(url,{
-       headers:{Accept:"application/vnd.github+json"}
-      },10000);
-
+      const r=await fetchWithTimeout(url,{headers:{Accept:"application/vnd.github+json"}},10000);
       if(!r.ok){
-       if(r.status===404) err(`Branch ${branch}: repositório ou branch inexistente`);
-       else if(r.status===403) err(`Branch ${branch}: rate limit da API GitHub`);
-       else err(`Branch ${branch}: HTTP ${r.status}`);
+       if(r.status===404) err(`${branch}: repositório/branch inexistente`);
+       else if(r.status===403) err(`${branch}: rate limit API GitHub`);
+       else err(`${branch}: HTTP ${r.status}`);
        continue;
       }
+      const list=await r.json();
+      if(!Array.isArray(list)){ err("API não retornou lista"); continue; }
 
-      const listing=await r.json();
-      if(!Array.isArray(listing)){ err("API não retornou lista"); continue; }
-
-      const jsonFiles=listing.filter(f=>
-       f.type==="file" &&
-       f.name.toLowerCase().endsWith(".json") &&
-       !f.name.startsWith(".") &&
-       f.name!=="manifest.json" &&
-       f.name!=="package.json" &&
-       f.name!=="package-lock.json"
+      const jsonFiles=list.filter(f=>
+       f.type==="file"&&f.name.toLowerCase().endsWith(".json")&&
+       !f.name.startsWith(".")&&f.name!=="manifest.json"&&
+       f.name!=="package.json"&&f.name!=="package-lock.json"
       );
-
       debug.filesFound.push(...jsonFiles.map(f=>f.name));
-      step(`${jsonFiles.length} arquivo(s) .json em ${branch}: ${jsonFiles.map(f=>f.name).join(", ")}`);
+      step(`${jsonFiles.length} .json em ${branch}: ${jsonFiles.map(f=>f.name).join(", ")}`);
 
-      // ⭐ Tenta TODOS os arquivos, não para no primeiro
       for(const file of jsonFiles){
-       step(`Baixando ${file.name}...`);
        try{
         const json=await fetchJson(file.download_url);
-        const estrutura=analyzeStructure(json);
-        step(`${file.name} · ${estrutura}`);
-
+        const est=analyzeStructure(json);
         const items=deepFindQuestions(json);
         let ok=0,rej=0;
         for(const item of items){
          const q=normalizeQuestion(item);
-         if(q){ loaded.push(q); ok++; }
-         else rej++;
+         if(q){ loaded.push(q); ok++; } else rej++;
         }
-        debug.questionsRejected+=rej;
-        debug.filesInfo.push({
-         name:file.name,branch,structure:estrutura,
-         candidates:items.length,valid:ok,rejected:rej
-        });
-
+        debug.filesInfo.push({name:file.name,branch,structure:est,candidates:items.length,valid:ok,rejected:rej});
         if(ok>0){
          debug.filesLoaded.push(file.name);
-         step(`✓ ${file.name}: ${ok} válidas, ${rej} rejeitadas`);
-        }else{
-         step(`✗ ${file.name}: 0 válidas (${items.length} candidatos, ${rej} rejeitados)`);
+         step(`✓ ${file.name}: ${ok} válidas`);
+        } else {
+         step(`✗ ${file.name}: ${items.length} candidatos · 0 válidas`);
         }
-       }catch(e){
-        err(`${file.name}: ${e.message}`);
-        debug.filesInfo.push({
-         name:file.name,branch,error:e.message
-        });
-       }
+       }catch(e){ err(`${file.name}: ${e.message}`); }
       }
-
       if(loaded.length) break;
      }catch(e){ err(`API (${branch}): ${e.message}`); }
     }
    }
 
-   // ── ESTRATÉGIA 2: raw com nomes comuns ──
    if(!loaded.length){
-    const names=[
-     "json.json","questoes.json","questions.json","banco.json",
-     "pmsc.json","concurso.json","dados.json","data.json","questoes-pmsc.json"
-    ];
+    const names=["json.json","questoes.json","questions.json","banco.json","pmsc.json"];
     for(const branch of APP.branches){
      if(loaded.length) break;
-     step(`Testando nomes comuns em ${branch}...`);
+     step(`Nomes comuns em ${branch}...`);
      for(const name of names){
       const url=`https://raw.githubusercontent.com/${APP.repo}/${branch}/${name}`;
-      debug.urlTried.push(url);
       try{
        const json=await fetchJson(url);
-       const estrutura=analyzeStructure(json);
+       const est=analyzeStructure(json);
        const items=deepFindQuestions(json);
-       let ok=0,rej=0;
+       let ok=0;
        for(const item of items){
         const q=normalizeQuestion(item);
         if(q){ loaded.push(q); ok++; }
-        else rej++;
        }
        if(ok>0){
+        debug.filesInfo.push({name,branch,structure:est,candidates:items.length,valid:ok,rejected:0});
         debug.filesLoaded.push(name);
-        debug.filesInfo.push({
-         name,branch,structure:estrutura,
-         candidates:items.length,valid:ok,rejected:rej
-        });
-        debug.questionsRejected+=rej;
-        step(`✓ ${name}: ${ok} válidas (${estrutura})`);
+        step(`✓ ${name}: ${ok} válidas · ${est}`);
         break;
        }
-      }catch(e){/*silencioso*/}
+      }catch(e){}
      }
     }
    }
 
-   // ── ESTRATÉGIA 3: manifest ──
-   if(!loaded.length){
-    for(const branch of APP.branches){
-     if(loaded.length) break;
-     const url=`https://raw.githubusercontent.com/${APP.repo}/${branch}/manifest.json`;
-     debug.urlTried.push(url);
-     step(`Testando manifest.json em ${branch}...`);
-     try{
-      const manifest=await fetchJson(url);
-      const names=Array.isArray(manifest)?manifest:manifest.files||[];
-      step(`manifest: ${names.length} arquivo(s)`);
-      for(const name of names){
-       if(typeof name!=="string"||!/^[\w.-]+\.json$/i.test(name)) continue;
-       const fileUrl=`https://raw.githubusercontent.com/${APP.repo}/${branch}/${name}`;
-       debug.urlTried.push(fileUrl);
-       try{
-        const json=await fetchJson(fileUrl);
-        const items=deepFindQuestions(json);
-        let ok=0;
-        for(const item of items){
-         const q=normalizeQuestion(item);
-         if(q){ loaded.push(q); ok++; }
-        }
-        if(ok>0){
-         debug.filesLoaded.push(name);
-         step(`${name}: ${ok} válidas`);
-        }
-       }catch(e){ err(`${name}: ${e.message}`); }
-      }
-     }catch(e){/*silencioso*/}
-    }
-   }
-
-   // ── ESTRATÉGIA 4: cache local ──
    if(!loaded.length){
     step("Tentando cache local...");
     try{
      const cached=JSON.parse(localStorage.getItem(APP.storageKey+"_BANK")||"[]");
-     if(cached.length){
-      loaded=cached;
-      step(`Cache: ${cached.length} questões recuperadas`);
-     }
-    }catch(e){ err("Cache: "+e.message); }
+     if(cached.length){ loaded=cached; step(`Cache: ${cached.length}`); }
+    }catch(e){}
    }
 
    loaded=QuestionManager.deduplicate(loaded);
-   debug.questionsLoaded=loaded.length;
    this._lastDebug=debug;
 
    if(loaded.length){
     questions=loaded;
     try{ localStorage.setItem(APP.storageKey+"_BANK",JSON.stringify(questions)); }catch{}
     status(`✅ ${loaded.length} questões carregadas · ${debug.filesLoaded.length} arquivo(s)`);
+    if(vrManager && vrManager.isActive()) vrManager.showHome();
    }else{
-    status("❌ Nenhuma questão carregada. Veja o diagnóstico abaixo.");
+    status("❌ 0 questões. Veja Banco de Questões.");
    }
 
    if(page==="Estudos") studyPool=[];
@@ -767,46 +552,40 @@ const ContentRepository={
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   5. ESTATÍSTICAS
+   4. STATS / REVIEW / SM-2
 ═══════════════════════════════════════════════════════════════════ */
 
 const StatisticsManager={
  summary(){
-  const history=state.history;
-  const correct=history.filter(x=>x.correct).length;
+  const h=state.history;
+  const c=h.filter(x=>x.correct).length;
   return {
-   total:history.length,
-   correct,
-   wrong:history.length-correct,
-   rate:history.length?Math.round(correct/history.length*100):0,
+   total:h.length,correct:c,wrong:h.length-c,
+   rate:h.length?Math.round(c/h.length*100):0,
    exams:state.exams.length,
    pending:Object.values(state.reviews).filter(x=>x.due<=now()).length
   };
  },
  bySubject(){
-  const data={};
-  for(const item of state.history){
-   const key=item.disciplina||"Geral";
-   if(!data[key]) data[key]={total:0,correct:0};
-   data[key].total++;
-   if(item.correct) data[key].correct++;
+  const d={};
+  for(const i of state.history){
+   const k=i.disciplina||"Geral";
+   if(!d[k]) d[k]={total:0,correct:0};
+   d[k].total++;
+   if(i.correct) d[k].correct++;
   }
-  return data;
+  return d;
  },
- record(question,choice,mode){
+ record(q,choice,mode){
   state.history.push({
-   id:question.id,disciplina:question.disciplina,assunto:question.assunto,
-   choice,correct:choice===question.correta,mode,date:now()
+   id:q.id,disciplina:q.disciplina,assunto:q.assunto,
+   choice,correct:choice===q.correta,mode,date:now()
   });
   if(state.history.length>10000) state.history=state.history.slice(-10000);
-  if(choice!==question.correta) ReviewManager.mark(question.id);
+  if(choice!==q.correta) ReviewManager.mark(q.id);
   save();
  }
 };
-
-/* ═══════════════════════════════════════════════════════════════════
-   6. REVISÃO / SM-2
-═══════════════════════════════════════════════════════════════════ */
 
 const ReviewManager={
  mark(id){ state.reviews[id]={due:now(),interval:1,repetitions:0,ease:2.5}; save(); },
@@ -817,31 +596,30 @@ const ReviewManager={
 
 const SpacedRepetition={
  grade(id,quality){
-  const old=state.reviews[id]||{interval:1,repetitions:0,ease:2.5};
-  let repetitions=old.repetitions,interval=old.interval,ease=old.ease;
-  if(quality<3){ repetitions=0; interval=1; }
-  else{
-   repetitions++;
-   if(repetitions===1) interval=1;
-   else if(repetitions===2) interval=6;
-   else interval=Math.max(1,Math.round(interval*ease));
+  const o=state.reviews[id]||{interval:1,repetitions:0,ease:2.5};
+  let r=o.repetitions,i=o.interval,e=o.ease;
+  if(quality<3){ r=0; i=1; } else {
+   r++;
+   if(r===1) i=1;
+   else if(r===2) i=6;
+   else i=Math.max(1,Math.round(i*e));
   }
-  ease=Math.max(1.3,ease+(.1-(5-quality)*(.08+(5-quality)*.02)));
-  state.reviews[id]={repetitions,interval,ease,due:now()+interval*86400000};
+  e=Math.max(1.3,e+(.1-(5-quality)*(.08+(5-quality)*.02)));
+  state.reviews[id]={repetitions:r,interval:i,ease:e,due:now()+i*86400000};
   save();
  }
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   7. HELPERS DE UI
+   5. UI 2D (helpers + telas)
 ═══════════════════════════════════════════════════════════════════ */
 
-function element(tag,text,parent,className){
- const node=document.createElement(tag);
- if(text!==undefined&&text!==null) node.textContent=String(text);
- if(className) node.className=className;
- if(parent) parent.append(node);
- return node;
+function element(tag,text,parent,cls){
+ const n=document.createElement(tag);
+ if(text!==undefined&&text!==null) n.textContent=String(text);
+ if(cls) n.className=cls;
+ if(parent) parent.append(n);
+ return n;
 }
 function button(text,cb,parent){
  const n=element("button",text,parent);
@@ -849,56 +627,53 @@ function button(text,cb,parent){
  return n;
 }
 function clearContent(title){
- const root=$("content");
- root.replaceChildren();
- element("h2",title,root);
- return root;
+ const r=$("content"); r.replaceChildren();
+ element("h2",title,r);
+ return r;
 }
-function paragraph(text,parent){ return element("p",text,parent); }
-function sectionTitle(text,parent){ return element("h3",text,parent); }
+function paragraph(t,p){ return element("p",t,p); }
+function sectionTitle(t,p){ return element("h3",t,p); }
 function field(label,type,value,parent){
- const wrap=element("div",null,parent,"field");
- element("label",label,wrap);
- const input=element("input",null,wrap);
- input.type=type; input.value=value;
- return input;
+ const w=element("div",null,parent,"field");
+ element("label",label,w);
+ const i=element("input",null,w);
+ i.type=type; i.value=value;
+ return i;
 }
 function selectField(label,values,parent){
- const wrap=element("div",null,parent,"field");
- element("label",label,wrap);
- const select=element("select",null,wrap);
- for(const value of values){
+ const w=element("div",null,parent,"field");
+ element("label",label,w);
+ const s=element("select",null,w);
+ for(const v of values){
   const o=document.createElement("option");
-  o.value=value; o.textContent=value;
-  select.append(o);
+  o.value=v; o.textContent=v;
+  s.append(o);
  }
- return select;
+ return s;
 }
 function metric(label,value,parent){
- const card=element("div",null,parent,"metric");
- element("strong",value,card);
- element("span",label,card);
+ const c=element("div",null,parent,"metric");
+ element("strong",value,c);
+ element("span",label,c);
 }
 
 function renderSidebar(){
  const s=StatisticsManager.summary();
  $("sidebarMetrics").replaceChildren();
- const box=$("sidebarMetrics");
- sectionTitle("Seu desempenho",box);
- paragraph(`Questões: ${s.total}`,box);
- paragraph(`Acertos: ${s.correct}`,box);
- paragraph(`Erros: ${s.wrong}`,box);
- paragraph(`Aproveitamento: ${s.rate}%`,box);
- paragraph(`Revisões pendentes: ${s.pending}`,box);
+ const b=$("sidebarMetrics");
+ sectionTitle("Seu desempenho",b);
+ paragraph(`Questões: ${s.total}`,b);
+ paragraph(`Acertos: ${s.correct}`,b);
+ paragraph(`Erros: ${s.wrong}`,b);
+ paragraph(`Aproveitamento: ${s.rate}%`,b);
+ paragraph(`Revisões pendentes: ${s.pending}`,b);
 }
 
-function navigate(destination){
- if(destination!=="Simulados"&&examTimerId){
-  clearInterval(examTimerId); examTimerId=null;
- }
- page=destination;
+function navigate(dst){
+ if(dst!=="Simulados"&&examTimerId){ clearInterval(examTimerId); examTimerId=null; }
+ page=dst;
  document.querySelectorAll("#menu button").forEach(b=>{
-  b.classList.toggle("active",b.textContent===destination);
+  b.classList.toggle("active",b.textContent===dst);
  });
  render();
 }
@@ -917,51 +692,28 @@ function render(){
  }
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   8. TELAS
-═══════════════════════════════════════════════════════════════════ */
-
 function renderHome(){
  const root=clearContent("Central Inteligente de Estudos");
  const s=StatisticsManager.summary();
- const grid=element("div",null,root,"grid");
- metric("Questões respondidas",s.total,grid);
- metric("Aproveitamento",s.rate+"%",grid);
- metric("Simulados",s.exams,grid);
- metric("Revisões pendentes",s.pending,grid);
-
- sectionTitle("Próxima atividade recomendada",root);
- const subjects=StatisticsManager.bySubject();
- const ranking=Object.entries(subjects)
-  .filter(([,v])=>v.total>0)
-  .sort((a,b)=>a[1].correct/a[1].total-b[1].correct/b[1].total);
- if(ranking.length) paragraph("Disciplina para reforçar: "+ranking[0][0],root);
- else paragraph("Comece respondendo questões para gerar recomendações.",root);
-
+ const g=element("div",null,root,"grid");
+ metric("Respondidas",s.total,g);
+ metric("Aproveitamento",s.rate+"%",g);
+ metric("Simulados",s.exams,g);
+ metric("Revisões",s.pending,g);
  paragraph(`Banco disponível: ${questions.length} questões.`,root);
-
- const actions=element("div",null,root,"controls");
- button("Iniciar estudos",()=>navigate("Estudos"),actions);
- button("Revisar erros",()=>navigate("Revisões"),actions);
- button("Criar simulado",()=>navigate("Simulados"),actions);
-
- if(state.session?.id){
-  button("Continuar última questão",()=>{
-   studyPool=questions.filter(q=>q.id===state.session.id);
-   currentIndex=0;
-   navigate("Estudos");
-  },actions);
- }
+ const c=element("div",null,root,"controls");
+ button("Iniciar estudos",()=>navigate("Estudos"),c);
+ button("Revisar erros",()=>navigate("Revisões"),c);
+ button("Criar simulado",()=>navigate("Simulados"),c);
 }
 
-function getFilteredQuestions(subject,topic,difficulty,search){
+function getFiltered(subject,topic,difficulty,search){
  const term=(search||"").toLowerCase();
  return questions.filter(q=>
   (!subject||q.disciplina===subject)&&
   (!topic||q.assunto===topic)&&
   (!difficulty||q.dificuldade===difficulty)&&
-  (!term||[q.id,q.enunciado,q.assunto,q.disciplina,q.referencia]
-   .join(" ").toLowerCase().includes(term))
+  (!term||[q.id,q.enunciado,q.assunto,q.disciplina,q.referencia].join(" ").toLowerCase().includes(term))
  );
 }
 
@@ -969,59 +721,35 @@ function renderStudies(){
  const root=clearContent("Estudo de Questões");
  const subjects=["",...new Set(questions.map(q=>q.disciplina))];
  const topics=["",...new Set(questions.map(q=>q.assunto))];
- const subject=selectField("Disciplina",subjects,root);
- const topic=selectField("Assunto",topics,root);
- const difficulty=selectField("Dificuldade",["","facil","media","dificil"],root);
- const search=field("Pesquisar","search","",root);
-
+ const sub=selectField("Disciplina",subjects,root);
+ const top=selectField("Assunto",topics,root);
+ const dif=selectField("Dificuldade",["","facil","media","dificil"],root);
+ const sch=field("Pesquisar","search","",root);
  button("Aplicar filtros",()=>{
-  studyPool=getFilteredQuestions(subject.value,topic.value,difficulty.value,search.value);
-  currentIndex=0;
-  showStudyQuestion();
+  studyPool=getFiltered(sub.value,top.value,dif.value,sch.value);
+  currentIndex=0; showStudyQuestion();
  },root);
-
- const area=element("div",null,root);
- area.id="studyArea";
+ const area=element("div",null,root); area.id="studyArea";
  if(!studyPool.length) studyPool=[...questions];
  showStudyQuestion();
 }
 
 function showStudyQuestion(){
- const area=$("studyArea");
- if(!area) return;
+ const area=$("studyArea"); if(!area) return;
  area.replaceChildren();
- if(!studyPool.length){
-  paragraph("Nenhuma questão encontrada. Atualize o banco.",area);
-  return;
- }
+ if(!studyPool.length){ paragraph("Nenhuma questão. Atualize o banco.",area); return; }
  currentIndex=Math.max(0,Math.min(currentIndex,studyPool.length-1));
  const q=studyPool[currentIndex];
- state.session={id:q.id,index:currentIndex};
- save();
+ state.session={id:q.id}; save();
  renderQuestion(q,area,currentIndex+1,studyPool.length,"study");
-
- const controls=element("div",null,area,"controls");
- button("◀ Anterior",()=>{
-  currentIndex=Math.max(0,currentIndex-1);
-  showStudyQuestion();
- },controls);
- button("Próxima ▶",()=>{
-  currentIndex=Math.min(studyPool.length-1,currentIndex+1);
-  showStudyQuestion();
- },controls);
- button(state.favorites.includes(q.id)?"★ Remover favorito":"☆ Favoritar",()=>{
-  if(state.favorites.includes(q.id)){
-   state.favorites=state.favorites.filter(id=>id!==q.id);
-  }else{
-   state.favorites.push(q.id);
-  }
-  save();
-  showStudyQuestion();
- },controls);
- button("Marcar para revisão",()=>{
-  ReviewManager.mark(q.id);
-  status("Questão marcada para revisão.");
- },controls);
+ const c=element("div",null,area,"controls");
+ button("◀ Anterior",()=>{ currentIndex=Math.max(0,currentIndex-1); showStudyQuestion(); },c);
+ button("Próxima ▶",()=>{ currentIndex=Math.min(studyPool.length-1,currentIndex+1); showStudyQuestion(); },c);
+ button(state.favorites.includes(q.id)?"★ Remover":"☆ Favoritar",()=>{
+  if(state.favorites.includes(q.id)) state.favorites=state.favorites.filter(i=>i!==q.id);
+  else state.favorites.push(q.id);
+  save(); showStudyQuestion();
+ },c);
 }
 
 function renderQuestion(q,parent,number,total,mode,answers){
@@ -1029,135 +757,90 @@ function renderQuestion(q,parent,number,total,mode,answers){
  element("span",q.disciplina,meta,"badge");
  element("span",q.assunto,meta,"badge");
  element("span",q.dificuldade,meta,"badge");
-
  paragraph(`Questão ${number} de ${total}`,parent);
- const progress=element("progress",null,parent);
- progress.max=total; progress.value=number;
-
+ const p=element("progress",null,parent);
+ p.max=total; p.value=number;
  element("div",q.enunciado,parent,"question");
-
- const options=element("div",null,parent);
+ const opts=element("div",null,parent);
  const existing=mode==="exam"?answers[q.id]:undefined;
  let answered=false;
-
  q.alternativas.forEach((text,i)=>{
-  const option=button(
-   `${String.fromCharCode(65+i)}. ${text}`,
-   ()=>{
-    if(mode==="exam"){
-     answers[q.id]=i;
-     state.activeExam=exam;
-     save();
-     options.querySelectorAll("button").forEach((b,j)=>{
-      b.classList.toggle("selected",j===i);
-     });
-     return;
-    }
-    if(answered) return;
-    answered=true;
-    StatisticsManager.record(q,i,mode);
-    options.querySelectorAll("button").forEach((b,j)=>{
-     b.disabled=true;
-     if(j===q.correta) b.classList.add("correct");
-     if(j===i&&i!==q.correta) b.classList.add("wrong");
-    });
-    const exp=element("div",null,parent,"explanation");
-    paragraph(i===q.correta?"Resposta correta!":"Resposta incorreta.",exp);
-    paragraph("Gabarito: "+String.fromCharCode(65+q.correta),exp);
-    paragraph(q.explicacao||"Explicação não disponível.",exp);
-    if(q.referencia) paragraph("Referência: "+q.referencia,exp);
-    renderSidebar();
-   },
-   options
-  );
-  option.classList.add("option");
-  if(existing===i) option.classList.add("selected");
+  const o=button(`${String.fromCharCode(65+i)}. ${text}`,()=>{
+   if(mode==="exam"){
+    answers[q.id]=i; state.activeExam=exam; save();
+    opts.querySelectorAll("button").forEach((b,j)=>b.classList.toggle("selected",j===i));
+    return;
+   }
+   if(answered) return;
+   answered=true;
+   StatisticsManager.record(q,i,mode);
+   opts.querySelectorAll("button").forEach((b,j)=>{
+    b.disabled=true;
+    if(j===q.correta) b.classList.add("correct");
+    if(j===i&&i!==q.correta) b.classList.add("wrong");
+   });
+   const e=element("div",null,parent,"explanation");
+   paragraph(i===q.correta?"Resposta correta!":"Resposta incorreta.",e);
+   paragraph("Gabarito: "+String.fromCharCode(65+q.correta),e);
+   paragraph(q.explicacao||"Explicação não disponível.",e);
+   renderSidebar();
+  },opts);
+  o.classList.add("option");
+  if(existing===i) o.classList.add("selected");
  });
 }
 
 function renderExams(){
  const root=clearContent("Simulados");
  if(exam){ showExam(root); return; }
-
  const count=field("Quantidade de questões","number",20,root); count.min=1;
  const minutes=field("Tempo em minutos (0 = livre)","number",60,root); minutes.min=0;
  const subjects=["",...new Set(questions.map(q=>q.disciplina))];
- const subject=selectField("Disciplina",subjects,root);
-
+ const sub=selectField("Disciplina",subjects,root);
  button("Iniciar simulado",()=>{
-  const pool=questions.filter(q=>!subject.value||q.disciplina===subject.value);
-  if(!pool.length){ status("Nenhuma questão disponível."); return; }
-  const shuffled=[...pool];
-  for(let i=shuffled.length-1;i>0;i--){
-   const j=Math.floor(Math.random()*(i+1));
-   [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
-  }
-  const amount=Math.min(shuffled.length,Math.max(1,Number(count.value)||20));
-  exam={
-   id:uid(),
-   ids:shuffled.slice(0,amount).map(q=>q.id),
-   answers:{},index:0,start:now(),
-   duration:Math.max(0,Number(minutes.value)||0)*60000
-  };
-  state.activeExam=exam;
-  save(); render();
+  const pool=questions.filter(q=>!sub.value||q.disciplina===sub.value);
+  if(!pool.length){ status("Nenhuma questão."); return; }
+  const sh=[...pool];
+  for(let i=sh.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
+  const amt=Math.min(sh.length,Math.max(1,Number(count.value)||20));
+  exam={id:"e"+Date.now(),ids:sh.slice(0,amt).map(q=>q.id),answers:{},index:0,start:now(),duration:Math.max(0,Number(minutes.value)||0)*60000};
+  state.activeExam=exam; save(); render();
  },root);
-
  if(state.activeExam){
-  button("Retomar simulado salvo",()=>{
-   exam=state.activeExam;
-   render();
-  },root);
+  button("Retomar simulado",()=>{ exam=state.activeExam; render(); },root);
  }
 }
 
 function showExam(root){
  if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
  const pool=exam.ids.map(id=>QuestionManager.find(id)).filter(Boolean);
-
  if(!pool.length){
   paragraph("Questões indisponíveis.",root);
-  button("Encerrar",()=>{
-   exam=null; state.activeExam=null; save(); render();
-  },root);
+  button("Encerrar",()=>{ exam=null; state.activeExam=null; save(); render(); },root);
   return;
- }
- if(pool.length!==exam.ids.length){
-  exam.ids=pool.map(q=>q.id); state.activeExam=exam; save();
  }
  exam.index=Math.max(0,Math.min(exam.index,pool.length-1));
  const q=pool[exam.index];
-
  const timer=element("p","",root);
- function updateTimer(){
+ function upd(){
   if(!exam||!timer.isConnected) return;
-  if(!exam.duration){ timer.textContent="Simulado sem limite."; return; }
+  if(!exam.duration){ timer.textContent="Sem limite."; return; }
   const r=Math.max(0,exam.duration-(now()-exam.start));
   const s=Math.ceil(r/1000);
   timer.textContent="Tempo: "+Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
   if(r<=0) finishExam();
  }
- updateTimer();
+ upd();
  if(exam.duration){
   examTimerId=setInterval(()=>{
-   if(!timer.isConnected||!exam){
-    clearInterval(examTimerId); examTimerId=null; return;
-   }
-   updateTimer();
+   if(!timer.isConnected||!exam){ clearInterval(examTimerId); examTimerId=null; return; }
+   upd();
   },1000);
  }
-
  renderQuestion(q,root,exam.index+1,pool.length,"exam",exam.answers);
-
- const controls=element("div",null,root,"controls");
- button("◀ Anterior",()=>{
-  exam.index=Math.max(0,exam.index-1);
-  state.activeExam=exam; save(); render();
- },controls);
- button("Próxima ▶",()=>{
-  exam.index=Math.min(pool.length-1,exam.index+1);
-  state.activeExam=exam; save(); render();
- },controls);
+ const c=element("div",null,root,"controls");
+ button("◀ Anterior",()=>{ exam.index=Math.max(0,exam.index-1); state.activeExam=exam; save(); render(); },c);
+ button("Próxima ▶",()=>{ exam.index=Math.min(pool.length-1,exam.index+1); state.activeExam=exam; save(); render(); },c);
  paragraph(`Respondidas: ${Object.keys(exam.answers).length}/${pool.length}`,root);
  button("Finalizar simulado",finishExam,root);
 }
@@ -1169,26 +852,16 @@ function finishExam(){
   if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
   const pool=exam.ids.map(id=>QuestionManager.find(id)).filter(Boolean);
   let correct=0,wrong=0,blank=0;
-  const bySubject={};
   for(const q of pool){
    const choice=exam.answers[q.id];
-   if(!bySubject[q.disciplina]) bySubject[q.disciplina]={total:0,correct:0};
-   bySubject[q.disciplina].total++;
    if(choice===undefined){ blank++; continue; }
-   if(choice===q.correta){
-    correct++; bySubject[q.disciplina].correct++;
-   }else{
-    wrong++;
-   }
+   if(choice===q.correta){ correct++; } else { wrong++; }
    StatisticsManager.record(q,choice,"Simulado");
   }
-  state.exams.push({
-   id:exam.id,date:now(),total:pool.length,
-   correct,wrong,blank,duration:now()-exam.start,bySubject
-  });
+  state.exams.push({id:exam.id,date:now(),total:pool.length,correct,wrong,blank,duration:now()-exam.start});
   exam=null; state.activeExam=null; save();
   page="Desempenho"; render();
-  status(`Simulado: ${correct} acertos, ${wrong} erros, ${blank} em branco.`);
+  status(`Simulado: ${correct} ✓ · ${wrong} ✗ · ${blank} em branco`);
  }finally{
   finishingExam=false;
  }
@@ -1201,240 +874,127 @@ function renderFlashcards(){
  const q=questions[currentIndex];
  paragraph(`${currentIndex+1} de ${questions.length}`,root);
  const card=element("div","",root,"flashcard");
- function update(){
-  card.textContent=flashBack?q.alternativas[q.correta]+"\n\n"+q.explicacao:q.enunciado;
+ function upd(){ card.textContent=flashBack?q.alternativas[q.correta]+"\n\n"+q.explicacao:q.enunciado; }
+ upd();
+ card.onclick=()=>{ flashBack=!flashBack; upd(); };
+ const c=element("div",null,root,"controls");
+ button("Virar cartão",()=>{ flashBack=!flashBack; upd(); },c);
+ for(const [lbl,g] of [["Difícil",2],["Bom",4],["Fácil",5]]){
+  button(lbl,()=>{ SpacedRepetition.grade(q.id,g); currentIndex=(currentIndex+1)%questions.length; flashBack=false; render(); },c);
  }
- update();
- card.onclick=()=>{ flashBack=!flashBack; update(); };
-
- const controls=element("div",null,root,"controls");
- button("Virar cartão",()=>{ flashBack=!flashBack; update(); },controls);
- for(const [label,grade] of [["Difícil",2],["Bom",4],["Fácil",5]]){
-  button(label,()=>{
-   SpacedRepetition.grade(q.id,grade);
-   currentIndex=(currentIndex+1)%questions.length;
-   flashBack=false; render();
-  },controls);
- }
- button("◀ Anterior",()=>{
-  currentIndex=Math.max(0,currentIndex-1);
-  flashBack=false; render();
- },controls);
- button("Próximo ▶",()=>{
-  currentIndex=Math.min(questions.length-1,currentIndex+1);
-  flashBack=false; render();
- },controls);
 }
 
 function renderReviews(){
  const root=clearContent("Revisão Inteligente");
- const due=ReviewManager.due();
- const all=ReviewManager.all();
+ const due=ReviewManager.due(); const all=ReviewManager.all();
  paragraph(`Revisões pendentes: ${due.length}`,root);
  paragraph(`Questões marcadas: ${all.length}`,root);
-
- const controls=element("div",null,root,"controls");
- button("Revisar pendentes",()=>{
-  studyPool=due; currentIndex=0; navigate("Estudos");
- },controls);
- button("Revisar todas",()=>{
-  studyPool=all; currentIndex=0; navigate("Estudos");
- },controls);
+ const c=element("div",null,root,"controls");
+ button("Revisar pendentes",()=>{ studyPool=due; currentIndex=0; navigate("Estudos"); },c);
+ button("Revisar todas",()=>{ studyPool=all; currentIndex=0; navigate("Estudos"); },c);
  button("Caderno de erros",()=>{
   const ids=new Set(state.history.filter(x=>!x.correct).map(x=>x.id));
-  studyPool=questions.filter(q=>ids.has(q.id));
-  currentIndex=0; navigate("Estudos");
- },controls);
+  studyPool=questions.filter(q=>ids.has(q.id)); currentIndex=0; navigate("Estudos");
+ },c);
 }
 
 function renderStatistics(){
  const root=clearContent("Desempenho");
  const s=StatisticsManager.summary();
- const grid=element("div",null,root,"grid");
- metric("Respondidas",s.total,grid);
- metric("Acertos",s.correct,grid);
- metric("Erros",s.wrong,grid);
- metric("Aproveitamento",s.rate+"%",grid);
-
+ const g=element("div",null,root,"grid");
+ metric("Respondidas",s.total,g);
+ metric("Acertos",s.correct,g);
+ metric("Erros",s.wrong,g);
+ metric("Aproveitamento",s.rate+"%",g);
  sectionTitle("Por disciplina",root);
- const subjects=StatisticsManager.bySubject();
- for(const [name,data] of Object.entries(subjects)){
-  const rate=Math.round(data.correct/data.total*100);
-  paragraph(`${name}: ${rate}% (${data.correct}/${data.total})`,root);
-  const bar=element("div",null,root,"bar");
-  const fill=element("span",null,bar);
-  fill.style.width=rate+"%";
+ const subs=StatisticsManager.bySubject();
+ for(const [n,d] of Object.entries(subs)){
+  const r=Math.round(d.correct/d.total*100);
+  paragraph(`${n}: ${r}% (${d.correct}/${d.total})`,root);
+  const b=element("div",null,root,"bar");
+  const f=element("span",null,b); f.style.width=r+"%";
  }
-
- sectionTitle("Histórico de simulados",root);
+ sectionTitle("Simulados",root);
  for(const r of state.exams.slice(-10).reverse()){
   paragraph(`${new Date(r.date).toLocaleDateString("pt-BR")} — ${r.correct}/${r.total}`,root);
  }
-
- button("Exportar estatísticas JSON",()=>{
-  download("estatisticas-pmsc.json",
-   JSON.stringify({summary:s,subjects,exams:state.exams},null,2),
-   "application/json");
- },root);
- button("Exportar histórico CSV",()=>{
-  const rows=["id,disciplina,assunto,acerto,modo,data"];
-  for(const x of state.history){
-   rows.push([x.id,x.disciplina,x.assunto,x.correct,x.mode,
-    new Date(x.date).toISOString()].map(csv).join(","));
-  }
-  download("historico-pmsc.csv",rows.join("\n"),"text/csv");
- },root);
 }
 
 function renderBank(){
  const root=clearContent("Banco de Questões");
-
- sectionTitle("Configuração do repositório",root);
- const repoField=field("Repositório GitHub (owner/repo)","text",APP.repo,root);
+ sectionTitle("Repositório",root);
+ const rf=field("owner/repo","text",APP.repo,root);
  button("Aplicar e recarregar",()=>{
-  const v=repoField.value.trim();
-  if(!v||!v.includes("/")){ status("Use: usuario/repositorio"); return; }
-  APP.repo=v;
-  ContentRepository.load();
+  const v=rf.value.trim(); if(!v||!v.includes("/")){ status("Use: usuario/repo"); return; }
+  APP.repo=v; ContentRepository.load();
  },root);
-
- const urlField=field("URL direta do JSON (opcional)","text",APP.directJsonUrl||"",root);
+ const uf=field("URL direta do JSON (opcional)","text",APP.directJsonUrl,root);
  button("Testar URL direta",()=>{
-  const v=urlField.value.trim();
-  if(!v){ status("Cole a URL raw do JSON"); return; }
-  APP.directJsonUrl=v;
-  ContentRepository.load();
+  const v=uf.value.trim(); if(!v){ status("Cole a URL"); return; }
+  APP.directJsonUrl=v; ContentRepository.load();
  },root);
-
- sectionTitle("Status atual",root);
- paragraph(questions.length?`✅ ${questions.length} questões carregadas`:"❌ 0 questões carregadas",root);
-
+ sectionTitle("Status",root);
+ paragraph(questions.length?`✅ ${questions.length} questões`:"❌ 0 questões",root);
  const debug=ContentRepository.getDebug();
-
- // Mostra info de cada arquivo tentado
  if(debug.filesInfo&&debug.filesInfo.length){
   sectionTitle("Análise dos arquivos",root);
   for(const info of debug.filesInfo){
-   const box=element("div",null,root,"notice");
-   element("strong",info.name+(info.branch?` (${info.branch})`:""),box);
+   const b=element("div",null,root,"notice");
+   element("strong",info.name+(info.branch?` (${info.branch})`:""),b);
    if(info.error){
-    const p=element("div","⚠️ "+info.error,box);
-    p.style.cssText="color:var(--danger);font-size:.85rem;margin-top:6px";
-   }else{
+    const p=element("div","⚠️ "+info.error,b); p.style.color="var(--danger)";
+   } else {
     if(info.structure){
-     const p=element("div","📄 Estrutura: "+info.structure,box);
-     p.style.cssText="color:var(--muted);font-size:.85rem;margin-top:6px;font-family:monospace";
+     const p=element("div","📄 "+info.structure,b);
+     p.style.cssText="color:var(--muted);font-size:.85rem;font-family:monospace;margin-top:4px";
     }
     if(info.candidates!==undefined){
-     const p=element("div",
-      `🔍 ${info.candidates} candidato(s) · ${info.valid||0} válida(s) · ${info.rejected||0} rejeitada(s)`,box);
+     const p=element("div",`🔍 ${info.candidates} · ${info.valid||0} válidas · ${info.rejected||0} rejeitadas`,b);
      p.style.cssText="font-size:.85rem;margin-top:4px;color:"+(info.valid>0?"var(--accent)":"var(--muted)");
     }
    }
   }
  }
-
- // Diagnóstico completo
- if(debug.steps&&debug.steps.length){
-  sectionTitle("Diagnóstico da última tentativa",root);
-  const box=element("div",null,root,"notice");
-  paragraph("Etapas executadas:",box);
-  for(const s of debug.steps){
-   const p=element("div",s,box);
-   p.style.cssText="font-size:.85rem;padding:2px 0;color:var(--muted)";
-  }
-  if(debug.errors&&debug.errors.length){
-   paragraph("Erros encontrados:",box);
-   for(const e of debug.errors){
-    const p=element("div","⚠️ "+e,box);
-    p.style.cssText="font-size:.85rem;padding:2px 0;color:var(--danger)";
-   }
-  }
-  if(debug.urlTried&&debug.urlTried.length){
-   paragraph(`URLs tentadas: ${debug.urlTried.length}`,box);
-  }
- }
-
- // Instruções se vazio
  if(!questions.length){
   sectionTitle("Como resolver",root);
-  const help=element("div",null,root,"notice");
-  const steps=[
-   "1. Confirme que o repositório é PÚBLICO",
-   "2. Verifique o nome exato do arquivo .json na raiz",
-   "3. Teste a URL raw no navegador:",
-   `   https://raw.githubusercontent.com/${APP.repo}/main/SEU_ARQUIVO.json`,
-   "4. Cole a URL raw funcionando em 'URL direta' acima",
-   "5. Clique em 'Testar URL direta'"
-  ];
-  for(const s of steps) paragraph(s,help);
-
-  const testLink=`https://github.com/${APP.repo}`;
-  const link=element("a","🔗 Abrir repositório no GitHub",help);
-  link.href=testLink; link.target="_blank";
-  link.style.cssText="color:var(--accent);text-decoration:underline;display:block;margin-top:8px;font-size:.85rem";
+  const h=element("div",null,root,"notice");
+  paragraph("1. Confirme que o repositório é público",h);
+  paragraph("2. Verifique o nome exato do arquivo .json na raiz",h);
+  paragraph("3. Cole a URL raw funcionando em 'URL direta' acima",h);
+  const l=element("a","🔗 Abrir repositório",h);
+  l.href="https://github.com/"+APP.repo; l.target="_blank";
+  l.style.cssText="color:var(--accent);display:block;margin-top:8px";
  }
-
- if(questions.length){
-  sectionTitle("Disciplinas disponíveis",root);
-  const counts={};
-  for(const q of questions) counts[q.disciplina]=(counts[q.disciplina]||0)+1;
-  for(const [name,total] of Object.entries(counts)){
-   paragraph(`${name}: ${total} questões`,root);
-  }
- }
-
- button("🔄 Recarregar agora",()=>ContentRepository.load(),root);
+ button("🔄 Recarregar",()=>ContentRepository.load(),root);
 }
 
 function renderSettings(){
  const root=clearContent("Configurações");
-
- const font=field("Tamanho da fonte (px)","number",state.fontSize||16,root);
- font.min=14; font.max=30;
-
+ const f=field("Tamanho da fonte (px)","number",state.fontSize||16,root);
+ f.min=14; f.max=30;
  button("Aplicar tamanho",()=>{
-  const size=Math.max(14,Math.min(30,Number(font.value)||16));
-  state.fontSize=size; save();
-  document.documentElement.style.setProperty("--font",size+"px");
+  const s=Math.max(14,Math.min(30,Number(f.value)||16));
+  state.fontSize=s; save();
+  document.documentElement.style.setProperty("--font",s+"px");
  },root);
-
- button("Ativar/desativar modo foco",()=>{
-  document.body.classList.toggle("focus");
- },root);
-
- button("Exportar backup completo",()=>StorageManager.export(),root);
-
- const upload=element("input",null,root);
- upload.type="file"; upload.accept=".json";
- upload.onchange=async()=>{
-  try{
-   await StorageManager.restore(upload.files[0]);
-   status("Backup restaurado.");
-  }catch(e){
-   status("Erro: "+e.message);
-  }
- };
+ button("Modo foco",()=>document.body.classList.toggle("focus"),root);
+ button("Exportar backup",()=>StorageManager.export(),root);
+ const up=element("input",null,root);
+ up.type="file"; up.accept=".json";
+ up.onchange=async()=>{ try{ await StorageManager.restore(up.files[0]); status("Restaurado."); }catch(e){ status("Erro: "+e.message); } };
 }
-
-/* ═══════════════════════════════════════════════════════════════════
-   9. DOWNLOAD
-═══════════════════════════════════════════════════════════════════ */
-
-function csv(v){ return '"'+String(v??"").replace(/"/g,'""')+'"'; }
 
 function download(name,content,type){
- const blob=new Blob([content],{type});
- const url=URL.createObjectURL(blob);
+ const b=new Blob([content],{type});
+ const u=URL.createObjectURL(b);
  const a=document.createElement("a");
- a.href=url; a.download=name;
- document.body.append(a);
- a.click(); a.remove();
- setTimeout(()=>URL.revokeObjectURL(url),1000);
+ a.href=u; a.download=name;
+ document.body.append(a); a.click(); a.remove();
+ setTimeout(()=>URL.revokeObjectURL(u),1000);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   10. MOTOR 3D (inalterado)
+   6. ⭐ MOTOR VR — Painéis 3D interativos
 ═══════════════════════════════════════════════════════════════════ */
 
 let scene,camera,renderer,rig,room;
@@ -1446,6 +1006,7 @@ function material(color){
  }
  return materials.get(color);
 }
+
 function cube(x,y,z,w,h,d,color){
  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(color));
  m.position.set(x,y,z); room.add(m); return m;
@@ -1459,9 +1020,6 @@ function brazilFlag(x,z){
  cube(x+.7,3.25,z,1.4,.9,.04,"#169b45");
  const d=cube(x+.7,3.25,z+.04,.75,.6,.025,"#ffdf00");
  d.rotation.z=Math.PI/4;
- const s=new THREE.Mesh(new THREE.SphereGeometry(.25,16,12),material("#002776"));
- s.scale.z=.12; s.position.set(x+.7,3.25,z+.09);
- room.add(s);
 }
 function tree(x,z){
  cylinder(x,.9,z,.14,1.8,"#725333");
@@ -1471,10 +1029,9 @@ function tree(x,z){
 function bed(x,z){
  cube(x,.45,z,1.6,.18,2.2,"#667e77");
  cube(x,1.45,z,1.6,.18,2.2,"#667e77");
- for(const dx of [-.7,.7]) for(const dz of [-1,1]){
-  cube(x+dx,1,z+dz,.09,2,.09,"#a3aaa7");
- }
+ for(const dx of [-.7,.7]) for(const dz of [-1,1]) cube(x+dx,1,z+dz,.09,2,.09,"#a3aaa7");
 }
+
 function disposeRoom(){
  if(!room) return;
  scene.remove(room);
@@ -1488,58 +1045,532 @@ function changeEnvironment(index){
  if(!scene||!renderer) return;
  disposeRoom();
  room=new THREE.Group(); scene.add(room);
- scene.background=new THREE.Color(index===3?"#8bb9d3":"#7e9da9");
- cube(0,-.12,0,30,.24,30,index===3?"#607b47":"#7a8177");
- if(index!==3) cube(0,3,-11,26,6,.35,"#a5aaa1");
+ scene.background=new THREE.Color(index===3?"#8bb9d3":"#0a1e15");
+ cube(0,-.12,0,30,.24,30,index===3?"#607b47":"#0e2419");
  if(index===0){
-  cube(0,2,-10.5,10,4,.5,"#586d61");
-  for(let x=-4;x<=4;x+=2) cube(x,.015,-2,.1,.03,6,"#e2dfca");
+  cube(0,2,-10.5,10,4,.5,"#1a4030");
+  for(let x=-4;x<=4;x+=2) cube(x,.015,-2,.1,.03,6,"#3a5a4a");
   brazilFlag(-7,-9); brazilFlag(7,-9);
-  for(let x=-9;x<=9;x+=3) cylinder(x,.7,-7,.2,1.4,"#788b7c");
  }
  if(index===1){
-  cube(0,2.5,-10.7,7,2.5,.08,"#1e4c37");
+  cube(0,2.5,-10.7,7,2.5,.08,"#0e3024");
   for(let x=-4;x<=4;x+=2) for(let z=-5;z<=2;z+=2){
-   cube(x,.75,z,1.4,.15,.8,"#765a3e");
-   cube(x,.38,z,.1,.7,.1,"#596b65");
+   cube(x,.75,z,1.4,.15,.8,"#3a2a1a");
   }
   brazilFlag(-8,-9);
  }
  if(index===2){
-  cube(-5,1.6,-7,3,3.2,3,"#c4b9a4");
-  cube(-5,3.35,-7,3.7,.3,3.7,"#596a5e");
-  for(let x=-2;x<=7;x+=.8) cube(x,1.4,-8,.09,2.8,.09,"#43574e");
+  cube(-5,1.6,-7,3,3.2,3,"#3a3030");
+  for(let x=-2;x<=7;x+=.8) cube(x,1.4,-8,.09,2.8,.09,"#1a2a20");
   brazilFlag(8,-7);
  }
  if(index===3){
-  for(let x=-8;x<=8;x+=4){ cube(x,.55,-5,2,1.1,1,"#9a8057"); tree(x+1.8,-9); }
-  for(let z=-2;z<=5;z+=2) cube(-5,.15,z,3,.3,.18,"#92734d");
+  for(let x=-8;x<=8;x+=4){ cube(x,.55,-5,2,1.1,1,"#5a4a30"); tree(x+1.8,-9); }
   brazilFlag(7,-8);
  }
  if(index===4){
   for(let x=-6;x<=6;x+=3){ bed(x,-5); bed(x,1); }
-  cube(0,2.5,-10.7,4,1.5,.1,"#345849");
   brazilFlag(8,-9);
  }
  renderer.render(scene,camera);
 }
 
+/* ── Classe VRPanel ── */
+
+class VRPanel {
+ constructor(width,height,position,rotationY=0){
+  this.group=new THREE.Group();
+  this.group.position.copy(position);
+  this.group.rotation.y=rotationY;
+  this.width=width; this.height=height;
+  this.clickables=[];
+
+  const cv=document.createElement('canvas');
+  cv.width=2048;
+  cv.height=Math.round(2048*height/width);
+  const ctx=cv.getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,0,cv.height);
+  grad.addColorStop(0,'#0e2519');
+  grad.addColorStop(1,'#071711');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.strokeStyle='#54e5a0';
+  ctx.lineWidth=10;
+  ctx.strokeRect(5,5,cv.width-10,cv.height-10);
+
+  const tex=new THREE.CanvasTexture(cv);
+  tex.colorSpace=THREE.SRGBColorSpace;
+  tex.minFilter=THREE.LinearFilter;
+  tex.magFilter=THREE.LinearFilter;
+
+  const bgMesh=new THREE.Mesh(
+   new THREE.PlaneGeometry(width,height),
+   new THREE.MeshBasicMaterial({map:tex})
+  );
+  this.group.add(bgMesh);
+  this.bgTexture=tex;
+ }
+
+ addButton(x,y,w,h,text,onClick,opts={}){
+  const cw=Math.round(w*350);
+  const ch=Math.round(h*350);
+  const cv=document.createElement('canvas');
+  cv.width=cw; cv.height=ch;
+  const ctx=cv.getContext('2d');
+
+  const bg=opts.bgColor||'#19362a';
+  const bd=opts.borderColor||'#54e5a0';
+  const tx=opts.textColor||'#f1f8f3';
+
+  ctx.fillStyle=bg;
+  ctx.fillRect(0,0,cw,ch);
+  ctx.strokeStyle=bd;
+  ctx.lineWidth=6;
+  ctx.strokeRect(3,3,cw-6,ch-6);
+
+  ctx.fillStyle=tx;
+  const fs=opts.fontSize||Math.min(ch*0.42,cw*0.16);
+  ctx.font=`bold ${fs}px system-ui, Arial`;
+  ctx.textAlign=opts.align==='left'?'left':'center';
+  ctx.textBaseline='middle';
+
+  const maxW=cw-20;
+  const words=String(text).split(/\s+/);
+  const lines=[]; let ln='';
+  for(const wd of words){
+   const t=ln?ln+' '+wd:wd;
+   if(ctx.measureText(t).width>maxW&&ln){ lines.push(ln); ln=wd; }
+   else ln=t;
+  }
+  if(ln) lines.push(ln);
+
+  const lh=fs*1.2;
+  const startY=ch/2-((lines.length-1)*lh)/2;
+  const startX=opts.align==='left'?10:cw/2;
+
+  lines.forEach((l,i)=>ctx.fillText(l,startX,startY+i*lh));
+
+  const tex=new THREE.CanvasTexture(cv);
+  tex.colorSpace=THREE.SRGBColorSpace;
+  tex.minFilter=THREE.LinearFilter;
+  tex.magFilter=THREE.LinearFilter;
+
+  const mesh=new THREE.Mesh(
+   new THREE.PlaneGeometry(w,h),
+   new THREE.MeshBasicMaterial({map:tex,transparent:true})
+  );
+  mesh.position.set(x,y,0.01);
+  mesh.userData.onClick=onClick;
+  mesh.userData.isButton=true;
+  this.group.add(mesh);
+  this.clickables.push(mesh);
+
+  // Glow (hover)
+  const glow=new THREE.Mesh(
+   new THREE.PlaneGeometry(w+0.03,h+0.03),
+   new THREE.MeshBasicMaterial({color:0x54e5a0,transparent:true,opacity:0.6,side:THREE.DoubleSide})
+  );
+  glow.position.set(x,y,0.005);
+  glow.visible=false;
+  glow.userData.isGlow=true;
+  this.group.add(glow);
+  mesh.userData.glow=glow;
+
+  return mesh;
+ }
+
+ addText(x,y,w,h,text,opts={}){
+  const cw=Math.round(w*300);
+  const ch=Math.round(h*300);
+  const cv=document.createElement('canvas');
+  cv.width=cw; cv.height=ch;
+  const ctx=cv.getContext('2d');
+
+  const color=opts.color||'#f1f8f3';
+  const fs=opts.fontSize||42;
+  const bold=opts.bold!==false;
+  const align=opts.align||'left';
+
+  ctx.fillStyle=color;
+  ctx.font=`${bold?'bold ':''}${fs}px system-ui, Arial`;
+  ctx.textBaseline='top';
+
+  const maxW=cw-20;
+  const words=String(text).split(/\s+/);
+  const lines=[]; let ln='';
+  for(const wd of words){
+   const t=ln?ln+' '+wd:wd;
+   if(ctx.measureText(t).width>maxW&&ln){ lines.push(ln); ln=wd; }
+   else ln=t;
+  }
+  if(ln) lines.push(ln);
+
+  let tx=10;
+  if(align==='center'){ ctx.textAlign='center'; tx=cw/2; }
+  else if(align==='right'){ ctx.textAlign='right'; tx=cw-10; }
+  else { ctx.textAlign='left'; }
+
+  const lh=fs*1.3;
+  let ty=10;
+  for(const l of lines){ ctx.fillText(l,tx,ty); ty+=lh; }
+
+  const tex=new THREE.CanvasTexture(cv);
+  tex.colorSpace=THREE.SRGBColorSpace;
+  tex.minFilter=THREE.LinearFilter;
+  tex.magFilter=THREE.LinearFilter;
+
+  const mesh=new THREE.Mesh(
+   new THREE.PlaneGeometry(w,h),
+   new THREE.MeshBasicMaterial({map:tex,transparent:true})
+  );
+  mesh.position.set(x,y,0.01);
+  this.group.add(mesh);
+  return mesh;
+ }
+
+ dispose(){
+  this.group.traverse(o=>{
+   if(o.geometry) o.geometry.dispose();
+   if(o.material){
+    if(o.material.map) o.material.map.dispose();
+    o.material.dispose();
+   }
+  });
+ }
+}
+
+/* ── Gerenciador da cena VR ── */
+
+const vrManager = {
+ panels: [],
+ current: null,
+ raycaster: new THREE.Raycaster(),
+ hoveredButton: null,
+ mode: 'home',
+ lastHoverTime: 0,
+
+ isActive(){ return renderer && renderer.xr.isPresenting; },
+
+ clear(){
+  for(const p of this.panels){
+   scene.remove(p.group);
+   p.dispose();
+  }
+  this.panels=[];
+  this.current=null;
+  this.hoveredButton=null;
+ },
+
+ createPanel(w,h,z=-1.8){
+  const panel=new VRPanel(w,h,new THREE.Vector3(0,1.6,z),0);
+  scene.add(panel.group);
+  this.panels.push(panel);
+  this.current=panel;
+  return panel;
+ },
+
+ showHome(){
+  this.clear();
+  this.mode='home';
+  const p=this.createPanel(2.4,1.6);
+  p.addText(0,0.62,2.0,0.2,'PMSC Academy 2026',{bold:true,fontSize:70,align:'center',color:'#54e5a0'});
+  const s=StatisticsManager.summary();
+  p.addText(0,0.42,2.0,0.1,`Questões: ${s.total} · Acertos: ${s.correct} · ${s.rate}%`,{fontSize:38,align:'center'});
+
+  const buttons=[
+   {l:'📚 Estudar',a:()=>this.showStudy()},
+   {l:'📝 Simulado',a:()=>this.showExamMenu()},
+   {l:'🃏 Flashcard',a:()=>this.showFlashcard()},
+   {l:'🔄 Revisar',a:()=>this.showReview()},
+   {l:'📊 Desempenho',a:()=>this.showStats()},
+   {l:'🔄 Atualizar',a:()=>{ ContentRepository.load(); setTimeout(()=>this.showHome(),1500); }},
+  ];
+  const cols=3;
+  buttons.forEach((btn,i)=>{
+   const r=Math.floor(i/cols), c=i%cols;
+   const x=(c-(cols-1)/2)*0.75;
+   const y=0.15-r*0.28;
+   p.addButton(x,y,0.7,0.22,btn.l,btn.a,{fontSize:55});
+  });
+
+  p.addButton(-0.6,-0.65,0.8,0.18,'❌ Sair do VR',()=>{
+   const s=renderer.xr.getSession(); if(s) s.end();
+  },{bgColor:'#4b2525',borderColor:'#ff7777',fontSize:42});
+  p.addButton(0.6,-0.65,0.8,0.18,'🏠 Desktop',()=>{
+   const s=renderer.xr.getSession(); if(s) s.end();
+  },{fontSize:42});
+ },
+
+ showStudy(){
+  this.clear();
+  this.mode='study';
+  if(!questions.length){ this.showHome(); return; }
+  const q=questions[currentIndex%questions.length];
+  const answered=state.session?.answeredId===q.id;
+  const chosen=state.session?.choice;
+
+  const p=this.createPanel(2.8,2.0);
+  p.addText(0,0.85,2.4,0.1,`${q.disciplina} · ${q.assunto}`,{fontSize:36,align:'center',color:'#54e5a0'});
+  p.addText(0,0.55,2.4,0.5,q.enunciado,{fontSize:44,align:'left'});
+
+  q.alternativas.forEach((alt,i)=>{
+   const y=0.05-i*0.19;
+   const text=`${String.fromCharCode(65+i)}. ${alt}`;
+   let bg='#19362a', bd='#365b49';
+   if(answered){
+    if(i===q.correta){ bg='#174c32'; bd='#6affaa'; }
+    else if(i===chosen){ bg='#4b2525'; bd='#ff7777'; }
+   }
+   p.addButton(0,y,2.4,0.16,text,()=>{
+    if(answered) return;
+    StatisticsManager.record(q,i,'study');
+    state.session={id:q.id,answeredId:q.id,choice:i};
+    save();
+    this.showStudy();
+   },{bgColor:bg,borderColor:bd,fontSize:44,align:'left'});
+  });
+
+  p.addButton(-0.9,-0.85,0.6,0.16,'◀ Anterior',()=>{
+   currentIndex=Math.max(0,currentIndex-1);
+   state.session={id:questions[currentIndex].id}; save();
+   this.showStudy();
+  },{fontSize:40});
+  p.addButton(0,-0.85,0.6,0.16,'🏠 Menu',()=>this.showHome(),{fontSize:40});
+  p.addButton(0.9,-0.85,0.6,0.16,'Próxima ▶',()=>{
+   currentIndex=Math.min(questions.length-1,currentIndex+1);
+   state.session={id:questions[currentIndex].id}; save();
+   this.showStudy();
+  },{fontSize:40});
+ },
+
+ showFlashcard(){
+  this.clear();
+  this.mode='flashcard';
+  if(!questions.length){ this.showHome(); return; }
+  const q=questions[currentIndex%questions.length];
+  const p=this.createPanel(2.6,2.0);
+
+  if(!flashBack){
+   p.addText(0,0.85,2.2,0.1,`${q.disciplina} · ${q.assunto}`,{fontSize:32,align:'center',color:'#54e5a0'});
+   p.addText(0,0.15,2.2,0.9,q.enunciado,{fontSize:46,align:'center'});
+   p.addButton(0,-0.7,1.2,0.2,'🔄 Virar cartão',()=>{ flashBack=true; this.showFlashcard(); },{fontSize:50});
+  } else {
+   p.addText(0,0.85,2.2,0.1,'RESPOSTA',{fontSize:32,align:'center',color:'#54e5a0'});
+   p.addText(0,0.45,2.2,0.3,q.alternativas[q.correta],{fontSize:55,align:'center',color:'#6affaa'});
+   p.addText(0,-0.1,2.2,0.5,q.explicacao||'Sem explicação',{fontSize:34,align:'center'});
+
+   const grades=[
+    {l:'Difícil',g:2,x:-0.7,bg:'#4b2525',bd:'#ff7777'},
+    {l:'Médio',g:4,x:0,bg:'#7a4a10',bd:'#ffaa00'},
+    {l:'Fácil',g:5,x:0.7,bg:'#174c32',bd:'#6affaa'},
+   ];
+   grades.forEach(gr=>{
+    p.addButton(gr.x,-0.75,0.6,0.18,gr.l,()=>{
+     SpacedRepetition.grade(q.id,gr.g);
+     currentIndex=(currentIndex+1)%questions.length;
+     flashBack=false;
+     this.showFlashcard();
+    },{bgColor:gr.bg,borderColor:gr.bd,fontSize:42});
+   });
+  }
+
+  p.addButton(-1.0,-0.75,0.5,0.16,'🏠 Menu',()=>this.showHome(),{fontSize:38});
+ },
+
+ showExamMenu(){
+  this.clear();
+  this.mode='exam-menu';
+  const p=this.createPanel(2.4,1.8);
+  p.addText(0,0.7,2.0,0.15,'📝 Simulado',{fontSize:60,align:'center',color:'#54e5a0'});
+  p.addText(0,0.45,2.0,0.2,'Escolha a quantidade:',{fontSize:32,align:'center'});
+  [10,20,40,60].forEach((n,i)=>{
+   p.addButton(-0.9+i*0.6,0.1,0.5,0.2,`${n}q`,()=>{
+    if(!questions.length){ this.showHome(); return; }
+    const sh=[...questions];
+    for(let j=sh.length-1;j>0;j--){ const k=Math.floor(Math.random()*(j+1)); [sh[j],sh[k]]=[sh[k],sh[j]]; }
+    exam={id:"e"+Date.now(),ids:sh.slice(0,Math.min(n,sh.length)).map(q=>q.id),answers:{},index:0,start:now(),duration:0};
+    state.activeExam=exam; save();
+    this.showExam();
+   },{fontSize:50});
+  });
+  if(state.activeExam){
+   p.addButton(0,-0.4,1.2,0.2,'▶ Retomar simulado',()=>{
+    exam=state.activeExam; this.showExam();
+   },{fontSize:44});
+  }
+  p.addButton(0,-0.75,0.8,0.16,'🏠 Menu',()=>this.showHome(),{fontSize:38});
+ },
+
+ showExam(){
+  this.clear();
+  this.mode='exam';
+  if(!exam){ this.showExamMenu(); return; }
+  const pool=exam.ids.map(id=>QuestionManager.find(id)).filter(Boolean);
+  if(!pool.length){ this.showExamMenu(); return; }
+  exam.index=Math.max(0,Math.min(exam.index,pool.length-1));
+  const q=pool[exam.index];
+
+  const p=this.createPanel(2.8,2.0);
+  p.addText(0,0.85,2.4,0.1,`Questão ${exam.index+1} de ${pool.length}`,{fontSize:34,align:'center',color:'#54e5a0'});
+  p.addText(0,0.55,2.4,0.5,q.enunciado,{fontSize:44,align:'left'});
+
+  q.alternativas.forEach((alt,i)=>{
+   const y=0.05-i*0.19;
+   const text=`${String.fromCharCode(65+i)}. ${alt}`;
+   const selected=exam.answers[q.id]===i;
+   p.addButton(0,y,2.4,0.16,text,()=>{
+    exam.answers[q.id]=i;
+    state.activeExam=exam; save();
+    this.showExam();
+   },{
+    bgColor:selected?'#174c32':'#19362a',
+    borderColor:selected?'#6affaa':'#365b49',
+    fontSize:44,align:'left'
+   });
+  });
+
+  p.addButton(-0.9,-0.85,0.6,0.16,'◀ Anterior',()=>{
+   exam.index=Math.max(0,exam.index-1); state.activeExam=exam; save(); this.showExam();
+  },{fontSize:38});
+  p.addButton(0,-0.85,0.6,0.16,'Finalizar',()=>{
+   const choices=Object.keys(exam.answers).length;
+   if(!confirm(`Finalizar? ${choices}/${pool.length} respondidas`)) return;
+   let c=0,w=0,b=0;
+   for(const qq of pool){
+    const ch=exam.answers[qq.id];
+    if(ch===undefined){ b++; continue; }
+    if(ch===qq.correta){ c++; } else { w++; }
+    StatisticsManager.record(qq,ch,'Simulado');
+   }
+   state.exams.push({id:exam.id,date:now(),total:pool.length,correct:c,wrong:w,blank:b,duration:now()-exam.start});
+   exam=null; state.activeExam=null; save();
+   this.showHome();
+  },{fontSize:38,bgColor:'#7a4a10',borderColor:'#ffaa00'});
+  p.addButton(0.9,-0.85,0.6,0.16,'Próxima ▶',()=>{
+   exam.index=Math.min(pool.length-1,exam.index+1); state.activeExam=exam; save(); this.showExam();
+  },{fontSize:38});
+ },
+
+ showStats(){
+  this.clear();
+  this.mode='stats';
+  const s=StatisticsManager.summary();
+  const p=this.createPanel(2.4,1.8);
+  p.addText(0,0.7,2.0,0.15,'📊 Desempenho',{fontSize:60,align:'center',color:'#54e5a0'});
+  p.addText(0,0.35,2.0,0.5,
+   `Respondidas: ${s.total}\nAcertos: ${s.correct}\nErros: ${s.wrong}\nAproveitamento: ${s.rate}%\nRevisões pendentes: ${s.pending}\nSimulados: ${s.exams}`,
+   {fontSize:44,align:'left'});
+
+  const subs=StatisticsManager.bySubject();
+  let y=-0.2;
+  for(const [n,d] of Object.entries(subs).slice(0,4)){
+   const r=Math.round(d.correct/d.total*100);
+   p.addText(0,y,2.0,0.08,`${n.slice(0,20)}: ${r}% (${d.correct}/${d.total})`,{fontSize:32,align:'left',color:'#b4c7bb'});
+   y-=0.1;
+  }
+
+  p.addButton(0,-0.75,0.8,0.16,'🏠 Menu',()=>this.showHome(),{fontSize:38});
+ },
+
+ showReview(){
+  this.clear();
+  this.mode='review';
+  const due=ReviewManager.due();
+  const all=ReviewManager.all();
+  const p=this.createPanel(2.4,1.6);
+  p.addText(0,0.6,2.0,0.15,'🔄 Revisão',{fontSize:60,align:'center',color:'#54e5a0'});
+  p.addText(0,0.3,2.0,0.3,`Pendentes: ${due.length}\nMarcadas: ${all.length}`,{fontSize:40,align:'center'});
+
+  p.addButton(-0.7,0,0.6,0.2,'Revisar\npendentes',()=>{
+   if(!due.length){ alert('Nada pendente'); return; }
+   studyPool=due; currentIndex=0; this.showStudy();
+  },{fontSize:38});
+
+  p.addButton(0.7,0,0.6,0.2,'Revisar\ntodas',()=>{
+   if(!all.length){ alert('Nada marcado'); return; }
+   studyPool=all; currentIndex=0; this.showStudy();
+  },{fontSize:38});
+
+  p.addButton(0,-0.6,0.8,0.16,'🏠 Menu',()=>this.showHome(),{fontSize:38});
+ },
+
+ // Hover: chamado a cada frame
+ updateHover(controllers){
+  if(!this.current) return;
+  const nowMs=performance.now();
+  if(nowMs-this.lastHoverTime<50) return;
+  this.lastHoverTime=nowMs;
+
+  for(const ctrl of controllers){
+   if(!ctrl) continue;
+   ctrl.updateWorldMatrix(true,false);
+   const m=new THREE.Matrix4().extractRotation(ctrl.matrixWorld);
+   this.raycaster.ray.origin.setFromMatrixPosition(ctrl.matrixWorld);
+   this.raycaster.ray.direction.set(0,0,-1).applyMatrix4(m).normalize();
+   this.raycaster.far=8;
+
+   const hits=this.raycaster.intersectObjects(this.current.clickables,false);
+
+   // Atualiza laser
+   if(ctrl.userData.laser){
+    const dist=hits.length>0?Math.min(hits[0].distance,8):8;
+    ctrl.userData.laser.scale.z=dist;
+   }
+
+   // Reset de todos os glows
+   this.current.clickables.forEach(b=>{
+    if(b.userData.glow) b.userData.glow.visible=false;
+   });
+
+   // Ativa glow no hover atual
+   if(hits.length>0){
+    const target=hits[0].object;
+    if(target.userData.glow) target.userData.glow.visible=true;
+    this.hoveredButton=target;
+   } else {
+    this.hoveredButton=null;
+   }
+  }
+ },
+
+ // Clique: chamado no selectstart
+ handleClick(controller){
+  if(!this.current) return;
+  controller.updateWorldMatrix(true,false);
+  const m=new THREE.Matrix4().extractRotation(controller.matrixWorld);
+  this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+  this.raycaster.ray.direction.set(0,0,-1).applyMatrix4(m).normalize();
+  this.raycaster.far=8;
+
+  const hits=this.raycaster.intersectObjects(this.current.clickables,false);
+  if(hits.length>0){
+   const btn=hits[0].object;
+   if(btn.userData.onClick) btn.userData.onClick();
+  }
+ }
+};
+
+/* ── init3D ── */
+
 function init3D(){
  try{
   scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x071711);
   camera=new THREE.PerspectiveCamera(70,1,.1,100);
-  rig=new THREE.Group(); rig.position.set(0,1.65,7);
-  rig.add(camera); scene.add(rig);
+  rig=new THREE.Group();
+  rig.position.set(0,1.65,3);
+  rig.add(camera);
+  scene.add(rig);
 
   renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
   renderer.xr.enabled=true;
-  const q=state.quality;
-  renderer.setPixelRatio(q==="low"?1:q==="high"?Math.min(devicePixelRatio,2):Math.min(devicePixelRatio,1.5));
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   $("scene").append(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xffffff,0x405344,2.2));
-  const sun=new THREE.DirectionalLight(0xffffff,2);
-  sun.position.set(5,10,5); scene.add(sun);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x405344,2.0));
+  const sun=new THREE.DirectionalLight(0xffffff,1.5);
+  sun.position.set(5,10,5);
+  scene.add(sun);
 
   changeEnvironment(state.environment);
 
@@ -1556,25 +1587,56 @@ function init3D(){
    }catch(e){ status("Erro VR: "+e.message); }
   };
 
-  renderer.xr.addEventListener("sessionstart",()=>status("VR iniciada."));
-  renderer.xr.addEventListener("sessionend",()=>status("VR encerrada."));
+  renderer.xr.addEventListener("sessionstart",()=>{
+   status("🥽 VR iniciada — use os controles para interagir");
+   rig.position.set(0,0,0);
+   vrManager.showHome();
+  });
 
+  renderer.xr.addEventListener("sessionend",()=>{
+   status("VR encerrada");
+   vrManager.clear();
+   rig.position.set(0,1.65,3);
+  });
+
+  // Controllers
+  const ctrls=[];
+  for(let i=0;i<2;i++){
+   const ctrl=renderer.xr.getController(i);
+   ctrl.addEventListener("selectstart",()=>vrManager.handleClick(ctrl));
+   rig.add(ctrl);
+   ctrls.push(ctrl);
+
+   // Laser
+   const laserGeo=new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0,0,0),
+    new THREE.Vector3(0,0,-8)
+   ]);
+   const laser=new THREE.Line(laserGeo,new THREE.LineBasicMaterial({color:0x54e5a0}));
+   ctrl.add(laser);
+   ctrl.userData.laser=laser;
+  }
+
+  // Animation loop
   let lastW=0,lastH=0;
   renderer.setAnimationLoop(()=>{
    const c=$("scene");
-   const w=c.clientWidth, h=c.clientHeight;
+   const w=c.clientWidth,h=c.clientHeight;
    if(w&&h&&(w!==lastW||h!==lastH)){
     lastW=w; lastH=h;
     renderer.setSize(w,h,false);
     camera.aspect=w/h;
     camera.updateProjectionMatrix();
    }
+   if(renderer.xr.isPresenting){
+    vrManager.updateHover(ctrls);
+   }
    renderer.render(scene,camera);
   });
 
   $("rotateLeft").onclick=()=>{ rig.rotation.y+=Math.PI/8; };
   $("rotateRight").onclick=()=>{ rig.rotation.y-=Math.PI/8; };
-  $("resetView").onclick=()=>{ rig.rotation.y=0; rig.position.set(0,1.65,7); };
+  $("resetView").onclick=()=>{ rig.rotation.y=0; rig.position.set(0,1.65,3); };
  }catch(e){
   console.error(e);
   status("Falha WebGL: "+e.message);
@@ -1582,7 +1644,7 @@ function init3D(){
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   11. CONFIG / MENUS
+   7. CONFIG / INIT
 ═══════════════════════════════════════════════════════════════════ */
 
 function applySettings(){
@@ -1597,7 +1659,7 @@ function applySettings(){
 }
 
 function initializeMenus(){
- for(const name of pages) button(name,()=>navigate(name),$("menu"));
+ for(const n of pages) button(n,()=>navigate(n),$("menu"));
  environments.forEach((name,i)=>{
   const o=document.createElement("option");
   o.value=i; o.textContent=name;
@@ -1605,33 +1667,22 @@ function initializeMenus(){
  });
  $("environment").onchange=e=>changeEnvironment(Number(e.target.value));
  $("theme").onchange=e=>{ state.theme=e.target.value; save(); applySettings(); };
- $("quality").onchange=e=>{
-  state.quality=e.target.value; save();
-  status("Qualidade salva. Recarregue para aplicar.");
- };
+ $("quality").onchange=e=>{ state.quality=e.target.value; save(); };
  $("refresh").onclick=()=>ContentRepository.load();
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   12. APP CORE
-═══════════════════════════════════════════════════════════════════ */
-
-const AppCore={
- async start(){
-  try{
-   initializeMenus();
-   applySettings();
-   init3D();
-   navigate("Início");
-   await ContentRepository.load();
-  }catch(e){
-   console.error(e);
-   status("Erro: "+e.message);
-  }
+(async function start(){
+ try{
+  initializeMenus();
+  applySettings();
+  init3D();
+  navigate("Início");
+  await ContentRepository.load();
+ }catch(e){
+  console.error(e);
+  status("Erro: "+e.message);
  }
-};
-
-AppCore.start();
+})();
 
 </script>
 
