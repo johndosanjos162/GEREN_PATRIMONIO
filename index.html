@@ -3,88 +3,138 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#071711">
-<title>PM-SC Immersive Academy 2026</title>
+<title>PM-SC Academia Imersiva</title>
 
 <style>
-:root{
- --bg:#071711;--panel:#10251d;--panel2:#19362a;
- --text:#f1f8f3;--muted:#b4c7bb;--accent:#54e5a0;
- --border:#365b49;--danger:#ff7777;--gold:#e8c879;--font:16px;
+:root {
+  --bg:#081710;
+  --panel:#122b20;
+  --accent:#72ecaa;
+  --fg:#effcf3;
+  --soft:#b5d4c1;
+  --line:#416950;
 }
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--text);
- font-family:system-ui,Arial,sans-serif;font-size:var(--font)}
-button,input,select{font:inherit}
-button,select,input{background:var(--panel2);color:var(--text);
- border:1px solid var(--border);border-radius:9px;padding:10px}
-button{cursor:pointer;transition:.15s}
-button:hover{border-color:var(--accent)}
-button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent)}
-button:disabled{opacity:.5;cursor:not-allowed}
-header{background:#10261c;border-bottom:1px solid var(--border);
- padding:17px;display:flex;align-items:center;justify-content:space-between;
- gap:12px;flex-wrap:wrap}
-header h1{margin:0;font-size:1.25rem}
-header small{color:var(--muted)}
-.layout{display:grid;grid-template-columns:280px minmax(0,1fr);
- min-height:calc(100vh - 80px)}
-aside{background:var(--panel);border-right:1px solid var(--border);padding:16px}
-nav{display:grid;gap:7px}
-nav button{text-align:left}
-nav button.active{background:#24563d;border-color:var(--accent)}
-main{padding:16px;min-width:0}
-.card{background:var(--panel);border:1px solid var(--border);
- border-radius:15px;padding:18px;margin-bottom:15px}
-.card h2{margin-top:0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-.metric{background:var(--panel2);border-radius:12px;padding:15px}
-.metric strong{display:block;font-size:1.7rem;color:var(--accent)}
-.metric span{color:var(--muted)}
-.controls{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
-.field{display:grid;gap:6px;margin:10px 0}
-.field label{color:var(--muted)}
-.question{font-size:1.13rem;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
-.option{display:block;width:100%;text-align:left;padding:15px;margin:9px 0;
- line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
-.option.selected{border:2px solid var(--accent)}
-.option.correct{border-color:#6affaa;background:#174c32}
-.option.wrong{border-color:var(--danger);background:#4b2525}
-.explanation{border-left:4px solid var(--accent);background:var(--panel2);
- padding:15px;margin-top:15px;line-height:1.6;white-space:pre-wrap}
-#scene{width:100%;height:340px;overflow:hidden;border-radius:12px;
- background:#162b25;position:relative}
-#scene canvas{display:block}
-#status{color:var(--muted);font-size:.9rem}
-progress{width:100%;height:15px;accent-color:var(--accent)}
-.badge{display:inline-block;border:1px solid var(--border);
- padding:5px 9px;border-radius:20px;color:var(--muted);margin:3px}
-.flashcard{min-height:240px;display:grid;place-items:center;text-align:center;
- padding:25px;background:linear-gradient(135deg,#174b36,#112c25);
- border:1px solid var(--accent);border-radius:16px;cursor:pointer;
- white-space:pre-wrap;line-height:1.7;font-size:1.15rem}
-.bar{height:12px;background:#294536;border-radius:20px;
- overflow:hidden;margin:7px 0 15px}
-.bar span{display:block;height:100%;background:var(--accent)}
-.notice{padding:12px;border:1px solid var(--border);
- border-radius:10px;margin:10px 0;color:var(--muted)}
-body.light{--bg:#edf4ef;--panel:#ffffff;--panel2:#e1eee5;
- --text:#16291e;--muted:#42604c;--accent:#087b47;--border:#9db9a6}
-body.blue{--bg:#071323;--panel:#10243c;--panel2:#193856;
- --text:#f0f7ff;--muted:#b8d0e5;--accent:#64c8ff;--border:#345e80}
-body.purple{--bg:#160d25;--panel:#281b3c;--panel2:#39264e;
- --text:#f8f2ff;--muted:#d2c2e8;--accent:#c69aff;--border:#6c4c89}
-body.contrast{--bg:#000;--panel:#111;--panel2:#222;
- --text:#fff;--muted:#fff;--accent:#ffff00;--border:#fff}
-body.focus aside,body.focus #sceneCard{display:none}
-body.focus .layout{grid-template-columns:1fr}
-@media(max-width:850px){
- .layout{grid-template-columns:1fr}
- aside{border-right:0}
- nav{grid-template-columns:repeat(2,1fr)}
- #scene{height:260px}
- main{padding:10px}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  font:16px system-ui,Arial;
+  background:var(--bg);
+  color:var(--fg);
+}
+header {
+  padding:16px;
+  background:#10291d;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.layout {
+  display:grid;
+  grid-template-columns:235px minmax(0,1fr);
+  gap:12px;
+  padding:12px;
+}
+aside,.box {
+  background:var(--panel);
+  padding:15px;
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+nav {display:grid;gap:7px}
+button,select,input {
+  background:#244232;
+  color:var(--fg);
+  border:1px solid #5a896c;
+  padding:10px;
+  border-radius:8px;
+  font:inherit;
+  max-width:100%;
+}
+button {cursor:pointer}
+button:hover,button:focus-visible {
+  outline:2px solid var(--accent);
+}
+button.active {
+  border-color:var(--accent);
+  background:#276142;
+}
+label {display:block;margin:12px 0 5px}
+select,input {width:100%}
+.row {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:12px 0;
+}
+.row button {flex:1 1 auto}
+#scene {
+  width:100%;
+  height:340px;
+  background:#172b24;
+  border-radius:10px;
+  overflow:hidden;
+}
+#scene canvas {display:block}
+#content {
+  margin-top:12px;
+  line-height:1.55;
+  min-height:240px;
+}
+h1 {font-size:1.3rem;margin:0}
+h2 {margin-top:0}
+p {overflow-wrap:anywhere}
+.muted {color:var(--soft)}
+.question {
+  font-size:1.1rem;
+  white-space:pre-wrap;
+}
+.option {
+  display:block;
+  width:100%;
+  text-align:left;
+  margin:8px 0;
+  white-space:pre-wrap;
+}
+.correct {
+  border:2px solid #70ffaa;
+  background:#215b3b;
+}
+.wrong {
+  border:2px solid #ff8b8b;
+  background:#572c2c;
+}
+.stat {
+  display:inline-block;
+  background:#244232;
+  padding:12px;
+  border-radius:9px;
+  margin:5px;
+}
+hr {
+  border:0;
+  border-top:1px solid var(--line);
+}
+body.light {
+  --bg:#eaf4eb;
+  --panel:#fff;
+  --fg:#17251b;
+  --soft:#486c55;
+  --line:#abc7b1;
+  --accent:#12794e;
+}
+body.light button,
+body.light select,
+body.light input {
+  background:#e1efe3;
+  color:#17251b;
+}
+@media(max-width:800px) {
+  .layout {grid-template-columns:1fr}
+  nav {grid-template-columns:repeat(3,1fr)}
+  nav button {font-size:.85rem;padding:7px}
+  #scene {height:270px}
 }
 </style>
 </head>
@@ -92,1588 +142,1373 @@ body.focus .layout{grid-template-columns:1fr}
 <body>
 
 <header>
- <div>
-  <h1>🇧🇷 PM-SC Immersive Academy 2026</h1>
-  <small>Academia de Estudos em Realidade Virtual</small>
- </div>
- <span id="status">Inicializando...</span>
+  <h1>🇧🇷 PM-SC • Academia Imersiva de Estudos</h1>
+  <span id="status" role="status">Iniciando...</span>
 </header>
 
 <div class="layout">
+  <aside>
+    <nav id="nav"></nav>
 
-<aside>
- <nav id="menu"></nav>
- <hr>
- <div class="field">
-  <label for="environment">Ambiente militar</label>
-  <select id="environment"></select>
- </div>
- <div class="field">
-  <label for="theme">Tema visual</label>
-  <select id="theme">
-   <option value="dark">Verde militar</option>
-   <option value="blue">Azul holográfico</option>
-   <option value="purple">Roxo futurista</option>
-   <option value="light">Branco minimalista</option>
-   <option value="contrast">Alto contraste</option>
-  </select>
- </div>
- <div class="field">
-  <label for="quality">Qualidade 3D</label>
-  <select id="quality">
-   <option value="low">Econômica</option>
-   <option value="medium">Equilibrada</option>
-   <option value="high">Alta</option>
-  </select>
- </div>
- <div class="controls">
-  <button id="refresh">Atualizar JSON</button>
-  <button id="vr">Entrar em VR</button>
- </div>
- <div id="sidebarMetrics"></div>
-</aside>
+    <label for="env">Ambiente 3D</label>
+    <select id="env"></select>
 
-<main>
- <section class="card" id="sceneCard">
-  <h2>Ambiente tridimensional</h2>
-  <div id="scene"></div>
-  <div class="controls">
-   <button id="rotateLeft">◀ Girar</button>
-   <button id="rotateRight">Girar ▶</button>
-   <button id="resetView">Centralizar</button>
-  </div>
- </section>
- <section id="content" class="card"></section>
-</main>
+    <label for="subject">Disciplina</label>
+    <select id="subject">
+      <option value="">Todas</option>
+    </select>
+
+    <label for="search">Buscar questão</label>
+    <input id="search" placeholder="Digite uma palavra">
+
+    <div class="row">
+      <button id="reload">Atualizar JSON</button>
+      <button id="enterVR">Entrar em VR</button>
+    </div>
+
+    <small class="muted">
+      Na RV: aponte e aperte o gatilho, ou use a pinça
+      das mãos (se disponível). Para se deslocar,
+      aponte ao chão e aperte o gatilho.
+    </small>
+  </aside>
+
+  <main>
+    <section class="box">
+      <div id="scene"></div>
+    </section>
+    <section class="box" id="content"></section>
+  </main>
 </div>
 
 <script type="importmap">
 {
- "imports":{
-  "three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
-  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
- }
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+  }
 }
 </script>
 
 <script type="module">
 
-import * as THREE from "three";
-import {VRButton} from "three/addons/webxr/VRButton.js";
+import * as THREE from 'three';
+import {VRButton} from 'three/addons/webxr/VRButton.js';
+import {XRControllerModelFactory} from 'three/addons/webxr/XRControllerModelFactory.js';
+import {XRHandModelFactory} from 'three/addons/webxr/XRHandModelFactory.js';
 
-/* ═══════════════════════════════════════════════════════════════════
-   CONFIG
-═══════════════════════════════════════════════════════════════════ */
-
-const APP={
- repo:"johndosanjos162/PMSC",
- branches:["main","master"],
- storageKey:"PMSC_ACADEMY_V3",
- directJsonUrl:""
-};
+const REPO='johndosanjos162/PMSC';
+const STORE='pmsc-imersiva-v5';
 
 const $=id=>document.getElementById(id);
 const now=()=>Date.now();
 
-const environments=[
- "Pátio de Formatura","Sala de Instrução Militar","Entrada do Quartel",
- "Campo de Treinamento","Alojamento Militar"
-];
-
 const pages=[
- "Início","Estudos","Simulados","Flashcards",
- "Revisões","Desempenho","Banco de Questões","Configurações"
+  ['inicio','Início'],
+  ['aulas','Aulas'],
+  ['questoes','Questões'],
+  ['simulado','Simulado'],
+  ['flashcards','Flashcards'],
+  ['revisoes','Revisões'],
+  ['estatisticas','Estatísticas'],
+  ['banco','Banco JSON'],
+  ['config','Configurações']
 ];
 
-const defaults={
- environment:0,theme:"dark",quality:"medium",fontSize:16,
- history:[],favorites:[],reviews:{},exams:[],flashcards:{},
- session:null,activeExam:null
+const envs=[
+  'Pátio de formatura',
+  'Sala de instrução',
+  'Entrada do quartel',
+  'Campo de treinamento',
+  'Alojamento',
+  'Biblioteca',
+  'Auditório',
+  'Sala de estudos',
+  'Praça central',
+  'Centro de operações'
+];
+
+const initial={
+  history:[],
+  favorites:[],
+  reviews:{},
+  exams:[],
+  answer:null,
+  exam:null,
+  theme:'dark',
+  env:0
 };
 
-const VALID_THEMES=["dark","blue","purple","light","contrast"];
-const VALID_QUALITY=["low","medium","high"];
+let state={...initial};
+let questions=[];
+let page='inicio';
+let qIndex=0;
+let activePool=[];
+let flipped=false;
+let db=null;
+let loadDetails='Ainda não carregado';
 
-let state,questions=[],page="Início",currentIndex=0,studyPool=[];
-let exam=null,examTimerId=null,finishingExam=false,flashBack=false,loadBusy=false;
-
-function status(m){ $("status").textContent=m; }
-function save(){ try{ localStorage.setItem(APP.storageKey,JSON.stringify(state)); }catch(e){} }
-function cloneDefaults(){ return JSON.parse(JSON.stringify(defaults)); }
-
-const StorageManager={
- load(){
-  try{
-   const data=JSON.parse(localStorage.getItem(APP.storageKey)||"{}");
-   const m={...cloneDefaults(),...data};
-   if(!VALID_THEMES.includes(m.theme)) m.theme="dark";
-   if(!VALID_QUALITY.includes(m.quality)) m.quality="medium";
-   if(typeof m.environment!=="number"||m.environment<0||m.environment>=environments.length) m.environment=0;
-   if(typeof m.fontSize!=="number"||m.fontSize<10||m.fontSize>40) m.fontSize=16;
-   if(!m.session) m.session=null;
-   if(!m.activeExam) m.activeExam=null;
-   return m;
-  }catch{ return cloneDefaults(); }
- },
- export(){ download("backup-pmsc.json",JSON.stringify(state,null,2),"application/json"); },
- async restore(file){
-  if(!file||file.size>3000000) throw Error("Arquivo inválido.");
-  const data=JSON.parse(await file.text());
-  if(!data||!Array.isArray(data.history)||!Array.isArray(data.favorites)) throw Error("Backup incompatível.");
-  if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
-  exam=null;
-  state={...cloneDefaults(),...data};
-  state.activeExam=null;
-  save(); applySettings(); render();
- }
-};
-state=StorageManager.load();
-
-/* ═══════════════════════════════════════════════════════════════════
-   PARSER
-═══════════════════════════════════════════════════════════════════ */
-
-function looksLikeQuestion(obj){
- if(!obj||typeof obj!=="object"||Array.isArray(obj)) return false;
- const qKeys=["pergunta","enunciado","question","questao","texto","statement","title","text","descricao","wording","body"];
- if(!qKeys.some(k=>obj[k]&&typeof obj[k]==="string"&&obj[k].trim().length>=3)) return false;
- const oKeys=["alternativas","opcoes","options","choices","respostas","items","opcoes_resposta","alternatives","possibilidades","answers"];
- if(!oKeys.some(k=>obj[k]&&(Array.isArray(obj[k])||typeof obj[k]==="object"||typeof obj[k]==="string"))){
-  const letters=["a","b","c","d","e","A","B","C","D","E"];
-  if(letters.filter(l=>obj[l]!==undefined).length<2) return false;
- }
- return true;
-}
-
-function deepFindQuestions(data,depth=0){
- if(depth>6||!data) return [];
- if(Array.isArray(data)){
-  if(data.length>0 && data.every(item=>looksLikeQuestion(item))) return data;
-  let found=[];
-  for(const item of data) found.push(...deepFindQuestions(item,depth+1));
-  return found;
- }
- if(typeof data==="object"){
-  if(looksLikeQuestion(data)) return [data];
-  const keys=["questoes","questions","perguntas","dados","data","items","banco","bank","lista","list","conteudo","content","exercicios","exercises","problemas","problems"];
-  for(const key of keys){
-   if(data[key]){
-    const found=deepFindQuestions(data[key],depth+1);
-    if(found.length>0) return found;
-   }
-  }
-  let found=[];
-  for(const v of Object.values(data)) found.push(...deepFindQuestions(v,depth+1));
-  return found;
- }
- return [];
-}
-
-function normalizeQuestion(raw,fb){
- fb=fb||"Geral";
- if(!raw||typeof raw!=="object") return null;
- const qKeys=["pergunta","enunciado","question","questao","texto","statement","title","text","descricao","wording","body"];
- let texto="";
- for(const k of qKeys){
-  if(raw[k]&&typeof raw[k]==="string"&&raw[k].trim().length>=3){ texto=raw[k].trim(); break; }
- }
- if(!texto) return null;
-
- const oKeys=["alternativas","opcoes","options","choices","respostas","items","opcoes_resposta","alternatives","possibilidades","answers"];
- let optsRaw=null;
- for(const k of oKeys){ if(raw[k]){ optsRaw=raw[k]; break; } }
-
- let alts=[];
- if(Array.isArray(optsRaw)){
-  alts=optsRaw.map(o=>{
-   if(typeof o==="string") return o.trim();
-   if(typeof o==="number") return String(o);
-   if(typeof o==="object"&&o!==null) return String(o.texto??o.text??o.valor??o.value??o.label??"").trim();
-   return "";
-  }).filter(a=>a.length>0);
- }else if(typeof optsRaw==="string"){
-  let parts=optsRaw.split(/\n|\|/).map(s=>s.trim()).filter(Boolean);
-  if(parts.length<2) parts=optsRaw.split(/(?=[A-Ea-e]\s*[\)\.\-\:])/).map(s=>s.trim()).filter(Boolean);
-  alts=parts;
- }else if(optsRaw&&typeof optsRaw==="object"){
-  alts=Object.values(optsRaw).map(o=>{
-   if(typeof o==="string") return o.trim();
-   if(typeof o==="number") return String(o);
-   if(typeof o==="object"&&o!==null) return String(o.texto??o.text??o.valor??o.value??"").trim();
-   return "";
-  }).filter(a=>a.length>0);
- }
- if(alts.length<2){
-  const letters=["a","b","c","d","e","A","B","C","D","E"];
-  const found=[];
-  for(const l of letters) if(raw[l]!==undefined) found.push(String(raw[l]).trim());
-  if(found.length>=2) alts=found;
- }
- if(alts.length<2) return null;
-
- const prefix=/^([A-Ea-e])\s*[\)\.\-\:]\s*/;
- if(alts.every((a,i)=>{ const m=String(a).match(prefix); return m&&m[1].toUpperCase()==="ABCDE"[i]; })){
-  alts=alts.map(a=>a.replace(prefix,"").trim());
- }
- if(alts.length<2) return null;
-
- const aKeys=["correta","correct","gabarito","answer","resposta","right","answerIndex"];
- let cRaw=null;
- for(const k of aKeys){ if(raw[k]!==undefined){ cRaw=raw[k]; break; } }
-
- let correct=-1;
- if(typeof cRaw==="number") correct=cRaw;
- else if(typeof cRaw==="string"){
-  const v=cRaw.trim().toUpperCase();
-  if(/^[A-E]$/.test(v)) correct=v.charCodeAt(0)-65;
-  else if(/^\d+$/.test(v)) correct=Number(v);
-  else {
-   const idx=alts.findIndex(a=>a.toLowerCase()===cRaw.toLowerCase().trim());
-   if(idx>=0) correct=idx;
-  }
- }
- if(!Number.isInteger(correct)||correct<0||correct>=alts.length) return null;
-
- const sKeys=["disciplina","materia","subject","area","category","topic","assunto"];
- let disc=fb;
- for(const k of sKeys){
-  if(raw[k]&&typeof raw[k]==="string"&&raw[k].trim()){ disc=raw[k].trim(); break; }
- }
-
- return {
-  id:String(raw.id??raw.codigo??`${disc}:${texto.slice(0,60)}`),
-  disciplina:disc,
-  assunto:String(raw.assunto??raw.topic??"Geral"),
-  dificuldade:String(raw.dificuldade??raw.difficulty??"media"),
-  enunciado:texto,
-  alternativas:alts.map(String),
-  correta:correct,
-  explicacao:String(raw.explicacao??raw.explanation??raw.comentario??""),
-  referencia:String(raw.referencia??raw.reference??"")
- };
-}
-
-function analyzeStructure(data){
- if(data===null) return "null";
- if(Array.isArray(data)){
-  if(data.length===0) return "array vazio";
-  const f=data[0];
-  if(typeof f==="object"&&f!==null) return `array[${data.length}] · chaves: [${Object.keys(f).slice(0,6).join(", ")}]`;
-  return `array[${data.length}]`;
- }
- if(typeof data==="object") return `objeto · chaves: [${Object.keys(data).slice(0,8).join(", ")}]`;
- return typeof data;
-}
-
-const QuestionManager={
- deduplicate(list){
-  const ids=new Set();
-  return list.filter(q=>{ if(ids.has(q.id)) return false; ids.add(q.id); return true; });
- },
- find(id){ return questions.find(q=>q.id===id); }
-};
-
-/* ═══════════════════════════════════════════════════════════════════
-   CARREGAMENTO
-═══════════════════════════════════════════════════════════════════ */
-
-function fetchWithTimeout(url,opts={},ms=10000){
- return new Promise((res,rej)=>{
-  const c=new AbortController();
-  const t=setTimeout(()=>{c.abort();rej(Error("Timeout"));},ms);
-  fetch(url,{...opts,signal:c.signal})
-   .then(r=>{clearTimeout(t);res(r);})
-   .catch(e=>{clearTimeout(t);rej(e);});
- });
-}
-async function fetchJson(url){
- const r=await fetchWithTimeout(url,{},10000);
- if(!r.ok) throw Error(`HTTP ${r.status}`);
- const text=await r.text();
- if(text.length>5000000) throw Error("JSON >5MB");
- if(!text.trim()) throw Error("Arquivo vazio");
- try{ return JSON.parse(text); }catch(e){ throw Error("JSON inválido"); }
-}
-
-const ContentRepository={
- _lastDebug:{steps:[],errors:[],filesInfo:[],filesLoaded:[]},
-
- async load(){
-  if(loadBusy) return;
-  loadBusy=true;
-  const debug={steps:[],errors:[],filesInfo:[],filesLoaded:[],urlTried:[],filesFound:[]};
-  function step(m){ debug.steps.push(m); status(m); console.log("[REPO]",m); }
-  function err(m){ debug.errors.push(m); console.warn("[REPO-ERR]",m); }
-
-  try{
-   step("Iniciando busca do banco...");
-   let loaded=[];
-
-   if(APP.directJsonUrl){
-    step("Testando URL direta...");
-    try{
-     const json=await fetchJson(APP.directJsonUrl);
-     const est=analyzeStructure(json);
-     const items=deepFindQuestions(json);
-     let ok=0,rej=0;
-     for(const item of items){
-      const q=normalizeQuestion(item);
-      if(q){ loaded.push(q); ok++; } else rej++;
-     }
-     debug.filesInfo.push({name:"URL direta",structure:est,candidates:items.length,valid:ok,rejected:rej});
-     debug.filesLoaded.push(APP.directJsonUrl);
-     step(`URL direta: ${ok} válidas · ${est}`);
-    }catch(e){ err("URL direta: "+e.message); }
-   }
-
-   if(!loaded.length){
-    for(const branch of APP.branches){
-     step(`API GitHub (${APP.repo} / ${branch})...`);
-     try{
-      const url=`https://api.github.com/repos/${APP.repo}/contents/?ref=${branch}`;
-      const r=await fetchWithTimeout(url,{headers:{Accept:"application/vnd.github+json"}},10000);
-      if(!r.ok){
-       if(r.status===404) err(`${branch}: repositório/branch inexistente`);
-       else if(r.status===403) err(`${branch}: rate limit API`);
-       else err(`${branch}: HTTP ${r.status}`);
-       continue;
-      }
-      const list=await r.json();
-      if(!Array.isArray(list)){ err("API não retornou lista"); continue; }
-      const jsonFiles=list.filter(f=>
-       f.type==="file"&&f.name.toLowerCase().endsWith(".json")&&
-       !f.name.startsWith(".")&&f.name!=="manifest.json"&&
-       f.name!=="package.json"&&f.name!=="package-lock.json"
-      );
-      debug.filesFound.push(...jsonFiles.map(f=>f.name));
-      step(`${jsonFiles.length} .json em ${branch}: ${jsonFiles.map(f=>f.name).join(", ")}`);
-      for(const file of jsonFiles){
-       try{
-        const json=await fetchJson(file.download_url);
-        const est=analyzeStructure(json);
-        const items=deepFindQuestions(json);
-        let ok=0,rej=0;
-        for(const item of items){
-         const q=normalizeQuestion(item);
-         if(q){ loaded.push(q); ok++; } else rej++;
-        }
-        debug.filesInfo.push({name:file.name,branch,structure:est,candidates:items.length,valid:ok,rejected:rej});
-        if(ok>0){ debug.filesLoaded.push(file.name); step(`✓ ${file.name}: ${ok} válidas`); }
-        else step(`✗ ${file.name}: ${items.length} candidatos · 0 válidas`);
-       }catch(e){ err(`${file.name}: ${e.message}`); }
-      }
-      if(loaded.length) break;
-     }catch(e){ err(`API (${branch}): ${e.message}`); }
-    }
-   }
-
-   if(!loaded.length){
-    const names=["json.json","questoes.json","questions.json","banco.json","pmsc.json"];
-    for(const branch of APP.branches){
-     if(loaded.length) break;
-     step(`Nomes comuns em ${branch}...`);
-     for(const name of names){
-      const url=`https://raw.githubusercontent.com/${APP.repo}/${branch}/${name}`;
-      try{
-       const json=await fetchJson(url);
-       const est=analyzeStructure(json);
-       const items=deepFindQuestions(json);
-       let ok=0;
-       for(const item of items){
-        const q=normalizeQuestion(item);
-        if(q){ loaded.push(q); ok++; }
-       }
-       if(ok>0){
-        debug.filesInfo.push({name,branch,structure:est,candidates:items.length,valid:ok,rejected:0});
-        debug.filesLoaded.push(name);
-        step(`✓ ${name}: ${ok} válidas · ${est}`);
-        break;
-       }
-      }catch(e){}
-     }
-    }
-   }
-
-   if(!loaded.length){
-    step("Tentando cache local...");
-    try{
-     const cached=JSON.parse(localStorage.getItem(APP.storageKey+"_BANK")||"[]");
-     if(cached.length){ loaded=cached; step(`Cache: ${cached.length}`); }
-    }catch(e){}
-   }
-
-   loaded=QuestionManager.deduplicate(loaded);
-   this._lastDebug=debug;
-
-   if(loaded.length){
-    questions=loaded;
-    try{ localStorage.setItem(APP.storageKey+"_BANK",JSON.stringify(questions)); }catch{}
-    status(`✅ ${loaded.length} questões · ${debug.filesLoaded.length} arquivo(s)`);
-    if(vrManager && vrManager.isActive()) vrManager.showHome();
-   }else{
-    status("❌ 0 questões. Veja Banco de Questões.");
-   }
-
-   if(page==="Estudos") studyPool=[];
-   render();
-  }finally{
-   loadBusy=false;
-  }
- },
-
- getDebug(){ return this._lastDebug; }
-};
-
-/* ═══════════════════════════════════════════════════════════════════
-   STATS / REVIEW / SM-2
-═══════════════════════════════════════════════════════════════════ */
-
-const StatisticsManager={
- summary(){
-  const h=state.history;
-  const c=h.filter(x=>x.correct).length;
-  return {
-   total:h.length,correct:c,wrong:h.length-c,
-   rate:h.length?Math.round(c/h.length*100):0,
-   exams:state.exams.length,
-   pending:Object.values(state.reviews).filter(x=>x.due<=now()).length
+try {
+  state={
+    ...initial,
+    ...JSON.parse(localStorage.getItem(STORE)||'{}')
   };
- },
- bySubject(){
-  const d={};
-  for(const i of state.history){
-   const k=i.disciplina||"Geral";
-   if(!d[k]) d[k]={total:0,correct:0};
-   d[k].total++;
-   if(i.correct) d[k].correct++;
+} catch {}
+
+if(!Array.isArray(state.history))state.history=[];
+if(!Array.isArray(state.favorites))state.favorites=[];
+if(!state.reviews||typeof state.reviews!=='object')state.reviews={};
+if(!Array.isArray(state.exams))state.exams=[];
+
+function save() {
+  try {
+    localStorage.setItem(STORE,JSON.stringify(state));
+  } catch(e) {
+    setStatus('Não foi possível salvar: '+e.message);
   }
-  return d;
- },
- record(q,choice,mode){
-  state.history.push({
-   id:q.id,disciplina:q.disciplina,assunto:q.assunto,
-   choice,correct:choice===q.correta,mode,date:now()
-  });
-  if(state.history.length>10000) state.history=state.history.slice(-10000);
-  if(choice!==q.correta) ReviewManager.mark(q.id);
-  save();
- }
-};
+  idbSet('progress',state).catch(()=>{});
+}
 
-const ReviewManager={
- mark(id){ state.reviews[id]={due:now(),interval:1,repetitions:0,ease:2.5}; save(); },
- remove(id){ delete state.reviews[id]; save(); },
- due(){ return questions.filter(q=>state.reviews[q.id]&&state.reviews[q.id].due<=now()); },
- all(){ return questions.filter(q=>state.reviews[q.id]); }
-};
+function setStatus(t) {
+  $('status').textContent=t;
+}
 
-const SpacedRepetition={
- grade(id,quality){
-  const o=state.reviews[id]||{interval:1,repetitions:0,ease:2.5};
-  let r=o.repetitions,i=o.interval,e=o.ease;
-  if(quality<3){ r=0; i=1; } else {
-   r++;
-   if(r===1) i=1; else if(r===2) i=6;
-   else i=Math.max(1,Math.round(i*e));
+function el(tag,txt,parent) {
+  const e=document.createElement(tag);
+  if(txt!==null&&txt!==undefined)e.textContent=String(txt);
+  if(parent)parent.append(e);
+  return e;
+}
+
+function btn(txt,fn,parent) {
+  const b=el('button',txt,parent);
+  b.addEventListener('click',fn);
+  return b;
+}
+
+function byId(id) {
+  return questions.find(q=>q.id===id);
+}
+
+function shuffle(arr) {
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
   }
-  e=Math.max(1.3,e+(.1-(5-quality)*(.08+(5-quality)*.02)));
-  state.reviews[id]={repetitions:r,interval:i,ease:e,due:now()+i*86400000};
-  save();
- }
-};
-
-/* ═══════════════════════════════════════════════════════════════════
-   UI 2D
-═══════════════════════════════════════════════════════════════════ */
-
-function element(tag,text,parent,cls){
- const n=document.createElement(tag);
- if(text!==undefined&&text!==null) n.textContent=String(text);
- if(cls) n.className=cls;
- if(parent) parent.append(n);
- return n;
-}
-function button(text,cb,parent){ const n=element("button",text,parent); n.addEventListener("click",cb); return n; }
-function clearContent(title){ const r=$("content"); r.replaceChildren(); element("h2",title,r); return r; }
-function paragraph(t,p){ return element("p",t,p); }
-function sectionTitle(t,p){ return element("h3",t,p); }
-function field(label,type,value,parent){
- const w=element("div",null,parent,"field");
- element("label",label,w);
- const i=element("input",null,w); i.type=type; i.value=value;
- return i;
-}
-function selectField(label,values,parent){
- const w=element("div",null,parent,"field");
- element("label",label,w);
- const s=element("select",null,w);
- for(const v of values){
-  const o=document.createElement("option"); o.value=v; o.textContent=v; s.append(o);
- }
- return s;
-}
-function metric(label,value,parent){
- const c=element("div",null,parent,"metric");
- element("strong",value,c);
- element("span",label,c);
+  return a;
 }
 
-function renderSidebar(){
- const s=StatisticsManager.summary();
- $("sidebarMetrics").replaceChildren();
- const b=$("sidebarMetrics");
- sectionTitle("Seu desempenho",b);
- paragraph(`Questões: ${s.total}`,b);
- paragraph(`Acertos: ${s.correct}`,b);
- paragraph(`Erros: ${s.wrong}`,b);
- paragraph(`Aproveitamento: ${s.rate}%`,b);
- paragraph(`Revisões pendentes: ${s.pending}`,b);
-}
-
-function navigate(dst){
- if(dst!=="Simulados"&&examTimerId){ clearInterval(examTimerId); examTimerId=null; }
- page=dst;
- document.querySelectorAll("#menu button").forEach(b=>{
-  b.classList.toggle("active",b.textContent===dst);
- });
- render();
-}
-
-function render(){
- renderSidebar();
- switch(page){
-  case "Início": renderHome(); break;
-  case "Estudos": renderStudies(); break;
-  case "Simulados": renderExams(); break;
-  case "Flashcards": renderFlashcards(); break;
-  case "Revisões": renderReviews(); break;
-  case "Desempenho": renderStatistics(); break;
-  case "Banco de Questões": renderBank(); break;
-  case "Configurações": renderSettings(); break;
- }
-}
-
-function renderHome(){
- const root=clearContent("Central Inteligente de Estudos");
- const s=StatisticsManager.summary();
- const g=element("div",null,root,"grid");
- metric("Respondidas",s.total,g);
- metric("Aproveitamento",s.rate+"%",g);
- metric("Simulados",s.exams,g);
- metric("Revisões",s.pending,g);
- paragraph(`Banco disponível: ${questions.length} questões.`,root);
- const c=element("div",null,root,"controls");
- button("Iniciar estudos",()=>navigate("Estudos"),c);
- button("Revisar erros",()=>navigate("Revisões"),c);
- button("Criar simulado",()=>navigate("Simulados"),c);
-}
-
-function getFiltered(subject,topic,difficulty,search){
- const term=(search||"").toLowerCase();
- return questions.filter(q=>
-  (!subject||q.disciplina===subject)&&
-  (!topic||q.assunto===topic)&&
-  (!difficulty||q.dificuldade===difficulty)&&
-  (!term||[q.id,q.enunciado,q.assunto,q.disciplina,q.referencia].join(" ").toLowerCase().includes(term))
- );
-}
-
-function renderStudies(){
- const root=clearContent("Estudo de Questões");
- const subjects=["",...new Set(questions.map(q=>q.disciplina))];
- const topics=["",...new Set(questions.map(q=>q.assunto))];
- const sub=selectField("Disciplina",subjects,root);
- const top=selectField("Assunto",topics,root);
- const dif=selectField("Dificuldade",["","facil","media","dificil"],root);
- const sch=field("Pesquisar","search","",root);
- button("Aplicar filtros",()=>{
-  studyPool=getFiltered(sub.value,top.value,dif.value,sch.value);
-  currentIndex=0; showStudyQuestion();
- },root);
- const area=element("div",null,root); area.id="studyArea";
- if(!studyPool.length) studyPool=[...questions];
- showStudyQuestion();
-}
-
-function showStudyQuestion(){
- const area=$("studyArea"); if(!area) return;
- area.replaceChildren();
- if(!studyPool.length){ paragraph("Nenhuma questão. Atualize o banco.",area); return; }
- currentIndex=Math.max(0,Math.min(currentIndex,studyPool.length-1));
- const q=studyPool[currentIndex];
- state.session={id:q.id}; save();
- renderQuestion(q,area,currentIndex+1,studyPool.length,"study");
- const c=element("div",null,area,"controls");
- button("◀ Anterior",()=>{ currentIndex=Math.max(0,currentIndex-1); showStudyQuestion(); },c);
- button("Próxima ▶",()=>{ currentIndex=Math.min(studyPool.length-1,currentIndex+1); showStudyQuestion(); },c);
- button(state.favorites.includes(q.id)?"★ Remover":"☆ Favoritar",()=>{
-  if(state.favorites.includes(q.id)) state.favorites=state.favorites.filter(i=>i!==q.id);
-  else state.favorites.push(q.id);
-  save(); showStudyQuestion();
- },c);
-}
-
-function renderQuestion(q,parent,number,total,mode,answers){
- const meta=element("div",null,parent);
- element("span",q.disciplina,meta,"badge");
- element("span",q.assunto,meta,"badge");
- element("span",q.dificuldade,meta,"badge");
- paragraph(`Questão ${number} de ${total}`,parent);
- const p=element("progress",null,parent);
- p.max=total; p.value=number;
- element("div",q.enunciado,parent,"question");
- const opts=element("div",null,parent);
- const existing=mode==="exam"?answers[q.id]:undefined;
- let answered=false;
- q.alternativas.forEach((text,i)=>{
-  const o=button(`${String.fromCharCode(65+i)}. ${text}`,()=>{
-   if(mode==="exam"){
-    answers[q.id]=i; state.activeExam=exam; save();
-    opts.querySelectorAll("button").forEach((b,j)=>b.classList.toggle("selected",j===i));
-    return;
-   }
-   if(answered) return;
-   answered=true;
-   StatisticsManager.record(q,i,mode);
-   opts.querySelectorAll("button").forEach((b,j)=>{
-    b.disabled=true;
-    if(j===q.correta) b.classList.add("correct");
-    if(j===i&&i!==q.correta) b.classList.add("wrong");
-   });
-   const e=element("div",null,parent,"explanation");
-   paragraph(i===q.correta?"Resposta correta!":"Resposta incorreta.",e);
-   paragraph("Gabarito: "+String.fromCharCode(65+q.correta),e);
-   paragraph(q.explicacao||"Explicação não disponível.",e);
-   renderSidebar();
-  },opts);
-  o.classList.add("option");
-  if(existing===i) o.classList.add("selected");
- });
-}
-
-function renderExams(){
- const root=clearContent("Simulados");
- if(exam){ showExam(root); return; }
- const count=field("Quantidade de questões","number",20,root); count.min=1;
- const minutes=field("Tempo em minutos (0 = livre)","number",60,root); minutes.min=0;
- const subjects=["",...new Set(questions.map(q=>q.disciplina))];
- const sub=selectField("Disciplina",subjects,root);
- button("Iniciar simulado",()=>{
-  const pool=questions.filter(q=>!sub.value||q.disciplina===sub.value);
-  if(!pool.length){ status("Nenhuma questão."); return; }
-  const sh=[...pool];
-  for(let i=sh.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [sh[i],sh[j]]=[sh[j],sh[i]]; }
-  const amt=Math.min(sh.length,Math.max(1,Number(count.value)||20));
-  exam={id:"e"+Date.now(),ids:sh.slice(0,amt).map(q=>q.id),answers:{},index:0,start:now(),duration:Math.max(0,Number(minutes.value)||0)*60000};
-  state.activeExam=exam; save(); render();
- },root);
- if(state.activeExam){
-  button("Retomar simulado",()=>{ exam=state.activeExam; render(); },root);
- }
-}
-
-function showExam(root){
- if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
- const pool=exam.ids.map(id=>QuestionManager.find(id)).filter(Boolean);
- if(!pool.length){
-  paragraph("Questões indisponíveis.",root);
-  button("Encerrar",()=>{ exam=null; state.activeExam=null; save(); render(); },root);
-  return;
- }
- exam.index=Math.max(0,Math.min(exam.index,pool.length-1));
- const q=pool[exam.index];
- const timer=element("p","",root);
- function upd(){
-  if(!exam||!timer.isConnected) return;
-  if(!exam.duration){ timer.textContent="Sem limite."; return; }
-  const r=Math.max(0,exam.duration-(now()-exam.start));
-  const s=Math.ceil(r/1000);
-  timer.textContent="Tempo: "+Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
-  if(r<=0) finishExam();
- }
- upd();
- if(exam.duration){
-  examTimerId=setInterval(()=>{
-   if(!timer.isConnected||!exam){ clearInterval(examTimerId); examTimerId=null; return; }
-   upd();
-  },1000);
- }
- renderQuestion(q,root,exam.index+1,pool.length,"exam",exam.answers);
- const c=element("div",null,root,"controls");
- button("◀ Anterior",()=>{ exam.index=Math.max(0,exam.index-1); state.activeExam=exam; save(); render(); },c);
- button("Próxima ▶",()=>{ exam.index=Math.min(pool.length-1,exam.index+1); state.activeExam=exam; save(); render(); },c);
- paragraph(`Respondidas: ${Object.keys(exam.answers).length}/${pool.length}`,root);
- button("Finalizar simulado",finishExam,root);
-}
-
-function finishExam(){
- if(!exam||finishingExam) return;
- finishingExam=true;
- try{
-  if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
-  const pool=exam.ids.map(id=>QuestionManager.find(id)).filter(Boolean);
-  let correct=0,wrong=0,blank=0;
-  for(const q of pool){
-   const choice=exam.answers[q.id];
-   if(choice===undefined){ blank++; continue; }
-   if(choice===q.correta){ correct++; } else { wrong++; }
-   StatisticsManager.record(q,choice,"Simulado");
-  }
-  state.exams.push({id:exam.id,date:now(),total:pool.length,correct,wrong,blank,duration:now()-exam.start});
-  exam=null; state.activeExam=null; save();
-  page="Desempenho"; render();
-  status(`Simulado: ${correct} ✓ · ${wrong} ✗ · ${blank} em branco`);
- }finally{
-  finishingExam=false;
- }
-}
-
-function renderFlashcards(){
- const root=clearContent("Flashcards Inteligentes");
- if(!questions.length){ paragraph("Banco vazio.",root); return; }
- currentIndex=Math.max(0,Math.min(currentIndex,questions.length-1));
- const q=questions[currentIndex];
- paragraph(`${currentIndex+1} de ${questions.length}`,root);
- const card=element("div","",root,"flashcard");
- function upd(){ card.textContent=flashBack?q.alternativas[q.correta]+"\n\n"+q.explicacao:q.enunciado; }
- upd();
- card.onclick=()=>{ flashBack=!flashBack; upd(); };
- const c=element("div",null,root,"controls");
- button("Virar cartão",()=>{ flashBack=!flashBack; upd(); },c);
- for(const [lbl,g] of [["Difícil",2],["Bom",4],["Fácil",5]]){
-  button(lbl,()=>{ SpacedRepetition.grade(q.id,g); currentIndex=(currentIndex+1)%questions.length; flashBack=false; render(); },c);
- }
-}
-
-function renderReviews(){
- const root=clearContent("Revisão Inteligente");
- const due=ReviewManager.due(); const all=ReviewManager.all();
- paragraph(`Revisões pendentes: ${due.length}`,root);
- paragraph(`Questões marcadas: ${all.length}`,root);
- const c=element("div",null,root,"controls");
- button("Revisar pendentes",()=>{ studyPool=due; currentIndex=0; navigate("Estudos"); },c);
- button("Revisar todas",()=>{ studyPool=all; currentIndex=0; navigate("Estudos"); },c);
- button("Caderno de erros",()=>{
-  const ids=new Set(state.history.filter(x=>!x.correct).map(x=>x.id));
-  studyPool=questions.filter(q=>ids.has(q.id)); currentIndex=0; navigate("Estudos");
- },c);
-}
-
-function renderStatistics(){
- const root=clearContent("Desempenho");
- const s=StatisticsManager.summary();
- const g=element("div",null,root,"grid");
- metric("Respondidas",s.total,g);
- metric("Acertos",s.correct,g);
- metric("Erros",s.wrong,g);
- metric("Aproveitamento",s.rate+"%",g);
- sectionTitle("Por disciplina",root);
- const subs=StatisticsManager.bySubject();
- for(const [n,d] of Object.entries(subs)){
-  const r=Math.round(d.correct/d.total*100);
-  paragraph(`${n}: ${r}% (${d.correct}/${d.total})`,root);
-  const b=element("div",null,root,"bar");
-  const f=element("span",null,b); f.style.width=r+"%";
- }
- sectionTitle("Simulados",root);
- for(const r of state.exams.slice(-10).reverse()){
-  paragraph(`${new Date(r.date).toLocaleDateString("pt-BR")} — ${r.correct}/${r.total}`,root);
- }
-}
-
-function renderBank(){
- const root=clearContent("Banco de Questões");
- sectionTitle("Repositório",root);
- const rf=field("owner/repo","text",APP.repo,root);
- button("Aplicar e recarregar",()=>{
-  const v=rf.value.trim(); if(!v||!v.includes("/")){ status("Use: usuario/repo"); return; }
-  APP.repo=v; ContentRepository.load();
- },root);
- const uf=field("URL direta do JSON (opcional)","text",APP.directJsonUrl,root);
- button("Testar URL direta",()=>{
-  const v=uf.value.trim(); if(!v){ status("Cole a URL"); return; }
-  APP.directJsonUrl=v; ContentRepository.load();
- },root);
- sectionTitle("Status",root);
- paragraph(questions.length?`✅ ${questions.length} questões`:"❌ 0 questões",root);
- const debug=ContentRepository.getDebug();
- if(debug.filesInfo&&debug.filesInfo.length){
-  sectionTitle("Análise dos arquivos",root);
-  for(const info of debug.filesInfo){
-   const b=element("div",null,root,"notice");
-   element("strong",info.name+(info.branch?` (${info.branch})`:""),b);
-   if(info.error){
-    const p=element("div","⚠️ "+info.error,b); p.style.color="var(--danger)";
-   } else {
-    if(info.structure){
-     const p=element("div","📄 "+info.structure,b);
-     p.style.cssText="color:var(--muted);font-size:.85rem;font-family:monospace;margin-top:4px";
+function dbOpen() {
+  return new Promise(resolve=>{
+    if(!('indexedDB' in window)){
+      resolve(null);
+      return;
     }
-    if(info.candidates!==undefined){
-     const p=element("div",`🔍 ${info.candidates} · ${info.valid||0} válidas · ${info.rejected||0} rejeitadas`,b);
-     p.style.cssText="font-size:.85rem;margin-top:4px;color:"+(info.valid>0?"var(--accent)":"var(--muted)");
+    try {
+      const r=indexedDB.open('PMSCAcademia',1);
+      r.onupgradeneeded=()=>{
+        r.result.createObjectStore('data');
+      };
+      r.onsuccess=()=>resolve(r.result);
+      r.onerror=()=>resolve(null);
+    } catch {
+      resolve(null);
     }
-   }
+  });
+}
+
+async function idbGet(key) {
+  if(!db)return null;
+  return new Promise(resolve=>{
+    try {
+      const r=db.transaction('data')
+        .objectStore('data').get(key);
+      r.onsuccess=()=>resolve(r.result??null);
+      r.onerror=()=>resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function idbSet(key,value) {
+  if(!db)return;
+  return new Promise(resolve=>{
+    try {
+      const r=db.transaction('data','readwrite')
+        .objectStore('data').put(value,key);
+      r.onsuccess=()=>resolve();
+      r.onerror=()=>resolve();
+    } catch {
+      resolve();
+    }
+  });
+}
+
+/* NORMALIZAR QUESTÕES */
+
+function normalize(raw,disc) {
+  if(!raw||typeof raw!=='object')return null;
+
+  const text=raw.pergunta??raw.enunciado??raw.question;
+  let opts=raw.alternativas??raw.opcoes??raw.options;
+
+  if(opts&&!Array.isArray(opts)&&typeof opts==='object') {
+    opts=Object.values(opts);
   }
- }
- if(!questions.length){
-  sectionTitle("Como resolver",root);
-  const h=element("div",null,root,"notice");
-  paragraph("1. Confirme que o repositório é público",h);
-  paragraph("2. Verifique o nome exato do arquivo .json na raiz",h);
-  paragraph("3. Cole a URL raw em 'URL direta' acima",h);
-  const l=element("a","🔗 Abrir repositório",h);
-  l.href="https://github.com/"+APP.repo; l.target="_blank";
-  l.style.cssText="color:var(--accent);display:block;margin-top:8px";
- }
- button("🔄 Recarregar",()=>ContentRepository.load(),root);
-}
 
-function renderSettings(){
- const root=clearContent("Configurações");
- const f=field("Tamanho da fonte (px)","number",state.fontSize||16,root);
- f.min=14; f.max=30;
- button("Aplicar tamanho",()=>{
-  const s=Math.max(14,Math.min(30,Number(f.value)||16));
-  state.fontSize=s; save();
-  document.documentElement.style.setProperty("--font",s+"px");
- },root);
- button("Modo foco",()=>document.body.classList.toggle("focus"),root);
- button("Exportar backup",()=>StorageManager.export(),root);
- const up=element("input",null,root);
- up.type="file"; up.accept=".json";
- up.onchange=async()=>{ try{ await StorageManager.restore(up.files[0]); status("Restaurado."); }catch(e){ status("Erro: "+e.message); } };
-}
+  if(!Array.isArray(opts)||typeof text!=='string'||
+     !text.trim()||opts.length<2)return null;
 
-function download(name,content,type){
- const b=new Blob([content],{type});
- const u=URL.createObjectURL(b);
- const a=document.createElement("a");
- a.href=u; a.download=name;
- document.body.append(a); a.click(); a.remove();
- setTimeout(()=>URL.revokeObjectURL(u),1000);
-}
+  opts=opts.map(x=>typeof x==='string'
+    ?x:String(x?.texto??x?.text??''));
 
-/* ═══════════════════════════════════════════════════════════════════
-   ⭐ VR — Painéis 3D com texto auto-ajustado
-═══════════════════════════════════════════════════════════════════ */
+  let key=raw.correta??raw.gabarito??raw.correct??raw.resposta;
 
-let scene,camera,renderer,rig,room;
-const materials=new Map();
-const PX_PER_M = 400;
-
-function material(color){
- if(!materials.has(color)) materials.set(color,new THREE.MeshStandardMaterial({color,roughness:.8}));
- return materials.get(color);
-}
-function cube(x,y,z,w,h,d,color){
- const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(color));
- m.position.set(x,y,z); room.add(m); return m;
-}
-function cylinder(x,y,z,r,h,color){
- const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),material(color));
- m.position.set(x,y,z); room.add(m); return m;
-}
-function brazilFlag(x,z){
- cylinder(x,2,z,.045,4,"#cccccc");
- cube(x+.7,3.25,z,1.4,.9,.04,"#169b45");
- const d=cube(x+.7,3.25,z+.04,.75,.6,.025,"#ffdf00");
- d.rotation.z=Math.PI/4;
-}
-function tree(x,z){
- cylinder(x,.9,z,.14,1.8,"#725333");
- const c=new THREE.Mesh(new THREE.ConeGeometry(1.1,3,8),material("#315e36"));
- c.position.set(x,3,z); room.add(c);
-}
-function bed(x,z){
- cube(x,.45,z,1.6,.18,2.2,"#667e77");
- cube(x,1.45,z,1.6,.18,2.2,"#667e77");
- for(const dx of [-.7,.7]) for(const dz of [-1,1]) cube(x+dx,1,z+dz,.09,2,.09,"#a3aaa7");
-}
-function disposeRoom(){
- if(!room) return;
- scene.remove(room);
- room.traverse(o=>{ if(o.geometry) o.geometry.dispose(); });
- room=null;
-}
-
-function changeEnvironment(index){
- index=Math.max(0,Math.min(environments.length-1,Number(index)||0));
- state.environment=index; save();
- if(!scene||!renderer) return;
- disposeRoom();
- room=new THREE.Group(); scene.add(room);
- scene.background=new THREE.Color(index===3?"#8bb9d3":"#0a1e15");
- cube(0,-.12,0,30,.24,30,index===3?"#607b47":"#0e2419");
- if(index===0){
-  cube(0,2,-10.5,10,4,.5,"#1a4030");
-  for(let x=-4;x<=4;x+=2) cube(x,.015,-2,.1,.03,6,"#3a5a4a");
-  brazilFlag(-7,-9); brazilFlag(7,-9);
- }
- if(index===1){
-  cube(0,2.5,-10.7,7,2.5,.08,"#0e3024");
-  for(let x=-4;x<=4;x+=2) for(let z=-5;z<=2;z+=2) cube(x,.75,z,1.4,.15,.8,"#3a2a1a");
-  brazilFlag(-8,-9);
- }
- if(index===2){
-  cube(-5,1.6,-7,3,3.2,3,"#3a3030");
-  for(let x=-2;x<=7;x+=.8) cube(x,1.4,-8,.09,2.8,.09,"#1a2a20");
-  brazilFlag(8,-7);
- }
- if(index===3){
-  for(let x=-8;x<=8;x+=4){ cube(x,.55,-5,2,1.1,1,"#5a4a30"); tree(x+1.8,-9); }
-  brazilFlag(7,-8);
- }
- if(index===4){
-  for(let x=-6;x<=6;x+=3){ bed(x,-5); bed(x,1); }
-  brazilFlag(8,-9);
- }
- renderer.render(scene,camera);
-}
-
-/* ── Helpers de texto com AUTO-FIT ── */
-
-/**
- * Desenha texto em um canvas com auto-fit:
- * - Tenta fontSizeMax, reduz até caber em (maxW × maxH)
- * - Faz wrap por pixels medidos
- * - Trunca com "…" só se fontSize chegar ao mínimo
- */
-function drawFittedText(ctx,text,maxW,maxH,opts){
- opts=opts||{};
- const fontSizeMax=opts.fontSizeMax||64;
- const fontSizeMin=opts.fontSizeMin||18;
- const lineHeightFactor=opts.lineHeightFactor||1.2;
- const bold=opts.bold!==false;
- const maxLines=opts.maxLines||10;
-
- let fs=fontSizeMax;
- let lines=[];
- let lh=0;
-
- while(fs>=fontSizeMin){
-  ctx.font=`${bold?'bold ':''}${fs}px system-ui, Arial`;
-  lines=[];
-  let ln='';
-  for(const wd of String(text).split(/\s+/)){
-   const t=ln?ln+' '+wd:wd;
-   if(ctx.measureText(t).width>maxW&&ln){ lines.push(ln); ln=wd; }
-   else ln=t;
+  if(typeof key==='string') {
+    const s=key.trim().toUpperCase();
+    key=/^[A-Z]$/.test(s)
+      ?s.charCodeAt(0)-65
+      :Number(s);
   }
-  if(ln) lines.push(ln);
-  lh=fs*lineHeightFactor;
-  if(lines.length<=maxLines && lines.length*lh<=maxH) break;
-  fs-=2;
- }
 
- if(lines.length>maxLines){
-  lines=lines.slice(0,maxLines);
-  let last=lines[maxLines-1];
-  while(ctx.measureText(last+'…').width>maxW && last.length>0) last=last.slice(0,-1);
-  lines[maxLines-1]=last+'…';
- } else if(lines.length*lh>maxH){
-  const maxL=Math.max(1,Math.floor(maxH/lh));
-  if(lines.length>maxL){
-   lines=lines.slice(0,maxL);
-   let last=lines[maxL-1];
-   while(ctx.measureText(last+'…').width>maxW && last.length>0) last=last.slice(0,-1);
-   lines[maxL-1]=last+'…';
+  if(!Number.isInteger(key)||key<0||
+     key>=opts.length||opts.some(x=>!x.trim()))return null;
+
+  const materia=String(raw.disciplina||disc||'Geral');
+
+  return {
+    id:String(raw.id||raw.codigo||materia+':'+text.trim()),
+    disciplina:materia,
+    assunto:String(raw.assunto||raw.topico||'Geral'),
+    dificuldade:String(raw.dificuldade||'Não informada'),
+    pergunta:text,
+    alternativas:opts,
+    correta:key,
+    explicacao:String(raw.explicacao||raw.comentario||''),
+    referencia:String(raw.referencia||'')
+  };
+}
+
+function extract(data,disc='Geral',out=[]) {
+  if(Array.isArray(data)) {
+    for(const row of data)extract(row,disc,out);
+    return out;
   }
- }
+  if(!data||typeof data!=='object')return out;
 
- return {lines,lh,fs};
+  if('pergunta' in data||'enunciado' in data||'question' in data) {
+    const q=normalize(data,disc);
+    if(q)out.push(q);
+    return out;
+  }
+
+  for(const [name,val] of Object.entries(data)) {
+    if(!val||typeof val!=='object')continue;
+    const generic=[
+      'questoes','questions','dados','data','disciplinas','items'
+    ];
+    extract(
+      val,
+      generic.includes(name.toLowerCase())?disc:name,
+      out
+    );
+  }
+  return out;
 }
 
-class VRPanel {
- constructor(width,height,position,rotationY=0){
-  this.group=new THREE.Group();
-  this.group.position.copy(position);
-  this.group.rotation.y=rotationY;
-  this.width=width; this.height=height;
-  this.clickables=[];
+/* CARREGAR JSON DO GITHUB */
 
-  const cw=Math.round(width*PX_PER_M);
-  const ch=Math.round(height*PX_PER_M);
-  const cv=document.createElement('canvas');
-  cv.width=cw; cv.height=ch;
-  const ctx=cv.getContext('2d');
-  const grad=ctx.createLinearGradient(0,0,0,ch);
-  grad.addColorStop(0,'#0e2519'); grad.addColorStop(1,'#071711');
-  ctx.fillStyle=grad; ctx.fillRect(0,0,cw,ch);
-  ctx.strokeStyle='#54e5a0'; ctx.lineWidth=10; ctx.strokeRect(5,5,cw-10,ch-10);
+async function loadBank() {
+  setStatus('Lendo arquivos JSON da raiz...');
 
-  const tex=new THREE.CanvasTexture(cv);
-  tex.colorSpace=THREE.SRGBColorSpace;
-  tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter;
+  let urls=new Set(['./json.json']);
+  let checked=0;
+  let rejected=0;
+  let errors=[];
 
-  const bg=new THREE.Mesh(new THREE.PlaneGeometry(width,height),new THREE.MeshBasicMaterial({map:tex}));
-  this.group.add(bg);
-  this.bgTexture=tex;
- }
+  try {
+    const r=await fetch(
+      `https://api.github.com/repos/${REPO}/contents/`,
+      {cache:'no-store'}
+    );
+    if(r.ok) {
+      const contents=await r.json();
+      if(Array.isArray(contents)) {
+        for(const f of contents) {
+          if(f.type==='file'&&
+             /\.json$/i.test(f.name)&&f.download_url) {
+            urls.add(f.download_url);
+          }
+        }
+      }
+    } else {
+      errors.push('API GitHub: '+r.status);
+    }
+  } catch(e) {
+    errors.push('API: '+e.message);
+  }
 
- addButton(x,y,w,h,text,onClick,opts={}){
-  opts=opts||{};
-  const cw=Math.round(w*PX_PER_M);
-  const ch=Math.round(h*PX_PER_M);
-  const cv=document.createElement('canvas');
-  cv.width=cw; cv.height=ch;
-  const ctx=cv.getContext('2d');
+  const map=new Map();
 
-  // Fundo + borda
-  ctx.fillStyle=opts.bgColor||'#19362a'; ctx.fillRect(0,0,cw,ch);
-  ctx.strokeStyle=opts.borderColor||'#54e5a0'; ctx.lineWidth=4; ctx.strokeRect(2,2,cw-4,ch-4);
+  for(const url of urls) {
+    try {
+      const r=await fetch(url,{cache:'no-store'});
+      if(!r.ok)throw Error(String(r.status));
 
-  // Texto com auto-fit
-  const padding=opts.padding||14;
-  const maxW=cw-padding*2;
-  const maxH=ch-padding*2;
-  const align=opts.align||'center';
+      const raw=await r.text();
+      if(raw.length>15000000)throw Error('arquivo muito grande');
 
-  const {lines,lh,fs}=drawFittedText(ctx,text,maxW,maxH,{
-   fontSizeMax:opts.fontSizeMax||Math.min(ch*0.42,cw*0.09),
-   fontSizeMin:opts.fontSizeMin||16,
-   maxLines:opts.maxLines||2,
-   bold:true,
-   lineHeightFactor:1.15
-  });
+      const json=JSON.parse(raw);
+      const list=extract(json);
 
-  ctx.fillStyle=opts.textColor||'#f1f8f3';
-  ctx.font=`bold ${fs}px system-ui, Arial`;
-  ctx.textBaseline='middle';
-  if(align==='left') ctx.textAlign='left';
-  else if(align==='right') ctx.textAlign='right';
-  else ctx.textAlign='center';
+      for(const q of list) {
+        if(!map.has(q.id))map.set(q.id,q);
+      }
+      checked++;
+    } catch(e) {
+      rejected++;
+      errors.push(url.split('/').pop()+': '+e.message);
+    }
+  }
 
-  const totalH=lines.length*lh;
-  const startY=ch/2-totalH/2+lh/2;
-  const startX=align==='left'?padding:align==='right'?cw-padding:cw/2;
-
-  lines.forEach((l,i)=>ctx.fillText(l,startX,startY+i*lh));
-
-  const tex=new THREE.CanvasTexture(cv);
-  tex.colorSpace=THREE.SRGBColorSpace;
-  tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter;
-
-  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true}));
-  mesh.position.set(x,y,0.01);
-  mesh.userData.onClick=onClick;
-  mesh.userData.isButton=true;
-  this.group.add(mesh);
-  this.clickables.push(mesh);
-
-  // Glow
-  const glow=new THREE.Mesh(
-   new THREE.PlaneGeometry(w+0.03,h+0.03),
-   new THREE.MeshBasicMaterial({color:0x54e5a0,transparent:true,opacity:0.55,side:THREE.DoubleSide})
-  );
-  glow.position.set(x,y,0.005);
-  glow.visible=false;
-  this.group.add(glow);
-  mesh.userData.glow=glow;
-
-  return mesh;
- }
-
- addText(x,y,w,h,text,opts={}){
-  opts=opts||{};
-  const cw=Math.round(w*PX_PER_M);
-  const ch=Math.round(h*PX_PER_M);
-  const cv=document.createElement('canvas');
-  cv.width=cw; cv.height=ch;
-  const ctx=cv.getContext('2d');
-
-  const padding=opts.padding||10;
-  const maxW=cw-padding*2;
-  const maxH=ch-padding*2;
-  const align=opts.align||'left';
-
-  const {lines,lh,fs}=drawFittedText(ctx,text,maxW,maxH,{
-   fontSizeMax:opts.fontSizeMax||Math.min(ch*0.6,cw*0.12),
-   fontSizeMin:opts.fontSizeMin||14,
-   maxLines:opts.maxLines||8,
-   bold:opts.bold!==false,
-   lineHeightFactor:1.25
-  });
-
-  ctx.fillStyle=opts.color||'#f1f8f3';
-  ctx.font=`${opts.bold!==false?'bold ':''}${fs}px system-ui, Arial`;
-  ctx.textBaseline='top';
-  if(align==='left') ctx.textAlign='left';
-  else if(align==='right') ctx.textAlign='right';
-  else ctx.textAlign='center';
-
-  const totalH=lines.length*lh;
-  let startY=padding;
-  if(opts.valign==='middle') startY=ch/2-totalH/2;
-  else if(opts.valign==='bottom') startY=ch-totalH-padding;
-
-  const startX=align==='left'?padding:align==='right'?cw-padding:cw/2;
-
-  lines.forEach((l,i)=>ctx.fillText(l,startX,startY+i*lh));
-
-  const tex=new THREE.CanvasTexture(cv);
-  tex.colorSpace=THREE.SRGBColorSpace;
-  tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter;
-
-  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true}));
-  mesh.position.set(x,y,0.01);
-  this.group.add(mesh);
-  return mesh;
- }
-
- dispose(){
-  this.group.traverse(o=>{
-   if(o.geometry) o.geometry.dispose();
-   if(o.material){
-    if(o.material.map) o.material.map.dispose();
-    o.material.dispose();
-   }
-  });
- }
-}
-
-/* ── VR Manager ── */
-
-const vrManager = {
- panels: [],
- current: null,
- raycaster: new THREE.Raycaster(),
- lastHoverTime: 0,
-
- isActive(){ return renderer && renderer.xr.isPresenting; },
-
- clear(){
-  for(const p of this.panels){ scene.remove(p.group); p.dispose(); }
-  this.panels=[]; this.current=null;
- },
-
- createPanel(w,h,z=-2.0){
-  const panel=new VRPanel(w,h,new THREE.Vector3(0,1.6,z),0);
-  scene.add(panel.group);
-  this.panels.push(panel);
-  this.current=panel;
-  return panel;
- },
-
- showHome(){
-  this.clear();
-  const p=this.createPanel(2.6,1.9);
-
-  // Cabeçalho
-  p.addText(0,0.74,2.3,0.14,'PMSC Academy 2026',{align:'center',color:'#54e5a0',fontSizeMax:70,valign:'middle'});
-  const s=StatisticsManager.summary();
-  p.addText(0,0.53,2.3,0.10,`Questões: ${s.total} · Acertos: ${s.correct} · ${s.rate}%`,{align:'center',fontSizeMax:38,valign:'middle'});
-
-  // 6 botões em 2 linhas de 3
-  const buttons=[
-   {l:'📚 Estudar',a:()=>this.showStudy()},
-   {l:'📝 Simulado',a:()=>this.showExamMenu()},
-   {l:'🃏 Flashcard',a:()=>this.showFlashcard()},
-   {l:'🔄 Revisar',a:()=>this.showReview()},
-   {l:'📊 Desempenho',a:()=>this.showStats()},
-   {l:'🔄 Atualizar',a:()=>{ ContentRepository.load(); setTimeout(()=>this.showHome(),1500); }},
-  ];
-  const cols=3;
-  buttons.forEach((btn,i)=>{
-   const r=Math.floor(i/cols), c=i%cols;
-   const x=(c-(cols-1)/2)*0.78;
-   const y=0.22-r*0.30;
-   p.addButton(x,y,0.72,0.24,btn.l,btn.a,{fontSizeMax:44,fontSizeMin:18,maxLines:2});
-  });
-
-  // Botões de saída
-  p.addButton(-0.65,-0.68,0.9,0.18,'❌ Sair do VR',()=>{
-   const s=renderer.xr.getSession(); if(s) s.end();
-  },{bgColor:'#4b2525',borderColor:'#ff7777',fontSizeMax:38});
-
-  p.addButton(0.65,-0.68,0.9,0.18,'🏠 Desktop',()=>{
-   const s=renderer.xr.getSession(); if(s) s.end();
-  },{fontSizeMax:38});
- },
-
- showStudy(){
-  this.clear();
-  if(!questions.length){ this.showHome(); return; }
-  const q=questions[currentIndex%questions.length];
-  const answered=state.session?.answeredId===q.id;
-  const chosen=state.session?.choice;
-
-  const p=this.createPanel(2.8,2.4);
-
-  // Cabeçalho
-  p.addText(0,1.02,2.5,0.12,`${q.disciplina} · ${q.assunto}`,{align:'center',color:'#54e5a0',fontSizeMax:34,valign:'middle'});
-
-  // Enunciado (com auto-shrink, até 4 linhas)
-  p.addText(0,0.65,2.5,0.55,q.enunciado,{align:'left',fontSizeMax:42,maxLines:4,valign:'top'});
-
-  // Alternativas (5 × 0.20, espaçamento 0.24)
-  q.alternativas.forEach((alt,i)=>{
-   const y=0.25-i*0.24;
-   const text=`${String.fromCharCode(65+i)}) ${alt}`;
-   let bg='#19362a', bd='#365b49';
-   if(answered){
-    if(i===q.correta){ bg='#174c32'; bd='#6affaa'; }
-    else if(i===chosen){ bg='#4b2525'; bd='#ff7777'; }
-   }
-   p.addButton(0,y,2.6,0.20,text,()=>{
-    if(answered) return;
-    StatisticsManager.record(q,i,'study');
-    state.session={id:q.id,answeredId:q.id,choice:i};
-    save(); this.showStudy();
-   },{bgColor:bg,borderColor:bd,align:'left',fontSizeMax:28,maxLines:2});
-  });
-
-  // Navegação
-  p.addButton(-0.9,-1.05,0.6,0.16,'◀ Anterior',()=>{
-   currentIndex=Math.max(0,currentIndex-1);
-   state.session={id:questions[currentIndex].id}; save();
-   this.showStudy();
-  },{fontSizeMax:34});
-  p.addButton(0,-1.05,0.6,0.16,'🏠 Menu',()=>this.showHome(),{fontSizeMax:34});
-  p.addButton(0.9,-1.05,0.6,0.16,'Próxima ▶',()=>{
-   currentIndex=Math.min(questions.length-1,currentIndex+1);
-   state.session={id:questions[currentIndex].id}; save();
-   this.showStudy();
-  },{fontSizeMax:34});
- },
-
- showFlashcard(){
-  this.clear();
-  if(!questions.length){ this.showHome(); return; }
-  const q=questions[currentIndex%questions.length];
-  const p=this.createPanel(2.6,2.2);
-
-  if(!flashBack){
-   // Frente
-   p.addText(0,0.92,2.3,0.12,`${q.disciplina} · ${q.assunto}`,{align:'center',color:'#54e5a0',fontSizeMax:32,valign:'middle'});
-   p.addText(0,0.15,2.3,1.2,q.enunciado,{align:'center',fontSizeMax:44,maxLines:8,valign:'middle'});
-   p.addButton(0,-0.82,1.4,0.20,'🔄 Virar cartão',()=>{ flashBack=true; this.showFlashcard(); },{fontSizeMax:44});
+  if(map.size) {
+    questions=[...map.values()];
+    await idbSet('bank',questions);
+    loadDetails=`${questions.length} questões de ${checked} arquivo(s) JSON. ${rejected} arquivo(s) ignorado(s).`;
+    setStatus(loadDetails);
   } else {
-   // Verso
-   p.addText(0,0.90,2.3,0.12,'✓ RESPOSTA CORRETA',{align:'center',color:'#54e5a0',fontSizeMax:32,valign:'middle'});
-
-   // Alternativa correta (auto-fit, até 3 linhas)
-   const ansText=`${String.fromCharCode(65+q.correta)}) ${q.alternativas[q.correta]}`;
-   p.addText(0,0.60,2.3,0.28,ansText,{align:'center',color:'#6affaa',fontSizeMax:40,maxLines:3,valign:'middle'});
-
-   // Explicação (auto-fit, até 5 linhas)
-   p.addText(0,0.05,2.3,0.65,q.explicacao||'Sem explicação disponível.',{align:'center',fontSizeMax:28,maxLines:5,valign:'top'});
-
-   // Botões de avaliação
-   const grades=[
-    {l:'😰 Difícil',g:2,x:-0.75,bg:'#4b2525',bd:'#ff7777'},
-    {l:'😊 Médio',g:4,x:0,bg:'#7a4a10',bd:'#ffaa00'},
-    {l:'😎 Fácil',g:5,x:0.75,bg:'#174c32',bd:'#6affaa'},
-   ];
-   grades.forEach(gr=>{
-    p.addButton(gr.x,-0.62,0.68,0.20,gr.l,()=>{
-     SpacedRepetition.grade(q.id,gr.g);
-     currentIndex=(currentIndex+1)%questions.length;
-     flashBack=false; this.showFlashcard();
-    },{bgColor:gr.bg,borderColor:gr.bd,fontSizeMax:32});
-   });
+    const cached=await idbGet('bank');
+    questions=Array.isArray(cached)?cached:[];
+    loadDetails=questions.length
+      ?`GitHub indisponível: ${questions.length} questões recuperadas do cache.`
+      :'Não encontrei questões válidas. '+errors.join('; ');
+    setStatus(loadDetails);
   }
 
-  p.addButton(0,-0.92,0.9,0.16,'🏠 Menu',()=>this.showHome(),{fontSizeMax:34});
- },
+  activePool=[];
+  qIndex=0;
+  populateSubjects();
+  render();
+  updateVR();
+}
 
- showExamMenu(){
-  this.clear();
-  const p=this.createPanel(2.4,1.8);
-  p.addText(0,0.72,2.1,0.14,'📝 Simulado',{align:'center',color:'#54e5a0',fontSizeMax:60,valign:'middle'});
-  p.addText(0,0.45,2.1,0.10,'Escolha a quantidade:',{align:'center',fontSizeMax:32,valign:'middle'});
+function subjects() {
+  return [...new Set(questions.map(q=>q.disciplina))]
+    .sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
 
-  [10,20,40,60].forEach((n,i)=>{
-   p.addButton(-0.9+i*0.6,0.12,0.5,0.22,`${n}q`,()=>{
-    if(!questions.length){ this.showHome(); return; }
-    const sh=[...questions];
-    for(let j=sh.length-1;j>0;j--){ const k=Math.floor(Math.random()*(j+1)); [sh[j],sh[k]]=[sh[k],sh[j]]; }
-    exam={id:"e"+Date.now(),ids:sh.slice(0,Math.min(n,sh.length)).map(q=>q.id),answers:{},index:0,start:now(),duration:0};
-    state.activeExam=exam; save(); this.showExam();
-   },{fontSizeMax:44});
+function populateSubjects() {
+  const node=$('subject');
+  const old=node.value;
+  node.replaceChildren(new Option('Todas',''));
+  for(const name of subjects())node.add(new Option(name,name));
+  node.value=[...node.options].some(x=>x.value===old)?old:'';
+}
+
+function filtered() {
+  const s=$('subject').value;
+  const term=$('search').value.trim().toLowerCase();
+  return questions.filter(q=>
+    (!s||q.disciplina===s)&&
+    (!term||(q.pergunta+' '+q.assunto+' '+q.disciplina)
+      .toLowerCase().includes(term))
+  );
+}
+
+function pool() {
+  if(page==='simulado'&&state.exam)
+    return state.exam.ids.map(byId).filter(Boolean);
+  if(page==='revisoes')return activePool;
+  return activePool.length?activePool:filtered();
+}
+
+function current() {
+  const a=pool();
+  qIndex=Math.max(0,Math.min(qIndex,a.length-1));
+  return a[qIndex];
+}
+
+function go(p) {
+  page=p;
+  qIndex=0;
+  flipped=false;
+  activePool=[];
+  render();
+}
+
+function count() {
+  const n=state.history.length;
+  const ok=state.history.filter(x=>x.correct).length;
+  return {n,ok,pct:n?Math.round(ok/n*100):0};
+}
+
+function answered(q,choice,mode) {
+  state.history.push({
+    id:q.id,
+    disciplina:q.disciplina,
+    assunto:q.assunto,
+    choice,
+    correct:choice===q.correta,
+    mode,
+    time:now()
   });
+  if(state.history.length>15000)
+    state.history=state.history.slice(-15000);
+  if(choice!==q.correta)
+    state.reviews[q.id]={due:now(),interval:1};
+  save();
+}
 
-  if(state.activeExam){
-   p.addButton(0,-0.30,1.4,0.22,'▶ Retomar simulado',()=>{
-    exam=state.activeExam; this.showExam();
-   },{fontSizeMax:36});
+function reviewGrade(id,grade) {
+  const prev=state.reviews[id]||{interval:1};
+  const days=grade===1?1:
+    grade===3?Math.max(3,prev.interval*2):
+    Math.max(7,prev.interval*3);
+  state.reviews[id]={
+    interval:days,
+    due:now()+days*86400000
+  };
+  save();
+}
+
+function examStart(n) {
+  const list=shuffle(filtered()).slice(0,n);
+  if(!list.length) {
+    setStatus('Banco vazio. Atualize os JSONs.');
+    return;
   }
+  state.exam={
+    ids:list.map(q=>q.id),
+    answers:{},
+    index:0,
+    start:now(),
+    minutes:Math.max(0,Number($('examMinutes')?.value)||45)
+  };
+  page='simulado';
+  qIndex=0;
+  save();
+  render();
+}
 
-  p.addButton(0,-0.70,0.9,0.16,'🏠 Menu',()=>this.showHome(),{fontSizeMax:34});
- },
-
- showExam(){
-  this.clear();
-  if(!exam){ this.showExamMenu(); return; }
-  const pool=exam.ids.map(id=>QuestionManager.find(id)).filter(Boolean);
-  if(!pool.length){ this.showExamMenu(); return; }
-  exam.index=Math.max(0,Math.min(exam.index,pool.length-1));
-  const q=pool[exam.index];
-
-  const p=this.createPanel(2.8,2.4);
-  p.addText(0,1.02,2.5,0.12,`Questão ${exam.index+1} de ${pool.length}`,{align:'center',color:'#54e5a0',fontSizeMax:34,valign:'middle'});
-
-  p.addText(0,0.65,2.5,0.55,q.enunciado,{align:'left',fontSizeMax:42,maxLines:4,valign:'top'});
-
-  q.alternativas.forEach((alt,i)=>{
-   const y=0.25-i*0.24;
-   const text=`${String.fromCharCode(65+i)}) ${alt}`;
-   const selected=exam.answers[q.id]===i;
-   p.addButton(0,y,2.6,0.20,text,()=>{
-    exam.answers[q.id]=i;
-    state.activeExam=exam; save();
-    this.showExam();
-   },{
-    bgColor:selected?'#174c32':'#19362a',
-    borderColor:selected?'#6affaa':'#365b49',
-    align:'left',fontSizeMax:28,maxLines:2
-   });
+function examFinish() {
+  if(!state.exam)return;
+  const e=state.exam;
+  let ok=0,wrong=0;
+  for(const id of e.ids) {
+    const q=byId(id),a=e.answers[id];
+    if(!q||a===undefined)continue;
+    answered(q,a,'simulado');
+    if(a===q.correta)ok++;
+    else wrong++;
+  }
+  const total=e.ids.length;
+  state.exams.push({
+    date:now(),total,ok,wrong,
+    blank:total-ok-wrong
   });
+  state.exam=null;
+  save();
+  go('estatisticas');
+  setStatus(`Simulado: ${ok} acertos, ${wrong} erros, ${total-ok-wrong} em branco.`);
+}
 
-  p.addButton(-0.9,-1.05,0.6,0.16,'◀ Anterior',()=>{
-   exam.index=Math.max(0,exam.index-1); state.activeExam=exam; save(); this.showExam();
-  },{fontSizeMax:32});
+function changeQuestion(d) {
+  const a=pool();
+  qIndex=Math.max(0,Math.min(a.length-1,qIndex+d));
+  if(state.exam)state.exam.index=qIndex;
+  state.answer=null;
+  flipped=false;
+  save();
+  render();
+}
 
-  p.addButton(0,-1.05,0.6,0.16,'Finalizar',()=>{
-   const choices=Object.keys(exam.answers).length;
-   if(!confirm(`Finalizar? ${choices}/${pool.length} respondidas`)) return;
-   let c=0,w=0,b=0;
-   for(const qq of pool){
-    const ch=exam.answers[qq.id];
-    if(ch===undefined){ b++; continue; }
-    if(ch===qq.correta){ c++; } else { w++; }
-    StatisticsManager.record(qq,ch,'Simulado');
-   }
-   state.exams.push({id:exam.id,date:now(),total:pool.length,correct:c,wrong:w,blank:b,duration:now()-exam.start});
-   exam=null; state.activeExam=null; save();
-   this.showHome();
-  },{fontSizeMax:32,bgColor:'#7a4a10',borderColor:'#ffaa00'});
+function choose(i) {
+  const q=current();
+  if(!q)return;
+  if(page==='simulado'&&state.exam) {
+    state.exam.answers[q.id]=i;
+    save();
+  } else if(state.answer?.id!==q.id) {
+    state.answer={id:q.id,choice:i};
+    answered(q,i,page);
+  }
+  render();
+}
 
-  p.addButton(0.9,-1.05,0.6,0.16,'Próxima ▶',()=>{
-   exam.index=Math.min(pool.length-1,exam.index+1); state.activeExam=exam; save(); this.showExam();
-  },{fontSizeMax:32});
- },
+function favorite() {
+  const q=current();
+  if(!q)return;
+  state.favorites=state.favorites.includes(q.id)
+    ?state.favorites.filter(id=>id!==q.id)
+    :[...state.favorites,q.id];
+  save();
+  render();
+}
 
- showStats(){
-  this.clear();
-  const s=StatisticsManager.summary();
-  const p=this.createPanel(2.6,2.0);
-  p.addText(0,0.82,2.3,0.14,'📊 Desempenho',{align:'center',color:'#54e5a0',fontSizeMax:55,valign:'middle'});
+function beginReviews(type) {
+  const ids=type==='errors'
+    ?new Set(state.history.filter(h=>!h.correct).map(h=>h.id))
+    :null;
+  activePool=type==='errors'
+    ?questions.filter(q=>ids.has(q.id))
+    :questions.filter(q=>
+      state.reviews[q.id]&&state.reviews[q.id].due<=now());
+  page='revisoes';
+  qIndex=0;
+  render();
+}
 
-  const text=[
-   `Respondidas: ${s.total}`,
-   `Acertos: ${s.correct}`,
-   `Erros: ${s.wrong}`,
-   `Aproveitamento: ${s.rate}%`,
-   `Revisões pendentes: ${s.pending}`,
-   `Simulados: ${s.exams}`
-  ].join('\n');
+function download(name,data,type='application/json') {
+  const url=URL.createObjectURL(new Blob([data],{type}));
+  const a=el('a','',document.body);
+  a.href=url;
+  a.download=name;
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 
-  p.addText(0,0.30,2.3,0.85,text,{align:'left',fontSizeMax:38,maxLines:6,valign:'top'});
+/* INTERFACE HTML */
 
-  // Por disciplina (até 4)
-  const subs=StatisticsManager.bySubject();
-  let y=-0.10;
-  let count=0;
-  for(const [n,d] of Object.entries(subs)){
-   if(count>=4) break;
-   const r=Math.round(d.correct/d.total*100);
-   p.addText(0,y,2.3,0.09,`${n.slice(0,22)}: ${r}% (${d.correct}/${d.total})`,{align:'left',color:'#b4c7bb',fontSizeMax:28,maxLines:1,valign:'middle'});
-   y-=0.10;
-   count++;
+function render() {
+  document.querySelectorAll('#nav button').forEach(b=>
+    b.classList.toggle('active',b.dataset.page===page)
+  );
+  const root=$('content');
+  root.replaceChildren();
+  el('h2',pages.find(x=>x[0]===page)?.[1]||page,root);
+
+  if(page==='inicio') {
+    const s=count();
+    el('p',`Banco: ${questions.length} questões | Respondidas: ${s.n} | Aproveitamento: ${s.pct}%`,root);
+    el('p','No Meta Quest 3S, entre em VR para visualizar o painel e selecionar com controle ou mãos.',root);
+    const row=el('div',null,root);
+    row.className='row';
+    btn('Estudar questões',()=>go('questoes'),row);
+    btn('Aulas guiadas',()=>go('aulas'),row);
+    btn('Criar simulado',()=>go('simulado'),row);
+    btn('Revisões',()=>go('revisoes'),row);
   }
 
-  p.addButton(0,-0.82,0.9,0.16,'🏠 Menu',()=>this.showHome(),{fontSizeMax:34});
- },
-
- showReview(){
-  this.clear();
-  const due=ReviewManager.due();
-  const all=ReviewManager.all();
-  const p=this.createPanel(2.4,1.8);
-  p.addText(0,0.68,2.1,0.14,'🔄 Revisão',{align:'center',color:'#54e5a0',fontSizeMax:55,valign:'middle'});
-  p.addText(0,0.38,2.1,0.20,`Pendentes: ${due.length}\nMarcadas: ${all.length}`,{align:'center',fontSizeMax:36,maxLines:2,valign:'middle'});
-
-  p.addButton(-0.7,0.05,0.7,0.24,'Revisar\npendentes',()=>{
-   if(!due.length){ alert('Nada pendente'); return; }
-   studyPool=due; currentIndex=0; this.showStudy();
-  },{fontSizeMax:34,maxLines:2});
-
-  p.addButton(0.7,0.05,0.7,0.24,'Revisar\ntodas',()=>{
-   if(!all.length){ alert('Nada marcado'); return; }
-   studyPool=all; currentIndex=0; this.showStudy();
-  },{fontSizeMax:34,maxLines:2});
-
-  p.addButton(0,-0.60,0.9,0.16,'🏠 Menu',()=>this.showHome(),{fontSizeMax:34});
- },
-
- updateHover(controllers){
-  if(!this.current) return;
-  const t=performance.now();
-  if(t-this.lastHoverTime<50) return;
-  this.lastHoverTime=t;
-
-  for(const ctrl of controllers){
-   if(!ctrl) continue;
-   ctrl.updateWorldMatrix(true,false);
-   const m=new THREE.Matrix4().extractRotation(ctrl.matrixWorld);
-   this.raycaster.ray.origin.setFromMatrixPosition(ctrl.matrixWorld);
-   this.raycaster.ray.direction.set(0,0,-1).applyMatrix4(m).normalize();
-   this.raycaster.far=8;
-
-   const hits=this.raycaster.intersectObjects(this.current.clickables,false);
-
-   if(ctrl.userData.laser){
-    const dist=hits.length>0?Math.min(hits[0].distance,8):8;
-    ctrl.userData.laser.scale.z=dist;
-   }
-
-   this.current.clickables.forEach(b=>{
-    if(b.userData.glow) b.userData.glow.visible=false;
-   });
-
-   if(hits.length>0){
-    const target=hits[0].object;
-    if(target.userData.glow) target.userData.glow.visible=true;
-   }
+  if(page==='banco') {
+    el('p',loadDetails,root);
+    el('p',`Repositório: ${REPO}. Os JSONs são buscados na raiz.`,root);
+    for(const s of subjects()) {
+      el('p',`${s}: ${questions.filter(q=>q.disciplina===s).length} questões`,root);
+    }
+    btn('Atualizar agora',loadBank,root);
   }
- },
 
- handleClick(controller){
-  if(!this.current) return;
-  controller.updateWorldMatrix(true,false);
-  const m=new THREE.Matrix4().extractRotation(controller.matrixWorld);
-  this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
-  this.raycaster.ray.direction.set(0,0,-1).applyMatrix4(m).normalize();
-  this.raycaster.far=8;
-
-  const hits=this.raycaster.intersectObjects(this.current.clickables,false);
-  if(hits.length>0){
-   const btn=hits[0].object;
-   if(btn.userData.onClick) btn.userData.onClick();
+  if(page==='questoes'||page==='aulas'||
+     page==='revisoes'||(page==='simulado'&&state.exam)) {
+    renderQuestion(root);
   }
- }
-};
 
-/* ── init3D ── */
+  if(page==='simulado'&&!state.exam) {
+    el('p','Escolha quantas questões deseja responder. O simulado registra acertos, erros e questões em branco.',root);
+    el('label','Tempo em minutos',root);
+    const inp=el('input',null,root);
+    inp.id='examMinutes';
+    inp.type='number';
+    inp.value='45';
+    inp.min='0';
+    const row=el('div',null,root);
+    row.className='row';
+    for(const n of [10,20,50,100])
+      btn(`${n} questões`,()=>examStart(n),row);
+  }
 
-function init3D(){
- try{
+  if(page==='flashcards') {
+    const list=filtered();
+    const q=list[qIndex%Math.max(list.length,1)];
+    if(!q) {
+      el('p','Nenhuma questão disponível.',root);
+    } else {
+      el('p',`${qIndex+1}/${list.length} — ${q.disciplina}`,root);
+      el('div',flipped
+        ?`Resposta: ${q.alternativas[q.correta]}\n${q.explicacao}`
+        :q.pergunta,root).className='question';
+      const row=el('div',null,root);
+      row.className='row';
+      btn(flipped?'Ocultar resposta':'Virar cartão',()=>{
+        flipped=!flipped;render();
+      },row);
+      for(const [t,v] of [['Difícil',1],['Bom',3],['Fácil',5]]) {
+        btn(t,()=>{
+          reviewGrade(q.id,v);
+          qIndex=(qIndex+1)%list.length;
+          flipped=false;
+          render();
+        },row);
+      }
+      btn('Próximo',()=>{
+        qIndex=(qIndex+1)%list.length;
+        flipped=false;
+        render();
+      },row);
+    }
+  }
+
+  if(page==='revisoes'&&!pool().length) {
+    el('p','Sem revisões nesta seleção.',root);
+  }
+
+  if(page==='estatisticas') {
+    const s=count();
+    el('p',`Respondidas: ${s.n} | Acertos: ${s.ok} | Erros: ${s.n-s.ok} | Aproveitamento: ${s.pct}%`,root);
+    for(const subj of subjects()) {
+      const a=state.history.filter(h=>h.disciplina===subj);
+      if(a.length)el('p',`${subj}: ${a.filter(h=>h.correct).length}/${a.length}`,root);
+    }
+    el('h3','Últimos simulados',root);
+    for(const e of state.exams.slice(-10).reverse()) {
+      el('p',`${new Date(e.date).toLocaleDateString('pt-BR')}: ${e.ok}/${e.total} | ${e.blank} em branco`,root);
+    }
+    btn('Exportar histórico CSV',()=>{
+      const rows=['disciplina,assunto,correta,data'];
+      for(const h of state.history) {
+        rows.push(
+          [h.disciplina,h.assunto,h.correct,new Date(h.time).toISOString()]
+          .map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')
+        );
+      }
+      download('pmsc-historico.csv',rows.join('\n'),'text/csv');
+    },root);
+  }
+
+  if(page==='config') {
+    el('p','Os dados de desempenho são guardados neste navegador. Faça backup para transferir de aparelho.',root);
+    const row=el('div',null,root);
+    row.className='row';
+    btn('Tema claro/escuro',()=>{
+      state.theme=state.theme==='light'?'dark':'light';
+      document.body.classList.toggle('light',state.theme==='light');
+      save();render();
+    },row);
+    btn('Exportar backup JSON',()=>
+      download('pmsc-backup.json',JSON.stringify(state,null,2)),row);
+    const f=el('input',null,root);
+    f.type='file';
+    f.accept='.json';
+    f.onchange=async()=>{
+      try {
+        if(f.files[0].size>5000000)throw Error('Arquivo grande demais');
+        const o=JSON.parse(await f.files[0].text());
+        if(!Array.isArray(o.history)||!Array.isArray(o.favorites))
+          throw Error('Backup inválido');
+        state={...initial,...o};
+        save();render();
+        setStatus('Backup restaurado');
+      } catch(e) {
+        setStatus(e.message);
+      }
+    };
+    el('p','Selecione um backup JSON acima para restaurar.',root);
+  }
+
+  if(page==='revisoes') {
+    const row=el('div',null,root);
+    row.className='row';
+    btn('Revisões vencidas',()=>beginReviews('due'),row);
+    btn('Caderno de erros',()=>beginReviews('errors'),row);
+  }
+
+  updateVR();
+}
+
+function renderQuestion(root) {
+  const list=pool();
+  const q=current();
+  if(!q) {
+    el('p','Nenhuma questão encontrada. Selecione outra disciplina ou atualize o JSON.',root);
+    return;
+  }
+  const exam=page==='simulado'&&state.exam;
+  el('p',`${qIndex+1} de ${list.length} • ${q.disciplina} • ${q.assunto}`,root);
+  if(exam&&state.exam.minutes) {
+    const remain=Math.max(0,state.exam.minutes*60000-(now()-state.exam.start));
+    el('p',`Tempo restante: ${Math.ceil(remain/60000)} minuto(s)`,root);
+  }
+  el('div',q.pergunta,root).className='question';
+  const ans=exam
+    ?state.exam.answers[q.id]
+    :state.answer?.id===q.id?state.answer.choice:undefined;
+
+  if(page==='aulas') {
+    el('p','Aula guiada: leia a questão, consulte o gabarito e a explicação disponível no arquivo JSON.',root);
+    el('p',`Resposta: ${q.alternativas[q.correta]}`,root);
+    if(q.explicacao)el('p',q.explicacao,root);
+  } else {
+    for(let i=0;i<q.alternativas.length;i++) {
+      const b=btn(q.alternativas[i],()=>choose(i),root);
+      b.className='option';
+      if(ans!==undefined) {
+        if(exam&&ans===i)b.classList.add('active');
+        if(!exam) {
+          if(i===q.correta)b.classList.add('correct');
+          if(ans===i&&i!==q.correta)b.classList.add('wrong');
+        }
+      }
+    }
+  }
+  if(ans!==undefined&&!exam) {
+    el('p',ans===q.correta?'Resposta correta!':'Resposta incorreta.',root);
+    if(q.explicacao)el('p',q.explicacao,root);
+    if(q.referencia)el('p',`Referência: ${q.referencia}`,root);
+  }
+  const row=el('div',null,root);
+  row.className='row';
+  btn('◀ Anterior',()=>changeQuestion(-1),row);
+  btn('Próxima ▶',()=>changeQuestion(1),row);
+  btn(state.favorites.includes(q.id)?'★ Favorita':'☆ Favoritar',favorite,row);
+  if(exam)btn('Finalizar simulado',examFinish,row);
+}
+
+/* AÇÕES WEBXR */
+
+function perform(action) {
+  if(action.startsWith('go:'))return go(action.slice(3));
+  if(action.startsWith('answer:'))return choose(Number(action.slice(7)));
+  if(action.startsWith('exam:'))return examStart(Number(action.slice(5)));
+  if(action.startsWith('grade:')) {
+    const q=filtered()[qIndex];
+    if(q)reviewGrade(q.id,Number(action.slice(6)));
+    qIndex++;
+    flipped=false;
+    return render();
+  }
+  switch(action) {
+    case 'next':return changeQuestion(1);
+    case 'prev':return changeQuestion(-1);
+    case 'favorite':return favorite();
+    case 'flip':flipped=!flipped;return render();
+    case 'finish':return examFinish();
+    case 'refresh':return loadBank();
+    case 'reviewDue':return beginReviews('due');
+    case 'reviewErrors':return beginReviews('errors');
+    case 'sceneNext':
+      $('env').value=(Number($('env').value)+1)%envs.length;
+      return changeEnv(Number($('env').value));
+    case 'scenePrev':
+      $('env').value=(Number($('env').value)+envs.length-1)%envs.length;
+      return changeEnv(Number($('env').value));
+    case 'theme':
+      state.theme=state.theme==='light'?'dark':'light';
+      document.body.classList.toggle('light',state.theme==='light');
+      save();
+      return render();
+  }
+}
+
+/* PAINEL VR */
+
+const W=1200,H=1000;
+const board=document.createElement('canvas');
+board.width=W;
+board.height=H;
+
+const ctx=board.getContext('2d');
+const hotspots=[];
+
+let hovered=-1;
+let texture,panel,renderer,scene,camera,rig,room,floor;
+let controllers=[],hands=[];
+let lastSelect=0,lastSecond=-1;
+
+function rect(x,y,w,h,r=12) {
+  ctx.beginPath();
+  ctx.roundRect(x,y,w,h,r);
+}
+
+function wordLines(text,width,font='25px Arial') {
+  ctx.font=font;
+  const lines=[];
+  for(const piece of String(text).split('\n')) {
+    let line='';
+    for(const word of piece.split(/\s+/)) {
+      const trial=line?line+' '+word:word;
+      if(ctx.measureText(trial).width>width&&line) {
+        lines.push(line);
+        line=word;
+      } else {
+        line=trial;
+      }
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+function drawText(text,x,y,width,limit=5,size=28,color='#efffe9',gap=35) {
+  ctx.fillStyle=color;
+  ctx.font=`${size}px Arial`;
+  let lines=wordLines(text,width,`${size}px Arial`);
+  const cut=lines.length>limit;
+  lines=lines.slice(0,limit);
+  if(cut) {
+    lines[limit-1]=lines[limit-1]
+      .slice(0,Math.max(0,lines[limit-1].length-4))+'...';
+  }
+  for(const line of lines) {
+    ctx.fillText(line,x,y);
+    y+=gap;
+  }
+  return y;
+}
+
+function vrButton(label,x,y,w,h,action,tone='normal') {
+  const n=hotspots.length;
+  hotspots.push({x,y,w,h,action});
+  ctx.fillStyle=n===hovered
+    ?'#28684c':tone==='danger'?'#633331':'#244e3d';
+  rect(x,y,w,h,12);
+  ctx.fill();
+  ctx.strokeStyle=n===hovered?'#8fffc0':'#547c67';
+  ctx.lineWidth=3;
+  ctx.stroke();
+  drawText(label,x+14,y+h/2+9,w-24,1,22,'#fff',29);
+}
+
+function vrDraw() {
+  if(!texture)return;
+  hotspots.length=0;
+  ctx.fillStyle='#071911';
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#113526';
+  ctx.fillRect(0,0,W,76);
+  drawText('PM-SC | ACADEMIA IMERSIVA',32,49,1050,1,34,'#8dfac0');
+
+  let i=0;
+  for(const [key,name] of pages) {
+    const col=i%5,row=Math.floor(i/5);
+    vrButton(name,22+col*234,96+row*66,222,56,'go:'+key);
+    i++;
+  }
+
+  drawText(pages.find(x=>x[0]===page)?.[1]||page,40,260,1080,1,36,'#a9ffcf');
+
+  if(page==='inicio') {
+    drawText(`Questões carregadas: ${questions.length}`,42,330,1100);
+    const s=count();
+    drawText(`Respondidas: ${s.n} | Acertos: ${s.ok} | Aproveitamento: ${s.pct}%`,42,382,1100);
+    vrButton('INICIAR ESTUDOS',60,460,500,90,'go:questoes');
+    vrButton('AULAS GUIADAS',630,460,500,90,'go:aulas');
+    vrButton('SIMULADO',60,590,500,90,'go:simulado');
+    vrButton('REVISAR',630,590,500,90,'go:revisoes');
+  }
+  else if(page==='questoes'||page==='aulas'||
+          (page==='revisoes'&&activePool.length)||
+          (page==='simulado'&&state.exam)) {
+    const q=current(),list=pool();
+    if(!q) {
+      drawText('Nenhuma questão. Atualize o banco ou mude o filtro na página comum.',45,360,1070,4);
+    } else {
+      drawText(`${qIndex+1}/${list.length} • ${q.disciplina}`,43,320,1090,2,23,'#bddec8');
+      drawText(q.pergunta,43,363,1080,4,25,'#fff',33);
+      const exam=page==='simulado'&&state.exam;
+
+      if(page==='aulas') {
+        drawText('Gabarito: '+q.alternativas[q.correta],46,575,1100,4,27,'#88f8b6',35);
+        drawText(q.explicacao||'Sem explicação cadastrada neste JSON.',46,720,1100,3,24);
+      } else {
+        const chosen=exam
+          ?state.exam.answers[q.id]
+          :state.answer?.id===q.id?state.answer.choice:undefined;
+        let y=498;
+        for(let j=0;j<q.alternativas.length&&j<5;j++) {
+          const b=q.alternativas[j];
+          vrButton(b.slice(0,140),42,y,1115,73,'answer:'+j,
+            chosen===j?'chosen':'normal');
+          y+=78;
+        }
+        if(chosen!==undefined&&!exam) {
+          drawText(chosen===q.correta
+            ?'CORRETO'
+            :'INCORRETO — Gabarito '+String.fromCharCode(65+q.correta),
+            45,924,1060,1,23,'#afffbd');
+        }
+      }
+
+      vrButton('◀ ANTERIOR',42,936,230,52,'prev');
+      vrButton('PRÓXIMA ▶',286,936,230,52,'next');
+      vrButton(exam?'FINALIZAR':'★ FAVORITA',540,936,270,52,
+        exam?'finish':'favorite');
+      vrButton('AMBIENTE ▶',828,936,330,52,'sceneNext');
+    }
+  }
+  else if(page==='simulado') {
+    drawText('Escolha a quantidade de questões:',46,360,1100);
+    [10,20,50,100].forEach((n,i)=>
+      vrButton(n+' QUESTÕES',60+(i%2)*575,
+        430+Math.floor(i/2)*110,525,85,'exam:'+n));
+  }
+  else if(page==='flashcards') {
+    const arr=filtered();
+    const q=arr[qIndex%Math.max(1,arr.length)];
+    if(q) {
+      drawText(`${qIndex+1}/${arr.length} — ${q.disciplina}`,43,320,1080,1,24);
+      drawText(flipped
+        ?`RESPOSTA: ${q.alternativas[q.correta]} ${q.explicacao}`
+        :q.pergunta,43,394,1100,8,30,'#fff',42);
+      vrButton('VIRAR CARTÃO',40,756,350,80,'flip');
+      vrButton('DIFÍCIL',410,756,235,80,'grade:1');
+      vrButton('BOM',660,756,230,80,'grade:3');
+      vrButton('FÁCIL',905,756,245,80,'grade:5');
+      vrButton('PRÓXIMO',440,876,330,70,'grade:3');
+    } else {
+      drawText('Banco vazio.',40,380,1000);
+    }
+  }
+  else if(page==='revisoes') {
+    vrButton('REVISÕES VENCIDAS',50,450,510,95,'reviewDue');
+    vrButton('CADERNO DE ERROS',620,450,510,95,'reviewErrors');
+  }
+  else if(page==='estatisticas') {
+    const s=count();
+    drawText(`Respondidas: ${s.n} | Acertos: ${s.ok} | Aproveitamento: ${s.pct}%`,45,365,1080,3,30);
+    let y=435;
+    for(const name of subjects().slice(0,9)) {
+      const a=state.history.filter(h=>h.disciplina===name);
+      if(a.length) {
+        drawText(`${name}: ${a.filter(h=>h.correct).length}/${a.length}`,55,y,1060,1,25);
+        y+=45;
+      }
+    }
+  }
+  else if(page==='banco') {
+    drawText(loadDetails,45,370,1090,5,27);
+    drawText(`Repositório público: ${REPO}`,45,580,1100,2,25);
+    vrButton('ATUALIZAR JSON',50,700,490,85,'refresh');
+  }
+  else if(page==='config') {
+    drawText(`Ambiente: ${envs[state.env]}`,45,365,1100,2,27);
+    vrButton('◀ AMBIENTE',45,460,505,90,'scenePrev');
+    vrButton('AMBIENTE ▶',610,460,505,90,'sceneNext');
+    vrButton('TEMA CLARO / ESCURO',285,620,620,100,'theme');
+    drawText('Gatilho: selecionar. Apontar ao piso: teletransporte. Pinça: selecionar.',45,828,1080,3,24);
+  }
+
+  ctx.fillStyle='#b2d7c0';
+  ctx.font='20px Arial';
+  ctx.fillText('Projeto independente • Questões dos JSONs do repositório • Meta Quest 3S',30,996);
+  texture.needsUpdate=true;
+}
+
+function hitUV(uv) {
+  const x=uv.x*W,y=(1-uv.y)*H;
+  return hotspots.findIndex(h=>
+    x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);
+}
+
+function doHit(hit) {
+  if(now()-lastSelect<450)return false;
+  const ix=hitUV(hit.uv);
+  if(ix<0)return false;
+  lastSelect=now();
+  perform(hotspots[ix].action);
+  return true;
+}
+
+/* CONTROLES E MÃOS */
+
+const raycaster=new THREE.Raycaster();
+const mat4=new THREE.Matrix4();
+const orig=new THREE.Vector3();
+const direction=new THREE.Vector3();
+
+function rayFrom(obj) {
+  obj.updateWorldMatrix(true,false);
+  mat4.identity().extractRotation(obj.matrixWorld);
+  orig.setFromMatrixPosition(obj.matrixWorld);
+  direction.set(0,0,-1).applyMatrix4(mat4).normalize();
+  raycaster.set(orig,direction);
+}
+
+function selectFrom(obj) {
+  rayFrom(obj);
+  const panelHit=raycaster.intersectObject(panel)[0];
+  if(panelHit&&doHit(panelHit))return;
+
+  const floorHit=raycaster.intersectObject(floor)[0];
+  if(floorHit&&floorHit.distance<12) {
+    const p=floorHit.point;
+    if(Math.abs(p.x)<11&&Math.abs(p.z)<11) {
+      rig.position.x=p.x;
+      rig.position.z=p.z;
+      setStatus('Posição alterada pelo teletransporte.');
+    }
+  }
+}
+
+function handSelect(hand) {
+  if(!renderer.xr.isPresenting)return;
+
+  const tip=hand.joints?.['index-finger-tip'];
+  const wrist=hand.joints?.wrist;
+  if(!tip)return;
+
+  tip.updateWorldMatrix(true,false);
+  const p=new THREE.Vector3().setFromMatrixPosition(tip.matrixWorld);
+  const local=panel.worldToLocal(p.clone());
+
+  if(Math.abs(local.z)<.12&&Math.abs(local.x)<1.4&&Math.abs(local.y)<1.16) {
+    const u=local.x/2.8+.5;
+    const v=local.y/2.33+.5;
+    doHit({uv:{x:u,y:v}});
+    return;
+  }
+
+  if(wrist) {
+    wrist.updateWorldMatrix(true,false);
+    const w=new THREE.Vector3().setFromMatrixPosition(wrist.matrixWorld);
+    const dir=p.clone().sub(w).normalize();
+    raycaster.set(p,dir);
+    const hit=raycaster.intersectObject(panel)[0];
+    if(hit)doHit(hit);
+  }
+}
+
+/* MOTOR THREE.JS */
+
+function init3D() {
   scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x071711);
-  camera=new THREE.PerspectiveCamera(70,1,.1,100);
+  scene.background=new THREE.Color('#8eb1bf');
+  scene.add(new THREE.HemisphereLight(0xffffff,0x345342,2.2));
+
+  const sun=new THREE.DirectionalLight(0xffffff,1.8);
+  sun.position.set(4,9,4);
+  scene.add(sun);
+
   rig=new THREE.Group();
-  rig.position.set(0,1.65,3);
-  rig.add(camera);
   scene.add(rig);
 
-  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+  camera=new THREE.PerspectiveCamera(65,1,.1,120);
+  camera.position.set(0,1.65,7);
+  rig.add(camera);
+
+  renderer=new THREE.WebGLRenderer({
+    antialias:true,
+    powerPreference:'high-performance'
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
   renderer.xr.enabled=true;
-  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
-  $("scene").append(renderer.domElement);
+  $('scene').append(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xffffff,0x405344,2.0));
-  const sun=new THREE.DirectionalLight(0xffffff,1.5);
-  sun.position.set(5,10,5); scene.add(sun);
+  texture=new THREE.CanvasTexture(board);
+  texture.colorSpace=THREE.SRGBColorSpace;
 
-  changeEnvironment(state.environment);
+  panel=new THREE.Mesh(
+    new THREE.PlaneGeometry(2.8,2.33),
+    new THREE.MeshBasicMaterial({
+      map:texture,
+      side:THREE.DoubleSide
+    })
+  );
+  panel.position.set(0,1.67,-2.5);
+  rig.add(panel);
+  panel.visible=false;
 
-  const vrBtn=VRButton.createButton(renderer);
-  vrBtn.style.display="none";
-  document.body.append(vrBtn);
+  for(let i=0;i<2;i++) {
+    const c=renderer.xr.getController(i);
+    c.addEventListener('select',()=>selectFrom(c));
+    const points=[
+      new THREE.Vector3(0,0,0),
+      new THREE.Vector3(0,0,-7)
+    ];
+    c.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(points),
+      new THREE.LineBasicMaterial({color:0x8affba})
+    ));
+    rig.add(c);
+    controllers.push(c);
 
-  $("vr").onclick=async()=>{
-   if(!navigator.xr){ status("WebXR não disponível."); return; }
-   try{
-    const ok=await navigator.xr.isSessionSupported("immersive-vr");
-    if(!ok){ status("VR não suportada."); return; }
-    vrBtn.click();
-   }catch(e){ status("Erro VR: "+e.message); }
-  };
+    const grip=renderer.xr.getControllerGrip(i);
+    try {
+      grip.add(new XRControllerModelFactory().createControllerModel(grip));
+    } catch {}
+    rig.add(grip);
 
-  renderer.xr.addEventListener("sessionstart",()=>{
-   status("🥽 VR iniciada — use os controles");
-   rig.position.set(0,0,0);
-   vrManager.showHome();
-  });
-  renderer.xr.addEventListener("sessionend",()=>{
-   status("VR encerrada");
-   vrManager.clear();
-   rig.position.set(0,1.65,3);
-   render();
-  });
-
-  const ctrls=[];
-  for(let i=0;i<2;i++){
-   const ctrl=renderer.xr.getController(i);
-   ctrl.addEventListener("selectstart",()=>vrManager.handleClick(ctrl));
-   rig.add(ctrl);
-   ctrls.push(ctrl);
-
-   const laserGeo=new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-8)
-   ]);
-   const laser=new THREE.Line(laserGeo,new THREE.LineBasicMaterial({color:0x54e5a0}));
-   ctrl.add(laser);
-   ctrl.userData.laser=laser;
+    const hand=renderer.xr.getHand(i);
+    try {
+      hand.add(new XRHandModelFactory().createHandModel(hand,'spheres'));
+    } catch {}
+    rig.add(hand);
+    hand.addEventListener('select',()=>handSelect(hand));
+    hands.push({hand,pinched:false});
   }
 
-  let lastW=0,lastH=0;
-  renderer.setAnimationLoop(()=>{
-   const c=$("scene");
-   const w=c.clientWidth,h=c.clientHeight;
-   if(w&&h&&(w!==lastW||h!==lastH)){
-    lastW=w; lastH=h;
-    renderer.setSize(w,h,false);
-    camera.aspect=w/h;
-    camera.updateProjectionMatrix();
-   }
-   if(renderer.xr.isPresenting) vrManager.updateHover(ctrls);
-   renderer.render(scene,camera);
+  const vrBtn=VRButton.createButton(renderer,{
+    optionalFeatures:[
+      'hand-tracking',
+      'local-floor',
+      'bounded-floor'
+    ]
+  });
+  vrBtn.style.display='none';
+  document.body.append(vrBtn);
+
+  $('enterVR').onclick=()=>{
+    if(!navigator.xr) {
+      setStatus('WebXR indisponível. Abra pelo navegador do Meta Quest.');
+      return;
+    }
+    vrBtn.click();
+  };
+
+  renderer.xr.addEventListener('sessionstart',()=>{
+    panel.visible=true;
+    updateVR();
+    setStatus('VR iniciada. Use controle ou pinça.');
   });
 
-  $("rotateLeft").onclick=()=>{ rig.rotation.y+=Math.PI/8; };
-  $("rotateRight").onclick=()=>{ rig.rotation.y-=Math.PI/8; };
-  $("resetView").onclick=()=>{ rig.rotation.y=0; rig.position.set(0,1.65,3); };
- }catch(e){ console.error(e); status("Falha WebGL: "+e.message); }
+  renderer.xr.addEventListener('sessionend',()=>{
+    panel.visible=false;
+    setStatus('VR encerrada.');
+  });
+
+  changeEnv(state.env);
+
+  renderer.setAnimationLoop(()=>{
+    const dom=$('scene');
+    const w=dom.clientWidth,h=dom.clientHeight;
+
+    if(w&&h) {
+      const ratio=renderer.getPixelRatio();
+      if(renderer.domElement.width!==Math.round(w*ratio)||
+         renderer.domElement.height!==Math.round(h*ratio)) {
+        renderer.setSize(w,h,false);
+        camera.aspect=w/h;
+        camera.updateProjectionMatrix();
+      }
+    }
+
+    if(renderer.xr.isPresenting) {
+      const tick=Math.floor(now()/1000);
+      if(state.exam?.minutes&&tick!==lastSecond) {
+        lastSecond=tick;
+        if(now()-state.exam.start>=state.exam.minutes*60000)
+          examFinish();
+        else updateVR();
+      }
+
+      for(const o of hands) {
+        const hand=o.hand;
+        const t=hand.joints?.['thumb-tip'];
+        const f=hand.joints?.['index-finger-tip'];
+
+        if(t&&f&&hand.visible) {
+          t.updateWorldMatrix(true,false);
+          f.updateWorldMatrix(true,false);
+          const a=new THREE.Vector3().setFromMatrixPosition(t.matrixWorld);
+          const b=new THREE.Vector3().setFromMatrixPosition(f.matrixWorld);
+          const near=a.distanceTo(b)<.027;
+          if(near&&!o.pinched)handSelect(hand);
+          o.pinched=near;
+        }
+      }
+
+      let over=-1;
+      for(const c of controllers) {
+        rayFrom(c);
+        const hit=raycaster.intersectObject(panel)[0];
+        if(hit) {
+          over=hitUV(hit.uv);
+          if(over>=0)break;
+        }
+      }
+      if(over!==hovered) {
+        hovered=over;
+        vrDraw();
+      }
+    }
+
+    renderer.render(scene,camera);
+  });
 }
 
-/* ── CONFIG / INIT ── */
-
-function applySettings(){
- const wasFocus=document.body.classList.contains("focus");
- document.body.className="";
- if(state.theme!=="dark") document.body.classList.add(state.theme);
- if(wasFocus) document.body.classList.add("focus");
- document.documentElement.style.setProperty("--font",(state.fontSize||16)+"px");
- $("theme").value=state.theme;
- $("environment").value=state.environment;
- $("quality").value=state.quality;
+function updateVR() {
+  if(texture)vrDraw();
 }
 
-function initializeMenus(){
- for(const n of pages) button(n,()=>navigate(n),$("menu"));
- environments.forEach((name,i)=>{
-  const o=document.createElement("option"); o.value=i; o.textContent=name;
-  $("environment").append(o);
- });
- $("environment").onchange=e=>changeEnvironment(Number(e.target.value));
- $("theme").onchange=e=>{ state.theme=e.target.value; save(); applySettings(); };
- $("quality").onchange=e=>{ state.quality=e.target.value; save(); };
- $("refresh").onclick=()=>ContentRepository.load();
+/* OBJETOS 3D */
+
+function cube(parent,x,y,z,w,h,d,color) {
+  const mesh=new THREE.Mesh(
+    new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshStandardMaterial({color})
+  );
+  mesh.position.set(x,y,z);
+  parent.add(mesh);
+  return mesh;
 }
 
-(async function start(){
- try{
-  initializeMenus();
-  applySettings();
+function column(parent,x,z) {
+  cube(parent,x,1.5,z,.26,3,.26,'#718076');
+}
+
+function flag(parent,x,z) {
+  cube(parent,x,2,z,.06,4,.06,'#b0bdb3');
+  cube(parent,x+.7,3.25,z,1.4,.85,.05,'#159a4b');
+  const dia=cube(parent,x+.7,3.25,z+.04,.62,.62,.045,'#efd336');
+  dia.rotation.z=Math.PI/4;
+  const ball=new THREE.Mesh(
+    new THREE.SphereGeometry(.23,16,12),
+    new THREE.MeshStandardMaterial({color:'#16429b'})
+  );
+  ball.position.set(x+.7,3.25,z+.08);
+  ball.scale.z=.12;
+  parent.add(ball);
+}
+
+/* DEZ AMBIENTES */
+
+function changeEnv(n) {
+  state.env=(n+envs.length)%envs.length;
+  save();
+
+  if(room) {
+    scene.remove(room);
+    room.traverse(o=>{
+      o.geometry?.dispose();
+      if(o.material) {
+        const mats=Array.isArray(o.material)?o.material:[o.material];
+        mats.forEach(m=>m.dispose());
+      }
+    });
+  }
+
+  room=new THREE.Group();
+  scene.add(room);
+
+  floor=cube(room,0,-.12,0,26,.24,26,
+    n===3?'#527d43':'#74847b');
+
+  if(n!==3)
+    cube(room,0,3,-10,23,6,.3,'#a3b1aa');
+
+  flag(room,-8,-8);
+
+  switch(n) {
+    case 0:
+      for(let x=-4;x<=4;x+=2)
+        cube(room,x,.01,-2,.12,.03,6,'#eadfba');
+      cube(room,0,1.8,-9,7,3,.4,'#52695e');
+      break;
+
+    case 1:
+    case 7:
+      for(let x=-4;x<=4;x+=2) {
+        for(let z=-5;z<=2;z+=2) {
+          cube(room,x,.7,z,1.4,.14,.7,'#786043');
+          cube(room,x,.3,z,.12,.6,.1,'#56645c');
+        }
+      }
+      cube(room,0,2.4,-9.6,6,2,.08,'#21513e');
+      break;
+
+    case 2:
+      cube(room,-4,1.7,-7,4,3.4,3,'#c0b7a8');
+      for(let x=-1;x<=7;x+=.9)column(room,x,-8);
+      break;
+
+    case 3:
+      for(let x=-8;x<=8;x+=4)
+        cube(room,x,.6,-5,2,1.2,1.1,'#988160');
+      for(let z=-3;z<=3;z+=2)
+        cube(room,-5,.3,z,3,.5,.25,'#8a7052');
+      break;
+
+    case 4:
+      for(let x=-6;x<=6;x+=3) {
+        for(const z of [-5,1]) {
+          cube(room,x,.5,z,1.5,.17,2.2,'#778987');
+          cube(room,x,1.5,z,1.5,.17,2.2,'#778987');
+          column(room,x-.7,z-1);
+        }
+      }
+      break;
+
+    case 5:
+      for(let x=-5;x<=5;x+=2.5)
+        cube(room,x,1.3,-7,2.1,2.6,.65,'#755d47');
+      break;
+
+    case 6:
+      for(let z=-6;z<=1;z+=2) {
+        for(let x=-5;x<=5;x+=2)
+          cube(room,x,.65,z,1.4,.8,.7,'#6c6256');
+      }
+      cube(room,0,.5,-9,7,1,2,'#75694b');
+      break;
+
+    case 8:
+      for(let x=-8;x<=8;x+=4)column(room,x,-7);
+      cube(room,0,.5,-7,6,1,2,'#839e8d');
+      break;
+
+    case 9:
+      for(let x=-6;x<=6;x+=3)
+        cube(room,x,.8,-5,2.3,.2,.8,'#4b6861');
+      cube(room,0,2.4,-9.6,8,2,.1,'#1c3d39');
+      break;
+  }
+
+  $('env').value=String(state.env);
+  updateVR();
+}
+
+/* EVENTOS E INICIALIZAÇÃO */
+
+for(const [id,label] of pages) {
+  const b=btn(label,()=>go(id),$('nav'));
+  b.dataset.page=id;
+}
+
+for(let i=0;i<envs.length;i++)
+  $('env').add(new Option(envs[i],String(i)));
+
+$('env').onchange=()=>changeEnv(Number($('env').value));
+
+$('subject').onchange=()=>{
+  qIndex=0;
+  activePool=[];
+  render();
+};
+
+$('search').oninput=()=>{
+  qIndex=0;
+  activePool=[];
+  render();
+};
+
+$('reload').onclick=loadBank;
+
+(async()=>{
+  db=await dbOpen();
+
+  const backed=await idbGet('progress');
+  if(backed&&!state.history.length&&Array.isArray(backed.history)) {
+    state={...initial,...backed};
+  }
+
+  document.body.classList.toggle(
+    'light',
+    state.theme==='light'
+  );
+
   init3D();
-  navigate("Início");
-  await ContentRepository.load();
- }catch(e){ console.error(e); status("Erro: "+e.message); }
-})();
+  populateSubjects();
+  render();
+
+  await loadBank();
+
+})().catch(e=>{
+  console.error(e);
+  setStatus('Erro ao iniciar: '+e.message);
+});
 
 </script>
-
 </body>
 </html>
