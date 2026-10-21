@@ -14,15 +14,14 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;
 canvas{display:block;outline:none}
 #menu{position:fixed;top:12px;left:12px;z-index:100;width:min(420px,94vw);
   max-height:calc(100vh - 100px);overflow-y:auto;padding:16px;
-  background:rgba(6,9,19,.97);border:1px solid var(--border);border-radius:12px;
-  box-shadow:0 8px 32px rgba(0,209,255,.15);backdrop-filter:blur(12px)}
+  background:rgba(6,9,19,.97);border:1px solid var(--border);border-radius:12px}
 #menu.hidden{display:none}
-h2{margin:0 0 4px;font-size:16px;color:var(--accent);letter-spacing:1px}
-h3{margin:12px 0 6px;font-size:12px;color:#c5eaff;text-transform:uppercase;letter-spacing:1px}
+h2{margin:0 0 4px;font-size:16px;color:var(--accent)}
+h3{margin:12px 0 6px;font-size:12px;color:#c5eaff;text-transform:uppercase}
 button,select,input{font:inherit;width:100%;padding:10px 12px;margin:4px 0;
   background:var(--panel-alt);color:#fff;border:1px solid var(--border);
-  border-radius:8px;cursor:pointer;transition:all .15s ease}
-button:hover{background:#1a6aa0;transform:translateY(-1px)}
+  border-radius:8px;cursor:pointer;transition:.15s}
+button:hover{background:#1a6aa0}
 button.primary{background:linear-gradient(90deg,#0066cc,#00d1ff);font-weight:700}
 button.ok{background:#0d6b4f;border-color:#2fbf8f}
 button.warn{background:#7a4a10;border-color:#d19a3a}
@@ -38,8 +37,7 @@ button.err{background:#7a1a1a;border-color:#ff4444}
 hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
 #enter{position:fixed;right:16px;bottom:16px;z-index:100;width:auto;
   padding:14px 28px;background:linear-gradient(90deg,#0050a8,#00d1ff);
-  border:2px solid #00d1ff;border-radius:32px;font-weight:900;font-size:14px;
-  letter-spacing:1px;box-shadow:0 0 20px rgba(0,209,255,.6)}
+  border:2px solid #00d1ff;border-radius:32px;font-weight:900;font-size:14px}
 #enter.hidden{display:none}
 #hud{position:fixed;top:12px;right:12px;z-index:90;padding:10px 16px;
   background:rgba(6,9,19,.9);border:1px solid var(--accent);border-radius:8px;
@@ -93,8 +91,7 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
 .fc-controls button{width:auto;padding:10px 20px}
 .fc-progress{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
 .chart{width:100%;height:140px;margin:8px 0}
-.chart .bar{fill:var(--accent);transition:.3s}
-.chart .bar:hover{fill:var(--ok)}
+.chart .bar{fill:var(--accent)}
 .chart .axis{stroke:var(--muted);stroke-width:1}
 .chart .label{fill:var(--text);font-size:10px}
 #tutorial{position:fixed;top:0;left:0;width:100%;height:100%;z-index:300;
@@ -150,7 +147,7 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
     </div>
   </div>
   <div class="tab-content" id="tab-exam">
-    <h3>Configurar Simulado</h3>
+    <h3>Simulado</h3>
     <select id="exam-qty">
       <option value="10">10 questões</option>
       <option value="20">20 questões</option>
@@ -170,10 +167,10 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
     <h3>Revisar Erros</h3>
     <div id="review-summary"></div>
     <button id="review-start" class="warn">🔄 Revisar erros</button>
-    <button id="reset-stats" class="err">🗑 Zerar estatísticas</button>
+    <button id="reset-stats" class="err">🗑 Zerar</button>
   </div>
   <div class="tab-content" id="tab-stats">
-    <h3>Desempenho por Disciplina</h3>
+    <h3>Desempenho</h3>
     <svg class="chart" id="stats-chart" viewBox="0 0 400 140"></svg>
     <div id="stats-detail" style="font-size:12px;line-height:1.6"></div>
   </div>
@@ -201,9 +198,6 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
   <div class="tab-content" id="tab-theme">
     <h3>Paleta</h3>
     <div class="themes" id="theme-grid"></div>
-    <h3>Escala de Texto</h3>
-    <label style="font-size:12px;color:var(--muted)">Escala: <span id="font-scale-val">100%</span></label>
-    <input type="range" id="font-scale" min="80" max="150" value="100" step="5">
   </div>
   <div class="tab-content" id="tab-config">
     <h3>Repositório GitHub</h3>
@@ -250,7 +244,7 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
     <div class="back">
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px">RESPOSTA</div>
       <div style="font-size:24px;font-weight:700;color:var(--ok)" id="fc-back"></div>
-      <div style="margin-top:16px;font-size:13px;line-height:1.5;color:var(--text);overflow-y:auto" id="fc-exp"></div>
+      <div style="margin-top:16px;font-size:13px;line-height:1.5;overflow-y:auto" id="fc-exp"></div>
     </div>
   </div>
   <div class="fc-controls" id="fc-controls" style="display:none">
@@ -269,15 +263,14 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
 <div id="tutorial">
   <div class="tutorial-card">
     <h2>👋 Bem-vindo!</h2>
-    <p><b>📱 Desktop:</b> Use o menu lateral.</p>
     <p><b>🥽 Meta Quest 3S:</b> Clique "ENTRAR EM VR".</p>
     <p style="font-size:13px;text-align:left;padding-left:20px">
-      • <b>Gatilho</b>: clicar em botões/alternativas<br>
-      • <b>Grip na alça ☰</b>: mover painel<br>
-      • <b>Grip + analógico ↕</b>: aumentar/diminuir<br>
-      • <b>Grip + analógico ↔</b>: rotacionar<br>
-      • <b>Analógico esquerdo</b>: caminhar<br>
-      • <b>Marcadores azuis</b>: teletransporte
+      • <b>Alça laranja "✋ SEGURE AQUI"</b> acima de cada painel<br>
+      • <b>Trigger OU Grip</b> na alça = mover painel<br>
+      • <b>Analógico ↕</b> durante grab = aumentar/diminuir<br>
+      • <b>Analógico ↔</b> durante grab = rotacionar<br>
+      • <b>Trigger</b> em alternativa = responder<br>
+      • <b>Analógico esquerdo</b> = caminhar
     </p>
     <button class="primary" id="tutorial-close">Entendi</button>
   </div>
@@ -294,8 +287,8 @@ const $ = id => document.getElementById(id);
 // STORAGE
 // ═══════════════════════════════════════════════════════════════════
 const STORAGE = {
-  KEY: 'pmsc_academy_v3',
-  VERSION: 3,
+  KEY: 'pmsc_academy_v4',
+  VERSION: 4,
   load() {
     try {
       const raw = localStorage.getItem(this.KEY);
@@ -311,8 +304,8 @@ const STORAGE = {
   },
   defaults() {
     return {
-      version: 3, theme: 'cyan', environment: 'academy', lighting: 'day',
-      fontScale: 100, repo: 'johndosanjos162/PMSC',
+      version: 4, theme: 'cyan', environment: 'academy', lighting: 'day',
+      repo: 'johndosanjos162/PMSC',
       stats: { total: 0, correct: 0, bySubject: {} },
       wrongIds: [], favorites: [], flashcards: {}, history: [], panels: {}
     };
@@ -320,9 +313,6 @@ const STORAGE = {
 };
 let DB = STORAGE.load();
 
-// ═══════════════════════════════════════════════════════════════════
-// THEMES
-// ═══════════════════════════════════════════════════════════════════
 const THEMES = {
   cyan:     { bg:'#060913', panel:'#0d2740', border:'#49baff', accent:'#00d1ff' },
   green:    { bg:'#061a10', panel:'#0d301e', border:'#49ff9e', accent:'#00ff88' },
@@ -333,7 +323,6 @@ const THEMES = {
   contrast: { bg:'#000000', panel:'#000000', border:'#ffff00', accent:'#ffff00' },
   sunset:   { bg:'#1a0808', panel:'#3a1810', border:'#ff8855', accent:'#ff6600' }
 };
-
 function applyTheme(name) {
   const t = THEMES[name] || THEMES.cyan;
   const r = document.documentElement;
@@ -341,15 +330,13 @@ function applyTheme(name) {
   r.style.setProperty('--panel', t.panel);
   r.style.setProperty('--border', t.border);
   r.style.setProperty('--accent', t.accent);
-  DB.theme = name;
-  STORAGE.save(DB);
+  DB.theme = name; STORAGE.save(DB);
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // QUESTION NORMALIZER
 // ═══════════════════════════════════════════════════════════════════
 const stripPrefix = s => String(s).replace(/^[A-Ea-e]\s*[\)\.\-\:]\s*/, '').trim();
-
 function normalizeOptions(opts) {
   if (!Array.isArray(opts)) return [];
   const pat = /^([A-Ea-e])\s*[\)\.\-\:]\s*/;
@@ -359,7 +346,6 @@ function normalizeOptions(opts) {
   });
   return opts.map(o => uniform ? stripPrefix(o) : String(o).trim());
 }
-
 function extractCorrect(q, opts, keys) {
   const a = q.correta ?? q.resposta ?? q.gabarito ?? q.correct ?? q.answer;
   if (typeof a === 'number') return a;
@@ -375,8 +361,7 @@ function extractCorrect(q, opts, keys) {
   }
   return -1;
 }
-
-function normalizeQuestion(q, fallbackSubject) {
+function normalizeQuestion(q, fb) {
   if (!q || typeof q !== 'object') return null;
   const text = q.enunciado ?? q.pergunta ?? q.questao ?? q.question;
   const rawOpts = q.alternativas ?? q.opcoes ?? q.options;
@@ -387,26 +372,21 @@ function normalizeQuestion(q, fallbackSubject) {
   const opts = normalizeOptions(raw);
   const correct = extractCorrect(q, opts, keys);
   if (correct < 0 || correct >= opts.length) return null;
-  const subject = String(q.disciplina ?? q.materia ?? q.subject ?? fallbackSubject ?? 'Geral');
+  const subject = String(q.disciplina ?? q.materia ?? q.subject ?? fb ?? 'Geral');
   return {
     id: String(q.id ?? `${subject}|${text}`.slice(0, 200)),
     question: text, options: opts, correct, subject,
-    difficulty: String(q.dificuldade ?? q.difficulty ?? 'media'),
-    topic: String(q.assunto ?? q.topic ?? ''),
-    explanation: String(q.explicacao ?? q.comentario ?? q.explanation ?? ''),
-    reference: String(q.referencia ?? q.reference ?? '')
+    explanation: String(q.explicacao ?? q.comentario ?? q.explanation ?? '')
   };
 }
-
 function flattenJSON(data) {
   if (Array.isArray(data)) return data;
   if (data && typeof data === 'object') {
     if (Array.isArray(data.questoes)) return data.questoes;
     if (Array.isArray(data.questions)) return data.questions;
     const flat = [];
-    for (const [subj, list] of Object.entries(data)) {
-      if (Array.isArray(list)) for (const q of list) flat.push({ ...q, materia: q.materia || subj });
-    }
+    for (const [s, l] of Object.entries(data))
+      if (Array.isArray(l)) for (const q of l) flat.push({ ...q, materia: q.materia || s });
     return flat;
   }
   return [];
@@ -426,30 +406,29 @@ async function loadFromGitHub() {
     if (r.ok) {
       const files = await r.json();
       if (Array.isArray(files)) {
-        const jsonFiles = files.filter(f => f.type === 'file' && f.name.endsWith('.json') && !f.name.startsWith('.') && !['package.json'].includes(f.name));
+        const jsonFiles = files.filter(f => f.type === 'file' && f.name.endsWith('.json') && !f.name.startsWith('.') && f.name !== 'package.json');
         if (jsonFiles.length > 0) {
-          let all = [], loaded = 0;
+          let all = [], n = 0;
           for (const f of jsonFiles) {
             try {
               const content = await fetch(f.download_url).then(x => x.json());
               const flat = flattenJSON(content);
               const norm = flat.map(q => normalizeQuestion(q)).filter(Boolean);
-              if (norm.length > 0) { all.push(...norm); loaded++; }
+              if (norm.length > 0) { all.push(...norm); n++; }
             } catch (e) {}
           }
           if (all.length > 0) {
-            $('status').textContent = `✅ ${all.length} questões (${loaded} arquivo)`;
+            $('status').textContent = `✅ ${all.length} questões (${n} arquivo)`;
             return all;
           }
         }
       }
     }
-  } catch (e) {}
-
+  } catch (e) { console.warn('API fail', e); }
   for (const name of CANDIDATES) {
-    for (const branch of ['main', 'master']) {
+    for (const br of ['main', 'master']) {
       try {
-        const url = `https://raw.githubusercontent.com/${repo}/${branch}/${name}`;
+        const url = `https://raw.githubusercontent.com/${repo}/${br}/${name}`;
         const content = await fetch(url).then(x => { if (!x.ok) throw 0; return x.json(); });
         const flat = flattenJSON(content);
         const norm = flat.map(q => normalizeQuestion(q)).filter(Boolean);
@@ -460,21 +439,17 @@ async function loadFromGitHub() {
       } catch (e) {}
     }
   }
-
   try {
     const cached = localStorage.getItem('pmsc_questions_cache');
     if (cached) {
       const p = JSON.parse(cached);
-      $('status').textContent = `⚠️ Offline: ${p.length} em cache`;
+      $('status').textContent = `⚠️ Cache: ${p.length} questões`;
       return p;
     }
   } catch (e) {}
   return [];
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════════════════
 let QUESTIONS = [];
 let currentPool = [];
 let currentIndex = 0;
@@ -489,7 +464,7 @@ let examEndsAt = 0;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x060913);
 const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.05, 200);
-camera.position.set(0, 1.65, 3);
+camera.position.set(0, 1.65, 0);
 const rig = new THREE.Group();
 rig.add(camera);
 scene.add(rig);
@@ -525,7 +500,6 @@ function clearEnv() {
   });
   envGroup.clear();
 }
-
 const box = (w,h,d,c,x,y,z) => {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
     new THREE.MeshStandardMaterial({color:c, roughness:0.85}));
@@ -550,19 +524,7 @@ function desk(x,z,c=0x795548) {
   box(2,.1,1,c,x,.85,z);
   for (const dx of [-.8,.8]) for (const dz of [-.4,.4]) box(.08,.8,.08,0x333333,x+dx,.4,z+dz);
 }
-function tree(x,z) {
-  cyl(.15,.2,2,0x6b4423,x,1,z); sphere(.9,0x2d8b4e,x,2.2,z);
-}
-function bookshelf(x,z) {
-  box(1.5,2.5,.4,0x5c3a21,x,1.25,z);
-  for (let r=0;r<4;r++) {
-    box(1.4,.05,.4,0x3d2415,x,.4+r*.55,z);
-    for (let c=0;c<5;c++) {
-      const colors=[0x2255aa,0xaa2233,0x22aa55,0xcc9933];
-      box(.2,.4,.25,colors[(r+c)%4],x-.55+c*.28,.65+r*.55,z);
-    }
-  }
-}
+function tree(x,z) { cyl(.15,.2,2,0x6b4423,x,1,z); sphere(.9,0x2d8b4e,x,2.2,z); }
 
 function buildEnvironment(type) {
   clearEnv();
@@ -570,69 +532,52 @@ function buildEnvironment(type) {
     case 'academy':
       scene.background = new THREE.Color(0x06111e);
       room(0x183047,0x10283f);
-      box(5,.15,.3,0x2b9dd8,0,3.7,-7.9);
       desk(-4,-5); desk(4,-5); break;
     case 'living':
       scene.background = new THREE.Color(0xb4c7d8);
       room(0xc4a682,0xe0dcd5);
       box(3,.5,1.2,0x526477,-4,.45,-4);
-      box(3,.9,.3,0x394b60,-4,.85,-4.45);
       desk(4,-4,0x94765d); break;
     case 'beach':
       scene.background = new THREE.Color(0x87ceeb);
       box(60,.1,60,0xe8d39b,0,0,0);
       box(60,.05,20,0x1e90ff,0,.05,-25);
-      sphere(2,0xffe9a0,-15,12,-35);
       for (const [x,z] of [[-8,-6],[-5,-8],[8,-6],[5,-8]]) tree(x,z); break;
     case 'library':
       scene.background = new THREE.Color(0x2b251f);
       room(0x5b4332,0x3b3027);
-      bookshelf(-6,-6); bookshelf(-4,-6); bookshelf(4,-6); bookshelf(6,-6);
       desk(-4,-2); desk(4,-2); break;
     case 'future':
       scene.background = new THREE.Color(0x050d1c);
       room(0x111b35,0x0b1630);
-      for (let x=-6;x<=6;x+=2) box(.05,4,.05,0x00cfff,x,2,-7.9);
       desk(-4,-4,0x1a4366); desk(4,-4,0x1a4366); break;
     case 'nature':
       scene.background = new THREE.Color(0x87ceeb);
       box(80,.1,80,0x4c9b53,0,0,0);
-      for (const [x,z] of [[-8,-8],[8,-8],[-8,2],[8,2],[-5,-10],[5,-10],[0,-12]]) tree(x,z);
-      desk(4,-3,0x8b6848); break;
+      for (const [x,z] of [[-8,-8],[8,-8],[-8,2],[8,2]]) tree(x,z); break;
     case 'penthouse':
       scene.background = new THREE.Color(0x1a1a3a);
       room(0xd2c9bd,0xe6e0d9);
-      box(6,3,.05,0x4a6a8a,0,2.2,-7.9);
-      box(3,.5,1.2,0x303b48,-4,.45,-4);
-      desk(4,-4,0x1a1a2e); break;
+      box(3,.5,1.2,0x303b48,-4,.45,-4); break;
     case 'space':
       scene.background = new THREE.Color(0x01040e);
       room(0x293344,0x1a2436);
-      sphere(4,0x3a7bc3,0,4,-25);
-      desk(-4,-4,0x334b66); desk(4,-4,0x334b66); break;
+      sphere(4,0x3a7bc3,0,4,-25); break;
     case 'minimal':
       scene.background = new THREE.Color(0xdde5ec);
-      room(0xe8e8e8,0xf0f0f0);
-      box(2,.1,2,0xcccccc,-4,.05,-4);
-      desk(4,-4,0xaaaaaa); break;
+      room(0xe8e8e8,0xf0f0f0); break;
   }
-  applyLighting();
-}
-
-function applyLighting() {
   const night = DB.lighting === 'night';
   ambient.intensity = night ? 0.8 : 2.0;
   dirLight.intensity = night ? 0.4 : 1.5;
-  if (DB.environment === 'space') { ambient.intensity = 1.2; dirLight.intensity = 0.6; }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TEXT RENDERER (auto-fit, sem cortes)
+// TEXT RENDERER
 // ═══════════════════════════════════════════════════════════════════
 function pickCanvasH(n) {
   if (n <= 1) return 256; if (n <= 2) return 384;
-  if (n <= 4) return 512; if (n <= 6) return 768;
-  if (n <= 8) return 1024; return 1280;
+  if (n <= 4) return 512; if (n <= 6) return 768; return 1024;
 }
 function wrapByPixels(text, maxW, ctx) {
   const words = String(text).split(/\s+/);
@@ -656,7 +601,6 @@ function drawText(text, opts = {}) {
   ctx.fillStyle = bgColor; ctx.fillRect(0,0,width,H);
   ctx.strokeStyle = borderColor; ctx.lineWidth = borderWidth;
   ctx.strokeRect(borderWidth/2, borderWidth/2, width-borderWidth, H-borderWidth);
-
   const maxW = width - 2*padding, maxH = H - 2*padding;
   let fs = fontSizeMax, lines = [], lh = 0;
   while (fs >= fontSizeMin) {
@@ -677,7 +621,7 @@ function drawText(text, opts = {}) {
   lines.forEach((l, i) => ctx.fillText(l, width/2, sy + i*lh));
   return c;
 }
-function createPanelLabel(text, opts = {}) {
+function makeLabel(text, opts = {}) {
   const canvas = drawText(text, opts);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -693,12 +637,13 @@ function createPanelLabel(text, opts = {}) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PANEL SYSTEM (NOVO — com alça grande e visível)
+// PANEL SYSTEM
 // ═══════════════════════════════════════════════════════════════════
 const PANEL_W = 2.2;
 const PANEL_H = 1.4;
-const HANDLE_W = PANEL_W;
-const HANDLE_H = 0.28;
+const HANDLE_W = 2.4;
+const HANDLE_H = 0.35;
+const PANEL_Z = -2.4;
 
 function ensurePanel(id, x, y, z, ry = 0) {
   if (panelRegistry.has(id)) {
@@ -714,7 +659,6 @@ function ensurePanel(id, x, y, z, ry = 0) {
   scene.add(g);
   panelRegistry.set(id, g);
 
-  // Fundo do painel
   const bg = new THREE.Mesh(
     new THREE.PlaneGeometry(PANEL_W, PANEL_H),
     new THREE.MeshBasicMaterial({ color: 0x0a1a2a, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
@@ -722,27 +666,29 @@ function ensurePanel(id, x, y, z, ry = 0) {
   bg.position.z = -0.02;
   g.add(bg);
 
-  // Borda neon
   const borderGeo = new THREE.EdgesGeometry(new THREE.PlaneGeometry(PANEL_W, PANEL_H));
   const border = new THREE.LineSegments(borderGeo, new THREE.LineBasicMaterial({ color: 0x00d1ff }));
   border.position.z = -0.01;
   g.add(border);
 
-  // ALÇA GRANDE — ocupa toda a largura do painel, texto explícito
-  const handle = createPanelLabel(`☰ ${id.toUpperCase()} — SEGURE PARA MOVER`, {
+  // ⭐ ALÇA GRANDE LARANJA — impossível errar
+  const handle = makeLabel(`✋ ${id.toUpperCase()} — SEGURE AQUI PARA MOVER`, {
     width3D: HANDLE_W,
     maxLines: 1,
-    fontSizeMax: 70,
+    fontSizeMax: 80,
     padding: 25,
-    bgColor: '#0a3a5a',
-    borderColor: '#00d1ff',
-    borderWidth: 6
+    bgColor: '#ff8800',        // ← laranja brilhante
+    borderColor: '#ffee00',
+    borderWidth: 8,
+    textColor: '#000000'       // ← texto preto para contraste
   });
-  handle.position.set(0, PANEL_H / 2 + HANDLE_H / 2 + 0.08, 0.01);
+  handle.position.set(0, PANEL_H / 2 + HANDLE_H / 2 + 0.08, 0.02);
   handle.userData.isGrabHandle = true;
   handle.userData.panelId = id;
   interactive.push(handle);
   g.add(handle);
+
+  console.log('[PANEL] criado:', id, 'handle em', handle.position.toArray());
 
   return g;
 }
@@ -763,23 +709,152 @@ function clearPanels() {
   for (let i = interactive.length - 1; i >= 0; i--) {
     if (!interactive[i].userData.isTeleport) interactive.splice(i, 1);
   }
+  console.log('[PANEL] clearPanels — interactive restante:', interactive.length);
 }
 
 function addPanelLabel(panelId, text, yOff, opts = {}) {
   const g = panelRegistry.get(panelId);
   if (!g) return null;
-  const l = createPanelLabel(text, { width3D: PANEL_W * 0.88, ...opts });
+  const l = makeLabel(text, { width3D: PANEL_W * 0.88, ...opts });
   l.position.set(0, yOff, 0.02);
-  if (opts.onClick) { l.userData.onClick = opts.onClick; interactive.push(l); }
+  if (opts.onClick) {
+    l.userData.onClick = opts.onClick;
+    interactive.push(l);
+  }
   g.add(l);
   return l;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 3D FLASHCARD PANEL
+// RENDER PANELS
+// ═══════════════════════════════════════════════════════════════════
+function renderQuestionPanel() {
+  clearPanels();
+
+  if (!currentPool.length) {
+    ensurePanel('center', 0, 1.5, PANEL_Z);
+    addPanelLabel('center', 'Carregue questões\npara começar', 0, {
+      width3D: 2, maxLines: 2, fontSizeMax: 80, padding: 60
+    });
+    renderSidePanels();
+    return;
+  }
+
+  const q = currentPool[currentIndex];
+  ensurePanel('center', 0, 1.5, PANEL_Z);
+
+  addPanelLabel('center', q.subject.toUpperCase(), 0.55, {
+    width3D: 2, maxLines: 1, fontSizeMax: 55, padding: 18,
+    bgColor: '#0d3a5a', borderColor: '#00d1ff'
+  });
+
+  addPanelLabel('center', q.question, -0.05, {
+    width3D: 2, maxLines: 5, fontSizeMax: 48, padding: 30
+  });
+
+  // Alternativas
+  let yCur = -0.7;
+  q.options.forEach((opt, i) => {
+    const text = `${'ABCDE'[i]}) ${opt}`;
+    let bg = '#0d2740', bd = '#49baff';
+    if (currentAnswer !== null) {
+      if (i === q.correct) { bg = '#16684d'; bd = '#00ff88'; }
+      else if (i === currentAnswer) { bg = '#893440'; bd = '#ff4444'; }
+    }
+    const label = makeLabel(text, {
+      width3D: 1.9, maxLines: 2, fontSizeMax: 38, padding: 20,
+      bgColor: bg, borderColor: bd
+    });
+    if (currentAnswer === null) {
+      label.userData.onClick = () => selectAnswer(i);
+      interactive.push(label);
+    }
+    label.position.set(0, yCur, 0.02);
+    panelRegistry.get('center').add(label);
+    yCur -= (label.geometry.parameters.height + 0.08);
+  });
+
+  addPanelLabel('center', `Questão ${currentIndex+1} de ${currentPool.length}`, -0.68, {
+    width3D: 1.8, maxLines: 1, fontSizeMax: 45, padding: 15,
+    bgColor: '#0a1a2a', borderColor: '#00d1ff'
+  });
+
+  renderSidePanels();
+  restorePanelStates();
+}
+
+function renderSidePanels() {
+  ensurePanel('left', -1.5, 1.5, PANEL_Z + 0.2, 0.35);
+  addPanelLabel('left', '🔧 FERRAMENTAS', 0.55, {
+    width3D: 1.2, maxLines: 1, fontSizeMax: 55, padding: 15,
+    bgColor: '#0d3a5a', borderColor: '#00d1ff'
+  });
+
+  const leftBtns = [
+    { label: '🎯 Foco', action: toggleFocus },
+    { label: '📖 Leitura', action: toggleReading },
+    { label: '🔄 Resetar', action: resetView },
+    { label: '🌍 Ambiente', action: cycleEnv },
+    { label: '⚙ Config', action: () => { $('menu').classList.remove('hidden'); } }
+  ];
+  leftBtns.forEach((btn, i) => {
+    const l = makeLabel(btn.label, {
+      width3D: 1.15, maxLines: 1, fontSizeMax: 45, padding: 12,
+      bgColor: '#0d2740', borderColor: '#49baff'
+    });
+    l.position.set(0, 0.25 - i * 0.24, 0.02);
+    l.userData.onClick = btn.action;
+    interactive.push(l);
+    panelRegistry.get('left').add(l);
+  });
+
+  ensurePanel('right', 1.5, 1.5, PANEL_Z + 0.2, -0.35);
+  addPanelLabel('right', '📊 PAINEL', 0.55, {
+    width3D: 1.2, maxLines: 1, fontSizeMax: 55, padding: 15,
+    bgColor: '#0d3a5a', borderColor: '#00d1ff'
+  });
+  addPanelLabel('right', `${DB.stats.correct}/${DB.stats.total}`, 0.32, {
+    width3D: 1.15, maxLines: 1, fontSizeMax: 70, padding: 15
+  });
+
+  const rightBtns = [
+    { label: '📇 Flashcard', action: () => openFlashcard(currentPool[currentIndex]) },
+    { label: '⭐ Favoritar', action: toggleFavorite },
+    { label: '▶ Próxima', action: nextQuestion },
+    { label: '🔄 Revisar', action: startReview }
+  ];
+  rightBtns.forEach((btn, i) => {
+    const l = makeLabel(btn.label, {
+      width3D: 1.15, maxLines: 1, fontSizeMax: 45, padding: 12,
+      bgColor: '#0d2740', borderColor: '#49baff'
+    });
+    l.position.set(0, 0.05 - i * 0.26, 0.02);
+    l.userData.onClick = btn.action;
+    interactive.push(l);
+    panelRegistry.get('right').add(l);
+  });
+}
+
+function savePanelState(id, g) {
+  DB.panels[id] = { pos: g.position.toArray(), rot: g.rotation.y, scale: g.scale.x };
+  STORAGE.save(DB);
+}
+
+function restorePanelStates() {
+  for (const [id, g] of panelRegistry) {
+    const s = DB.panels[id];
+    if (s && Array.isArray(s.pos)) {
+      g.position.fromArray(s.pos);
+      g.rotation.y = s.rot;
+      g.scale.setScalar(s.scale);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 3D FLASHCARD
 // ═══════════════════════════════════════════════════════════════════
 let flashcardGroup = null;
-
 function openFlashcard(q) {
   if (!q) return;
   if (renderer.xr.isPresenting) showFlashcard3D(q);
@@ -801,8 +876,7 @@ function showFlashcard3D(q) {
   flashcardGroup.position.copy(tp);
   flashcardGroup.lookAt(hp.x, tp.y, hp.z);
 
-  // Cabeçalho
-  const header = createPanelLabel(`📇 ${q.subject.toUpperCase()}`, {
+  const header = makeLabel(`📇 ${q.subject.toUpperCase()}`, {
     width3D: 1.8, maxLines: 1, fontSizeMax: 70, padding: 20,
     bgColor: '#0a3a5a', borderColor: '#00d1ff'
   });
@@ -810,8 +884,7 @@ function showFlashcard3D(q) {
   header.userData.isFlashcard = true;
   flashcardGroup.add(header);
 
-  // Frente — pergunta
-  const front = createPanelLabel(q.question, {
+  const front = makeLabel(q.question, {
     width3D: 1.8, maxLines: 6, fontSizeMax: 55, padding: 40,
     bgColor: '#0d2740', borderColor: '#49baff'
   });
@@ -819,8 +892,7 @@ function showFlashcard3D(q) {
   front.userData.isFlashcard = true;
   flashcardGroup.add(front);
 
-  // Botão virar
-  const flipBtn = createPanelLabel('🔄 VIRAR', {
+  const flipBtn = makeLabel('🔄 VIRAR', {
     width3D: 1.0, maxLines: 1, fontSizeMax: 70, padding: 20,
     bgColor: '#0066cc', borderColor: '#00d1ff'
   });
@@ -830,9 +902,8 @@ function showFlashcard3D(q) {
     front.visible = false;
     flipBtn.visible = false;
 
-    // Verso — resposta correta
     const answerText = `${'ABCDE'[q.correct]}) ${q.options[q.correct]}`;
-    const back = createPanelLabel(answerText, {
+    const back = makeLabel(answerText, {
       width3D: 1.8, maxLines: 3, fontSizeMax: 60, padding: 30,
       bgColor: '#16684d', borderColor: '#00ff88'
     });
@@ -840,9 +911,8 @@ function showFlashcard3D(q) {
     back.userData.isFlashcard = true;
     flashcardGroup.add(back);
 
-    // Explicação
     if (q.explanation) {
-      const exp = createPanelLabel(q.explanation, {
+      const exp = makeLabel(q.explanation, {
         width3D: 1.8, maxLines: 4, fontSizeMax: 38, padding: 20,
         bgColor: '#1a1a3a', borderColor: '#ffaa00'
       });
@@ -851,14 +921,13 @@ function showFlashcard3D(q) {
       flashcardGroup.add(exp);
     }
 
-    // Botões de avaliação
     const grades = [
       { label: '😰 Difícil', grade: 0, x: -0.7, bg: '#893440', bd: '#ff4444' },
       { label: '😊 Médio', grade: 1, x: 0, bg: '#7a4a10', bd: '#ffaa00' },
       { label: '😎 Fácil', grade: 2, x: 0.7, bg: '#16684d', bd: '#00ff88' }
     ];
     grades.forEach(g => {
-      const b = createPanelLabel(g.label, {
+      const b = makeLabel(g.label, {
         width3D: 0.6, maxLines: 1, fontSizeMax: 55, padding: 12,
         bgColor: g.bg, borderColor: g.bd
       });
@@ -878,8 +947,7 @@ function showFlashcard3D(q) {
   interactive.push(flipBtn);
   flashcardGroup.add(flipBtn);
 
-  // Botão fechar
-  const closeBtn = createPanelLabel('✖ FECHAR', {
+  const closeBtn = makeLabel('✖ FECHAR', {
     width3D: 1.0, maxLines: 1, fontSizeMax: 70, padding: 20,
     bgColor: '#893440', borderColor: '#ff4444'
   });
@@ -907,16 +975,15 @@ function closeFlashcard3D() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 3D FEEDBACK PANEL (substitui modal em VR)
+// 3D FEEDBACK
 // ═══════════════════════════════════════════════════════════════════
 let feedbackGroup = null;
-
-function showFeedback(q, selected, correct) {
-  if (renderer.xr.isPresenting) showFeedback3D(q, selected, correct);
-  else showModal(q, selected, correct);
+function showFeedback(q, sel, ok) {
+  if (renderer.xr.isPresenting) showFeedback3D(q, sel, ok);
+  else showModal(q, sel, ok);
 }
 
-function showFeedback3D(q, selected, correct) {
+function showFeedback3D(q, sel, ok) {
   closeFeedback3D();
   feedbackGroup = new THREE.Group();
   feedbackGroup.userData.isFeedback = true;
@@ -931,18 +998,18 @@ function showFeedback3D(q, selected, correct) {
   feedbackGroup.position.copy(tp);
   feedbackGroup.lookAt(hp.x, tp.y, hp.z);
 
-  const statusText = correct ? '✅ CORRETO!' : `❌ ERRADO\nCorreta: ${'ABCDE'[q.correct]}`;
-  const status = createPanelLabel(statusText, {
+  const statusText = ok ? '✅ CORRETO!' : `❌ ERRADO\nCorreta: ${'ABCDE'[q.correct]}`;
+  const status = makeLabel(statusText, {
     width3D: 1.6, maxLines: 2, fontSizeMax: 90, padding: 30,
-    bgColor: correct ? '#16684d' : '#893440',
-    borderColor: correct ? '#00ff88' : '#ff4444'
+    bgColor: ok ? '#16684d' : '#893440',
+    borderColor: ok ? '#00ff88' : '#ff4444'
   });
   status.position.set(0, 0.6, 0.01);
   status.userData.isFeedback = true;
   feedbackGroup.add(status);
 
   const answerText = `${'ABCDE'[q.correct]}) ${q.options[q.correct]}`;
-  const ans = createPanelLabel(answerText, {
+  const ans = makeLabel(answerText, {
     width3D: 1.6, maxLines: 3, fontSizeMax: 55, padding: 25,
     bgColor: '#0d2740', borderColor: '#00d1ff'
   });
@@ -951,7 +1018,7 @@ function showFeedback3D(q, selected, correct) {
   feedbackGroup.add(ans);
 
   if (q.explanation) {
-    const exp = createPanelLabel(q.explanation, {
+    const exp = makeLabel(q.explanation, {
       width3D: 1.6, maxLines: 3, fontSizeMax: 38, padding: 20,
       bgColor: '#1a1a3a', borderColor: '#ffaa00'
     });
@@ -960,7 +1027,7 @@ function showFeedback3D(q, selected, correct) {
     feedbackGroup.add(exp);
   }
 
-  const nextBtn = createPanelLabel('▶ PRÓXIMA', {
+  const nextBtn = makeLabel('▶ PRÓXIMA', {
     width3D: 1.4, maxLines: 1, fontSizeMax: 80, padding: 20,
     bgColor: '#0066cc', borderColor: '#00d1ff'
   });
@@ -991,195 +1058,147 @@ function closeFeedback3D() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// RENDER PANELS
-// ═══════════════════════════════════════════════════════════════════
-function renderQuestionPanel() {
-  clearPanels();
-
-  if (!currentPool.length) {
-    ensurePanel('center', 0, 1.5, -1.8);
-    addPanelLabel('center', 'Carregue questões\npara começar', 0, {
-      width3D: 2, maxLines: 2, fontSizeMax: 80, padding: 60
-    });
-    renderSidePanels();
-    return;
-  }
-
-  const q = currentPool[currentIndex];
-
-  // ── PAINEL CENTRAL ──
-  ensurePanel('center', 0, 1.5, -1.8);
-
-  addPanelLabel('center', q.subject.toUpperCase(), 0.55, {
-    width3D: 2, maxLines: 1, fontSizeMax: 55, padding: 18,
-    bgColor: '#0d3a5a', borderColor: '#00d1ff'
-  });
-
-  // Enunciado com auto-fit
-  addPanelLabel('center', q.question, -0.05, {
-    width3D: 2, maxLines: 5, fontSizeMax: 48, padding: 30
-  });
-
-  // Alternativas com altura dinâmica
-  let yCur = -0.7;
-  q.options.forEach((opt, i) => {
-    const text = `${'ABCDE'[i]}) ${opt}`;
-    let bg = '#0d2740', bd = '#49baff';
-    if (currentAnswer !== null) {
-      if (i === q.correct) { bg = '#16684d'; bd = '#00ff88'; }
-      else if (i === currentAnswer) { bg = '#893440'; bd = '#ff4444'; }
-    }
-    const label = createPanelLabel(text, {
-      width3D: 1.9, maxLines: 2, fontSizeMax: 38, padding: 20,
-      bgColor: bg, borderColor: bd
-    });
-    if (currentAnswer === null) {
-      label.userData.onClick = () => selectAnswer(i);
-      interactive.push(label);
-    }
-    label.position.set(0, yCur, 0.02);
-    panelRegistry.get('center').add(label);
-    const h = label.geometry.parameters.height;
-    yCur -= (h + 0.08);
-  });
-
-  addPanelLabel('center', `Questão ${currentIndex+1} de ${currentPool.length}`, -0.68, {
-    width3D: 1.8, maxLines: 1, fontSizeMax: 45, padding: 15,
-    bgColor: '#0a1a2a', borderColor: '#00d1ff'
-  });
-
-  renderSidePanels();
-  restorePanelStates();
-}
-
-function renderSidePanels() {
-  // ── PAINEL ESQUERDO — FERRAMENTAS ──
-  ensurePanel('left', -1.5, 1.5, -1.6, 0.35);
-  addPanelLabel('left', '🔧 FERRAMENTAS', 0.55, {
-    width3D: 1.2, maxLines: 1, fontSizeMax: 55, padding: 15,
-    bgColor: '#0d3a5a', borderColor: '#00d1ff'
-  });
-
-  const leftBtns = [
-    { label: '🎯 Modo Foco', action: toggleFocus },
-    { label: '📖 Modo Leitura', action: toggleReading },
-    { label: '🔄 Resetar Vista', action: resetView },
-    { label: '🌍 Trocar Ambiente', action: cycleEnv },
-    { label: '⚙ Configurações', action: () => { $('menu').classList.remove('hidden'); } }
-  ];
-
-  leftBtns.forEach((btn, i) => {
-    const l = createPanelLabel(btn.label, {
-      width3D: 1.15, maxLines: 1, fontSizeMax: 45, padding: 12,
-      bgColor: '#0d2740', borderColor: '#49baff'
-    });
-    l.position.set(0, 0.25 - i * 0.24, 0.02);
-    l.userData.onClick = btn.action;
-    interactive.push(l);
-    panelRegistry.get('left').add(l);
-  });
-
-  // ── PAINEL DIREITO — AÇÕES ──
-  ensurePanel('right', 1.5, 1.5, -1.6, -0.35);
-  addPanelLabel('right', '📊 PAINEL', 0.55, {
-    width3D: 1.2, maxLines: 1, fontSizeMax: 55, padding: 15,
-    bgColor: '#0d3a5a', borderColor: '#00d1ff'
-  });
-
-  addPanelLabel('right', `${DB.stats.correct}/${DB.stats.total}`, 0.32, {
-    width3D: 1.15, maxLines: 1, fontSizeMax: 70, padding: 15
-  });
-
-  const rightBtns = [
-    { label: '📇 Flashcard', action: () => openFlashcard(currentPool[currentIndex]) },
-    { label: '⭐ Favoritar', action: toggleFavorite },
-    { label: '▶ Próxima', action: nextQuestion },
-    { label: '🔄 Revisar', action: startReview }
-  ];
-
-  rightBtns.forEach((btn, i) => {
-    const l = createPanelLabel(btn.label, {
-      width3D: 1.15, maxLines: 1, fontSizeMax: 45, padding: 12,
-      bgColor: '#0d2740', borderColor: '#49baff'
-    });
-    l.position.set(0, 0.05 - i * 0.26, 0.02);
-    l.userData.onClick = btn.action;
-    interactive.push(l);
-    panelRegistry.get('right').add(l);
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// PANEL PERSISTENCE
-// ═══════════════════════════════════════════════════════════════════
-function savePanelState(id, g) {
-  DB.panels[id] = { pos: g.position.toArray(), rot: g.rotation.y, scale: g.scale.x };
-  STORAGE.save(DB);
-}
-
-function restorePanelStates() {
-  for (const [id, g] of panelRegistry) {
-    const s = DB.panels[id];
-    if (s) {
-      g.position.fromArray(s.pos);
-      g.rotation.y = s.rot;
-      g.scale.setScalar(s.scale);
-    }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// GRAB (FIX: thumbstickmoved event direto no controller)
+// ⭐ SISTEMA DE GRAB — CORRIGIDO
 // ═══════════════════════════════════════════════════════════════════
 const raycaster = new THREE.Raycaster();
-const rotM = new THREE.Matrix4();
+const _m4 = new THREE.Matrix4();
+const _v3 = new THREE.Vector3();
+const _v3b = new THREE.Vector3();
+const _q = new THREE.Quaternion();
 
-function raycastFirst(src) {
-  src.updateWorldMatrix(true, false);
-  rotM.extractRotation(src.matrixWorld);
-  raycaster.ray.origin.setFromMatrixPosition(src.matrixWorld);
-  raycaster.ray.direction.set(0,0,-1).applyMatrix4(rotM).normalize();
+/**
+ * Retorna o hit mais próximo na cena a partir da posição/direção do controller.
+ * IMPORTANTE: atualiza matrixWorld de toda a cena antes de raycast.
+ */
+function getHitFromController(ctrl) {
+  // Atualiza matrizes ANTES do raycast (crítico!)
+  scene.updateMatrixWorld(true);
+
+  ctrl.updateWorldMatrix(true, false);
+  _m4.extractRotation(ctrl.matrixWorld);
+  raycaster.ray.origin.setFromMatrixPosition(ctrl.matrixWorld);
+  raycaster.ray.direction.set(0, 0, -1).applyMatrix4(_m4).normalize();
+  raycaster.far = 15;
+
   const hits = raycaster.intersectObjects(interactive, false);
-  return hits.length > 0 && hits[0].distance < 15 ? hits[0] : null;
+  return hits.length > 0 ? hits[0] : null;
 }
 
-function startGrab(src, id) {
-  const g = panelRegistry.get(id);
-  if (!g || src.userData.grabState) return;
-  const p = new THREE.Vector3();
-  src.getWorldPosition(p);
-  src.userData.grabState = {
-    panelId: id, group: g,
-    startSrc: p.clone(), startGroup: g.position.clone()
+/**
+ * ⭐ ATUALIZA HOVER A CADA FRAME — guarda em ctrl.userData.hovered
+ * Isso elimina problemas de timing nos eventos
+ */
+function updateHover(ctrl) {
+  const hit = getHitFromController(ctrl);
+  const prev = ctrl.userData.hovered;
+
+  if (prev && prev.object) {
+    // Reset do hover anterior
+    if (prev.object.material && prev.object.userData._origEmissive !== undefined) {
+      prev.object.material.color.setHex(prev.object.userData._origEmissive);
+      prev.object.userData._origEmissive = undefined;
+    }
+  }
+
+  ctrl.userData.hovered = hit;
+
+  if (hit) {
+    // Highlight do hover atual
+    const o = hit.object;
+    if (o.material && o.material.color) {
+      if (o.userData._origEmissive === undefined) {
+        o.userData._origEmissive = o.material.color.getHex();
+      }
+      if (o.userData.isGrabHandle) {
+        o.material.color.setHex(0xffff00);  // amarelo quando mira na alça
+      } else if (o.userData.onClick) {
+        o.material.color.setHex(0x66aaff);  // azul claro quando mira em botão
+      }
+    }
+  }
+
+  // Atualiza HUD de debug do laser (só em VR)
+  if (renderer.xr.isPresenting) {
+    const dbg = ctrl.userData.hovered?.object;
+    const dbgEl = document.getElementById('vr-debug-' + ctrl.userData.hand);
+    if (dbgEl) {
+      const name = dbg?.userData?.isGrabHandle ? '🤚 ALÇA' :
+                   dbg?.userData?.onClick ? '👆 BOTÃO' :
+                   dbg?.userData?.isTeleport ? '🌀 TELEPORTE' : '· · ·';
+      dbgEl.textContent = name;
+    }
+  }
+}
+
+/**
+ * ⭐ UNIFICADO: trigger e grip fazem exatamente a mesma coisa
+ * Se mira alça → inicia grab
+ * Se mira botão/alternativa → executa click
+ */
+function handleSelectStart(ctrl, source) {
+  const hit = ctrl.userData.hovered;
+  console.log('[SELECT]', ctrl.userData.hand, 'hovered:', hit?.object?.userData);
+
+  if (!hit) {
+    // Sem hit → fallback: tenta raycast imediato
+    const fallback = getHitFromController(ctrl);
+    if (!fallback) return;
+    processHit(ctrl, fallback.object);
+    return;
+  }
+  processHit(ctrl, hit.object);
+}
+
+function processHit(ctrl, obj) {
+  if (obj.userData.isGrabHandle) {
+    startGrab(ctrl, obj.userData.panelId);
+  } else if (obj.userData.isTeleport) {
+    if (obj.userData.onClick) obj.userData.onClick();
+  } else if (obj.userData.onClick) {
+    obj.userData.onClick();
+  }
+}
+
+function startGrab(ctrl, panelId) {
+  const g = panelRegistry.get(panelId);
+  if (!g || ctrl.userData.grabState) return;
+
+  // Captura posição inicial
+  ctrl.updateWorldMatrix(true, false);
+  ctrl.getWorldPosition(_v3);
+
+  ctrl.userData.grabState = {
+    panelId, group: g,
+    startCtrlPos: _v3.clone(),
+    startGroupPos: g.position.clone(),
+    startGroupScale: g.scale.x,
+    startGroupRotY: g.rotation.y
   };
-  g.scale.multiplyScalar(1.02);
-  $('status').textContent = `✋ Movendo ${id.toUpperCase()} — solte para parar`;
+
+  g.scale.setScalar(g.scale.x * 1.02);
+  $('status').textContent = `✋ Movendo ${panelId.toUpperCase()} — solte para parar`;
+  console.log('[GRAB-START]', panelId);
 }
 
-function updateGrabPosition(src) {
-  const s = src.userData.grabState;
+function updateGrab(ctrl) {
+  const s = ctrl.userData.grabState;
   if (!s) return;
-  const p = new THREE.Vector3();
-  src.getWorldPosition(p);
-  const delta = p.clone().sub(s.startSrc);
-  s.group.position.copy(s.startGroup.clone().add(delta));
+
+  ctrl.updateWorldMatrix(true, false);
+  ctrl.getWorldPosition(_v3);
+
+  _v3.sub(s.startCtrlPos);  // delta = current - start
+  s.group.position.copy(s.startGroupPos).add(_v3);
 }
 
-function endGrab(src) {
-  const s = src.userData.grabState;
+function endGrab(ctrl) {
+  const s = ctrl.userData.grabState;
   if (!s) return;
-  s.group.scale.multiplyScalar(1/1.02);
+  s.group.scale.setScalar(s.startGroupScale);
   savePanelState(s.panelId, s.group);
-  delete src.userData.grabState;
+  delete ctrl.userData.grabState;
   $('status').textContent = `📍 ${s.panelId.toUpperCase()} posicionado`;
-}
-
-function selectObject(src) {
-  const h = raycastFirst(src);
-  if (!h) return;
-  const o = h.object;
-  if (o.userData.isGrabHandle) startGrab(src, o.userData.panelId);
-  else if (o.userData.onClick) o.userData.onClick();
+  console.log('[GRAB-END]', s.panelId);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1190,58 +1209,54 @@ const handFactory = new XRHandModelFactory();
 
 for (let i = 0; i < 2; i++) {
   const ctrl = renderer.xr.getController(i);
+  ctrl.userData.hand = i === 0 ? 'left' : 'right';
 
-  // GRIP = grab
-  ctrl.addEventListener('squeezestart', () => {
-    const h = raycastFirst(ctrl);
-    if (h?.object.userData.isGrabHandle) startGrab(ctrl, h.object.userData.panelId);
-  });
+  // ⭐ TRIGGER (select) → mesma função que grip
+  ctrl.addEventListener('selectstart', () => handleSelectStart(ctrl, 'trigger'));
+  // ⭐ GRIP (squeeze) → mesma função
+  ctrl.addEventListener('squeezestart', () => handleSelectStart(ctrl, 'grip'));
+
+  // Soltar grab (trigger ou grip)
+  ctrl.addEventListener('selectend', () => endGrab(ctrl));
   ctrl.addEventListener('squeezeend', () => endGrab(ctrl));
 
-  // TRIGGER = click
-  ctrl.addEventListener('selectstart', () => {
-    const h = raycastFirst(ctrl);
-    if (!h) return;
-    const o = h.object;
-    if (o.userData.isGrabHandle) return;
-    if (o.userData.onClick) o.userData.onClick();
-  });
-
-  // THUMBSTICK durante grab = resize/rotate
+  // Thumbstick durante grab = resize/rotate
   ctrl.addEventListener('thumbstickmoved', (evt) => {
     const s = ctrl.userData.grabState;
     if (!s) return;
     const { x, y } = evt.detail;
     if (Math.abs(y) > 0.15) {
-      const sc = Math.max(0.5, Math.min(2.5, s.group.scale.x * (1 + y * 0.015)));
+      const sc = Math.max(0.5, Math.min(2.5, s.group.scale.x * (1 + y * 0.02)));
       s.group.scale.setScalar(sc);
       $('status').textContent = `📏 Escala: ${sc.toFixed(2)}x`;
     }
     if (Math.abs(x) > 0.15) {
       s.group.rotation.y += x * 0.03;
+      $('status').textContent = `🔄 Rotação: ${(s.group.rotation.y * 180 / Math.PI).toFixed(0)}°`;
     }
   });
 
   rig.add(ctrl);
 
-  const line = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-5)]),
-    new THREE.LineBasicMaterial({ color: 0x4cdeff })
-  );
+  // Laser visual
+  const lineGeo = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -5)
+  ]);
+  const lineMat = new THREE.LineBasicMaterial({ color: 0x4cdeff });
+  const line = new THREE.Line(lineGeo, lineMat);
   ctrl.add(line);
+  ctrl.userData.laserLine = line;
 
+  // Modelo visual do controle
   const grip = renderer.xr.getControllerGrip(i);
   grip.add(ctrlFactory.createControllerModel(grip));
   rig.add(grip);
 
+  // Hand tracking
   const hand = renderer.xr.getHand(i);
+  hand.userData.hand = i === 0 ? 'left' : 'right';
   hand.add(handFactory.createHandModel(hand, 'mesh'));
-  hand.addEventListener('selectstart', () => {
-    const h = raycastFirst(hand);
-    if (!h) return;
-    if (h.object.userData.isGrabHandle) startGrab(hand, h.object.userData.panelId);
-    else if (h.object.userData.onClick) h.object.userData.onClick();
-  });
+  hand.addEventListener('selectstart', () => handleSelectStart(hand, 'hand'));
   hand.addEventListener('selectend', () => endGrab(hand));
   rig.add(hand);
 }
@@ -1249,12 +1264,12 @@ for (let i = 0; i < 2; i++) {
 // ═══════════════════════════════════════════════════════════════════
 // TELEPORT
 // ═══════════════════════════════════════════════════════════════════
-for (const [x,z] of [[0,-2],[-3,-2],[3,-2],[0,2]]) {
+for (const [x, z] of [[0, -2], [-3, -2], [3, -2], [0, 2]]) {
   const m = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.4,0.4,0.02,32),
+    new THREE.CylinderGeometry(0.4, 0.4, 0.02, 32),
     new THREE.MeshBasicMaterial({ color: 0x20c8fa, transparent: true, opacity: 0.6 })
   );
-  m.position.set(x,0.02,z);
+  m.position.set(x, 0.02, z);
   m.userData.isTeleport = true;
   m.userData.onClick = () => {
     const h = new THREE.Vector3();
@@ -1262,6 +1277,7 @@ for (const [x,z] of [[0,-2],[-3,-2],[3,-2],[0,2]]) {
     else camera.getWorldPosition(h);
     rig.position.x += x - h.x;
     rig.position.z += z - h.z;
+    $('status').textContent = '🌀 Teletransporte';
   };
   scene.add(m);
   interactive.push(m);
@@ -1271,22 +1287,31 @@ for (const [x,z] of [[0,-2],[-3,-2],[3,-2],[0,2]]) {
 // ANIMATION LOOP
 // ═══════════════════════════════════════════════════════════════════
 const clock = new THREE.Clock();
+let _debugHoverLeft = null;
+let _debugHoverRight = null;
 
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  // Atualiza grabs (fix: só atualiza posição, sem depender de inputSources)
-  for (let i = 0; i < 2; i++) {
-    updateGrabPosition(renderer.xr.getController(i));
-    updateGrabPosition(renderer.xr.getHand(i));
-  }
-
-  // Locomotion (só se nenhum grab ativo)
+  // Atualiza hover de cada controller/hand (se em VR)
   if (renderer.xr.isPresenting) {
-    const anyGrab = renderer.xr.getController(0).userData.grabState ||
-                    renderer.xr.getController(1).userData.grabState ||
-                    renderer.xr.getHand(0).userData.grabState ||
-                    renderer.xr.getHand(1).userData.grabState;
+    const c0 = renderer.xr.getController(0);
+    const c1 = renderer.xr.getController(1);
+    updateHover(c0);
+    updateHover(c1);
+
+    // Atualiza posição de painéis em grab
+    updateGrab(c0);
+    updateGrab(c1);
+
+    const h0 = renderer.xr.getHand(0);
+    const h1 = renderer.xr.getHand(1);
+    updateGrab(h0);
+    updateGrab(h1);
+
+    // Locomotion (se nenhum grab ativo)
+    const anyGrab = c0.userData.grabState || c1.userData.grabState ||
+                    h0.userData.grabState || h1.userData.grabState;
     if (!anyGrab) {
       const sess = renderer.xr.getSession();
       for (const src of sess.inputSources) {
@@ -1309,7 +1334,7 @@ renderer.setAnimationLoop(() => {
 });
 
 window.addEventListener('resize', () => {
-  camera.aspect = innerWidth/innerHeight;
+  camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
@@ -1342,7 +1367,7 @@ $('enter').onclick = async () => {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// UI LOGIC (resto preservado)
+// UI LOGIC
 // ═══════════════════════════════════════════════════════════════════
 function updateHUD() {
   $('hud-total').textContent = DB.stats.total;
@@ -1406,7 +1431,6 @@ function populateSubjects() {
   if ([...s.options].some(o => o.value === cur)) s.value = cur;
 }
 
-// SM-2
 function updateFlashcardSRS(id, grade) {
   const now = Date.now();
   const c = DB.flashcards[id] || { interval: 0, ease: 2.5, reps: 0, due: now };
@@ -1422,7 +1446,6 @@ function updateFlashcardSRS(id, grade) {
   DB.flashcards[id] = c;
 }
 
-// HTML Flashcard (desktop only)
 let currentFlashcard = null;
 function openFlashcardHTML(q) {
   if (!q) return;
@@ -1455,7 +1478,6 @@ document.querySelectorAll('[data-grade]').forEach(b => {
   };
 });
 
-// Answer
 function selectAnswer(idx) {
   const q = currentPool[currentIndex];
   if (!q || currentAnswer !== null) return;
@@ -1543,22 +1565,22 @@ function toggleFavorite() {
 function toggleFocus() {
   $('menu').classList.add('hidden');
   $('hud').style.opacity = '0.3';
-  $('status').textContent = '🎯 Modo foco (clique no menu para sair)';
+  $('status').textContent = '🎯 Modo foco';
   setTimeout(() => { $('menu').classList.remove('hidden'); $('hud').style.opacity = '1'; }, 30000);
 }
 
 function toggleReading() {
   const g = panelRegistry.get('center');
-  if (g) { g.position.set(0, 1.6, -1.2); g.scale.setScalar(1.4); }
+  if (g) { g.position.set(0, 1.6, -1.8); g.scale.setScalar(1.4); }
   $('status').textContent = '📖 Modo leitura';
 }
 
 function resetView() {
   for (const [id, g] of panelRegistry) {
     const defaults = {
-      center: [0, 1.5, -1.8, 0],
-      left: [-1.5, 1.5, -1.6, 0.35],
-      right: [1.5, 1.5, -1.6, -0.35]
+      center: [0, 1.5, PANEL_Z, 0],
+      left: [-1.5, 1.5, PANEL_Z + 0.2, 0.35],
+      right: [1.5, 1.5, PANEL_Z + 0.2, -0.35]
     };
     if (defaults[id]) {
       g.position.set(defaults[id][0], defaults[id][1], defaults[id][2]);
@@ -1592,7 +1614,6 @@ function startReview() {
   $('status').textContent = `🔄 Revisando ${currentPool.length} erros`;
 }
 
-// Pool
 function buildPool(mode, subj, limit = 9999) {
   let p = QUESTIONS.slice();
   if (subj && subj !== 'Todas') p = p.filter(q => q.subject === subj);
@@ -1624,7 +1645,7 @@ $('demo').onclick = () => {
   currentPool = QUESTIONS.slice();
   currentIndex = 0; currentAnswer = null; responsesLocked.clear();
   renderQuestionPanel();
-  $('status').textContent = '✅ Demo';
+  $('status').textContent = '✅ Demo carregada';
 };
 
 $('refresh').onclick = async () => {
@@ -1647,7 +1668,7 @@ $('exam-start').onclick = () => {
   responsesLocked.clear();
   renderQuestionPanel();
   $('exam-status').textContent = `⏱ ${qty}q ${time > 0 ? '/ '+time+'min' : ''}`;
-  $('status').textContent = '✅ Simulado iniciado';
+  $('status').textContent = '✅ Simulado';
 };
 
 setInterval(() => {
@@ -1677,7 +1698,7 @@ $('environment').onchange = (e) => {
   STORAGE.save(DB);
   buildEnvironment(t);
 };
-$('lighting').onchange = (e) => { DB.lighting = e.target.value; STORAGE.save(DB); applyLighting(); };
+$('lighting').onchange = (e) => { DB.lighting = e.target.value; STORAGE.save(DB); buildEnvironment(DB.environment); };
 $('reset-panels').onclick = () => { resetView(); renderQuestionPanel(); };
 
 function renderThemeSwatches() {
@@ -1692,11 +1713,6 @@ function renderThemeSwatches() {
     g.appendChild(s);
   }
 }
-$('font-scale').oninput = (e) => {
-  DB.fontScale = parseInt(e.target.value);
-  $('font-scale-val').textContent = DB.fontScale + '%';
-  STORAGE.save(DB);
-};
 $('repo-apply').onclick = async () => {
   DB.repo = $('repo-input').value.trim();
   STORAGE.save(DB);
@@ -1739,12 +1755,9 @@ document.querySelectorAll('.tabs button').forEach(b => {
 $('tutorial-close').onclick = () => $('tutorial').classList.remove('open');
 $('show-tutorial').onclick = () => $('tutorial').classList.add('open');
 
-// Init
 (async function init() {
   applyTheme(DB.theme);
   renderThemeSwatches();
-  $('font-scale').value = DB.fontScale;
-  $('font-scale-val').textContent = DB.fontScale + '%';
   buildEnvironment(DB.environment);
   $('environment').value = DB.environment;
   $('lighting').value = DB.lighting;
@@ -1761,7 +1774,7 @@ $('show-tutorial').onclick = () => $('tutorial').classList.add('open');
     renderQuestionPanel();
   } else {
     $('status').textContent = '⚠️ Sem questões. Use Demo.';
-    ensurePanel('center', 0, 1.5, -1.8);
+    ensurePanel('center', 0, 1.5, PANEL_Z);
     addPanelLabel('center', 'Bem-vindo!\nUse 🧪 Demo\nou configure repo.', 0, {
       width3D: 2, maxLines: 3, fontSizeMax: 60, padding: 40
     });
@@ -1772,6 +1785,8 @@ $('show-tutorial').onclick = () => $('tutorial').classList.add('open');
     $('tutorial').classList.add('open');
     localStorage.setItem('pmsc_tutorial_seen', '1');
   }
+
+  console.log('[PMSC v4] iniciado');
 })();
 </script>
 </body>
