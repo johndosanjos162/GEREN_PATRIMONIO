@@ -5,206 +5,186 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <title>PMSC Immersive Academy 2026</title>
+
 <style>
 :root{
-  --bg:#060913; --panel:#0d2740; --panel-alt:#123c60;
-  --border:#49baff; --accent:#00d1ff; --ok:#00ff88;
-  --warn:#ffaa00; --err:#ff4444; --text:#e8f4ff; --muted:#8ab0d0;
+  --bg:#060913;--panel:#0d2740;--panel-alt:#123c60;
+  --border:#49baff;--accent:#00d1ff;--ok:#00ff88;
+  --warn:#ffaa00;--err:#ff4444;--text:#e8f4ff;--muted:#8ab0d0;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;
   font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text)}
 canvas{display:block;outline:none}
 
-/* MENU LATERAL */
+/* MENU */
 #menu{
   position:fixed;top:12px;left:12px;z-index:100;
-  width:min(400px,94vw);max-height:calc(100vh - 100px);overflow-y:auto;
-  padding:16px;background:rgba(6,9,19,.96);
+  width:min(420px,94vw);max-height:calc(100vh - 100px);overflow-y:auto;
+  padding:16px;background:rgba(6,9,19,.97);
   border:1px solid var(--border);border-radius:12px;
   box-shadow:0 8px 32px rgba(0,209,255,.15);
   backdrop-filter:blur(12px);
 }
 #menu.hidden{display:none}
 h2{margin:0 0 4px;font-size:16px;color:var(--accent);letter-spacing:1px}
-h3{margin:12px 0 6px;font-size:13px;color:#c5eaff;text-transform:uppercase;letter-spacing:1px}
+h3{margin:12px 0 6px;font-size:12px;color:#c5eaff;text-transform:uppercase;letter-spacing:1px}
 button,select,input,textarea{
   font:inherit;width:100%;padding:10px 12px;margin:4px 0;
   background:var(--panel-alt);color:#fff;
   border:1px solid var(--border);border-radius:8px;
   cursor:pointer;transition:all .15s ease;
 }
-button:hover,select:hover{background:#1a6aa0;transform:translateY(-1px)}
+button:hover{background:#1a6aa0;transform:translateY(-1px)}
 button:active{transform:translateY(0)}
-button.primary{background:linear-gradient(90deg,#0066cc,#00d1ff);border-color:#00d1ff;font-weight:700}
+button.primary{background:linear-gradient(90deg,#0066cc,#00d1ff);font-weight:700}
 button.ok{background:#0d6b4f;border-color:#2fbf8f}
 button.warn{background:#7a4a10;border-color:#d19a3a}
 button.err{background:#7a1a1a;border-color:#ff4444}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .row button{margin:0}
 
-/* STATUS BAR */
 #status{
   margin-top:8px;padding:8px 10px;background:rgba(0,209,255,.1);
   border-left:3px solid var(--accent);border-radius:4px;
   font-size:12px;color:#c4e9ff;min-height:20px
 }
-#stats-summary{
-  margin-top:8px;padding:10px;background:rgba(0,255,136,.08);
-  border-radius:6px;font-size:12px;line-height:1.6
-}
+#stats-summary{margin-top:8px;padding:10px;background:rgba(0,255,136,.08);
+  border-radius:6px;font-size:12px;line-height:1.6}
 #stats-summary b{color:var(--ok)}
 hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
 
-/* BOTÃO ENTRAR VR */
 #enter{
-  position:fixed;right:16px;bottom:16px;z-index:100;
-  width:auto;padding:14px 28px;
-  background:linear-gradient(90deg,#0050a8,#00d1ff);
+  position:fixed;right:16px;bottom:16px;z-index:100;width:auto;
+  padding:14px 28px;background:linear-gradient(90deg,#0050a8,#00d1ff);
   border:2px solid #00d1ff;border-radius:32px;
   font-weight:900;font-size:14px;letter-spacing:1px;
   box-shadow:0 0 20px rgba(0,209,255,.6);
 }
 #enter.hidden{display:none}
 
-/* HUD */
 #hud{
-  position:fixed;top:12px;right:12px;z-index:90;
-  padding:10px 16px;background:rgba(6,9,19,.9);
-  border:1px solid var(--accent);border-radius:8px;
-  font-size:12px;color:var(--accent);
+  position:fixed;top:12px;right:12px;z-index:90;padding:10px 16px;
+  background:rgba(6,9,19,.9);border:1px solid var(--accent);
+  border-radius:8px;font-size:12px;color:var(--accent);
   display:flex;gap:16px;align-items:center;
 }
 #hud .k{color:#fff;font-weight:700}
 
-/* MODAL */
 .modal{
   position:fixed;top:0;left:0;width:100%;height:100%;z-index:200;
-  background:rgba(0,0,0,.85);display:none;
-  align-items:center;justify-content:center;padding:20px;
+  background:rgba(0,0,0,.85);display:none;align-items:center;
+  justify-content:center;padding:20px;
 }
 .modal.open{display:flex}
 .modal-content{
   background:var(--bg);border:1px solid var(--border);border-radius:12px;
-  padding:24px;max-width:600px;width:100%;max-height:80vh;overflow-y:auto;
+  padding:24px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;
 }
-.modal h2{font-size:20px;margin-bottom:16px}
-.modal .q-text{font-size:16px;line-height:1.5;margin-bottom:16px;color:#fff}
+.modal h2{font-size:20px;margin-bottom:16px;color:var(--accent)}
+.modal .q-text{font-size:16px;line-height:1.5;margin-bottom:16px;white-space:pre-wrap}
 .modal .options{display:flex;flex-direction:column;gap:8px}
-.modal .option{
-  padding:12px;border:1px solid var(--border);border-radius:8px;
-  cursor:pointer;transition:.15s
-}
+.modal .option{padding:12px;border:1px solid var(--border);border-radius:8px;
+  cursor:pointer;transition:.15s;font-size:14px;line-height:1.4}
 .modal .option:hover{background:var(--panel-alt)}
 .modal .option.correct{border-color:var(--ok);background:rgba(0,255,136,.15)}
 .modal .option.wrong{border-color:var(--err);background:rgba(255,68,68,.15)}
-.modal .explanation{
-  margin-top:16px;padding:12px;background:var(--panel-alt);
+.modal .explanation{margin-top:16px;padding:12px;background:var(--panel-alt);
   border-left:3px solid var(--accent);border-radius:4px;
-  font-size:13px;line-height:1.5
-}
+  font-size:13px;line-height:1.5;white-space:pre-wrap}
 .modal button.close{margin-top:16px;width:auto;padding:10px 24px}
 
-/* TABS MENU */
 .tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
-.tabs button{
-  flex:1;min-width:80px;padding:8px;font-size:11px;
-  background:var(--panel);border-color:transparent;
-}
-.tabs button.active{
-  background:var(--panel-alt);border-color:var(--accent);
-  color:var(--accent);font-weight:700
-}
+.tabs button{flex:1;min-width:70px;padding:8px;font-size:11px;
+  background:var(--panel);border-color:transparent}
+.tabs button.active{background:var(--panel-alt);border-color:var(--accent);
+  color:var(--accent);font-weight:700}
 .tab-content{display:none}
 .tab-content.active{display:block}
 
-/* THEME SWATCHES */
 .themes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
-.theme-swatch{
-  height:36px;border-radius:6px;border:2px solid transparent;
-  cursor:pointer;transition:.2s
-}
+.theme-swatch{height:36px;border-radius:6px;border:2px solid transparent;
+  cursor:pointer;transition:.2s}
 .theme-swatch.active{border-color:#fff;transform:scale(1.05)}
 
-/* FLASHCARD STAGE */
 .flashcard-stage{
   position:fixed;top:0;left:0;width:100%;height:100%;z-index:150;
   background:rgba(0,0,0,.95);display:none;
-  flex-direction:column;align-items:center;justify-content:center;
-  padding:20px;
+  flex-direction:column;align-items:center;justify-content:center;padding:20px;
 }
 .flashcard-stage.open{display:flex}
 .flashcard{
-  width:min(600px,90vw);height:min(400px,60vh);
+  width:min(650px,92vw);height:min(420px,62vh);
   background:linear-gradient(135deg,var(--panel),var(--panel-alt));
   border:2px solid var(--accent);border-radius:16px;
   padding:32px;display:flex;flex-direction:column;
   justify-content:center;cursor:pointer;
   box-shadow:0 20px 60px rgba(0,209,255,.3);
-  transition:transform .4s ease;
-  position:relative;
+  transition:transform .4s ease;position:relative;
+  transform-style:preserve-3d;
 }
 .flashcard.flipped{transform:rotateY(180deg)}
 .flashcard .front,.flashcard .back{
   position:absolute;inset:0;padding:32px;
   display:flex;flex-direction:column;justify-content:center;
-  backface-visibility:hidden;
+  backface-visibility:hidden;overflow-y:auto;
 }
 .flashcard .back{transform:rotateY(180deg)}
-.flashcard.disabled{opacity:.5;cursor:not-allowed}
-.fc-controls{margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.fc-controls{margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 .fc-controls button{width:auto;padding:10px 20px}
-.fc-progress{margin-top:12px;color:var(--muted);font-size:13px}
+.fc-progress{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
 
-/* EXAM RESULT */
-.exam-result{
-  background:var(--panel);border:1px solid var(--accent);
-  border-radius:12px;padding:20px;margin:12px 0;
-}
-.exam-result .score{
-  font-size:32px;font-weight:900;color:var(--ok);
-  text-align:center;margin:12px 0
-}
-.exam-result .detail{font-size:13px;color:var(--muted);text-align:center}
-
-/* SVG CHART */
-.chart{width:100%;height:120px;margin:8px 0}
+.chart{width:100%;height:140px;margin:8px 0}
 .chart .bar{fill:var(--accent);transition:.3s}
 .chart .bar:hover{fill:var(--ok)}
 .chart .axis{stroke:var(--muted);stroke-width:1}
 .chart .label{fill:var(--text);font-size:10px}
 
+/* TUTORIAL */
+#tutorial{
+  position:fixed;top:0;left:0;width:100%;height:100%;z-index:300;
+  background:rgba(0,0,0,.92);display:none;
+  align-items:center;justify-content:center;padding:20px;
+}
+#tutorial.open{display:flex}
+.tutorial-card{
+  background:var(--bg);border:2px solid var(--accent);border-radius:16px;
+  padding:32px;max-width:560px;width:100%;text-align:center;
+}
+.tutorial-card h2{font-size:24px;color:var(--accent);margin:0 0 16px}
+.tutorial-card p{font-size:14px;line-height:1.6;margin:8px 0;color:var(--text)}
+.tutorial-card button{margin-top:20px;padding:12px 32px}
+
 @media(max-width:600px){
-  #menu{width:94vw;max-height:60vh}
-  #hud{font-size:10px;gap:10px}
+  #menu{width:94vw;max-height:62vh}
+  #hud{font-size:10px;gap:8px}
   .row{grid-template-columns:1fr}
 }
 </style>
 
 <script type="importmap">
 {
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
   }
 }
 </script>
 </head>
 <body>
 
-<!-- MENU LATERAL -->
 <div id="menu">
   <h2>🎓 PMSC Academy 2026</h2>
   <div class="tabs">
     <button class="active" data-tab="study">📚 Estudo</button>
     <button data-tab="exam">📝 Simulado</button>
     <button data-tab="review">🔄 Revisão</button>
-    <button data-tab="env">🌍 Ambientes</button>
-    <button data-tab="theme">🎨 Temas</button>
+    <button data-tab="stats">📊 Stats</button>
+    <button data-tab="env">🌍 Amb</button>
+    <button data-tab="theme">🎨 Tema</button>
     <button data-tab="config">⚙️ Config</button>
   </div>
 
-  <!-- TAB: ESTUDO -->
   <div class="tab-content active" id="tab-study">
     <h3>Disciplina</h3>
     <select id="subject"><option value="Todas">Todas</option></select>
@@ -214,20 +194,25 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
       <option value="random">Aleatório</option>
       <option value="unanswered">Não respondidas</option>
       <option value="difficult">Difíceis</option>
+      <option value="favorites">Favoritas</option>
     </select>
     <div class="row">
       <button id="start" class="primary">▶ Iniciar</button>
       <button id="refresh" class="ok">🔄 Atualizar</button>
     </div>
     <div class="row">
+      <button id="focus-mode">🎯 Foco</button>
+      <button id="reading-mode">📖 Leitura</button>
+    </div>
+    <div class="row">
       <button id="flashcards">📇 Flashcards</button>
       <button id="demo">🧪 Demo</button>
     </div>
+    <button id="continue-session" style="display:none">⏵ Continuar última sessão</button>
   </div>
 
-  <!-- TAB: SIMULADO -->
   <div class="tab-content" id="tab-exam">
-    <h3>Configuração do Simulado</h3>
+    <h3>Configurar Simulado</h3>
     <select id="exam-qty">
       <option value="10">10 questões</option>
       <option value="20">20 questões</option>
@@ -236,15 +221,18 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
     </select>
     <select id="exam-time">
       <option value="0">Sem cronômetro</option>
-      <option value="60">60 minutos</option>
-      <option value="120">120 minutos</option>
-      <option value="240" selected>240 minutos (4h)</option>
+      <option value="60">60 min</option>
+      <option value="120">120 min</option>
+      <option value="240" selected>240 min (4h)</option>
+    </select>
+    <select id="exam-correct">
+      <option value="end">Corrigir ao finalizar</option>
+      <option value="immediate">Correção imediata</option>
     </select>
     <button id="exam-start" class="primary">▶ Iniciar Simulado</button>
-    <div id="exam-status"></div>
+    <div id="exam-status" style="font-size:12px;color:var(--warn);margin-top:8px"></div>
   </div>
 
-  <!-- TAB: REVISÃO -->
   <div class="tab-content" id="tab-review">
     <h3>Revisar Erros</h3>
     <div id="review-summary"></div>
@@ -252,19 +240,24 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
     <button id="reset-stats" class="err">🗑 Zerar estatísticas</button>
   </div>
 
-  <!-- TAB: AMBIENTES -->
+  <div class="tab-content" id="tab-stats">
+    <h3>Desempenho por Disciplina</h3>
+    <svg class="chart" id="stats-chart" viewBox="0 0 400 140"></svg>
+    <div id="stats-detail" style="font-size:12px;line-height:1.6"></div>
+  </div>
+
   <div class="tab-content" id="tab-env">
     <h3>Cenário</h3>
     <select id="environment">
       <option value="academy">🏢 Academia PMSC</option>
       <option value="living">🛋 Sala de estar</option>
-      <option value="beach">🏖 Praia tropical</option>
+      <option value="beach">🏖 Praia</option>
       <option value="library">📚 Biblioteca</option>
-      <option value="future">💻 Escritório futurista</option>
+      <option value="future">💻 Escritório</option>
       <option value="nature">🌳 Natureza</option>
       <option value="penthouse">🏙 Cobertura</option>
-      <option value="space">🚀 Estação espacial</option>
-      <option value="minimal">◻ Sala minimalista</option>
+      <option value="space">🚀 Espaço</option>
+      <option value="minimal">◻ Minimalista</option>
       <option value="random">🎲 Aleatório</option>
     </select>
     <h3>Iluminação</h3>
@@ -272,44 +265,43 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
       <option value="day">☀ Dia</option>
       <option value="night">🌙 Noite</option>
     </select>
-    <button id="reset-panels" class="warn">🔄 Restaurar painéis</button>
-  </div>
-
-  <!-- TAB: TEMAS -->
-  <div class="tab-content" id="tab-theme">
-    <h3>Paleta de Cores</h3>
-    <div class="themes" id="theme-grid"></div>
-    <h3>Textos</h3>
-    <label style="font-size:12px;color:var(--muted)">Escala: <span id="font-scale-val">100%</span></label>
-    <input type="range" id="font-scale" min="80" max="150" value="100" step="5">
-  </div>
-
-  <!-- TAB: CONFIG -->
-  <div class="tab-content" id="tab-config">
-    <h3>Repositório GitHub</h3>
-    <input id="repo-input" placeholder="owner/repo" value="johndosanjos162/PMSC">
-    <button id="repo-apply" class="ok">Aplicar</button>
-    <h3>Configurações</h3>
+    <h3>Qualidade</h3>
     <select id="quality">
       <option value="low">Econômico</option>
       <option value="medium" selected>Equilibrado</option>
       <option value="high">Alto</option>
     </select>
-    <h3>Exportar / Importar</h3>
+    <button id="reset-panels" class="warn">🔄 Restaurar painéis</button>
+  </div>
+
+  <div class="tab-content" id="tab-theme">
+    <h3>Paleta de Cores</h3>
+    <div class="themes" id="theme-grid"></div>
+    <h3>Escala de Texto</h3>
+    <label style="font-size:12px;color:var(--muted)">Escala: <span id="font-scale-val">100%</span></label>
+    <input type="range" id="font-scale" min="80" max="150" value="100" step="5">
+  </div>
+
+  <div class="tab-content" id="tab-config">
+    <h3>Repositório GitHub</h3>
+    <input id="repo-input" value="johndosanjos162/PMSC">
+    <button id="repo-apply" class="ok">Aplicar</button>
+    <h3>Backup</h3>
     <div class="row">
-      <button id="export-data">📤 Exportar JSON</button>
+      <button id="export-data">📤 Exportar</button>
       <button id="import-data">📥 Importar</button>
     </div>
     <input id="import-file" type="file" accept=".json" style="display:none">
+    <h3>Ajuda</h3>
+    <button id="show-tutorial">📖 Tutorial</button>
   </div>
 
   <div id="status">Pronto</div>
   <div id="stats-summary"></div>
 </div>
 
-<!-- HUD TOP-RIGHT -->
 <div id="hud">
-  <span>📊 <span class="k" id="hud-total">0</span> q</span>
+  <span>📊 <span class="k" id="hud-total">0</span></span>
   <span>✅ <span class="k" id="hud-ok">0</span></span>
   <span>❌ <span class="k" id="hud-err">0</span></span>
   <span>🎯 <span class="k" id="hud-pct">0%</span></span>
@@ -317,7 +309,6 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
 
 <button id="enter">ENTRAR EM VR</button>
 
-<!-- MODAL DE QUESTÃO -->
 <div class="modal" id="modal">
   <div class="modal-content">
     <div id="modal-disc" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
@@ -329,17 +320,16 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
   </div>
 </div>
 
-<!-- FLASHCARD STAGE -->
 <div class="flashcard-stage" id="flashcard-stage">
   <div class="flashcard" id="flashcard">
     <div class="front">
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="fc-disc"></div>
-      <div style="font-size:18px;line-height:1.4" id="fc-front"></div>
+      <div style="font-size:18px;line-height:1.4;overflow-y:auto" id="fc-front"></div>
     </div>
     <div class="back">
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px">RESPOSTA</div>
-      <div style="font-size:22px;font-weight:700;color:var(--ok)" id="fc-back"></div>
-      <div style="margin-top:16px;font-size:13px;line-height:1.5;color:var(--text)" id="fc-exp"></div>
+      <div style="font-size:24px;font-weight:700;color:var(--ok)" id="fc-back"></div>
+      <div style="margin-top:16px;font-size:13px;line-height:1.5;color:var(--text);overflow-y:auto" id="fc-exp"></div>
     </div>
   </div>
   <div class="fc-controls" id="fc-controls" style="display:none">
@@ -350,8 +340,26 @@ hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
   <div class="fc-progress" id="fc-progress"></div>
   <div class="fc-controls">
     <button id="fc-close">Fechar</button>
-    <button id="fc-flip" class="primary">Virar cartão</button>
+    <button id="fc-flip" class="primary">Virar</button>
     <button id="fc-next">Próximo →</button>
+  </div>
+</div>
+
+<div id="tutorial">
+  <div class="tutorial-card">
+    <h2>👋 Bem-vindo!</h2>
+    <p><b>📱 Desktop:</b> Use o menu lateral, clique nas alternativas para responder.</p>
+    <p><b>🥽 Meta Quest 3S:</b> Clique "ENTRAR EM VR" (canto inferior direito).</p>
+    <p><b>🎮 Controles VR:</b></p>
+    <p style="font-size:13px;text-align:left;padding-left:20px">
+      • <b>Gatilho</b>: selecionar alternativa / botão<br>
+      • <b>Grip</b> na alça ☰: mover painel<br>
+      • <b>Grip + analógico ↕</b>: redimensionar<br>
+      • <b>Grip + analógico ↔</b>: rotacionar<br>
+      • <b>Analógico esquerdo</b>: caminhar<br>
+      • <b>Marcadores azuis</b>: teletransporte
+    </p>
+    <button class="primary" id="tutorial-close">Entendi</button>
   </div>
 </div>
 
@@ -366,44 +374,33 @@ import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
 const $ = id => document.getElementById(id);
 
 // ═══════════════════════════════════════════════════════════════════
-// STORAGE — Versionado
+// STORAGE
 // ═══════════════════════════════════════════════════════════════════
 const STORAGE = {
-  KEY: 'pmsc_academy_v1',
-  VERSION: 1,
+  KEY: 'pmsc_academy_v2',
+  VERSION: 2,
 
   load() {
     try {
       const raw = localStorage.getItem(this.KEY);
       if (!raw) return this.defaults();
-      const data = JSON.parse(raw);
-      if (data.version !== this.VERSION) return this.defaults();
-      return Object.assign(this.defaults(), data);
+      const d = JSON.parse(raw);
+      if (d.version !== this.VERSION) return this.defaults();
+      return Object.assign(this.defaults(), d);
     } catch { return this.defaults(); }
   },
-
-  save(data) {
-    try {
-      data.version = this.VERSION;
-      localStorage.setItem(this.KEY, JSON.stringify(data));
-    } catch (e) { console.warn('Storage save failed:', e); }
+  save(d) {
+    try { d.version = this.VERSION; localStorage.setItem(this.KEY, JSON.stringify(d)); }
+    catch (e) { console.warn('save fail', e); }
   },
-
   defaults() {
     return {
-      version: this.VERSION,
-      theme: 'cyan',
-      environment: 'academy',
-      lighting: 'day',
-      quality: 'medium',
-      fontScale: 100,
-      repo: 'johndosanjos162/PMSC',
+      version: 2, theme: 'cyan', environment: 'academy', lighting: 'day',
+      quality: 'medium', fontScale: 100, repo: 'johndosanjos162/PMSC',
       stats: { total: 0, correct: 0, bySubject: {} },
-      wrongIds: [],
-      favorites: [],
-      flashcards: {},  // { questionId: { interval, due, ease, reps } }
-      history: [],     // [{ date, mode, correct, total, duration }]
-      panels: {},      // posições dos painéis
+      wrongIds: [], favorites: [],
+      flashcards: {}, history: [], panels: {},
+      lastSession: null
     };
   }
 };
@@ -411,7 +408,7 @@ const STORAGE = {
 let DB = STORAGE.load();
 
 // ═══════════════════════════════════════════════════════════════════
-// TEMAS
+// THEMES
 // ═══════════════════════════════════════════════════════════════════
 const THEMES = {
   cyan:     { bg:'#060913', panel:'#0d2740', border:'#49baff', accent:'#00d1ff' },
@@ -426,44 +423,41 @@ const THEMES = {
 
 function applyTheme(name) {
   const t = THEMES[name] || THEMES.cyan;
-  const root = document.documentElement;
-  root.style.setProperty('--bg', t.bg);
-  root.style.setProperty('--panel', t.panel);
-  root.style.setProperty('--border', t.border);
-  root.style.setProperty('--accent', t.accent);
-  DB.theme = name;
-  STORAGE.save(DB);
+  const r = document.documentElement;
+  r.style.setProperty('--bg', t.bg);
+  r.style.setProperty('--panel', t.panel);
+  r.style.setProperty('--border', t.border);
+  r.style.setProperty('--accent', t.accent);
+  DB.theme = name; STORAGE.save(DB);
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // QUESTION NORMALIZER
 // ═══════════════════════════════════════════════════════════════════
-function stripPrefix(s) {
-  return String(s).replace(/^[A-Ea-e]\s*[\)\.\-\:]\s*/, '').trim();
-}
+const stripPrefix = s => String(s).replace(/^[A-Ea-e]\s*[\)\.\-\:]\s*/, '').trim();
 
-function normalizeOptions(options) {
-  if (!Array.isArray(options)) return [];
-  const pattern = /^([A-Ea-e])\s*[\)\.\-\:]\s*/;
-  const hasUniformPrefix = options.every((o, i) => {
-    const m = String(o).match(pattern);
+function normalizeOptions(opts) {
+  if (!Array.isArray(opts)) return [];
+  const pat = /^([A-Ea-e])\s*[\)\.\-\:]\s*/;
+  const uniform = opts.every((o, i) => {
+    const m = String(o).match(pat);
     return m && m[1].toUpperCase() === 'ABCDE'[i];
   });
-  return options.map(o => hasUniformPrefix ? stripPrefix(o) : String(o).trim());
+  return opts.map(o => uniform ? stripPrefix(o) : String(o).trim());
 }
 
-function extractCorrect(q, options, keys) {
-  const answer = q.correta ?? q.resposta ?? q.gabarito ?? q.correct ?? q.answer;
-  if (typeof answer === 'number') return answer;
-  if (typeof answer === 'string') {
-    const v = answer.trim();
+function extractCorrect(q, opts, keys) {
+  const a = q.correta ?? q.resposta ?? q.gabarito ?? q.correct ?? q.answer;
+  if (typeof a === 'number') return a;
+  if (typeof a === 'string') {
+    const v = a.trim();
     if (/^[A-E]$/i.test(v)) return v.toUpperCase().charCodeAt(0) - 65;
     if (keys && keys.includes(v)) return keys.indexOf(v);
     if (/^\d+$/.test(v)) return Number(v);
-    const clean = stripPrefix(v);
-    let idx = options.indexOf(v);
-    if (idx === -1) idx = options.indexOf(clean);
-    return idx;
+    const cl = stripPrefix(v);
+    let i = opts.indexOf(v);
+    if (i === -1) i = opts.indexOf(cl);
+    return i;
   }
   return -1;
 }
@@ -472,26 +466,17 @@ function normalizeQuestion(q, fallbackSubject) {
   if (!q || typeof q !== 'object') return null;
   const text = q.enunciado ?? q.pergunta ?? q.questao ?? q.question;
   const rawOpts = q.alternativas ?? q.opcoes ?? q.options;
-  if (!text || !rawOpts) return null;
-  if (typeof text !== 'string' || text.length < 3) return null;
-
+  if (!text || !rawOpts || typeof text !== 'string') return null;
   const keys = Array.isArray(rawOpts) ? null : Object.keys(rawOpts);
   const raw = Array.isArray(rawOpts) ? rawOpts : keys.map(k => rawOpts[k]);
   if (raw.length < 2 || raw.length > 5) return null;
-
-  const options = normalizeOptions(raw);
-  const correct = extractCorrect(q, options, keys);
-  if (correct < 0 || correct >= options.length) return null;
-
+  const opts = normalizeOptions(raw);
+  const correct = extractCorrect(q, opts, keys);
+  if (correct < 0 || correct >= opts.length) return null;
   const subject = String(q.disciplina ?? q.materia ?? q.subject ?? fallbackSubject ?? 'Geral');
-  const id = String(q.id ?? `${subject}|${text}`.slice(0, 200));
-
   return {
-    id,
-    question: text,
-    options,
-    correct,
-    subject,
+    id: String(q.id ?? `${subject}|${text}`.slice(0, 200)),
+    question: text, options: opts, correct, subject,
     difficulty: String(q.dificuldade ?? q.difficulty ?? 'media'),
     topic: String(q.assunto ?? q.topic ?? ''),
     explanation: String(q.explicacao ?? q.comentario ?? q.explanation ?? ''),
@@ -505,12 +490,8 @@ function flattenJSON(data) {
     if (Array.isArray(data.questoes)) return data.questoes;
     if (Array.isArray(data.questions)) return data.questions;
     const flat = [];
-    for (const [subject, list] of Object.entries(data)) {
-      if (Array.isArray(list)) {
-        for (const q of list) {
-          flat.push({ ...q, materia: q.materia || subject });
-        }
-      }
+    for (const [subj, list] of Object.entries(data)) {
+      if (Array.isArray(list)) for (const q of list) flat.push({ ...q, materia: q.materia || subj });
     }
     return flat;
   }
@@ -518,88 +499,67 @@ function flattenJSON(data) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// GITHUB API LOADER
+// GITHUB LOADER
 // ═══════════════════════════════════════════════════════════════════
 async function loadFromGitHub() {
   const repo = DB.repo;
-  const CANDIDATES = [
-    'questoes.json', 'json.json', 'questions.json',
-    'banco.json', 'pmsc.json'
-  ];
+  const CANDIDATES = ['questoes.json', 'json.json', 'questions.json', 'banco.json'];
 
-  // Tentativa 1: API de contents
   try {
-    $('status').textContent = `🔍 Consultando github.com/${repo}...`;
-    const resp = await fetch(`https://api.github.com/repos/${repo}/contents/`, {
+    $('status').textContent = `🔍 Consultando ${repo}...`;
+    const r = await fetch(`https://api.github.com/repos/${repo}/contents/`, {
       headers: { 'Accept': 'application/vnd.github+json' }
     });
-
-    if (resp.ok) {
-      const files = await resp.json();
+    if (r.ok) {
+      const files = await r.json();
       if (Array.isArray(files)) {
         const jsonFiles = files.filter(f =>
           f.type === 'file' && f.name.endsWith('.json') &&
-          !f.name.startsWith('.') &&
-          !['package.json', 'tsconfig.json'].includes(f.name)
+          !f.name.startsWith('.') && !['package.json'].includes(f.name)
         );
-
         if (jsonFiles.length > 0) {
-          let allQuestions = [];
-          let loadedFiles = 0;
-
-          for (const file of jsonFiles) {
+          let all = [], loaded = 0;
+          for (const f of jsonFiles) {
             try {
-              const content = await fetch(file.download_url).then(r => r.json());
+              const content = await fetch(f.download_url).then(r => r.json());
               const flat = flattenJSON(content);
-              const normalized = flat.map(q => normalizeQuestion(q)).filter(Boolean);
-              if (normalized.length > 0) {
-                allQuestions.push(...normalized);
-                loadedFiles++;
-              }
-            } catch (e) { console.warn('Failed:', file.name, e); }
+              const norm = flat.map(q => normalizeQuestion(q)).filter(Boolean);
+              if (norm.length > 0) { all.push(...norm); loaded++; }
+            } catch (e) { console.warn('skip', f.name); }
           }
-
-          if (allQuestions.length > 0) {
-            $('status').textContent = `✅ ${allQuestions.length} questões de ${loadedFiles} arquivo(s)`;
-            return allQuestions;
+          if (all.length > 0) {
+            $('status').textContent = `✅ ${all.length} questões de ${loaded} arquivo(s)`;
+            return all;
           }
         }
       }
     }
-  } catch (e) {
-    console.warn('GitHub API failed:', e);
-  }
+  } catch (e) { console.warn('API fail:', e); }
 
-  // Tentativa 2: raw.githubusercontent com nomes conhecidos
   $('status').textContent = '🔍 Tentando nomes conhecidos...';
   for (const name of CANDIDATES) {
     for (const branch of ['main', 'master']) {
       try {
         const url = `https://raw.githubusercontent.com/${repo}/${branch}/${name}`;
-        const content = await fetch(url).then(r => {
-          if (!r.ok) throw new Error('404');
-          return r.json();
-        });
+        const content = await fetch(url).then(r => { if (!r.ok) throw new Error('404'); return r.json(); });
         const flat = flattenJSON(content);
-        const normalized = flat.map(q => normalizeQuestion(q)).filter(Boolean);
-        if (normalized.length > 0) {
-          $('status').textContent = `✅ ${normalized.length} questões de ${name}`;
-          return normalized;
+        const norm = flat.map(q => normalizeQuestion(q)).filter(Boolean);
+        if (norm.length > 0) {
+          $('status').textContent = `✅ ${norm.length} questões de ${name}`;
+          return norm;
         }
-      } catch (e) { /* try next */ }
+      } catch (e) {}
     }
   }
 
-  // Fallback: cache
   try {
     const cached = localStorage.getItem('pmsc_questions_cache');
     if (cached) {
-      const parsed = JSON.parse(cached);
-      $('status').textContent = `⚠️ Offline: ${parsed.length} questões em cache`;
-      return parsed;
+      const p = JSON.parse(cached);
+      $('status').textContent = `⚠️ Offline: ${p.length} questões em cache`;
+      return p;
     }
   } catch (e) {}
-
   return [];
 }
 
@@ -612,16 +572,16 @@ let currentIndex = 0;
 let currentAnswer = null;
 let examActive = false;
 let examEndsAt = 0;
+let examCorrectMode = 'end';
+let responsesLocked = new Set(); // ids que já foram contabilizadas
 
 // ═══════════════════════════════════════════════════════════════════
-// THREE.JS — CENA
+// THREE.JS SCENE
 // ═══════════════════════════════════════════════════════════════════
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x060913);
-
 const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.05, 200);
 camera.position.set(0, 1.65, 3);
-
 const rig = new THREE.Group();
 rig.add(camera);
 scene.add(rig);
@@ -642,12 +602,11 @@ scene.add(dirLight);
 
 const envGroup = new THREE.Group();
 scene.add(envGroup);
-
 const panelRegistry = new Map();
 const interactive = [];
 
 // ═══════════════════════════════════════════════════════════════════
-// AMBIENTES (10)
+// ENVIRONMENTS
 // ═══════════════════════════════════════════════════════════════════
 function clearEnv() {
   envGroup.traverse(o => {
@@ -659,161 +618,123 @@ function clearEnv() {
   envGroup.clear();
 }
 
-function box(w, h, d, color, x, y, z) {
-  const m = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    new THREE.MeshStandardMaterial({ color, roughness: 0.8 })
-  );
-  m.position.set(x, y, z);
-  envGroup.add(m);
-  return m;
+const box = (w,h,d,c,x,y,z) => {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshStandardMaterial({color:c, roughness:0.85}));
+  m.position.set(x,y,z); envGroup.add(m); return m;
+};
+const sphere = (r,c,x,y,z) => {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r,16,12),
+    new THREE.MeshStandardMaterial({color:c}));
+  m.position.set(x,y,z); envGroup.add(m); return m;
+};
+const cyl = (r1,r2,h,c,x,y,z) => {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,12),
+    new THREE.MeshStandardMaterial({color:c}));
+  m.position.set(x,y,z); envGroup.add(m); return m;
+};
+
+function room(floor, wall) {
+  box(16, .1, 16, floor, 0, 0, 0);
+  box(16, 5, .1, wall, 0, 2.5, -8);
+  box(.1, 5, 16, wall, -8, 2.5, 0);
+  box(.1, 5, 16, wall, 8, 2.5, 0);
+  box(16, 5, .1, wall, 0, 2.5, 8);
+  box(16, .1, 16, wall, 0, 5, 0);
 }
 
-function sphere(r, color, x, y, z) {
-  const m = new THREE.Mesh(
-    new THREE.SphereGeometry(r, 16, 12),
-    new THREE.MeshStandardMaterial({ color })
-  );
-  m.position.set(x, y, z);
-  envGroup.add(m);
-  return m;
-}
-
-function cyl(r1, r2, h, color, x, y, z) {
-  const m = new THREE.Mesh(
-    new THREE.CylinderGeometry(r1, r2, h, 12),
-    new THREE.MeshStandardMaterial({ color })
-  );
-  m.position.set(x, y, z);
-  envGroup.add(m);
-  return m;
-}
-
-function room(floorColor, wallColor) {
-  box(16, 0.1, 16, floorColor, 0, 0, 0);
-  box(16, 5, 0.1, wallColor, 0, 2.5, -8);
-  box(0.1, 5, 16, wallColor, -8, 2.5, 0);
-  box(0.1, 5, 16, wallColor, 8, 2.5, 0);
-  box(16, 5, 0.1, wallColor, 0, 2.5, 8);
-  box(16, 0.1, 16, wallColor, 0, 5, 0);
-}
-
-function desk(x, z, color = 0x795548) {
-  box(2, 0.1, 1, color, x, 0.85, z);
-  for (const dx of [-0.8, 0.8]) for (const dz of [-0.4, 0.4]) {
-    box(0.08, 0.8, 0.08, 0x333333, x + dx, 0.4, z + dz);
-  }
+function desk(x, z, c = 0x795548) {
+  box(2, .1, 1, c, x, .85, z);
+  for (const dx of [-.8,.8]) for (const dz of [-.4,.4]) box(.08,.8,.08,0x333333,x+dx,.4,z+dz);
 }
 
 function tree(x, z) {
-  cyl(0.15, 0.2, 2, 0x6b4423, x, 1, z);
-  sphere(0.9, 0x2d8b4e, x, 2.2, z);
+  cyl(.15,.2,2,0x6b4423,x,1,z);
+  sphere(.9,0x2d8b4e,x,2.2,z);
 }
 
 function bookshelf(x, z) {
-  box(1.5, 2.5, 0.4, 0x5c3a21, x, 1.25, z);
-  for (let r = 0; r < 4; r++) {
-    box(1.4, 0.05, 0.4, 0x3d2415, x, 0.4 + r * 0.55, z);
-    for (let c = 0; c < 5; c++) {
-      const colors = [0x2255aa, 0xaa2233, 0x22aa55, 0xcc9933];
-      box(0.2, 0.4, 0.25, colors[(r + c) % 4], x - 0.55 + c * 0.28, 0.65 + r * 0.55, z);
+  box(1.5,2.5,.4,0x5c3a21,x,1.25,z);
+  for (let r=0;r<4;r++) {
+    box(1.4,.05,.4,0x3d2415,x,.4+r*.55,z);
+    for (let c=0;c<5;c++) {
+      const colors=[0x2255aa,0xaa2233,0x22aa55,0xcc9933];
+      box(.2,.4,.25,colors[(r+c)%4],x-.55+c*.28,.65+r*.55,z);
     }
   }
 }
 
 function buildEnvironment(type) {
   clearEnv();
-
+  const q = DB.quality;
   switch (type) {
     case 'academy':
       scene.background = new THREE.Color(0x06111e);
       room(0x183047, 0x10283f);
-      box(5, 0.15, 0.3, 0x2b9dd8, 0, 3.7, -7.9);
-      desk(-4, -5); desk(4, -5);
-      box(2, 0.5, 1, 0x4a7c9e, 0, 0.25, -6);
+      box(5,.15,.3,0x2b9dd8,0,3.7,-7.9);
+      desk(-4,-5); desk(4,-5);
+      box(2,.5,1,0x4a7c9e,0,.25,-6);
+      if (q !== 'low') for (const x of [-6,6]) box(.15,4,.15,0x49baff,x,2,-7.9);
       break;
-
     case 'living':
       scene.background = new THREE.Color(0xb4c7d8);
       room(0xc4a682, 0xe0dcd5);
-      box(3, 0.5, 1.2, 0x526477, -4, 0.45, -4);
-      box(3, 0.9, 0.3, 0x394b60, -4, 0.85, -4.45);
-      desk(4, -4, 0x94765d);
-      box(4, 2, 0.05, 0x8bbad7, 0, 2.2, -7.9);
+      box(3,.5,1.2,0x526477,-4,.45,-4);
+      box(3,.9,.3,0x394b60,-4,.85,-4.45);
+      desk(4,-4,0x94765d);
+      box(4,2,.05,0x8bbad7,0,2.2,-7.9);
       break;
-
     case 'beach':
       scene.background = new THREE.Color(0x87ceeb);
-      box(60, 0.1, 60, 0xe8d39b, 0, 0, 0);
-      box(60, 0.05, 20, 0x1e90ff, 0, 0.05, -25);
-      sphere(2, 0xffe9a0, -15, 12, -35);
-      for (const [x, z] of [[-8,-6],[-5,-8],[8,-6],[5,-8]]) tree(x, z);
-      box(0.05, 3, 0.05, 0x8b6b3f, 3, 1.5, -3);
-      box(2, 0.05, 2, 0xff6b6b, 3, 3, -3);
+      box(60,.1,60,0xe8d39b,0,0,0);
+      box(60,.05,20,0x1e90ff,0,.05,-25);
+      sphere(2,0xffe9a0,-15,12,-35);
+      for (const [x,z] of [[-8,-6],[-5,-8],[8,-6],[5,-8]]) tree(x,z);
+      box(2,.05,2,0xff6b6b,3,3,-3);
       break;
-
     case 'library':
       scene.background = new THREE.Color(0x2b251f);
       room(0x5b4332, 0x3b3027);
-      bookshelf(-6, -6); bookshelf(-4, -6); bookshelf(4, -6); bookshelf(6, -6);
-      desk(-4, -2); desk(4, -2);
-      box(3, 0.5, 2, 0x4a2c1a, 0, 0.25, -3);
+      bookshelf(-6,-6); bookshelf(-4,-6); bookshelf(4,-6); bookshelf(6,-6);
+      desk(-4,-2); desk(4,-2);
       break;
-
     case 'future':
       scene.background = new THREE.Color(0x050d1c);
       room(0x111b35, 0x0b1630);
-      for (let x = -6; x <= 6; x += 2) box(0.05, 4, 0.05, 0x00cfff, x, 2, -7.9);
-      for (let x = -6; x <= 6; x += 2) box(0.05, 4, 0.05, 0x00cfff, x, 2, 7.9);
-      desk(-4, -4, 0x1a4366); desk(4, -4, 0x1a4366);
+      if (q !== 'low') for (let x=-6;x<=6;x+=2) box(.05,4,.05,0x00cfff,x,2,-7.9);
+      desk(-4,-4,0x1a4366); desk(4,-4,0x1a4366);
       break;
-
     case 'nature':
       scene.background = new THREE.Color(0x87ceeb);
-      box(80, 0.1, 80, 0x4c9b53, 0, 0, 0);
-      for (const [x, z] of [[-8,-8],[8,-8],[-8,2],[8,2],[-5,-10],[5,-10],[0,-12]]) tree(x, z);
-      for (let i = 0; i < 20; i++) {
-        const fx = (Math.random() - 0.5) * 30;
-        const fz = (Math.random() - 0.5) * 30;
-        if (Math.abs(fx) < 3 && Math.abs(fz) < 3) continue;
-        box(0.1, 0.3, 0.1, 0xff6b9d, fx, 0.15, fz);
-      }
-      desk(4, -3, 0x8b6848);
+      box(80,.1,80,0x4c9b53,0,0,0);
+      for (const [x,z] of [[-8,-8],[8,-8],[-8,2],[8,2],[-5,-10],[5,-10],[0,-12]]) tree(x,z);
+      desk(4,-3,0x8b6848);
       break;
-
     case 'penthouse':
       scene.background = new THREE.Color(0x1a1a3a);
       room(0xd2c9bd, 0xe6e0d9);
-      box(6, 3, 0.05, 0x4a6a8a, 0, 2.2, -7.9);
-      box(3, 0.5, 1.2, 0x303b48, -4, 0.45, -4);
-      desk(4, -4, 0x1a1a2e);
-      for (const x of [-6, 6]) {
-        box(0.1, 2.5, 0.1, 0xc6b17b, x, 1.25, -5);
-        sphere(0.3, 0xffdd88, x, 2.6, -5);
-      }
+      box(6,3,.05,0x4a6a8a,0,2.2,-7.9);
+      box(3,.5,1.2,0x303b48,-4,.45,-4);
+      desk(4,-4,0x1a1a2e);
+      for (const x of [-6,6]) { box(.1,2.5,.1,0xc6b17b,x,1.25,-5); sphere(.3,0xffdd88,x,2.6,-5); }
       break;
-
     case 'space':
       scene.background = new THREE.Color(0x01040e);
       room(0x293344, 0x1a2436);
-      sphere(4, 0x3a7bc3, 0, 4, -25);
-      for (let i = 0; i < 50; i++) {
-        const r = 30 + Math.random() * 40;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
-        sphere(0.05, 0xffffff, r * Math.sin(phi) * Math.cos(theta), 4 + r * Math.sin(phi) * Math.sin(theta), -5 + r * Math.cos(phi));
+      sphere(4,0x3a7bc3,0,4,-25);
+      if (q === 'high') for (let i=0;i<50;i++) {
+        const r=30+Math.random()*40, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+        sphere(.05,0xffffff, r*Math.sin(ph)*Math.cos(th), 4+r*Math.sin(ph)*Math.sin(th), -5+r*Math.cos(ph));
       }
-      desk(-4, -4, 0x334b66); desk(4, -4, 0x334b66);
+      desk(-4,-4,0x334b66); desk(4,-4,0x334b66);
       break;
-
     case 'minimal':
       scene.background = new THREE.Color(0xdde5ec);
       room(0xe8e8e8, 0xf0f0f0);
-      box(2, 0.1, 2, 0xcccccc, -4, 0.05, -4);
-      desk(4, -4, 0xaaaaaa);
+      box(2,.1,2,0xcccccc,-4,.05,-4);
+      desk(4,-4,0xaaaaaa);
       break;
   }
-
   applyLighting();
 }
 
@@ -825,26 +746,21 @@ function applyLighting() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TEXT RENDERING — AUTO-FIT (sem cortes)
+// TEXT RENDERER (auto-fit, sem cortes)
 // ═══════════════════════════════════════════════════════════════════
-function pickCanvasHeight(maxLines) {
-  if (maxLines <= 1) return 256;
-  if (maxLines <= 2) return 384;
-  if (maxLines <= 4) return 512;
-  if (maxLines <= 6) return 768;
-  if (maxLines <= 8) return 1024;
-  return 1280;
+function pickCanvasH(n) {
+  if (n <= 1) return 256; if (n <= 2) return 384;
+  if (n <= 4) return 512; if (n <= 6) return 768;
+  if (n <= 8) return 1024; return 1280;
 }
 
-function wrapByPixels(text, maxWidth, ctx) {
+function wrapByPixels(text, maxW, ctx) {
   const words = String(text).split(/\s+/);
-  const lines = [];
-  let line = '';
-  for (const word of words) {
-    const candidate = line ? line + ' ' + word : word;
-    if (ctx.measureText(candidate).width > maxWidth && line) {
-      lines.push(line); line = word;
-    } else line = candidate;
+  const lines = []; let line = '';
+  for (const w of words) {
+    const c = line ? line + ' ' + w : w;
+    if (ctx.measureText(c).width > maxW && line) { lines.push(line); line = w; }
+    else line = c;
   }
   if (line) lines.push(line);
   return lines;
@@ -857,44 +773,33 @@ function drawText(text, opts = {}) {
     textColor = '#ffffff', borderWidth = 7
   } = opts;
 
-  const H = pickCanvasHeight(maxLines);
+  const H = pickCanvasH(maxLines);
   const c = document.createElement('canvas');
   c.width = width; c.height = H;
   const ctx = c.getContext('2d');
+  ctx.fillStyle = bgColor; ctx.fillRect(0,0,width,H);
+  ctx.strokeStyle = borderColor; ctx.lineWidth = borderWidth;
+  ctx.strokeRect(borderWidth/2, borderWidth/2, width-borderWidth, H-borderWidth);
 
-  ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, width, H);
-  ctx.strokeStyle = borderColor;
-  ctx.lineWidth = borderWidth;
-  ctx.strokeRect(borderWidth/2, borderWidth/2, width - borderWidth, H - borderWidth);
-
-  const maxW = width - 2 * padding;
-  const maxH = H - 2 * padding;
-  let fontSize = fontSizeMax;
-  let lines = [];
-  let lineHeight = 0;
-
-  while (fontSize >= fontSizeMin) {
-    ctx.font = `bold ${fontSize}px Segoe UI, Arial`;
+  const maxW = width - 2*padding, maxH = H - 2*padding;
+  let fs = fontSizeMax, lines = [], lh = 0;
+  while (fs >= fontSizeMin) {
+    ctx.font = `bold ${fs}px Segoe UI,Arial`;
     lines = wrapByPixels(text, maxW, ctx);
-    lineHeight = fontSize * 1.25;
-    if (lines.length <= maxLines && lines.length * lineHeight <= maxH) break;
-    fontSize -= 2;
+    lh = fs * 1.25;
+    if (lines.length <= maxLines && lines.length * lh <= maxH) break;
+    fs -= 2;
   }
-
   if (lines.length > maxLines) {
     lines = lines.slice(0, maxLines);
-    lines[maxLines - 1] = lines[maxLines - 1].slice(0, -3) + '…';
+    lines[maxLines-1] = lines[maxLines-1].slice(0,-3) + '…';
   }
 
-  ctx.font = `bold ${fontSize}px Segoe UI, Arial`;
-  ctx.fillStyle = textColor;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const totalH = lines.length * lineHeight;
-  const startY = (H - totalH) / 2 + lineHeight / 2;
-  lines.forEach((line, i) => ctx.fillText(line, width/2, startY + i * lineHeight));
-
+  ctx.font = `bold ${fs}px Segoe UI,Arial`;
+  ctx.fillStyle = textColor; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const th = lines.length * lh;
+  const sy = (H - th)/2 + lh/2;
+  lines.forEach((l, i) => ctx.fillText(l, width/2, sy + i*lh));
   return c;
 }
 
@@ -903,32 +808,30 @@ function createPanelLabel(text, opts = {}) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-  tex.minFilter = THREE.LinearFilter;
-  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
 
-  const width = opts.width3D || 2.0;
-  const height = width * (canvas.height / canvas.width);
+  const w3d = opts.width3D || 2.0;
+  const h3d = w3d * (canvas.height / canvas.width);
 
   const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true });
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w3d, h3d), mat);
   mesh.userData.canvas = canvas;
   mesh.userData.texture = tex;
   return mesh;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PANEL SYSTEM — 3 painéis (esquerda, centro, direita)
+// PANEL SYSTEM
 // ═══════════════════════════════════════════════════════════════════
-function ensurePanel(id, x, y, z, rotationY = 0) {
+function ensurePanel(id, x, y, z, ry = 0) {
   if (panelRegistry.has(id)) return panelRegistry.get(id);
-  const group = new THREE.Group();
-  group.userData.panelId = id;
-  group.position.set(x, y, z);
-  group.rotation.y = rotationY;
-  scene.add(group);
-  panelRegistry.set(id, group);
+  const g = new THREE.Group();
+  g.userData.panelId = id;
+  g.position.set(x, y, z);
+  g.rotation.y = ry;
+  scene.add(g);
+  panelRegistry.set(id, g);
 
-  // Botão grab handle
   const handle = createPanelLabel(`☰ ${id.toUpperCase()}`, {
     width3D: 1.2, maxLines: 1, fontSizeMax: 60, padding: 20,
     bgColor: '#0a3a5a', borderColor: '#00d1ff'
@@ -937,14 +840,14 @@ function ensurePanel(id, x, y, z, rotationY = 0) {
   handle.userData.isGrabHandle = true;
   handle.userData.panelId = id;
   interactive.push(handle);
-  group.add(handle);
+  g.add(handle);
 
-  return group;
+  return g;
 }
 
 function clearPanels() {
-  for (const [id, group] of panelRegistry) {
-    group.traverse(o => {
+  for (const [, g] of panelRegistry) {
+    g.traverse(o => {
       if (o.userData.texture) o.userData.texture.dispose();
       if (o.geometry) o.geometry.dispose();
       if (o.material) {
@@ -952,29 +855,26 @@ function clearPanels() {
         else o.material.dispose();
       }
     });
-    scene.remove(group);
+    scene.remove(g);
   }
   panelRegistry.clear();
-  for (let i = interactive.length - 1; i >= 0; i--) {
+  for (let i = interactive.length-1; i >= 0; i--) {
     if (!interactive[i].userData.isTeleport) interactive.splice(i, 1);
   }
 }
 
-function addPanelText(panelId, text, yOffset, opts = {}) {
-  const group = panelRegistry.get(panelId);
-  if (!group) return null;
-  const label = createPanelLabel(text, opts);
-  label.position.set(0, yOffset, 0.01);
-  if (opts.onClick) {
-    label.userData.onClick = opts.onClick;
-    interactive.push(label);
-  }
-  group.add(label);
-  return label;
+function addPanelText(panelId, text, yOff, opts = {}) {
+  const g = panelRegistry.get(panelId);
+  if (!g) return null;
+  const l = createPanelLabel(text, opts);
+  l.position.set(0, yOff, 0.01);
+  if (opts.onClick) { l.userData.onClick = opts.onClick; interactive.push(l); }
+  g.add(l);
+  return l;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// RENDER DO PAINEL DE QUESTÃO
+// RENDER QUESTION PANEL
 // ═══════════════════════════════════════════════════════════════════
 function renderQuestionPanel() {
   clearPanels();
@@ -990,66 +890,62 @@ function renderQuestionPanel() {
   const q = currentPool[currentIndex];
   ensurePanel('center', 0, 2.0, -3.5);
 
-  // Cabeçalho
   addPanelText('center', q.subject.toUpperCase(), 2.2, {
     width3D: 5, maxLines: 1, fontSizeMax: 60, padding: 30,
     bgColor: '#0d3a5a', borderColor: '#00d1ff'
   });
 
-  // Enunciado
   addPanelText('center', q.question, 0.6, {
     width3D: 5, maxLines: 6, fontSizeMax: 56, padding: 40
   });
 
-  // Alternativas
-  const optionHeights = [];
+  // Alternativas com altura dinâmica
+  let yCur = -0.9;
   q.options.forEach((opt, i) => {
     const text = `${'ABCDE'[i]}) ${opt}`;
-    let bgColor = '#0d2740';
-    let borderColor = '#49baff';
+    let bg = '#0d2740', bd = '#49baff';
     if (currentAnswer !== null) {
-      if (i === q.correct) { bgColor = '#16684d'; borderColor = '#00ff88'; }
-      else if (i === currentAnswer) { bgColor = '#893440'; borderColor = '#ff4444'; }
+      if (i === q.correct) { bg = '#16684d'; bd = '#00ff88'; }
+      else if (i === currentAnswer) { bg = '#893440'; bd = '#ff4444'; }
     }
     const label = createPanelLabel(text, {
       width3D: 4.5, maxLines: 3, fontSizeMax: 44, padding: 28,
-      bgColor, borderColor
+      bgColor: bg, borderColor: bd
     });
-    label.userData.onClick = () => selectAnswer(i);
-    interactive.push(label);
-    const group = panelRegistry.get('center');
-    const yBase = -1.0 - optionHeights.reduce((a, b) => a + b, 0) - 0.15;
-    label.position.set(0, yBase, 0.01);
-    group.add(label);
-    optionHeights.push(label.geometry.parameters.height + 0.15);
+    if (currentAnswer === null) {
+      label.userData.onClick = () => selectAnswer(i);
+      interactive.push(label);
+    }
+    label.position.set(0, yCur, 0.01);
+    panelRegistry.get('center').add(label);
+    const h = label.geometry.parameters.height;
+    yCur -= (h + 0.12);
   });
 
-  // Explicação (se respondeu)
+  // Explicação
   if (currentAnswer !== null && q.explanation) {
-    const totalOptH = optionHeights.reduce((a, b) => a + b, 0);
-    addPanelText('center', '📖 ' + q.explanation, -1.0 - totalOptH - 0.3, {
+    addPanelText('center', '📖 ' + q.explanation, yCur - 0.1, {
       width3D: 4.5, maxLines: 4, fontSizeMax: 36, padding: 24,
       bgColor: '#2a1a0a', borderColor: '#ffaa00'
     });
   }
 
-  // Status
-  addPanelText('center', `Questão ${currentIndex + 1} de ${currentPool.length}`, -4.5, {
+  // Status + botão próxima
+  addPanelText('center', `Questão ${currentIndex+1} de ${currentPool.length}`, -4.5, {
     width3D: 4, maxLines: 1, fontSizeMax: 50, padding: 20,
     bgColor: '#0a1a2a', borderColor: '#00d1ff'
   });
 
-  // Próxima
-  const nextBtn = createPanelLabel('➡ PRÓXIMA', {
+  const next = createPanelLabel('➡ PRÓXIMA', {
     width3D: 3, maxLines: 1, fontSizeMax: 60, padding: 20,
     bgColor: '#0066cc', borderColor: '#00d1ff'
   });
-  nextBtn.position.set(0, -5.0, 0.01);
-  nextBtn.userData.onClick = () => nextQuestion();
-  interactive.push(nextBtn);
-  panelRegistry.get('center').add(nextBtn);
+  next.position.set(0, -5.0, 0.01);
+  next.userData.onClick = () => nextQuestion();
+  interactive.push(next);
+  panelRegistry.get('center').add(next);
 
-  // Painel esquerdo — info
+  // Painel esquerdo - desempenho
   ensurePanel('left', -3.5, 2.0, -3.0, 0.3);
   addPanelText('left', 'DESEMPENHO', 1.4, {
     width3D: 1.8, maxLines: 1, fontSizeMax: 50, padding: 15,
@@ -1066,153 +962,130 @@ function renderQuestionPanel() {
     bgColor: '#3a1a0a', borderColor: '#ffaa00'
   });
 
-  // Painel direito — controles
+  // Painel direito - controles
   ensurePanel('right', 3.5, 2.0, -3.0, -0.3);
   addPanelText('right', 'CONTROLES', 1.4, {
     width3D: 1.8, maxLines: 1, fontSizeMax: 50, padding: 15,
     bgColor: '#0d3a5a', borderColor: '#00d1ff'
   });
 
-  const controls = [
+  const ctrls = [
     { label: '📇 Flashcard', action: () => openFlashcard(currentPool[currentIndex]) },
-    { label: '📖 Explicar', action: () => showExplanation() },
     { label: '⭐ Favoritar', action: () => toggleFavorite() },
     { label: '🏠 Início', action: () => renderQuestionPanel() }
   ];
-  controls.forEach((ctrl, i) => {
-    const label = createPanelLabel(ctrl.label, {
+  ctrls.forEach((c, i) => {
+    const l = createPanelLabel(c.label, {
       width3D: 1.8, maxLines: 1, fontSizeMax: 44, padding: 15,
       bgColor: '#0d2740', borderColor: '#49baff'
     });
-    label.position.set(0, 0.8 - i * 0.55, 0.01);
-    label.userData.onClick = ctrl.action;
-    interactive.push(label);
-    panelRegistry.get('right').add(label);
+    l.position.set(0, 0.8 - i*0.55, 0.01);
+    l.userData.onClick = c.action;
+    interactive.push(l);
+    panelRegistry.get('right').add(l);
   });
 
   restorePanelStates();
 }
 
-function showExplanation() {
-  const q = currentPool[currentIndex];
-  if (!q) return;
-  if (!q.explanation) {
-    alert('Esta questão não tem explicação cadastrada.');
-    return;
-  }
-  alert(q.explanation);
-}
-
 function toggleFavorite() {
   const q = currentPool[currentIndex];
   if (!q) return;
-  const idx = DB.favorites.indexOf(q.id);
-  if (idx >= 0) DB.favorites.splice(idx, 1);
-  else DB.favorites.push(q.id);
+  const i = DB.favorites.indexOf(q.id);
+  if (i >= 0) DB.favorites.splice(i, 1); else DB.favorites.push(q.id);
   STORAGE.save(DB);
-  $('status').textContent = idx >= 0 ? '⭐ Removido dos favoritos' : '⭐ Adicionado aos favoritos';
+  $('status').textContent = i >= 0 ? '⭐ Removido' : '⭐ Favoritado';
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // PANEL PERSISTENCE
 // ═══════════════════════════════════════════════════════════════════
-function savePanelState(id, group) {
-  DB.panels[id] = {
-    pos: group.position.toArray(),
-    rot: group.rotation.y,
-    scale: group.scale.x
-  };
+function savePanelState(id, g) {
+  DB.panels[id] = { pos: g.position.toArray(), rot: g.rotation.y, scale: g.scale.x };
   STORAGE.save(DB);
 }
 
 function restorePanelStates() {
-  for (const [id, group] of panelRegistry) {
-    const saved = DB.panels[id];
-    if (saved) {
-      group.position.fromArray(saved.pos);
-      group.rotation.y = saved.rot;
-      group.scale.setScalar(saved.scale);
-    }
+  for (const [id, g] of panelRegistry) {
+    const s = DB.panels[id];
+    if (s) { g.position.fromArray(s.pos); g.rotation.y = s.rot; g.scale.setScalar(s.scale); }
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// GRAB SYSTEM
+// GRAB
 // ═══════════════════════════════════════════════════════════════════
 const raycaster = new THREE.Raycaster();
-const rotation = new THREE.Matrix4();
+const rotM = new THREE.Matrix4();
 
-function raycastFirst(source) {
-  source.updateWorldMatrix(true, false);
-  rotation.extractRotation(source.matrixWorld);
-  raycaster.ray.origin.setFromMatrixPosition(source.matrixWorld);
-  raycaster.ray.direction.set(0, 0, -1).applyMatrix4(rotation).normalize();
+function raycastFirst(src) {
+  src.updateWorldMatrix(true, false);
+  rotM.extractRotation(src.matrixWorld);
+  raycaster.ray.origin.setFromMatrixPosition(src.matrixWorld);
+  raycaster.ray.direction.set(0,0,-1).applyMatrix4(rotM).normalize();
   const hits = raycaster.intersectObjects(interactive, false);
   return hits.length > 0 && hits[0].distance < 15 ? hits[0] : null;
 }
 
-function startGrab(source, panelId) {
-  const group = panelRegistry.get(panelId);
-  if (!group) return;
-  if (source.userData.grabState) return;
-  const pos = new THREE.Vector3();
-  source.getWorldPosition(pos);
-  source.userData.grabState = {
-    panelId, group,
-    startSourcePos: pos.clone(),
-    startGroupPos: group.position.clone()
+function startGrab(src, id) {
+  const g = panelRegistry.get(id);
+  if (!g || src.userData.grabState) return;
+  const p = new THREE.Vector3();
+  src.getWorldPosition(p);
+  src.userData.grabState = {
+    panelId: id, group: g,
+    startSrc: p.clone(), startGroup: g.position.clone()
   };
-  group.scale.multiplyScalar(1.03);
+  g.scale.multiplyScalar(1.03);
 }
 
-function updateGrab(entity, inputSource) {
-  const state = entity.userData.grabState;
-  if (!state) return;
-  const pos = new THREE.Vector3();
-  entity.getWorldPosition(pos);
-  const delta = pos.clone().sub(state.startSourcePos);
-  state.group.position.copy(state.startGroupPos.clone().add(delta));
+function updateGrab(entity, input) {
+  const s = entity.userData.grabState;
+  if (!s) return;
+  const p = new THREE.Vector3();
+  entity.getWorldPosition(p);
+  const delta = p.clone().sub(s.startSrc);
+  s.group.position.copy(s.startGroup.clone().add(delta));
 
-  if (inputSource?.gamepad?.axes) {
-    const axes = inputSource.gamepad.axes;
-    const x = axes[2] || 0;
-    const y = axes[3] || 0;
+  if (input?.gamepad?.axes) {
+    const ax = input.gamepad.axes;
+    const x = ax[2] || 0, y = ax[3] || 0;
     if (Math.abs(y) > 0.2) {
-      const s = Math.max(0.5, Math.min(2, state.group.scale.x * (1 + y * 0.012)));
-      state.group.scale.setScalar(s);
+      const sc = Math.max(0.5, Math.min(2, s.group.scale.x * (1 + y*0.012)));
+      s.group.scale.setScalar(sc);
     }
-    if (Math.abs(x) > 0.2) state.group.rotation.y += x * 0.025;
+    if (Math.abs(x) > 0.2) s.group.rotation.y += x * 0.025;
   }
 }
 
-function endGrab(source) {
-  const state = source.userData.grabState;
-  if (!state) return;
-  state.group.scale.multiplyScalar(1 / 1.03);
-  savePanelState(state.panelId, state.group);
-  delete source.userData.grabState;
+function endGrab(src) {
+  const s = src.userData.grabState;
+  if (!s) return;
+  s.group.scale.multiplyScalar(1/1.03);
+  savePanelState(s.panelId, s.group);
+  delete src.userData.grabState;
 }
 
-function selectObject(source) {
-  const hit = raycastFirst(source);
-  if (!hit) return;
-  const obj = hit.object;
-  if (obj.userData.isGrabHandle) startGrab(source, obj.userData.panelId);
-  else if (obj.userData.onClick) obj.userData.onClick();
+function selectObject(src) {
+  const h = raycastFirst(src);
+  if (!h) return;
+  const o = h.object;
+  if (o.userData.isGrabHandle) startGrab(src, o.userData.panelId);
+  else if (o.userData.onClick) o.userData.onClick();
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// VR CONTROLLERS + HANDS
+// XR CONTROLLERS + HANDS
 // ═══════════════════════════════════════════════════════════════════
-const controllerFactory = new XRControllerModelFactory();
+const ctrlFactory = new XRControllerModelFactory();
 const handFactory = new XRHandModelFactory();
 
 for (let i = 0; i < 2; i++) {
   const ctrl = renderer.xr.getController(i);
   ctrl.addEventListener('selectstart', () => selectObject(ctrl));
   ctrl.addEventListener('squeezestart', () => {
-    const hit = raycastFirst(ctrl);
-    if (hit?.object.userData.isGrabHandle) startGrab(ctrl, hit.object.userData.panelId);
+    const h = raycastFirst(ctrl);
+    if (h?.object.userData.isGrabHandle) startGrab(ctrl, h.object.userData.panelId);
   });
   ctrl.addEventListener('squeezeend', () => endGrab(ctrl));
   rig.add(ctrl);
@@ -1224,7 +1097,7 @@ for (let i = 0; i < 2; i++) {
   ctrl.add(line);
 
   const grip = renderer.xr.getControllerGrip(i);
-  grip.add(controllerFactory.createControllerModel(grip));
+  grip.add(ctrlFactory.createControllerModel(grip));
   rig.add(grip);
 
   const hand = renderer.xr.getHand(i);
@@ -1235,69 +1108,63 @@ for (let i = 0; i < 2; i++) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TELETRANSPORTE
+// TELEPORT
 // ═══════════════════════════════════════════════════════════════════
-for (const [x, z] of [[0, -2], [-3, -2], [3, -2], [0, 2]]) {
-  const marker = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.4, 0.4, 0.02, 32),
+for (const [x,z] of [[0,-2],[-3,-2],[3,-2],[0,2]]) {
+  const m = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4,0.4,0.02,32),
     new THREE.MeshBasicMaterial({ color: 0x20c8fa, transparent: true, opacity: 0.6 })
   );
-  marker.position.set(x, 0.02, z);
-  marker.userData.isTeleport = true;
-  marker.userData.onClick = () => {
-    const head = new THREE.Vector3();
-    if (renderer.xr.isPresenting) renderer.xr.getCamera().getWorldPosition(head);
-    else camera.getWorldPosition(head);
-    rig.position.x += x - head.x;
-    rig.position.z += z - head.z;
+  m.position.set(x,0.02,z);
+  m.userData.isTeleport = true;
+  m.userData.onClick = () => {
+    const h = new THREE.Vector3();
+    if (renderer.xr.isPresenting) renderer.xr.getCamera().getWorldPosition(h);
+    else camera.getWorldPosition(h);
+    rig.position.x += x - h.x;
+    rig.position.z += z - h.z;
   };
-  scene.add(marker);
-  interactive.push(marker);
+  scene.add(m);
+  interactive.push(m);
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // ANIMATION LOOP
 // ═══════════════════════════════════════════════════════════════════
 const clock = new THREE.Clock();
-
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
 
   if (renderer.xr.isPresenting) {
-    const session = renderer.xr.getSession();
-    for (let i = 0; i < session.inputSources.length; i++) {
-      updateGrab(renderer.xr.getController(i), session.inputSources[i]);
-      updateGrab(renderer.xr.getHand(i), session.inputSources[i]);
+    const s = renderer.xr.getSession();
+    for (let i = 0; i < s.inputSources.length; i++) {
+      updateGrab(renderer.xr.getController(i), s.inputSources[i]);
+      updateGrab(renderer.xr.getHand(i), s.inputSources[i]);
     }
 
-    // Locomotion (se nenhum grab ativo)
     const anyGrab = renderer.xr.getController(0).userData.grabState ||
                     renderer.xr.getController(1).userData.grabState;
     if (!anyGrab) {
-      for (const src of session.inputSources) {
+      for (const src of s.inputSources) {
         if (!src.gamepad || src.handedness !== 'left') continue;
-        const axes = src.gamepad.axes;
-        const x = axes[2] || 0;
-        const z = axes[3] || 0;
+        const ax = src.gamepad.axes;
+        const x = ax[2]||0, z = ax[3]||0;
         if (Math.abs(x) < 0.15 && Math.abs(z) < 0.15) continue;
-
         const dir = new THREE.Vector3();
         renderer.xr.getCamera().getWorldDirection(dir);
         dir.y = 0; dir.normalize();
         const right = new THREE.Vector3(-dir.z, 0, dir.x);
-        const move = dir.multiplyScalar(-z).addScaledVector(right, x).multiplyScalar(dt * 1.5);
-
-        rig.position.x = THREE.MathUtils.clamp(rig.position.x + move.x, -7, 7);
-        rig.position.z = THREE.MathUtils.clamp(rig.position.z + move.z, -7, 7);
+        const mv = dir.multiplyScalar(-z).addScaledVector(right, x).multiplyScalar(dt*1.5);
+        rig.position.x = THREE.MathUtils.clamp(rig.position.x + mv.x, -7, 7);
+        rig.position.z = THREE.MathUtils.clamp(rig.position.z + mv.z, -7, 7);
       }
     }
   }
-
   renderer.render(scene, camera);
 });
 
 window.addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight;
+  camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
@@ -1314,22 +1181,19 @@ $('enter').onclick = async () => {
       return;
     }
     if (!navigator.xr) throw new Error('WebXR não disponível');
-    const supported = await navigator.xr.isSessionSupported('immersive-vr');
-    if (!supported) throw new Error('VR não suportada neste dispositivo');
-
-    const session = await navigator.xr.requestSession('immersive-vr', {
+    const ok = await navigator.xr.isSessionSupported('immersive-vr');
+    if (!ok) throw new Error('VR não suportada');
+    const sess = await navigator.xr.requestSession('immersive-vr', {
       optionalFeatures: ['local-floor', 'hand-tracking']
     });
-    await renderer.xr.setSession(session);
+    await renderer.xr.setSession(sess);
     $('enter').textContent = 'SAIR DO VR';
     $('menu').classList.add('hidden');
-    session.addEventListener('end', () => {
+    sess.addEventListener('end', () => {
       $('enter').textContent = 'ENTRAR EM VR';
       $('menu').classList.remove('hidden');
     });
-  } catch (e) {
-    $('status').textContent = '❌ ' + e.message;
-  }
+  } catch (e) { $('status').textContent = '❌ ' + e.message; }
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1339,101 +1203,109 @@ function updateHUD() {
   $('hud-total').textContent = DB.stats.total;
   $('hud-ok').textContent = DB.stats.correct;
   $('hud-err').textContent = DB.stats.total - DB.stats.correct;
-  $('hud-pct').textContent = DB.stats.total > 0
-    ? Math.round(DB.stats.correct * 100 / DB.stats.total) + '%'
-    : '0%';
+  $('hud-pct').textContent = DB.stats.total > 0 ? Math.round(DB.stats.correct*100/DB.stats.total)+'%' : '0%';
 
+  $('stats-summary').innerHTML =
+    `📊 <b>${DB.stats.total}</b> · ✅ <b>${DB.stats.correct}</b> · ` +
+    `🎯 <b>${DB.stats.total > 0 ? Math.round(DB.stats.correct*100/DB.stats.total) : 0}%</b><br>` +
+    `❌ Revisar: <b>${DB.wrongIds.length}</b> · ⭐ Favoritas: <b>${DB.favorites.length}</b>`;
+
+  updateStatsChart();
+}
+
+function updateStatsChart() {
+  const svg = $('stats-chart');
   const bySubj = DB.stats.bySubject;
-  let html = `📊 <b>${DB.stats.total}</b> respondidas · <b>${DB.stats.correct}</b> acertos · `;
-  html += `${DB.stats.total > 0 ? Math.round(DB.stats.correct * 100 / DB.stats.total) : 0}% aproveitamento`;
-  html += `<br>❌ Revisar: <b>${DB.wrongIds.length}</b> · ⭐ Favoritas: <b>${DB.favorites.length}</b>`;
-  $('stats-summary').innerHTML = html;
+  const entries = Object.entries(bySubj).filter(([_, v]) => v.total > 0).slice(0, 8);
+
+  if (entries.length === 0) {
+    svg.innerHTML = '<text x="200" y="70" text-anchor="middle" fill="#8ab0d0" font-size="12">Sem dados ainda</text>';
+    $('stats-detail').innerHTML = '';
+    return;
+  }
+
+  const w = 400, h = 140, pad = 20;
+  const barW = (w - pad*2) / entries.length;
+
+  let html = `<line class="axis" x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}"/>`;
+  entries.forEach(([subj, v], i) => {
+    const pct = v.correct / v.total;
+    const bh = (h - pad*2) * pct;
+    const x = pad + i*barW + 4;
+    const y = h - pad - bh;
+    html += `<rect class="bar" x="${x}" y="${y}" width="${barW-8}" height="${bh}" rx="2">
+      <title>${subj}: ${v.correct}/${v.total} (${Math.round(pct*100)}%)</title>
+    </rect>`;
+    html += `<text class="label" x="${x + (barW-8)/2}" y="${h-8}" text-anchor="middle">${subj.slice(0,6)}</text>`;
+    html += `<text class="label" x="${x + (barW-8)/2}" y="${y-3}" text-anchor="middle">${Math.round(pct*100)}%</text>`;
+  });
+  svg.innerHTML = html;
+
+  let detail = '<h3 style="margin-top:12px">Detalhes</h3>';
+  entries.forEach(([subj, v]) => {
+    detail += `<div style="padding:4px 0;border-bottom:1px solid rgba(73,186,255,.15)">
+      <b>${subj}</b>: ${v.correct}/${v.total} (${Math.round(v.correct*100/v.total)}%)
+    </div>`;
+  });
+  $('stats-detail').innerHTML = detail;
 }
 
 function updateReviewSummary() {
-  const totalWrong = DB.wrongIds.length;
   $('review-summary').innerHTML = `
     <div style="padding:10px;background:rgba(255,68,68,.1);border-radius:6px;margin-bottom:8px">
-      ❌ <b>${totalWrong}</b> questões erradas
+      ❌ <b>${DB.wrongIds.length}</b> questões erradas
     </div>
     <div style="padding:10px;background:rgba(255,170,0,.1);border-radius:6px">
-      📇 <b>${Object.keys(DB.flashcards).length}</b> flashcards cadastrados
+      📇 <b>${Object.keys(DB.flashcards).length}</b> flashcards
     </div>
   `;
 }
 
 function populateSubjects() {
-  const select = $('subject');
-  const current = select.value;
-  while (select.options.length > 1) select.remove(1);
-  const subjects = [...new Set(QUESTIONS.map(q => q.subject))].sort();
-  for (const s of subjects) {
-    const opt = document.createElement('option');
-    opt.value = s; opt.textContent = s;
-    select.appendChild(opt);
+  const s = $('subject');
+  const cur = s.value;
+  while (s.options.length > 1) s.remove(1);
+  const subs = [...new Set(QUESTIONS.map(q => q.subject))].sort();
+  for (const sub of subs) {
+    const o = document.createElement('option');
+    o.value = sub; o.textContent = sub;
+    s.appendChild(o);
   }
-  if ([...select.options].some(o => o.value === current)) select.value = current;
-}
-
-function recordAnswer(correct) {
-  DB.stats.total++;
-  if (correct) DB.stats.correct++;
-
-  const q = currentPool[currentIndex];
-  if (!DB.stats.bySubject[q.subject]) DB.stats.bySubject[q.subject] = { total: 0, correct: 0 };
-  DB.stats.bySubject[q.subject].total++;
-  if (correct) DB.stats.bySubject[q.subject].correct++;
-
-  if (correct) {
-    const idx = DB.wrongIds.indexOf(q.id);
-    if (idx >= 0) DB.wrongIds.splice(idx, 1);
-  } else {
-    if (!DB.wrongIds.includes(q.id)) DB.wrongIds.push(q.id);
-  }
-
-  // Atualiza flashcard (SM-2)
-  updateFlashcardSRS(q.id, correct ? 2 : 0);
-
-  STORAGE.save(DB);
-  updateHUD();
+  if ([...s.options].some(o => o.value === cur)) s.value = cur;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// FLASHCARD SM-2 SIMPLIFICADO
+// SM-2
 // ═══════════════════════════════════════════════════════════════════
 function updateFlashcardSRS(id, grade) {
   const now = Date.now();
-  const card = DB.flashcards[id] || { interval: 0, ease: 2.5, reps: 0, due: now };
-
-  if (grade < 1) {
-    card.reps = 0;
-    card.interval = 1;
-  } else {
-    card.reps++;
-    if (card.reps === 1) card.interval = 1;
-    else if (card.reps === 2) card.interval = 3;
-    else card.interval = Math.round(card.interval * card.ease);
-    card.ease = Math.max(1.3, card.ease + (grade - 1) * 0.15);
+  const c = DB.flashcards[id] || { interval: 0, ease: 2.5, reps: 0, due: now };
+  if (grade < 1) { c.reps = 0; c.interval = 1; }
+  else {
+    c.reps++;
+    if (c.reps === 1) c.interval = 1;
+    else if (c.reps === 2) c.interval = 3;
+    else c.interval = Math.round(c.interval * c.ease);
+    c.ease = Math.max(1.3, c.ease + (grade - 1) * 0.15);
   }
-
-  card.due = now + card.interval * 24 * 3600 * 1000;
-  DB.flashcards[id] = card;
+  c.due = now + c.interval * 86400000;
+  DB.flashcards[id] = c;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// FLASHCARD UI
+// FLASHCARD
 // ═══════════════════════════════════════════════════════════════════
 let currentFlashcard = null;
 
 function openFlashcard(q) {
   if (!q) return;
   currentFlashcard = q;
-  const card = DB.flashcards[q.id] || { interval: 0, reps: 0 };
+  const c = DB.flashcards[q.id] || { interval: 0, reps: 0 };
   $('fc-disc').textContent = q.subject;
   $('fc-front').textContent = q.question;
   $('fc-back').textContent = 'ABCDE'[q.correct];
-  $('fc-exp').textContent = q.explanation || 'Sem explicação disponível.';
-  $('fc-progress').textContent = `Repetições: ${card.reps} · Intervalo: ${card.interval}d`;
+  $('fc-exp').textContent = q.explanation || 'Sem explicação.';
+  $('fc-progress').textContent = `Reps: ${c.reps} · Intervalo: ${c.interval}d`;
   $('flashcard').classList.remove('flipped');
   $('fc-controls').style.display = 'none';
   $('flashcard-stage').classList.add('open');
@@ -1441,70 +1313,91 @@ function openFlashcard(q) {
 
 $('fc-flip').onclick = () => {
   $('flashcard').classList.toggle('flipped');
-  if ($('flashcard').classList.contains('flipped')) {
-    $('fc-controls').style.display = 'flex';
-  }
+  if ($('flashcard').classList.contains('flipped')) $('fc-controls').style.display = 'flex';
 };
 
 $('fc-next').onclick = () => {
-  const idx = currentPool.indexOf(currentFlashcard);
-  const next = currentPool[(idx + 1) % currentPool.length];
-  openFlashcard(next);
+  const i = currentPool.indexOf(currentFlashcard);
+  openFlashcard(currentPool[(i+1) % currentPool.length]);
 };
 
-$('fc-close').onclick = () => {
-  $('flashcard-stage').classList.remove('open');
-};
+$('fc-close').onclick = () => $('flashcard-stage').classList.remove('open');
 
-document.querySelectorAll('[data-grade]').forEach(btn => {
-  btn.onclick = () => {
+document.querySelectorAll('[data-grade]').forEach(b => {
+  b.onclick = () => {
     if (!currentFlashcard) return;
-    updateFlashcardSRS(currentFlashcard.id, parseInt(btn.dataset.grade));
+    updateFlashcardSRS(currentFlashcard.id, parseInt(b.dataset.grade));
     STORAGE.save(DB);
     $('fc-next').click();
   };
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// RESPOSTA E NAVEGAÇÃO
+// ANSWER / NAVIGATE
 // ═══════════════════════════════════════════════════════════════════
 function selectAnswer(idx) {
-  if (currentAnswer !== null) return;
   const q = currentPool[currentIndex];
+  if (!q) return;
+
+  // Simulado com correção ao final: permite trocar
+  if (examActive && examCorrectMode === 'end') {
+    currentAnswer = idx;
+    renderQuestionPanel();
+    return;
+  }
+
+  // Modo imediato ou estudo livre
+  if (currentAnswer !== null) return;
   currentAnswer = idx;
   const correct = idx === q.correct;
-  recordAnswer(correct);
-  renderQuestionPanel();
 
-  // Modal desktop
+  // Só contabiliza 1x por id
+  if (!responsesLocked.has(q.id)) {
+    responsesLocked.add(q.id);
+    recordAnswer(q, correct);
+  }
+
+  renderQuestionPanel();
   showModal(q, idx, correct);
 }
 
-function showModal(q, selected, correct) {
-  const modal = $('modal');
-  $('modal-disc').textContent = q.subject;
-  $('modal-q-num').textContent = `Questão ${currentIndex + 1} de ${currentPool.length}`;
-  $('modal-q-text').textContent = q.question;
+function recordAnswer(q, correct) {
+  DB.stats.total++;
+  if (correct) DB.stats.correct++;
+  if (!DB.stats.bySubject[q.subject]) DB.stats.bySubject[q.subject] = { total: 0, correct: 0 };
+  DB.stats.bySubject[q.subject].total++;
+  if (correct) DB.stats.bySubject[q.subject].correct++;
+  if (correct) {
+    const i = DB.wrongIds.indexOf(q.id);
+    if (i >= 0) DB.wrongIds.splice(i, 1);
+  } else {
+    if (!DB.wrongIds.includes(q.id)) DB.wrongIds.push(q.id);
+  }
+  updateFlashcardSRS(q.id, correct ? 2 : 0);
+  STORAGE.save(DB);
+  updateHUD();
+  updateReviewSummary();
+}
 
+function showModal(q, sel, ok) {
+  $('modal').classList.add('open');
+  $('modal-disc').textContent = q.subject;
+  $('modal-q-num').textContent = `Questão ${currentIndex+1} de ${currentPool.length}`;
+  $('modal-q-text').textContent = q.question;
   const opts = $('modal-options');
   opts.innerHTML = '';
-  q.options.forEach((opt, i) => {
-    const div = document.createElement('div');
-    div.className = 'option';
-    if (i === q.correct) div.classList.add('correct');
-    else if (i === selected) div.classList.add('wrong');
-    div.textContent = `${'ABCDE'[i]}) ${opt}`;
-    opts.appendChild(div);
+  q.options.forEach((o, i) => {
+    const d = document.createElement('div');
+    d.className = 'option';
+    if (i === q.correct) d.classList.add('correct');
+    else if (i === sel) d.classList.add('wrong');
+    d.textContent = `${'ABCDE'[i]}) ${o}`;
+    opts.appendChild(d);
   });
-
   if (q.explanation) {
     $('modal-exp').style.display = 'block';
     $('modal-exp').textContent = '📖 ' + q.explanation;
-  } else {
-    $('modal-exp').style.display = 'none';
-  }
-
-  modal.classList.add('open');
+  } else $('modal-exp').style.display = 'none';
 }
 
 $('modal-close').onclick = () => {
@@ -1516,120 +1409,106 @@ function nextQuestion() {
   if (currentIndex < currentPool.length - 1) {
     currentIndex++;
     currentAnswer = null;
+    // Se simulado com correção ao final, manter respostas anteriores
+    if (examActive && examCorrectMode === 'end') {
+      const q = currentPool[currentIndex];
+      if (responsesLocked.has(q.id)) currentAnswer = q.selected ?? null;
+    }
     renderQuestionPanel();
   } else {
-    // Fim da sessão
     finishSession();
   }
 }
 
 function finishSession() {
   const total = currentPool.length;
-  const correct = DB.stats.correct;
-  alert(`Sessão finalizada!\n\nQuestões: ${total}\nAproveitamento geral: ${DB.stats.total > 0 ? Math.round(DB.stats.correct * 100 / DB.stats.total) : 0}%`);
+  const pct = DB.stats.total > 0 ? Math.round(DB.stats.correct*100/DB.stats.total) : 0;
+  const wrong = DB.wrongIds.length;
+  alert(`✅ Sessão finalizada!\n\nQuestões nesta sessão: ${total}\nAproveitamento geral: ${pct}%\nQuestões para revisar: ${wrong}`);
   $('status').textContent = '✅ Sessão finalizada';
+  examActive = false;
+  DB.lastSession = null;
+  STORAGE.save(DB);
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SESSÃO / POOL
+// POOL
 // ═══════════════════════════════════════════════════════════════════
-function buildPool(mode, subject, limit = 9999) {
-  let pool = QUESTIONS.slice();
-
-  if (subject && subject !== 'Todas') {
-    pool = pool.filter(q => q.subject === subject);
-  }
-
+function buildPool(mode, subj, limit = 9999) {
+  let p = QUESTIONS.slice();
+  if (subj && subj !== 'Todas') p = p.filter(q => q.subject === subj);
   switch (mode) {
-    case 'random':
-      pool = pool.sort(() => Math.random() - 0.5);
-      break;
-    case 'unanswered':
-      pool = pool.filter(q => !DB.wrongIds.includes(q.id) && q.id);
-      break;
-    case 'difficult':
-      pool = pool.filter(q => DB.wrongIds.includes(q.id));
-      break;
+    case 'random': p = p.sort(() => Math.random() - 0.5); break;
+    case 'unanswered': p = p.filter(q => !DB.wrongIds.includes(q.id)); break;
+    case 'difficult': p = p.filter(q => DB.wrongIds.includes(q.id)); break;
+    case 'favorites': p = p.filter(q => DB.favorites.includes(q.id)); break;
   }
-
-  return pool.slice(0, limit);
+  return p.slice(0, limit);
 }
 
 $('start').onclick = () => {
-  const mode = $('mode').value;
-  const subject = $('subject').value;
-  currentPool = buildPool(mode, subject);
-  if (currentPool.length === 0) {
-    $('status').textContent = '⚠️ Nenhuma questão neste filtro';
-    return;
-  }
+  currentPool = buildPool($('mode').value, $('subject').value);
+  if (!currentPool.length) { $('status').textContent = '⚠️ Sem questões neste filtro'; return; }
   currentIndex = 0;
   currentAnswer = null;
   examActive = false;
+  responsesLocked.clear();
+  DB.lastSession = { mode: 'study', index: 0, poolSize: currentPool.length, subject: $('subject').value };
+  STORAGE.save(DB);
   renderQuestionPanel();
   $('status').textContent = `✅ ${currentPool.length} questões carregadas`;
 };
 
 $('demo').onclick = () => {
   QUESTIONS = [
-    { id: 'demo1', question: 'Qual é a Constituição Federal atualmente vigente no Brasil?', options: ['Constituição de 1967', 'Constituição de 1988', 'Constituição de 1946', 'Constituição de 1937'], correct: 1, subject: 'Direito Constitucional', explanation: 'A Constituição de 1988 é a atual.' },
-    { id: 'demo2', question: 'Qual princípio exige que a Administração Pública atue conforme a lei?', options: ['Publicidade', 'Legalidade', 'Impessoalidade', 'Eficiência'], correct: 1, subject: 'Direito Constitucional', explanation: 'A legalidade vincula toda atuação administrativa.' },
-    { id: 'demo3', question: 'Qual artigo do Código Penal trata do furto?', options: ['Art. 121', 'Art. 155', 'Art. 157', 'Art. 171'], correct: 1, subject: 'Direito Penal Comum', explanation: 'O furto está no art. 155 do CP.' },
-    { id: 'demo4', question: 'Qual placa indica parada obrigatória?', options: ['Placa PARE', 'Placa de estacionamento', 'Placa de velocidade máxima', 'Placa de pedestres'], correct: 0, subject: 'Legislação de Trânsito', explanation: 'A placa R-1 indica parada obrigatória.' }
+    { id: 'd1', question: 'Qual é a Constituição Federal atualmente vigente no Brasil?', options: ['Constituição de 1967', 'Constituição de 1988', 'Constituição de 1946', 'Constituição de 1937'], correct: 1, subject: 'Direito Constitucional', explanation: 'A Constituição de 1988 é a atual.' },
+    { id: 'd2', question: 'Qual princípio exige que a Administração Pública atue conforme a lei?', options: ['Publicidade', 'Legalidade', 'Impessoalidade', 'Eficiência'], correct: 1, subject: 'Direito Constitucional', explanation: 'A legalidade vincula toda atuação administrativa.' },
+    { id: 'd3', question: 'Qual artigo do Código Penal trata do furto?', options: ['Art. 121', 'Art. 155', 'Art. 157', 'Art. 171'], correct: 1, subject: 'Direito Penal Comum', explanation: 'O furto está no art. 155 do CP.' },
+    { id: 'd4', question: 'Qual placa indica parada obrigatória?', options: ['Placa PARE', 'Placa de estacionamento', 'Placa de velocidade máxima', 'Placa de pedestres'], correct: 0, subject: 'Legislação de Trânsito', explanation: 'A placa R-1 indica parada obrigatória.' }
   ];
   populateSubjects();
   currentPool = QUESTIONS.slice();
   currentIndex = 0;
   currentAnswer = null;
+  responsesLocked.clear();
   renderQuestionPanel();
-  $('status').textContent = '✅ Demonstração carregada';
+  $('status').textContent = '✅ Demo carregada';
 };
 
 $('refresh').onclick = async () => {
   $('status').textContent = '🔄 Recarregando...';
   QUESTIONS = await loadFromGitHub();
   if (QUESTIONS.length > 0) {
-    try { localStorage.setItem('pmsc_questions_cache', JSON.stringify(QUESTIONS)); } catch {}
+    try { localStorage.setItem('pmsc_questions_cache', JSON.stringify(QUESTIONS)); } catch (e) {}
     populateSubjects();
-    $('status').textContent = `✅ ${QUESTIONS.length} questões carregadas`;
   }
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// SIMULADO
+// EXAM
 // ═══════════════════════════════════════════════════════════════════
 $('exam-start').onclick = () => {
   const qty = parseInt($('exam-qty').value);
   const time = parseInt($('exam-time').value);
+  examCorrectMode = $('exam-correct').value;
 
   currentPool = QUESTIONS.sort(() => Math.random() - 0.5).slice(0, qty);
-  if (currentPool.length === 0) {
-    $('status').textContent = '⚠️ Sem questões disponíveis';
-    return;
-  }
+  if (!currentPool.length) { $('status').textContent = '⚠️ Sem questões'; return; }
   currentIndex = 0;
   currentAnswer = null;
   examActive = true;
-  examEndsAt = time > 0 ? Date.now() + time * 60 * 1000 : 0;
-
+  examEndsAt = time > 0 ? Date.now() + time*60000 : 0;
+  responsesLocked.clear();
   renderQuestionPanel();
-  $('exam-status').innerHTML = `⏱ ${qty} questões ${time > 0 ? '/ ' + time + 'min' : '(sem tempo)'}`;
+  $('exam-status').textContent = `⏱ ${qty}q ${time > 0 ? '/ '+time+'min' : ''} · ${examCorrectMode === 'end' ? 'ao final' : 'imediata'}`;
   $('status').textContent = '✅ Simulado iniciado';
 };
 
-// Timer do simulado
 setInterval(() => {
   if (!examActive || examEndsAt === 0) return;
-  const remaining = examEndsAt - Date.now();
-  if (remaining <= 0) {
-    examActive = false;
-    alert('⏱ Tempo esgotado!');
-    finishSession();
-    return;
-  }
-  const min = Math.floor(remaining / 60000);
-  const sec = Math.floor((remaining % 60000) / 1000);
-  $('exam-status').innerHTML = `⏱ ${min}:${sec.toString().padStart(2, '0')} restantes`;
+  const r = examEndsAt - Date.now();
+  if (r <= 0) { examActive = false; alert('⏱ Tempo esgotado!'); finishSession(); return; }
+  $('exam-status').textContent = `⏱ ${Math.floor(r/60000)}:${Math.floor((r%60000)/1000).toString().padStart(2,'0')}`;
 }, 1000);
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1637,13 +1516,11 @@ setInterval(() => {
 // ═══════════════════════════════════════════════════════════════════
 $('review-start').onclick = () => {
   currentPool = QUESTIONS.filter(q => DB.wrongIds.includes(q.id));
-  if (currentPool.length === 0) {
-    $('status').textContent = '✅ Nenhuma questão errada para revisar';
-    return;
-  }
+  if (!currentPool.length) { $('status').textContent = '✅ Nenhum erro para revisar'; return; }
   currentIndex = 0;
   currentAnswer = null;
   examActive = false;
+  responsesLocked.clear();
   renderQuestionPanel();
   $('status').textContent = `🔄 Revisando ${currentPool.length} questões erradas`;
 };
@@ -1655,31 +1532,29 @@ $('reset-stats').onclick = () => {
   DB.favorites = [];
   DB.flashcards = {};
   DB.history = [];
+  DB.lastSession = null;
   STORAGE.save(DB);
   updateHUD();
   updateReviewSummary();
-  $('status').textContent = '🗑 Estatísticas zeradas';
+  $('status').textContent = '🗑 Zerado';
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// ENVIRONMENT SELECTOR
+// ENV / THEME / CONFIG SELECTORS
 // ═══════════════════════════════════════════════════════════════════
 $('environment').onchange = (e) => {
-  let type = e.target.value;
-  if (type === 'random') {
-    const opts = ['academy', 'living', 'beach', 'library', 'future', 'nature', 'penthouse', 'space', 'minimal'];
-    type = opts[Math.floor(Math.random() * opts.length)];
+  let t = e.target.value;
+  if (t === 'random') {
+    const opts = ['academy','living','beach','library','future','nature','penthouse','space','minimal'];
+    t = opts[Math.floor(Math.random()*opts.length)];
   }
-  DB.environment = type;
+  DB.environment = t;
   STORAGE.save(DB);
-  buildEnvironment(type);
+  buildEnvironment(t);
 };
 
-$('lighting').onchange = (e) => {
-  DB.lighting = e.target.value;
-  STORAGE.save(DB);
-  applyLighting();
-};
+$('lighting').onchange = (e) => { DB.lighting = e.target.value; STORAGE.save(DB); applyLighting(); };
+$('quality').onchange = (e) => { DB.quality = e.target.value; STORAGE.save(DB); buildEnvironment(DB.environment); };
 
 $('reset-panels').onclick = () => {
   DB.panels = {};
@@ -1689,23 +1564,16 @@ $('reset-panels').onclick = () => {
   $('status').textContent = '🔄 Painéis restaurados';
 };
 
-// ═══════════════════════════════════════════════════════════════════
-// THEMES
-// ═══════════════════════════════════════════════════════════════════
 function renderThemeSwatches() {
-  const grid = $('theme-grid');
-  grid.innerHTML = '';
-  for (const [name, colors] of Object.entries(THEMES)) {
-    const sw = document.createElement('div');
-    sw.className = 'theme-swatch';
-    if (name === DB.theme) sw.classList.add('active');
-    sw.style.background = `linear-gradient(135deg, ${colors.bg}, ${colors.accent})`;
-    sw.title = name;
-    sw.onclick = () => {
-      applyTheme(name);
-      renderThemeSwatches();
-    };
-    grid.appendChild(sw);
+  const g = $('theme-grid');
+  g.innerHTML = '';
+  for (const [name, c] of Object.entries(THEMES)) {
+    const s = document.createElement('div');
+    s.className = 'theme-swatch' + (name === DB.theme ? ' active' : '');
+    s.style.background = `linear-gradient(135deg, ${c.bg}, ${c.accent})`;
+    s.title = name;
+    s.onclick = () => { applyTheme(name); renderThemeSwatches(); };
+    g.appendChild(s);
   }
 }
 
@@ -1715,28 +1583,20 @@ $('font-scale').oninput = (e) => {
   STORAGE.save(DB);
 };
 
-// ═══════════════════════════════════════════════════════════════════
-// REPO CONFIG
-// ═══════════════════════════════════════════════════════════════════
 $('repo-apply').onclick = async () => {
   DB.repo = $('repo-input').value.trim();
   STORAGE.save(DB);
-  $('status').textContent = '🔄 Recarregando do repositório...';
+  $('status').textContent = '🔄 Recarregando...';
   QUESTIONS = await loadFromGitHub();
   populateSubjects();
 };
 
-$('repo-input').value = DB.repo;
-
-// ═══════════════════════════════════════════════════════════════════
-// EXPORT/IMPORT
-// ═══════════════════════════════════════════════════════════════════
 $('export-data').onclick = () => {
   const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `pmsc-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `pmsc-backup-${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
 };
@@ -1744,14 +1604,12 @@ $('export-data').onclick = () => {
 $('import-data').onclick = () => $('import-file').click();
 
 $('import-file').onchange = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const f = e.target.files[0];
+  if (!f) return;
   try {
-    const data = JSON.parse(await file.text());
-    if (data.version !== STORAGE.VERSION) {
-      if (!confirm('Versão diferente. Continuar?')) return;
-    }
-    DB = Object.assign(STORAGE.defaults(), data);
+    const d = JSON.parse(await f.text());
+    if (d.version !== STORAGE.VERSION && !confirm('Versão diferente. Continuar?')) return;
+    DB = Object.assign(STORAGE.defaults(), d);
     STORAGE.save(DB);
     applyTheme(DB.theme);
     buildEnvironment(DB.environment);
@@ -1759,60 +1617,99 @@ $('import-file').onchange = async (e) => {
     updateReviewSummary();
     renderThemeSwatches();
     $('status').textContent = '✅ Backup importado';
-  } catch (err) {
-    $('status').textContent = '❌ Erro: ' + err.message;
-  }
+  } catch (err) { $('status').textContent = '❌ ' + err.message; }
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// TABS MENU
+// MODES
 // ═══════════════════════════════════════════════════════════════════
-document.querySelectorAll('.tabs button').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    $(`tab-${btn.dataset.tab}`).classList.add('active');
+$('focus-mode').onclick = () => {
+  $('menu').classList.add('hidden');
+  $('hud').style.opacity = '0.3';
+  $('status').textContent = '🎯 Modo foco (F5 para sair)';
+  setTimeout(() => {
+    $('menu').classList.remove('hidden');
+    $('hud').style.opacity = '1';
+  }, 60000);
+};
+
+$('reading-mode').onclick = () => {
+  if (panelRegistry.has('center')) {
+    const g = panelRegistry.get('center');
+    g.position.set(0, 1.8, -1.8);
+    g.scale.setScalar(1.3);
+  }
+  $('status').textContent = '📖 Modo leitura';
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════════
+document.querySelectorAll('.tabs button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    $(`tab-${b.dataset.tab}`).classList.add('active');
   };
 });
+
+// ═══════════════════════════════════════════════════════════════════
+// TUTORIAL
+// ═══════════════════════════════════════════════════════════════════
+$('tutorial-close').onclick = () => $('tutorial').classList.remove('open');
+$('show-tutorial').onclick = () => $('tutorial').classList.add('open');
 
 // ═══════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════
 (async function init() {
-  // Aplica tema
   applyTheme(DB.theme);
   renderThemeSwatches();
   $('font-scale').value = DB.fontScale;
   $('font-scale-val').textContent = DB.fontScale + '%';
-
-  // Aplica ambiente
   buildEnvironment(DB.environment);
   $('environment').value = DB.environment;
   $('lighting').value = DB.lighting;
   $('quality').value = DB.quality;
+  $('repo-input').value = DB.repo;
 
-  // HUD
   updateHUD();
   updateReviewSummary();
 
-  // Auto-load GitHub
   QUESTIONS = await loadFromGitHub();
   if (QUESTIONS.length > 0) {
-    try { localStorage.setItem('pmsc_questions_cache', JSON.stringify(QUESTIONS)); } catch {}
+    try { localStorage.setItem('pmsc_questions_cache', JSON.stringify(QUESTIONS)); } catch (e) {}
     populateSubjects();
     currentPool = QUESTIONS.slice();
     currentIndex = 0;
     renderQuestionPanel();
+
+    if (DB.lastSession) {
+      $('continue-session').style.display = 'block';
+      $('continue-session').onclick = () => {
+        currentPool = buildPool('study', DB.lastSession.subject || 'Todas');
+        currentIndex = 0;
+        currentAnswer = null;
+        renderQuestionPanel();
+        $('status').textContent = `⏵ Sessão retomada`;
+      };
+    }
   } else {
-    $('status').textContent = '⚠️ Sem questões. Use "Demo" ou configure o repositório.';
+    $('status').textContent = '⚠️ Sem questões. Use "Demo" ou configure repositório.';
     ensurePanel('center', 0, 2.0, -3.5);
-    addPanelText('center', 'Bem-vindo!\n\nUse 🧪 Demo\nou configure\no repositório', 0, {
-      width3D: 5, maxLines: 4, fontSizeMax: 80, padding: 60
+    addPanelText('center', 'Bem-vindo!\nUse 🧪 Demo\nou configure o repositório.', 0, {
+      width3D: 5, maxLines: 3, fontSizeMax: 70, padding: 60
     });
   }
 
-  console.log('[PMSC Academy] Iniciado. Questões:', QUESTIONS.length);
+  // Tutorial na primeira vez
+  if (!localStorage.getItem('pmsc_tutorial_seen')) {
+    $('tutorial').classList.add('open');
+    localStorage.setItem('pmsc_tutorial_seen', '1');
+  }
+
+  console.log('[PMSC Academy v2] iniciado. Questões:', QUESTIONS.length);
 })();
 </script>
 </body>
