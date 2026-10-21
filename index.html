@@ -2,1792 +2,2827 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>PMSC Immersive Academy 2026</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071711">
+<title>PM-SC Immersive Academy 2026</title>
+
 <style>
-:root{--bg:#060913;--panel:#0d2740;--panel-alt:#123c60;--border:#49baff;
-  --accent:#00d1ff;--ok:#00ff88;--warn:#ffaa00;--err:#ff4444;
-  --text:#e8f4ff;--muted:#8ab0d0}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;
-  font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text)}
-canvas{display:block;outline:none}
-#menu{position:fixed;top:12px;left:12px;z-index:100;width:min(420px,94vw);
-  max-height:calc(100vh - 100px);overflow-y:auto;padding:16px;
-  background:rgba(6,9,19,.97);border:1px solid var(--border);border-radius:12px}
-#menu.hidden{display:none}
-h2{margin:0 0 4px;font-size:16px;color:var(--accent)}
-h3{margin:12px 0 6px;font-size:12px;color:#c5eaff;text-transform:uppercase}
-button,select,input{font:inherit;width:100%;padding:10px 12px;margin:4px 0;
-  background:var(--panel-alt);color:#fff;border:1px solid var(--border);
-  border-radius:8px;cursor:pointer;transition:.15s}
-button:hover{background:#1a6aa0}
-button.primary{background:linear-gradient(90deg,#0066cc,#00d1ff);font-weight:700}
-button.ok{background:#0d6b4f;border-color:#2fbf8f}
-button.warn{background:#7a4a10;border-color:#d19a3a}
-button.err{background:#7a1a1a;border-color:#ff4444}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.row button{margin:0}
-#status{margin-top:8px;padding:8px 10px;background:rgba(0,209,255,.1);
-  border-left:3px solid var(--accent);border-radius:4px;font-size:12px;
-  color:#c4e9ff;min-height:20px}
-#stats-summary{margin-top:8px;padding:10px;background:rgba(0,255,136,.08);
-  border-radius:6px;font-size:12px;line-height:1.6}
-#stats-summary b{color:var(--ok)}
-hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
-#enter{position:fixed;right:16px;bottom:16px;z-index:100;width:auto;
-  padding:14px 28px;background:linear-gradient(90deg,#0050a8,#00d1ff);
-  border:2px solid #00d1ff;border-radius:32px;font-weight:900;font-size:14px}
-#enter.hidden{display:none}
-#hud{position:fixed;top:12px;right:12px;z-index:90;padding:10px 16px;
-  background:rgba(6,9,19,.9);border:1px solid var(--accent);border-radius:8px;
-  font-size:12px;color:var(--accent);display:flex;gap:16px;align-items:center}
-#hud .k{color:#fff;font-weight:700}
-.modal{position:fixed;top:0;left:0;width:100%;height:100%;z-index:200;
-  background:rgba(0,0,0,.85);display:none;align-items:center;
-  justify-content:center;padding:20px}
-.modal.open{display:flex}
-.modal-content{background:var(--bg);border:1px solid var(--border);
-  border-radius:12px;padding:24px;max-width:640px;width:100%;
-  max-height:85vh;overflow-y:auto}
-.modal h2{font-size:20px;margin-bottom:16px;color:var(--accent)}
-.modal .q-text{font-size:16px;line-height:1.5;margin-bottom:16px;white-space:pre-wrap}
-.modal .options{display:flex;flex-direction:column;gap:8px}
-.modal .option{padding:12px;border:1px solid var(--border);border-radius:8px;
-  font-size:14px;line-height:1.4}
-.modal .option.correct{border-color:var(--ok);background:rgba(0,255,136,.15)}
-.modal .option.wrong{border-color:var(--err);background:rgba(255,68,68,.15)}
-.modal .explanation{margin-top:16px;padding:12px;background:var(--panel-alt);
-  border-left:3px solid var(--accent);border-radius:4px;font-size:13px;
-  line-height:1.5;white-space:pre-wrap}
-.modal button.close{margin-top:16px;width:auto;padding:10px 24px}
-.tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
-.tabs button{flex:1;min-width:70px;padding:8px;font-size:11px;
-  background:var(--panel);border-color:transparent}
-.tabs button.active{background:var(--panel-alt);border-color:var(--accent);
-  color:var(--accent);font-weight:700}
-.tab-content{display:none}
-.tab-content.active{display:block}
-.themes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
-.theme-swatch{height:36px;border-radius:6px;border:2px solid transparent;
-  cursor:pointer;transition:.2s}
-.theme-swatch.active{border-color:#fff;transform:scale(1.05)}
-.flashcard-stage{position:fixed;top:0;left:0;width:100%;height:100%;z-index:150;
-  background:rgba(0,0,0,.95);display:none;flex-direction:column;
-  align-items:center;justify-content:center;padding:20px}
-.flashcard-stage.open{display:flex}
-.flashcard{width:min(650px,92vw);height:min(420px,62vh);
-  background:linear-gradient(135deg,var(--panel),var(--panel-alt));
-  border:2px solid var(--accent);border-radius:16px;padding:32px;
-  display:flex;flex-direction:column;justify-content:center;
-  cursor:pointer;box-shadow:0 20px 60px rgba(0,209,255,.3);
-  transition:transform .4s ease;position:relative;transform-style:preserve-3d}
-.flashcard.flipped{transform:rotateY(180deg)}
-.flashcard .front,.flashcard .back{position:absolute;inset:0;padding:32px;
-  display:flex;flex-direction:column;justify-content:center;
-  backface-visibility:hidden;overflow-y:auto}
-.flashcard .back{transform:rotateY(180deg)}
-.fc-controls{margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-.fc-controls button{width:auto;padding:10px 20px}
-.fc-progress{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
-.chart{width:100%;height:140px;margin:8px 0}
-.chart .bar{fill:var(--accent)}
-.chart .axis{stroke:var(--muted);stroke-width:1}
-.chart .label{fill:var(--text);font-size:10px}
-#tutorial{position:fixed;top:0;left:0;width:100%;height:100%;z-index:300;
-  background:rgba(0,0,0,.92);display:none;align-items:center;
-  justify-content:center;padding:20px}
-#tutorial.open{display:flex}
-.tutorial-card{background:var(--bg);border:2px solid var(--accent);
-  border-radius:16px;padding:32px;max-width:560px;width:100%;text-align:center}
-.tutorial-card h2{font-size:24px;color:var(--accent);margin:0 0 16px}
-.tutorial-card p{font-size:14px;line-height:1.6;margin:8px 0}
-.tutorial-card button{margin-top:20px;padding:12px 32px}
-@media(max-width:600px){#menu{width:94vw;max-height:62vh}
-  .row{grid-template-columns:1fr}}
+:root{
+ --bg:#071711;
+ --panel:#10251d;
+ --panel2:#19362a;
+ --text:#f1f8f3;
+ --muted:#b4c7bb;
+ --accent:#54e5a0;
+ --border:#365b49;
+ --danger:#ff7777;
+ --gold:#e8c879;
+ --font:16px;
+}
+
+*{box-sizing:border-box}
+
+html{scroll-behavior:smooth}
+
+body{
+ margin:0;
+ background:var(--bg);
+ color:var(--text);
+ font-family:system-ui,Arial,sans-serif;
+ font-size:var(--font);
+}
+
+button,input,select{
+ font:inherit;
+}
+
+button,select,input{
+ background:var(--panel2);
+ color:var(--text);
+ border:1px solid var(--border);
+ border-radius:9px;
+ padding:10px;
+}
+
+button{
+ cursor:pointer;
+ transition:.15s;
+}
+
+button:hover{
+ border-color:var(--accent);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible{
+ outline:3px solid var(--accent);
+}
+
+button:disabled{
+ opacity:.5;
+ cursor:not-allowed;
+}
+
+header{
+ background:#10261c;
+ border-bottom:1px solid var(--border);
+ padding:17px;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ flex-wrap:wrap;
+}
+
+header h1{
+ margin:0;
+ font-size:1.25rem;
+}
+
+header small{
+ color:var(--muted);
+}
+
+.layout{
+ display:grid;
+ grid-template-columns:280px minmax(0,1fr);
+ min-height:calc(100vh - 80px);
+}
+
+aside{
+ background:var(--panel);
+ border-right:1px solid var(--border);
+ padding:16px;
+}
+
+nav{
+ display:grid;
+ gap:7px;
+}
+
+nav button{
+ text-align:left;
+}
+
+nav button.active{
+ background:#24563d;
+ border-color:var(--accent);
+}
+
+main{
+ padding:16px;
+ min-width:0;
+}
+
+.card{
+ background:var(--panel);
+ border:1px solid var(--border);
+ border-radius:15px;
+ padding:18px;
+ margin-bottom:15px;
+}
+
+.card h2{
+ margin-top:0;
+}
+
+.grid{
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+ gap:12px;
+}
+
+.metric{
+ background:var(--panel2);
+ border-radius:12px;
+ padding:15px;
+}
+
+.metric strong{
+ display:block;
+ font-size:1.7rem;
+ color:var(--accent);
+}
+
+.metric span{
+ color:var(--muted);
+}
+
+.controls{
+ display:flex;
+ flex-wrap:wrap;
+ gap:9px;
+ margin:12px 0;
+}
+
+.field{
+ display:grid;
+ gap:6px;
+ margin:10px 0;
+}
+
+.field label{
+ color:var(--muted);
+}
+
+.question{
+ font-size:1.13rem;
+ line-height:1.7;
+ white-space:pre-wrap;
+ overflow-wrap:anywhere;
+}
+
+.option{
+ display:block;
+ width:100%;
+ text-align:left;
+ padding:15px;
+ margin:9px 0;
+ line-height:1.5;
+ white-space:pre-wrap;
+ overflow-wrap:anywhere;
+}
+
+.option.selected{
+ border:2px solid var(--accent);
+}
+
+.option.correct{
+ border-color:#6affaa;
+ background:#174c32;
+}
+
+.option.wrong{
+ border-color:var(--danger);
+ background:#4b2525;
+}
+
+.explanation{
+ border-left:4px solid var(--accent);
+ background:var(--panel2);
+ padding:15px;
+ margin-top:15px;
+ line-height:1.6;
+ white-space:pre-wrap;
+}
+
+#scene{
+ width:100%;
+ height:340px;
+ overflow:hidden;
+ border-radius:12px;
+ background:#162b25;
+ position:relative;
+}
+
+#scene canvas{
+ display:block;
+}
+
+#status{
+ color:var(--muted);
+ font-size:.9rem;
+}
+
+progress{
+ width:100%;
+ height:15px;
+ accent-color:var(--accent);
+}
+
+.badge{
+ display:inline-block;
+ border:1px solid var(--border);
+ padding:5px 9px;
+ border-radius:20px;
+ color:var(--muted);
+ margin:3px;
+}
+
+.flashcard{
+ min-height:240px;
+ display:grid;
+ place-items:center;
+ text-align:center;
+ padding:25px;
+ background:linear-gradient(135deg,#174b36,#112c25);
+ border:1px solid var(--accent);
+ border-radius:16px;
+ cursor:pointer;
+ white-space:pre-wrap;
+ line-height:1.7;
+ font-size:1.15rem;
+}
+
+.bar{
+ height:12px;
+ background:#294536;
+ border-radius:20px;
+ overflow:hidden;
+ margin:7px 0 15px;
+}
+
+.bar span{
+ display:block;
+ height:100%;
+ background:var(--accent);
+}
+
+.notice{
+ padding:12px;
+ border:1px solid var(--border);
+ border-radius:10px;
+ margin:10px 0;
+ color:var(--muted);
+}
+
+body.light{
+ --bg:#edf4ef;
+ --panel:#ffffff;
+ --panel2:#e1eee5;
+ --text:#16291e;
+ --muted:#42604c;
+ --accent:#087b47;
+ --border:#9db9a6;
+}
+
+body.blue{
+ --bg:#071323;
+ --panel:#10243c;
+ --panel2:#193856;
+ --text:#f0f7ff;
+ --muted:#b8d0e5;
+ --accent:#64c8ff;
+ --border:#345e80;
+}
+
+body.purple{
+ --bg:#160d25;
+ --panel:#281b3c;
+ --panel2:#39264e;
+ --text:#f8f2ff;
+ --muted:#d2c2e8;
+ --accent:#c69aff;
+ --border:#6c4c89;
+}
+
+body.contrast{
+ --bg:#000;
+ --panel:#111;
+ --panel2:#222;
+ --text:#fff;
+ --muted:#fff;
+ --accent:#ffff00;
+ --border:#fff;
+}
+
+body.focus aside,
+body.focus #sceneCard{
+ display:none;
+}
+
+body.focus .layout{
+ grid-template-columns:1fr;
+}
+
+@media(max-width:850px){
+ .layout{grid-template-columns:1fr}
+ aside{border-right:0}
+ nav{grid-template-columns:repeat(2,1fr)}
+ #scene{height:260px}
+ main{padding:10px}
+}
+
 </style>
-<script type="importmap">
-{"imports":{
-  "three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
-  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
-}}
-</script>
 </head>
+
 <body>
 
-<div id="menu">
-  <h2>🎓 PMSC Academy 2026</h2>
-  <div class="tabs">
-    <button class="active" data-tab="study">📚 Estudo</button>
-    <button data-tab="exam">📝 Simulado</button>
-    <button data-tab="review">🔄 Revisão</button>
-    <button data-tab="stats">📊 Stats</button>
-    <button data-tab="env">🌍 Amb</button>
-    <button data-tab="theme">🎨 Tema</button>
-    <button data-tab="config">⚙️ Config</button>
+<header>
+ <div>
+  <h1>🇧🇷 PM-SC Immersive Academy 2026</h1>
+  <small>Academia de Estudos em Realidade Virtual</small>
+ </div>
+ <span id="status">Inicializando...</span>
+</header>
+
+<div class="layout">
+
+<aside>
+ <nav id="menu"></nav>
+
+ <hr>
+
+ <div class="field">
+  <label for="environment">Ambiente militar</label>
+  <select id="environment"></select>
+ </div>
+
+ <div class="field">
+  <label for="theme">Tema visual</label>
+  <select id="theme">
+   <option value="dark">Verde militar</option>
+   <option value="blue">Azul holográfico</option>
+   <option value="purple">Roxo futurista</option>
+   <option value="light">Branco minimalista</option>
+   <option value="contrast">Alto contraste</option>
+  </select>
+ </div>
+
+ <div class="field">
+  <label for="quality">Qualidade 3D</label>
+  <select id="quality">
+   <option value="low">Econômica</option>
+   <option value="medium">Equilibrada</option>
+   <option value="high">Alta</option>
+  </select>
+ </div>
+
+ <div class="controls">
+  <button id="refresh">Atualizar JSON</button>
+  <button id="vr">Entrar em VR</button>
+ </div>
+
+ <div id="sidebarMetrics"></div>
+</aside>
+
+<main>
+
+ <section class="card" id="sceneCard">
+  <h2>Ambiente tridimensional</h2>
+  <div id="scene"></div>
+  <div class="controls">
+   <button id="rotateLeft">◀ Girar</button>
+   <button id="rotateRight">Girar ▶</button>
+   <button id="resetView">Centralizar</button>
   </div>
-  <div class="tab-content active" id="tab-study">
-    <h3>Disciplina</h3>
-    <select id="subject"><option value="Todas">Todas</option></select>
-    <h3>Modo</h3>
-    <select id="mode">
-      <option value="study">Estudo livre</option>
-      <option value="random">Aleatório</option>
-      <option value="unanswered">Não respondidas</option>
-      <option value="difficult">Difíceis</option>
-      <option value="favorites">Favoritas</option>
-    </select>
-    <div class="row">
-      <button id="start" class="primary">▶ Iniciar</button>
-      <button id="refresh" class="ok">🔄 Atualizar</button>
-    </div>
-    <div class="row">
-      <button id="flashcards">📇 Flashcards</button>
-      <button id="demo">🧪 Demo</button>
-    </div>
-  </div>
-  <div class="tab-content" id="tab-exam">
-    <h3>Simulado</h3>
-    <select id="exam-qty">
-      <option value="10">10 questões</option>
-      <option value="20">20 questões</option>
-      <option value="40">40 questões</option>
-      <option value="60" selected>60 questões</option>
-    </select>
-    <select id="exam-time">
-      <option value="0">Sem cronômetro</option>
-      <option value="60">60 min</option>
-      <option value="120">120 min</option>
-      <option value="240" selected>240 min</option>
-    </select>
-    <button id="exam-start" class="primary">▶ Iniciar Simulado</button>
-    <div id="exam-status" style="font-size:12px;color:var(--warn);margin-top:8px"></div>
-  </div>
-  <div class="tab-content" id="tab-review">
-    <h3>Revisar Erros</h3>
-    <div id="review-summary"></div>
-    <button id="review-start" class="warn">🔄 Revisar erros</button>
-    <button id="reset-stats" class="err">🗑 Zerar</button>
-  </div>
-  <div class="tab-content" id="tab-stats">
-    <h3>Desempenho</h3>
-    <svg class="chart" id="stats-chart" viewBox="0 0 400 140"></svg>
-    <div id="stats-detail" style="font-size:12px;line-height:1.6"></div>
-  </div>
-  <div class="tab-content" id="tab-env">
-    <h3>Cenário</h3>
-    <select id="environment">
-      <option value="academy">🏢 Academia PMSC</option>
-      <option value="living">🛋 Sala</option>
-      <option value="beach">🏖 Praia</option>
-      <option value="library">📚 Biblioteca</option>
-      <option value="future">💻 Escritório</option>
-      <option value="nature">🌳 Natureza</option>
-      <option value="penthouse">🏙 Cobertura</option>
-      <option value="space">🚀 Espaço</option>
-      <option value="minimal">◻ Minimalista</option>
-      <option value="random">🎲 Aleatório</option>
-    </select>
-    <h3>Iluminação</h3>
-    <select id="lighting">
-      <option value="day">☀ Dia</option>
-      <option value="night">🌙 Noite</option>
-    </select>
-    <button id="reset-panels" class="warn">🔄 Restaurar painéis</button>
-  </div>
-  <div class="tab-content" id="tab-theme">
-    <h3>Paleta</h3>
-    <div class="themes" id="theme-grid"></div>
-  </div>
-  <div class="tab-content" id="tab-config">
-    <h3>Repositório GitHub</h3>
-    <input id="repo-input" value="johndosanjos162/PMSC">
-    <button id="repo-apply" class="ok">Aplicar</button>
-    <h3>Backup</h3>
-    <div class="row">
-      <button id="export-data">📤 Exportar</button>
-      <button id="import-data">📥 Importar</button>
-    </div>
-    <input id="import-file" type="file" accept=".json" style="display:none">
-    <h3>Ajuda</h3>
-    <button id="show-tutorial">📖 Tutorial</button>
-  </div>
-  <div id="status">Pronto</div>
-  <div id="stats-summary"></div>
+ </section>
+
+ <section id="content" class="card"></section>
+
+</main>
 </div>
 
-<div id="hud">
-  <span>📊 <span class="k" id="hud-total">0</span></span>
-  <span>✅ <span class="k" id="hud-ok">0</span></span>
-  <span>❌ <span class="k" id="hud-err">0</span></span>
-  <span>🎯 <span class="k" id="hud-pct">0%</span></span>
-</div>
-<button id="enter">ENTRAR EM VR</button>
-
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <div id="modal-disc" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
-    <h2 id="modal-q-num"></h2>
-    <div class="q-text" id="modal-q-text"></div>
-    <div class="options" id="modal-options"></div>
-    <div class="explanation" id="modal-exp" style="display:none"></div>
-    <button class="close" id="modal-close">Próxima →</button>
-  </div>
-</div>
-
-<div class="flashcard-stage" id="flashcard-stage">
-  <div class="flashcard" id="flashcard">
-    <div class="front">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="fc-disc"></div>
-      <div style="font-size:18px;line-height:1.4;overflow-y:auto" id="fc-front"></div>
-    </div>
-    <div class="back">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">RESPOSTA</div>
-      <div style="font-size:24px;font-weight:700;color:var(--ok)" id="fc-back"></div>
-      <div style="margin-top:16px;font-size:13px;line-height:1.5;overflow-y:auto" id="fc-exp"></div>
-    </div>
-  </div>
-  <div class="fc-controls" id="fc-controls" style="display:none">
-    <button class="err" data-grade="0">Difícil</button>
-    <button class="warn" data-grade="1">Médio</button>
-    <button class="ok" data-grade="2">Fácil</button>
-  </div>
-  <div class="fc-progress" id="fc-progress"></div>
-  <div class="fc-controls">
-    <button id="fc-close">Fechar</button>
-    <button id="fc-flip" class="primary">Virar</button>
-    <button id="fc-next">Próximo →</button>
-  </div>
-</div>
-
-<div id="tutorial">
-  <div class="tutorial-card">
-    <h2>👋 Bem-vindo!</h2>
-    <p><b>🥽 Meta Quest 3S:</b> Clique "ENTRAR EM VR".</p>
-    <p style="font-size:13px;text-align:left;padding-left:20px">
-      • <b>Alça laranja "✋ SEGURE AQUI"</b> acima de cada painel<br>
-      • <b>Trigger OU Grip</b> na alça = mover painel<br>
-      • <b>Analógico ↕</b> durante grab = aumentar/diminuir<br>
-      • <b>Analógico ↔</b> durante grab = rotacionar<br>
-      • <b>Trigger</b> em alternativa = responder<br>
-      • <b>Analógico esquerdo</b> = caminhar
-    </p>
-    <button class="primary" id="tutorial-close">Entendi</button>
-  </div>
-</div>
+<script type="importmap">
+{
+ "imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+ }
+}
+</script>
 
 <script type="module">
-import * as THREE from 'three';
-import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
-import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
 
-const $ = id => document.getElementById(id);
+import * as THREE from "three";
+import {VRButton} from "three/addons/webxr/VRButton.js";
 
-// ═══════════════════════════════════════════════════════════════════
-// STORAGE
-// ═══════════════════════════════════════════════════════════════════
-const STORAGE = {
-  KEY: 'pmsc_academy_v4',
-  VERSION: 4,
-  load() {
-    try {
-      const raw = localStorage.getItem(this.KEY);
-      if (!raw) return this.defaults();
-      const d = JSON.parse(raw);
-      if (d.version !== this.VERSION) return this.defaults();
-      return Object.assign(this.defaults(), d);
-    } catch { return this.defaults(); }
-  },
-  save(d) {
-    try { d.version = this.VERSION; localStorage.setItem(this.KEY, JSON.stringify(d)); }
-    catch (e) {}
-  },
-  defaults() {
-    return {
-      version: 4, theme: 'cyan', environment: 'academy', lighting: 'day',
-      repo: 'johndosanjos162/PMSC',
-      stats: { total: 0, correct: 0, bySubject: {} },
-      wrongIds: [], favorites: [], flashcards: {}, history: [], panels: {}
-    };
-  }
+/* ==================================================
+   1. CONFIGURAÇÃO PRINCIPAL
+================================================== */
+
+const APP={
+ name:"PM-SC Immersive Academy 2026",
+ repo:"johndosanjos162/PMSC",
+ version:3,
+ storageKey:"PMSC_ACADEMY_V3"
 };
-let DB = STORAGE.load();
 
-const THEMES = {
-  cyan:     { bg:'#060913', panel:'#0d2740', border:'#49baff', accent:'#00d1ff' },
-  green:    { bg:'#061a10', panel:'#0d301e', border:'#49ff9e', accent:'#00ff88' },
-  purple:   { bg:'#100620', panel:'#251040', border:'#b449ff', accent:'#c800ff' },
-  white:    { bg:'#f0f4f8', panel:'#e0e8f0', border:'#3080c0', accent:'#0066cc' },
-  black:    { bg:'#000000', panel:'#1a1a1a', border:'#808080', accent:'#ffffff' },
-  night:    { bg:'#0a0a1a', panel:'#1a1a3a', border:'#8080ff', accent:'#aa88ff' },
-  contrast: { bg:'#000000', panel:'#000000', border:'#ffff00', accent:'#ffff00' },
-  sunset:   { bg:'#1a0808', panel:'#3a1810', border:'#ff8855', accent:'#ff6600' }
+const $=id=>document.getElementById(id);
+
+const environments=[
+ "Pátio de Formatura",
+ "Sala de Instrução Militar",
+ "Entrada do Quartel",
+ "Campo de Treinamento",
+ "Alojamento Militar"
+];
+
+const pages=[
+ "Início",
+ "Estudos",
+ "Simulados",
+ "Flashcards",
+ "Revisões",
+ "Desempenho",
+ "Banco de Questões",
+ "Configurações"
+];
+
+const defaults={
+ environment:0,
+ theme:"dark",
+ quality:"medium",
+ history:[],
+ favorites:[],
+ reviews:{},
+ exams:[],
+ flashcards:{},
+ session:null
 };
-function applyTheme(name) {
-  const t = THEMES[name] || THEMES.cyan;
-  const r = document.documentElement;
-  r.style.setProperty('--bg', t.bg);
-  r.style.setProperty('--panel', t.panel);
-  r.style.setProperty('--border', t.border);
-  r.style.setProperty('--accent', t.accent);
-  DB.theme = name; STORAGE.save(DB);
+
+let state;
+let questions=[];
+let page="Início";
+let currentIndex=0;
+let studyPool=[];
+let exam=null;
+let flashBack=false;
+let loadBusy=false;
+
+const now=()=>Date.now();
+
+const uid=()=>Math.random().toString(36).slice(2);
+
+const escapeHTML=s=>String(s??"").replace(
+ /[&<>"']/g,
+ c=>({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#39;"
+ }[c])
+);
+
+function status(message){
+ $("status").textContent=message;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// QUESTION NORMALIZER
-// ═══════════════════════════════════════════════════════════════════
-const stripPrefix = s => String(s).replace(/^[A-Ea-e]\s*[\)\.\-\:]\s*/, '').trim();
-function normalizeOptions(opts) {
-  if (!Array.isArray(opts)) return [];
-  const pat = /^([A-Ea-e])\s*[\)\.\-\:]\s*/;
-  const uniform = opts.every((o, i) => {
-    const m = String(o).match(pat);
-    return m && m[1].toUpperCase() === 'ABCDE'[i];
-  });
-  return opts.map(o => uniform ? stripPrefix(o) : String(o).trim());
+function save(){
+ try{
+  localStorage.setItem(
+   APP.storageKey,
+   JSON.stringify(state)
+  );
+ }catch(e){
+  status("Não foi possível salvar os dados.");
+ }
 }
-function extractCorrect(q, opts, keys) {
-  const a = q.correta ?? q.resposta ?? q.gabarito ?? q.correct ?? q.answer;
-  if (typeof a === 'number') return a;
-  if (typeof a === 'string') {
-    const v = a.trim();
-    if (/^[A-E]$/i.test(v)) return v.toUpperCase().charCodeAt(0) - 65;
-    if (keys && keys.includes(v)) return keys.indexOf(v);
-    if (/^\d+$/.test(v)) return Number(v);
-    const cl = stripPrefix(v);
-    let i = opts.indexOf(v);
-    if (i === -1) i = opts.indexOf(cl);
-    return i;
+
+/* ==================================================
+   2. STORAGE MANAGER
+================================================== */
+
+const StorageManager={
+ load(){
+  try{
+   const data=JSON.parse(
+    localStorage.getItem(APP.storageKey)||"{}"
+   );
+
+   return {
+    ...structuredClone(defaults),
+    ...data
+   };
+  }catch{
+   return structuredClone(defaults);
   }
-  return -1;
-}
-function normalizeQuestion(q, fb) {
-  if (!q || typeof q !== 'object') return null;
-  const text = q.enunciado ?? q.pergunta ?? q.questao ?? q.question;
-  const rawOpts = q.alternativas ?? q.opcoes ?? q.options;
-  if (!text || !rawOpts || typeof text !== 'string') return null;
-  const keys = Array.isArray(rawOpts) ? null : Object.keys(rawOpts);
-  const raw = Array.isArray(rawOpts) ? rawOpts : keys.map(k => rawOpts[k]);
-  if (raw.length < 2 || raw.length > 5) return null;
-  const opts = normalizeOptions(raw);
-  const correct = extractCorrect(q, opts, keys);
-  if (correct < 0 || correct >= opts.length) return null;
-  const subject = String(q.disciplina ?? q.materia ?? q.subject ?? fb ?? 'Geral');
+ },
+
+ export(){
+  download(
+   "backup-pmsc.json",
+   JSON.stringify(state,null,2),
+   "application/json"
+  );
+ },
+
+ async restore(file){
+  if(!file||file.size>3000000){
+   throw Error("Arquivo inválido ou muito grande.");
+  }
+
+  const data=JSON.parse(await file.text());
+
+  if(
+   !data||
+   !Array.isArray(data.history)||
+   !Array.isArray(data.favorites)||
+   typeof data.reviews!=="object"
+  ){
+   throw Error("Estrutura de backup incompatível.");
+  }
+
+  state={
+   ...structuredClone(defaults),
+   ...data
+  };
+
+  save();
+  applySettings();
+  render();
+ }
+};
+
+state=StorageManager.load();
+
+/* ==================================================
+   3. GERENCIADOR DE QUESTÕES
+================================================== */
+
+const QuestionManager={
+
+ normalize(raw){
+
+  if(!raw||typeof raw!=="object")return null;
+
+  const statement=
+   raw.enunciado??
+   raw.pergunta??
+   raw.question;
+
+  let options=
+   raw.alternativas??
+   raw.opcoes??
+   raw.options;
+
+  if(
+   options&&
+   !Array.isArray(options)&&
+   typeof options==="object"
+  ){
+   options=Object.values(options);
+  }
+
+  if(!Array.isArray(options))return null;
+
+  options=options.map(x=>
+   typeof x==="string"
+    ?x
+    :x?.texto??x?.text??""
+  );
+
+  let correct=
+   raw.correta??
+   raw.gabarito??
+   raw.correct;
+
+  if(typeof correct==="string"){
+   const letter=correct.trim().toUpperCase();
+
+   if(/^[A-Z]$/.test(letter)){
+    correct=letter.charCodeAt(0)-65;
+   }else{
+    correct=Number(letter);
+   }
+  }
+
+  if(
+   typeof statement!=="string"||
+   !statement.trim()||
+   options.length<2||
+   options.some(x=>!String(x).trim())||
+   !Number.isInteger(correct)||
+   correct<0||
+   correct>=options.length
+  ){
+   return null;
+  }
+
+  const id=String(
+   raw.id||
+   raw.codigo||
+   `${raw.disciplina||"Geral"}:${statement}`
+  );
+
   return {
-    id: String(q.id ?? `${subject}|${text}`.slice(0, 200)),
-    question: text, options: opts, correct, subject,
-    explanation: String(q.explicacao ?? q.comentario ?? q.explanation ?? '')
+   id,
+   disciplina:String(raw.disciplina||"Geral"),
+   assunto:String(raw.assunto||"Geral"),
+   dificuldade:String(raw.dificuldade||"media"),
+   enunciado:statement,
+   alternativas:options.map(String),
+   correta:correct,
+   explicacao:String(
+    raw.explicacao??raw.comentario??""
+   ),
+   referencia:String(raw.referencia||""),
+   banca:String(raw.banca||""),
+   ano:raw.ano||""
   };
-}
-function flattenJSON(data) {
-  if (Array.isArray(data)) return data;
-  if (data && typeof data === 'object') {
-    if (Array.isArray(data.questoes)) return data.questoes;
-    if (Array.isArray(data.questions)) return data.questions;
-    const flat = [];
-    for (const [s, l] of Object.entries(data))
-      if (Array.isArray(l)) for (const q of l) flat.push({ ...q, materia: q.materia || s });
-    return flat;
-  }
-  return [];
-}
+ },
 
-// ═══════════════════════════════════════════════════════════════════
-// GITHUB LOADER
-// ═══════════════════════════════════════════════════════════════════
-async function loadFromGitHub() {
-  const repo = DB.repo;
-  const CANDIDATES = ['questoes.json', 'json.json', 'questions.json', 'banco.json'];
-  try {
-    $('status').textContent = `🔍 ${repo}...`;
-    const r = await fetch(`https://api.github.com/repos/${repo}/contents/`, {
-      headers: { 'Accept': 'application/vnd.github+json' }
-    });
-    if (r.ok) {
-      const files = await r.json();
-      if (Array.isArray(files)) {
-        const jsonFiles = files.filter(f => f.type === 'file' && f.name.endsWith('.json') && !f.name.startsWith('.') && f.name !== 'package.json');
-        if (jsonFiles.length > 0) {
-          let all = [], n = 0;
-          for (const f of jsonFiles) {
-            try {
-              const content = await fetch(f.download_url).then(x => x.json());
-              const flat = flattenJSON(content);
-              const norm = flat.map(q => normalizeQuestion(q)).filter(Boolean);
-              if (norm.length > 0) { all.push(...norm); n++; }
-            } catch (e) {}
-          }
-          if (all.length > 0) {
-            $('status').textContent = `✅ ${all.length} questões (${n} arquivo)`;
-            return all;
-          }
-        }
-      }
-    }
-  } catch (e) { console.warn('API fail', e); }
-  for (const name of CANDIDATES) {
-    for (const br of ['main', 'master']) {
-      try {
-        const url = `https://raw.githubusercontent.com/${repo}/${br}/${name}`;
-        const content = await fetch(url).then(x => { if (!x.ok) throw 0; return x.json(); });
-        const flat = flattenJSON(content);
-        const norm = flat.map(q => normalizeQuestion(q)).filter(Boolean);
-        if (norm.length > 0) {
-          $('status').textContent = `✅ ${norm.length} questões de ${name}`;
-          return norm;
-        }
-      } catch (e) {}
-    }
-  }
-  try {
-    const cached = localStorage.getItem('pmsc_questions_cache');
-    if (cached) {
-      const p = JSON.parse(cached);
-      $('status').textContent = `⚠️ Cache: ${p.length} questões`;
-      return p;
-    }
-  } catch (e) {}
-  return [];
-}
+ deduplicate(list){
+  const ids=new Set();
 
-let QUESTIONS = [];
-let currentPool = [];
-let currentIndex = 0;
-let currentAnswer = null;
-let responsesLocked = new Set();
-let examActive = false;
-let examEndsAt = 0;
+  return list.filter(q=>{
+   const key=q.id;
 
-// ═══════════════════════════════════════════════════════════════════
-// THREE.JS
-// ═══════════════════════════════════════════════════════════════════
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x060913);
-const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.05, 200);
-camera.position.set(0, 1.65, 0);
-const rig = new THREE.Group();
-rig.add(camera);
-scene.add(rig);
+   if(ids.has(key))return false;
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.xr.enabled = true;
-renderer.xr.setFramebufferScaleFactor(1.0);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-document.body.appendChild(renderer.domElement);
-
-const ambient = new THREE.HemisphereLight(0xffffff, 0x304b6b, 2.0);
-scene.add(ambient);
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-dirLight.position.set(5, 10, 5);
-scene.add(dirLight);
-
-const envGroup = new THREE.Group();
-scene.add(envGroup);
-const panelRegistry = new Map();
-const interactive = [];
-
-// ═══════════════════════════════════════════════════════════════════
-// ENVIRONMENTS
-// ═══════════════════════════════════════════════════════════════════
-function clearEnv() {
-  envGroup.traverse(o => {
-    if (!o.isMesh) return;
-    o.geometry.dispose();
-    if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
-    else o.material.dispose();
+   ids.add(key);
+   return true;
   });
-  envGroup.clear();
-}
-const box = (w,h,d,c,x,y,z) => {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
-    new THREE.MeshStandardMaterial({color:c, roughness:0.85}));
-  m.position.set(x,y,z); envGroup.add(m); return m;
+ },
+
+ find(id){
+  return questions.find(q=>q.id===id);
+ }
 };
-const sphere = (r,c,x,y,z) => {
-  const m = new THREE.Mesh(new THREE.SphereGeometry(r,16,12),
-    new THREE.MeshStandardMaterial({color:c}));
-  m.position.set(x,y,z); envGroup.add(m); return m;
+
+/* ==================================================
+   4. REPOSITÓRIO DE CONTEÚDO
+================================================== */
+
+const ContentRepository={
+
+ async load(){
+
+  if(loadBusy)return;
+
+  loadBusy=true;
+  status("Consultando GitHub...");
+
+  let files=[];
+  let rejected=0;
+  let loaded=[];
+
+  try{
+
+   const response=await fetch(
+    `https://api.github.com/repos/${APP.repo}/contents/`,
+    {
+     headers:{
+      Accept:"application/vnd.github+json"
+     }
+    }
+   );
+
+   if(!response.ok){
+    throw Error("GitHub API: "+response.status);
+   }
+
+   const listing=await response.json();
+
+   files=listing.filter(f=>
+    f.type==="file"&&
+    f.name.toLowerCase().endsWith(".json")
+   );
+
+  }catch(e){
+
+   status("Tentando manifesto alternativo...");
+
+   try{
+
+    const response=await fetch("./manifest.json");
+
+    if(response.ok){
+
+     const manifest=await response.json();
+
+     const names=Array.isArray(manifest)
+      ?manifest
+      :manifest.files||[];
+
+     files=names
+      .filter(name=>
+       typeof name==="string"&&
+       /^[\w.-]+\.json$/i.test(name)
+      )
+      .map(name=>({
+       name,
+       download_url:
+        `https://raw.githubusercontent.com/${APP.repo}/HEAD/${name}`
+      }));
+    }
+
+   }catch{}
+  }
+
+  for(const file of files){
+
+   try{
+
+    const response=await fetch(file.download_url);
+
+    if(!response.ok)continue;
+
+    const text=await response.text();
+
+    if(text.length>5000000){
+     rejected++;
+     continue;
+    }
+
+    const json=JSON.parse(text);
+
+    const items=Array.isArray(json)
+     ?json
+     :Array.isArray(json.questoes)
+      ?json.questoes
+      :Array.isArray(json.questions)
+       ?json.questions
+       :[];
+
+    for(const item of items){
+
+     const q=QuestionManager.normalize(item);
+
+     if(q)loaded.push(q);
+     else rejected++;
+    }
+
+   }catch{
+    rejected++;
+   }
+  }
+
+  loaded=QuestionManager.deduplicate(loaded);
+
+  if(loaded.length){
+
+   questions=loaded;
+
+   try{
+    localStorage.setItem(
+     APP.storageKey+"_BANK",
+     JSON.stringify(questions)
+    );
+   }catch{}
+
+   status(
+    `${files.length} arquivos | `+
+    `${questions.length} questões | `+
+    `${rejected} rejeitadas`
+   );
+
+  }else{
+
+   try{
+    questions=JSON.parse(
+     localStorage.getItem(
+      APP.storageKey+"_BANK"
+     )||"[]"
+    );
+   }catch{
+    questions=[];
+   }
+
+   status(
+    questions.length
+     ?"Banco salvo recuperado."
+     :"Nenhuma questão compatível disponível."
+   );
+  }
+
+  loadBusy=false;
+
+  if(page==="Estudos"){
+   studyPool=[];
+  }
+
+  render();
+ }
 };
-const cyl = (r1,r2,h,c,x,y,z) => {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,12),
-    new THREE.MeshStandardMaterial({color:c}));
-  m.position.set(x,y,z); envGroup.add(m); return m;
+
+/* ==================================================
+   5. ESTATÍSTICAS
+================================================== */
+
+const StatisticsManager={
+
+ summary(){
+
+  const history=state.history;
+
+  const correct=history.filter(x=>x.correct).length;
+
+  return {
+   total:history.length,
+   correct,
+   wrong:history.length-correct,
+   rate:history.length
+    ?Math.round(correct/history.length*100)
+    :0,
+   exams:state.exams.length,
+   pending:Object.values(state.reviews)
+    .filter(x=>x.due<=now()).length
+  };
+ },
+
+ bySubject(){
+
+  const data={};
+
+  for(const item of state.history){
+
+   const key=item.disciplina||"Geral";
+
+   if(!data[key]){
+    data[key]={total:0,correct:0};
+   }
+
+   data[key].total++;
+
+   if(item.correct)data[key].correct++;
+  }
+
+  return data;
+ },
+
+ record(question,choice,mode){
+
+  state.history.push({
+   id:question.id,
+   disciplina:question.disciplina,
+   assunto:question.assunto,
+   choice,
+   correct:choice===question.correta,
+   mode,
+   date:now()
+  });
+
+  if(state.history.length>10000){
+   state.history=state.history.slice(-10000);
+  }
+
+  if(choice!==question.correta){
+   ReviewManager.mark(question.id);
+  }
+
+  save();
+ }
 };
-function room(f,w) {
-  box(16,.1,16,f,0,0,0); box(16,5,.1,w,0,2.5,-8);
-  box(.1,5,16,w,-8,2.5,0); box(.1,5,16,w,8,2.5,0);
-  box(16,5,.1,w,0,2.5,8); box(16,.1,16,w,0,5,0);
-}
-function desk(x,z,c=0x795548) {
-  box(2,.1,1,c,x,.85,z);
-  for (const dx of [-.8,.8]) for (const dz of [-.4,.4]) box(.08,.8,.08,0x333333,x+dx,.4,z+dz);
-}
-function tree(x,z) { cyl(.15,.2,2,0x6b4423,x,1,z); sphere(.9,0x2d8b4e,x,2.2,z); }
 
-function buildEnvironment(type) {
-  clearEnv();
-  switch (type) {
-    case 'academy':
-      scene.background = new THREE.Color(0x06111e);
-      room(0x183047,0x10283f);
-      desk(-4,-5); desk(4,-5); break;
-    case 'living':
-      scene.background = new THREE.Color(0xb4c7d8);
-      room(0xc4a682,0xe0dcd5);
-      box(3,.5,1.2,0x526477,-4,.45,-4);
-      desk(4,-4,0x94765d); break;
-    case 'beach':
-      scene.background = new THREE.Color(0x87ceeb);
-      box(60,.1,60,0xe8d39b,0,0,0);
-      box(60,.05,20,0x1e90ff,0,.05,-25);
-      for (const [x,z] of [[-8,-6],[-5,-8],[8,-6],[5,-8]]) tree(x,z); break;
-    case 'library':
-      scene.background = new THREE.Color(0x2b251f);
-      room(0x5b4332,0x3b3027);
-      desk(-4,-2); desk(4,-2); break;
-    case 'future':
-      scene.background = new THREE.Color(0x050d1c);
-      room(0x111b35,0x0b1630);
-      desk(-4,-4,0x1a4366); desk(4,-4,0x1a4366); break;
-    case 'nature':
-      scene.background = new THREE.Color(0x87ceeb);
-      box(80,.1,80,0x4c9b53,0,0,0);
-      for (const [x,z] of [[-8,-8],[8,-8],[-8,2],[8,2]]) tree(x,z); break;
-    case 'penthouse':
-      scene.background = new THREE.Color(0x1a1a3a);
-      room(0xd2c9bd,0xe6e0d9);
-      box(3,.5,1.2,0x303b48,-4,.45,-4); break;
-    case 'space':
-      scene.background = new THREE.Color(0x01040e);
-      room(0x293344,0x1a2436);
-      sphere(4,0x3a7bc3,0,4,-25); break;
-    case 'minimal':
-      scene.background = new THREE.Color(0xdde5ec);
-      room(0xe8e8e8,0xf0f0f0); break;
-  }
-  const night = DB.lighting === 'night';
-  ambient.intensity = night ? 0.8 : 2.0;
-  dirLight.intensity = night ? 0.4 : 1.5;
-}
+/* ==================================================
+   6. REVISÃO INTELIGENTE
+================================================== */
 
-// ═══════════════════════════════════════════════════════════════════
-// TEXT RENDERER
-// ═══════════════════════════════════════════════════════════════════
-function pickCanvasH(n) {
-  if (n <= 1) return 256; if (n <= 2) return 384;
-  if (n <= 4) return 512; if (n <= 6) return 768; return 1024;
-}
-function wrapByPixels(text, maxW, ctx) {
-  const words = String(text).split(/\s+/);
-  const lines = []; let line = '';
-  for (const w of words) {
-    const c = line ? line + ' ' + w : w;
-    if (ctx.measureText(c).width > maxW && line) { lines.push(line); line = w; }
-    else line = c;
-  }
-  if (line) lines.push(line);
-  return lines;
-}
-function drawText(text, opts = {}) {
-  const { width = 2048, maxLines = 4, fontSizeMax = 62, fontSizeMin = 22,
-    padding = 40, bgColor = '#123c60', borderColor = '#4289bb',
-    textColor = '#ffffff', borderWidth = 7 } = opts;
-  const H = pickCanvasH(maxLines);
-  const c = document.createElement('canvas');
-  c.width = width; c.height = H;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = bgColor; ctx.fillRect(0,0,width,H);
-  ctx.strokeStyle = borderColor; ctx.lineWidth = borderWidth;
-  ctx.strokeRect(borderWidth/2, borderWidth/2, width-borderWidth, H-borderWidth);
-  const maxW = width - 2*padding, maxH = H - 2*padding;
-  let fs = fontSizeMax, lines = [], lh = 0;
-  while (fs >= fontSizeMin) {
-    ctx.font = `bold ${fs}px Segoe UI,Arial`;
-    lines = wrapByPixels(text, maxW, ctx);
-    lh = fs * 1.25;
-    if (lines.length <= maxLines && lines.length * lh <= maxH) break;
-    fs -= 2;
-  }
-  if (lines.length > maxLines) {
-    lines = lines.slice(0, maxLines);
-    lines[maxLines-1] = lines[maxLines-1].slice(0,-3) + '…';
-  }
-  ctx.font = `bold ${fs}px Segoe UI,Arial`;
-  ctx.fillStyle = textColor; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const th = lines.length * lh;
-  const sy = (H - th)/2 + lh/2;
-  lines.forEach((l, i) => ctx.fillText(l, width/2, sy + i*lh));
-  return c;
-}
-function makeLabel(text, opts = {}) {
-  const canvas = drawText(text, opts);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-  tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
-  const w3d = opts.width3D || 2.0;
-  const h3d = w3d * (canvas.height / canvas.width);
-  const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true });
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w3d, h3d), mat);
-  mesh.userData.canvas = canvas;
-  mesh.userData.texture = tex;
-  return mesh;
-}
+const ReviewManager={
 
-// ═══════════════════════════════════════════════════════════════════
-// PANEL SYSTEM
-// ═══════════════════════════════════════════════════════════════════
-const PANEL_W = 2.2;
-const PANEL_H = 1.4;
-const HANDLE_W = 2.4;
-const HANDLE_H = 0.35;
-const PANEL_Z = -2.4;
+ mark(id){
 
-function ensurePanel(id, x, y, z, ry = 0) {
-  if (panelRegistry.has(id)) {
-    const g = panelRegistry.get(id);
-    g.position.set(x, y, z);
-    g.rotation.y = ry;
-    return g;
-  }
-  const g = new THREE.Group();
-  g.userData.panelId = id;
-  g.position.set(x, y, z);
-  g.rotation.y = ry;
-  scene.add(g);
-  panelRegistry.set(id, g);
+  state.reviews[id]={
+   due:now(),
+   interval:1,
+   repetitions:0,
+   ease:2.5
+  };
 
-  const bg = new THREE.Mesh(
-    new THREE.PlaneGeometry(PANEL_W, PANEL_H),
-    new THREE.MeshBasicMaterial({ color: 0x0a1a2a, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
+  save();
+ },
+
+ remove(id){
+  delete state.reviews[id];
+  save();
+ },
+
+ due(){
+
+  return questions.filter(q=>
+   state.reviews[q.id]&&
+   state.reviews[q.id].due<=now()
   );
-  bg.position.z = -0.02;
-  g.add(bg);
+ },
 
-  const borderGeo = new THREE.EdgesGeometry(new THREE.PlaneGeometry(PANEL_W, PANEL_H));
-  const border = new THREE.LineSegments(borderGeo, new THREE.LineBasicMaterial({ color: 0x00d1ff }));
-  border.position.z = -0.01;
-  g.add(border);
+ all(){
 
-  // ⭐ ALÇA GRANDE LARANJA — impossível errar
-  const handle = makeLabel(`✋ ${id.toUpperCase()} — SEGURE AQUI PARA MOVER`, {
-    width3D: HANDLE_W,
-    maxLines: 1,
-    fontSizeMax: 80,
-    padding: 25,
-    bgColor: '#ff8800',        // ← laranja brilhante
-    borderColor: '#ffee00',
-    borderWidth: 8,
-    textColor: '#000000'       // ← texto preto para contraste
-  });
-  handle.position.set(0, PANEL_H / 2 + HANDLE_H / 2 + 0.08, 0.02);
-  handle.userData.isGrabHandle = true;
-  handle.userData.panelId = id;
-  interactive.push(handle);
-  g.add(handle);
+  return questions.filter(q=>state.reviews[q.id]);
+ }
+};
 
-  console.log('[PANEL] criado:', id, 'handle em', handle.position.toArray());
+/* ==================================================
+   7. REPETIÇÃO ESPAÇADA
+================================================== */
 
-  return g;
-}
+const SpacedRepetition={
 
-function clearPanels() {
-  for (const [, g] of panelRegistry) {
-    g.traverse(o => {
-      if (o.userData.texture) o.userData.texture.dispose();
-      if (o.geometry) o.geometry.dispose();
-      if (o.material) {
-        if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
-        else o.material.dispose();
-      }
-    });
-    scene.remove(g);
-  }
-  panelRegistry.clear();
-  for (let i = interactive.length - 1; i >= 0; i--) {
-    if (!interactive[i].userData.isTeleport) interactive.splice(i, 1);
-  }
-  console.log('[PANEL] clearPanels — interactive restante:', interactive.length);
-}
+ grade(id,quality){
 
-function addPanelLabel(panelId, text, yOff, opts = {}) {
-  const g = panelRegistry.get(panelId);
-  if (!g) return null;
-  const l = makeLabel(text, { width3D: PANEL_W * 0.88, ...opts });
-  l.position.set(0, yOff, 0.02);
-  if (opts.onClick) {
-    l.userData.onClick = opts.onClick;
-    interactive.push(l);
-  }
-  g.add(l);
-  return l;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// RENDER PANELS
-// ═══════════════════════════════════════════════════════════════════
-function renderQuestionPanel() {
-  clearPanels();
-
-  if (!currentPool.length) {
-    ensurePanel('center', 0, 1.5, PANEL_Z);
-    addPanelLabel('center', 'Carregue questões\npara começar', 0, {
-      width3D: 2, maxLines: 2, fontSizeMax: 80, padding: 60
-    });
-    renderSidePanels();
-    return;
-  }
-
-  const q = currentPool[currentIndex];
-  ensurePanel('center', 0, 1.5, PANEL_Z);
-
-  addPanelLabel('center', q.subject.toUpperCase(), 0.55, {
-    width3D: 2, maxLines: 1, fontSizeMax: 55, padding: 18,
-    bgColor: '#0d3a5a', borderColor: '#00d1ff'
-  });
-
-  addPanelLabel('center', q.question, -0.05, {
-    width3D: 2, maxLines: 5, fontSizeMax: 48, padding: 30
-  });
-
-  // Alternativas
-  let yCur = -0.7;
-  q.options.forEach((opt, i) => {
-    const text = `${'ABCDE'[i]}) ${opt}`;
-    let bg = '#0d2740', bd = '#49baff';
-    if (currentAnswer !== null) {
-      if (i === q.correct) { bg = '#16684d'; bd = '#00ff88'; }
-      else if (i === currentAnswer) { bg = '#893440'; bd = '#ff4444'; }
-    }
-    const label = makeLabel(text, {
-      width3D: 1.9, maxLines: 2, fontSizeMax: 38, padding: 20,
-      bgColor: bg, borderColor: bd
-    });
-    if (currentAnswer === null) {
-      label.userData.onClick = () => selectAnswer(i);
-      interactive.push(label);
-    }
-    label.position.set(0, yCur, 0.02);
-    panelRegistry.get('center').add(label);
-    yCur -= (label.geometry.parameters.height + 0.08);
-  });
-
-  addPanelLabel('center', `Questão ${currentIndex+1} de ${currentPool.length}`, -0.68, {
-    width3D: 1.8, maxLines: 1, fontSizeMax: 45, padding: 15,
-    bgColor: '#0a1a2a', borderColor: '#00d1ff'
-  });
-
-  renderSidePanels();
-  restorePanelStates();
-}
-
-function renderSidePanels() {
-  ensurePanel('left', -1.5, 1.5, PANEL_Z + 0.2, 0.35);
-  addPanelLabel('left', '🔧 FERRAMENTAS', 0.55, {
-    width3D: 1.2, maxLines: 1, fontSizeMax: 55, padding: 15,
-    bgColor: '#0d3a5a', borderColor: '#00d1ff'
-  });
-
-  const leftBtns = [
-    { label: '🎯 Foco', action: toggleFocus },
-    { label: '📖 Leitura', action: toggleReading },
-    { label: '🔄 Resetar', action: resetView },
-    { label: '🌍 Ambiente', action: cycleEnv },
-    { label: '⚙ Config', action: () => { $('menu').classList.remove('hidden'); } }
-  ];
-  leftBtns.forEach((btn, i) => {
-    const l = makeLabel(btn.label, {
-      width3D: 1.15, maxLines: 1, fontSizeMax: 45, padding: 12,
-      bgColor: '#0d2740', borderColor: '#49baff'
-    });
-    l.position.set(0, 0.25 - i * 0.24, 0.02);
-    l.userData.onClick = btn.action;
-    interactive.push(l);
-    panelRegistry.get('left').add(l);
-  });
-
-  ensurePanel('right', 1.5, 1.5, PANEL_Z + 0.2, -0.35);
-  addPanelLabel('right', '📊 PAINEL', 0.55, {
-    width3D: 1.2, maxLines: 1, fontSizeMax: 55, padding: 15,
-    bgColor: '#0d3a5a', borderColor: '#00d1ff'
-  });
-  addPanelLabel('right', `${DB.stats.correct}/${DB.stats.total}`, 0.32, {
-    width3D: 1.15, maxLines: 1, fontSizeMax: 70, padding: 15
-  });
-
-  const rightBtns = [
-    { label: '📇 Flashcard', action: () => openFlashcard(currentPool[currentIndex]) },
-    { label: '⭐ Favoritar', action: toggleFavorite },
-    { label: '▶ Próxima', action: nextQuestion },
-    { label: '🔄 Revisar', action: startReview }
-  ];
-  rightBtns.forEach((btn, i) => {
-    const l = makeLabel(btn.label, {
-      width3D: 1.15, maxLines: 1, fontSizeMax: 45, padding: 12,
-      bgColor: '#0d2740', borderColor: '#49baff'
-    });
-    l.position.set(0, 0.05 - i * 0.26, 0.02);
-    l.userData.onClick = btn.action;
-    interactive.push(l);
-    panelRegistry.get('right').add(l);
-  });
-}
-
-function savePanelState(id, g) {
-  DB.panels[id] = { pos: g.position.toArray(), rot: g.rotation.y, scale: g.scale.x };
-  STORAGE.save(DB);
-}
-
-function restorePanelStates() {
-  for (const [id, g] of panelRegistry) {
-    const s = DB.panels[id];
-    if (s && Array.isArray(s.pos)) {
-      g.position.fromArray(s.pos);
-      g.rotation.y = s.rot;
-      g.scale.setScalar(s.scale);
-    }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// 3D FLASHCARD
-// ═══════════════════════════════════════════════════════════════════
-let flashcardGroup = null;
-function openFlashcard(q) {
-  if (!q) return;
-  if (renderer.xr.isPresenting) showFlashcard3D(q);
-  else openFlashcardHTML(q);
-}
-
-function showFlashcard3D(q) {
-  closeFlashcard3D();
-  flashcardGroup = new THREE.Group();
-  flashcardGroup.userData.isFlashcard = true;
-
-  const hp = new THREE.Vector3();
-  camera.getWorldPosition(hp);
-  const dir = new THREE.Vector3();
-  camera.getWorldDirection(dir);
-  dir.y = 0; dir.normalize();
-  const tp = hp.clone().add(dir.multiplyScalar(1.7));
-  tp.y = hp.y;
-  flashcardGroup.position.copy(tp);
-  flashcardGroup.lookAt(hp.x, tp.y, hp.z);
-
-  const header = makeLabel(`📇 ${q.subject.toUpperCase()}`, {
-    width3D: 1.8, maxLines: 1, fontSizeMax: 70, padding: 20,
-    bgColor: '#0a3a5a', borderColor: '#00d1ff'
-  });
-  header.position.set(0, 1.15, 0.01);
-  header.userData.isFlashcard = true;
-  flashcardGroup.add(header);
-
-  const front = makeLabel(q.question, {
-    width3D: 1.8, maxLines: 6, fontSizeMax: 55, padding: 40,
-    bgColor: '#0d2740', borderColor: '#49baff'
-  });
-  front.position.set(0, 0.3, 0.01);
-  front.userData.isFlashcard = true;
-  flashcardGroup.add(front);
-
-  const flipBtn = makeLabel('🔄 VIRAR', {
-    width3D: 1.0, maxLines: 1, fontSizeMax: 70, padding: 20,
-    bgColor: '#0066cc', borderColor: '#00d1ff'
-  });
-  flipBtn.position.set(-0.45, -0.55, 0.01);
-  flipBtn.userData.isFlashcard = true;
-  flipBtn.userData.onClick = () => {
-    front.visible = false;
-    flipBtn.visible = false;
-
-    const answerText = `${'ABCDE'[q.correct]}) ${q.options[q.correct]}`;
-    const back = makeLabel(answerText, {
-      width3D: 1.8, maxLines: 3, fontSizeMax: 60, padding: 30,
-      bgColor: '#16684d', borderColor: '#00ff88'
-    });
-    back.position.set(0, 0.55, 0.01);
-    back.userData.isFlashcard = true;
-    flashcardGroup.add(back);
-
-    if (q.explanation) {
-      const exp = makeLabel(q.explanation, {
-        width3D: 1.8, maxLines: 4, fontSizeMax: 38, padding: 20,
-        bgColor: '#1a1a3a', borderColor: '#ffaa00'
-      });
-      exp.position.set(0, -0.05, 0.01);
-      exp.userData.isFlashcard = true;
-      flashcardGroup.add(exp);
-    }
-
-    const grades = [
-      { label: '😰 Difícil', grade: 0, x: -0.7, bg: '#893440', bd: '#ff4444' },
-      { label: '😊 Médio', grade: 1, x: 0, bg: '#7a4a10', bd: '#ffaa00' },
-      { label: '😎 Fácil', grade: 2, x: 0.7, bg: '#16684d', bd: '#00ff88' }
-    ];
-    grades.forEach(g => {
-      const b = makeLabel(g.label, {
-        width3D: 0.6, maxLines: 1, fontSizeMax: 55, padding: 12,
-        bgColor: g.bg, borderColor: g.bd
-      });
-      b.position.set(g.x, -0.7, 0.01);
-      b.userData.isFlashcard = true;
-      b.userData.onClick = () => {
-        updateFlashcardSRS(q.id, g.grade);
-        STORAGE.save(DB);
-        closeFlashcard3D();
-        const idx = currentPool.indexOf(q);
-        openFlashcard(currentPool[(idx + 1) % currentPool.length]);
-      };
-      interactive.push(b);
-      flashcardGroup.add(b);
-    });
-  };
-  interactive.push(flipBtn);
-  flashcardGroup.add(flipBtn);
-
-  const closeBtn = makeLabel('✖ FECHAR', {
-    width3D: 1.0, maxLines: 1, fontSizeMax: 70, padding: 20,
-    bgColor: '#893440', borderColor: '#ff4444'
-  });
-  closeBtn.position.set(0.45, -0.55, 0.01);
-  closeBtn.userData.isFlashcard = true;
-  closeBtn.userData.onClick = () => closeFlashcard3D();
-  interactive.push(closeBtn);
-  flashcardGroup.add(closeBtn);
-
-  scene.add(flashcardGroup);
-}
-
-function closeFlashcard3D() {
-  if (!flashcardGroup) return;
-  scene.remove(flashcardGroup);
-  flashcardGroup.traverse(o => {
-    if (o.userData.texture) o.userData.texture.dispose();
-    if (o.geometry) o.geometry.dispose();
-    if (o.material) o.material.dispose();
-  });
-  for (let i = interactive.length - 1; i >= 0; i--) {
-    if (interactive[i].userData.isFlashcard) interactive.splice(i, 1);
-  }
-  flashcardGroup = null;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// 3D FEEDBACK
-// ═══════════════════════════════════════════════════════════════════
-let feedbackGroup = null;
-function showFeedback(q, sel, ok) {
-  if (renderer.xr.isPresenting) showFeedback3D(q, sel, ok);
-  else showModal(q, sel, ok);
-}
-
-function showFeedback3D(q, sel, ok) {
-  closeFeedback3D();
-  feedbackGroup = new THREE.Group();
-  feedbackGroup.userData.isFeedback = true;
-
-  const hp = new THREE.Vector3();
-  camera.getWorldPosition(hp);
-  const dir = new THREE.Vector3();
-  camera.getWorldDirection(dir);
-  dir.y = 0; dir.normalize();
-  const tp = hp.clone().add(dir.multiplyScalar(1.7));
-  tp.y = hp.y - 0.1;
-  feedbackGroup.position.copy(tp);
-  feedbackGroup.lookAt(hp.x, tp.y, hp.z);
-
-  const statusText = ok ? '✅ CORRETO!' : `❌ ERRADO\nCorreta: ${'ABCDE'[q.correct]}`;
-  const status = makeLabel(statusText, {
-    width3D: 1.6, maxLines: 2, fontSizeMax: 90, padding: 30,
-    bgColor: ok ? '#16684d' : '#893440',
-    borderColor: ok ? '#00ff88' : '#ff4444'
-  });
-  status.position.set(0, 0.6, 0.01);
-  status.userData.isFeedback = true;
-  feedbackGroup.add(status);
-
-  const answerText = `${'ABCDE'[q.correct]}) ${q.options[q.correct]}`;
-  const ans = makeLabel(answerText, {
-    width3D: 1.6, maxLines: 3, fontSizeMax: 55, padding: 25,
-    bgColor: '#0d2740', borderColor: '#00d1ff'
-  });
-  ans.position.set(0, 0.0, 0.01);
-  ans.userData.isFeedback = true;
-  feedbackGroup.add(ans);
-
-  if (q.explanation) {
-    const exp = makeLabel(q.explanation, {
-      width3D: 1.6, maxLines: 3, fontSizeMax: 38, padding: 20,
-      bgColor: '#1a1a3a', borderColor: '#ffaa00'
-    });
-    exp.position.set(0, -0.5, 0.01);
-    exp.userData.isFeedback = true;
-    feedbackGroup.add(exp);
-  }
-
-  const nextBtn = makeLabel('▶ PRÓXIMA', {
-    width3D: 1.4, maxLines: 1, fontSizeMax: 80, padding: 20,
-    bgColor: '#0066cc', borderColor: '#00d1ff'
-  });
-  nextBtn.position.set(0, -1.0, 0.01);
-  nextBtn.userData.isFeedback = true;
-  nextBtn.userData.onClick = () => {
-    closeFeedback3D();
-    nextQuestion();
-  };
-  interactive.push(nextBtn);
-  feedbackGroup.add(nextBtn);
-
-  scene.add(feedbackGroup);
-}
-
-function closeFeedback3D() {
-  if (!feedbackGroup) return;
-  scene.remove(feedbackGroup);
-  feedbackGroup.traverse(o => {
-    if (o.userData.texture) o.userData.texture.dispose();
-    if (o.geometry) o.geometry.dispose();
-    if (o.material) o.material.dispose();
-  });
-  for (let i = interactive.length - 1; i >= 0; i--) {
-    if (interactive[i].userData.isFeedback) interactive.splice(i, 1);
-  }
-  feedbackGroup = null;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// ⭐ SISTEMA DE GRAB — CORRIGIDO
-// ═══════════════════════════════════════════════════════════════════
-const raycaster = new THREE.Raycaster();
-const _m4 = new THREE.Matrix4();
-const _v3 = new THREE.Vector3();
-const _v3b = new THREE.Vector3();
-const _q = new THREE.Quaternion();
-
-/**
- * Retorna o hit mais próximo na cena a partir da posição/direção do controller.
- * IMPORTANTE: atualiza matrixWorld de toda a cena antes de raycast.
- */
-function getHitFromController(ctrl) {
-  // Atualiza matrizes ANTES do raycast (crítico!)
-  scene.updateMatrixWorld(true);
-
-  ctrl.updateWorldMatrix(true, false);
-  _m4.extractRotation(ctrl.matrixWorld);
-  raycaster.ray.origin.setFromMatrixPosition(ctrl.matrixWorld);
-  raycaster.ray.direction.set(0, 0, -1).applyMatrix4(_m4).normalize();
-  raycaster.far = 15;
-
-  const hits = raycaster.intersectObjects(interactive, false);
-  return hits.length > 0 ? hits[0] : null;
-}
-
-/**
- * ⭐ ATUALIZA HOVER A CADA FRAME — guarda em ctrl.userData.hovered
- * Isso elimina problemas de timing nos eventos
- */
-function updateHover(ctrl) {
-  const hit = getHitFromController(ctrl);
-  const prev = ctrl.userData.hovered;
-
-  if (prev && prev.object) {
-    // Reset do hover anterior
-    if (prev.object.material && prev.object.userData._origEmissive !== undefined) {
-      prev.object.material.color.setHex(prev.object.userData._origEmissive);
-      prev.object.userData._origEmissive = undefined;
-    }
-  }
-
-  ctrl.userData.hovered = hit;
-
-  if (hit) {
-    // Highlight do hover atual
-    const o = hit.object;
-    if (o.material && o.material.color) {
-      if (o.userData._origEmissive === undefined) {
-        o.userData._origEmissive = o.material.color.getHex();
-      }
-      if (o.userData.isGrabHandle) {
-        o.material.color.setHex(0xffff00);  // amarelo quando mira na alça
-      } else if (o.userData.onClick) {
-        o.material.color.setHex(0x66aaff);  // azul claro quando mira em botão
-      }
-    }
-  }
-
-  // Atualiza HUD de debug do laser (só em VR)
-  if (renderer.xr.isPresenting) {
-    const dbg = ctrl.userData.hovered?.object;
-    const dbgEl = document.getElementById('vr-debug-' + ctrl.userData.hand);
-    if (dbgEl) {
-      const name = dbg?.userData?.isGrabHandle ? '🤚 ALÇA' :
-                   dbg?.userData?.onClick ? '👆 BOTÃO' :
-                   dbg?.userData?.isTeleport ? '🌀 TELEPORTE' : '· · ·';
-      dbgEl.textContent = name;
-    }
-  }
-}
-
-/**
- * ⭐ UNIFICADO: trigger e grip fazem exatamente a mesma coisa
- * Se mira alça → inicia grab
- * Se mira botão/alternativa → executa click
- */
-function handleSelectStart(ctrl, source) {
-  const hit = ctrl.userData.hovered;
-  console.log('[SELECT]', ctrl.userData.hand, 'hovered:', hit?.object?.userData);
-
-  if (!hit) {
-    // Sem hit → fallback: tenta raycast imediato
-    const fallback = getHitFromController(ctrl);
-    if (!fallback) return;
-    processHit(ctrl, fallback.object);
-    return;
-  }
-  processHit(ctrl, hit.object);
-}
-
-function processHit(ctrl, obj) {
-  if (obj.userData.isGrabHandle) {
-    startGrab(ctrl, obj.userData.panelId);
-  } else if (obj.userData.isTeleport) {
-    if (obj.userData.onClick) obj.userData.onClick();
-  } else if (obj.userData.onClick) {
-    obj.userData.onClick();
-  }
-}
-
-function startGrab(ctrl, panelId) {
-  const g = panelRegistry.get(panelId);
-  if (!g || ctrl.userData.grabState) return;
-
-  // Captura posição inicial
-  ctrl.updateWorldMatrix(true, false);
-  ctrl.getWorldPosition(_v3);
-
-  ctrl.userData.grabState = {
-    panelId, group: g,
-    startCtrlPos: _v3.clone(),
-    startGroupPos: g.position.clone(),
-    startGroupScale: g.scale.x,
-    startGroupRotY: g.rotation.y
+  const old=state.reviews[id]||{
+   interval:1,
+   repetitions:0,
+   ease:2.5
   };
 
-  g.scale.setScalar(g.scale.x * 1.02);
-  $('status').textContent = `✋ Movendo ${panelId.toUpperCase()} — solte para parar`;
-  console.log('[GRAB-START]', panelId);
-}
+  let repetitions=old.repetitions;
+  let interval=old.interval;
+  let ease=old.ease;
 
-function updateGrab(ctrl) {
-  const s = ctrl.userData.grabState;
-  if (!s) return;
+  if(quality<3){
 
-  ctrl.updateWorldMatrix(true, false);
-  ctrl.getWorldPosition(_v3);
+   repetitions=0;
+   interval=1;
 
-  _v3.sub(s.startCtrlPos);  // delta = current - start
-  s.group.position.copy(s.startGroupPos).add(_v3);
-}
+  }else{
 
-function endGrab(ctrl) {
-  const s = ctrl.userData.grabState;
-  if (!s) return;
-  s.group.scale.setScalar(s.startGroupScale);
-  savePanelState(s.panelId, s.group);
-  delete ctrl.userData.grabState;
-  $('status').textContent = `📍 ${s.panelId.toUpperCase()} posicionado`;
-  console.log('[GRAB-END]', s.panelId);
-}
+   repetitions++;
 
-// ═══════════════════════════════════════════════════════════════════
-// XR CONTROLLERS + HANDS
-// ═══════════════════════════════════════════════════════════════════
-const ctrlFactory = new XRControllerModelFactory();
-const handFactory = new XRHandModelFactory();
+   if(repetitions===1)interval=1;
+   else if(repetitions===2)interval=6;
+   else interval=Math.max(
+    1,
+    Math.round(interval*ease)
+   );
+  }
 
-for (let i = 0; i < 2; i++) {
-  const ctrl = renderer.xr.getController(i);
-  ctrl.userData.hand = i === 0 ? 'left' : 'right';
-
-  // ⭐ TRIGGER (select) → mesma função que grip
-  ctrl.addEventListener('selectstart', () => handleSelectStart(ctrl, 'trigger'));
-  // ⭐ GRIP (squeeze) → mesma função
-  ctrl.addEventListener('squeezestart', () => handleSelectStart(ctrl, 'grip'));
-
-  // Soltar grab (trigger ou grip)
-  ctrl.addEventListener('selectend', () => endGrab(ctrl));
-  ctrl.addEventListener('squeezeend', () => endGrab(ctrl));
-
-  // Thumbstick durante grab = resize/rotate
-  ctrl.addEventListener('thumbstickmoved', (evt) => {
-    const s = ctrl.userData.grabState;
-    if (!s) return;
-    const { x, y } = evt.detail;
-    if (Math.abs(y) > 0.15) {
-      const sc = Math.max(0.5, Math.min(2.5, s.group.scale.x * (1 + y * 0.02)));
-      s.group.scale.setScalar(sc);
-      $('status').textContent = `📏 Escala: ${sc.toFixed(2)}x`;
-    }
-    if (Math.abs(x) > 0.15) {
-      s.group.rotation.y += x * 0.03;
-      $('status').textContent = `🔄 Rotação: ${(s.group.rotation.y * 180 / Math.PI).toFixed(0)}°`;
-    }
-  });
-
-  rig.add(ctrl);
-
-  // Laser visual
-  const lineGeo = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -5)
-  ]);
-  const lineMat = new THREE.LineBasicMaterial({ color: 0x4cdeff });
-  const line = new THREE.Line(lineGeo, lineMat);
-  ctrl.add(line);
-  ctrl.userData.laserLine = line;
-
-  // Modelo visual do controle
-  const grip = renderer.xr.getControllerGrip(i);
-  grip.add(ctrlFactory.createControllerModel(grip));
-  rig.add(grip);
-
-  // Hand tracking
-  const hand = renderer.xr.getHand(i);
-  hand.userData.hand = i === 0 ? 'left' : 'right';
-  hand.add(handFactory.createHandModel(hand, 'mesh'));
-  hand.addEventListener('selectstart', () => handleSelectStart(hand, 'hand'));
-  hand.addEventListener('selectend', () => endGrab(hand));
-  rig.add(hand);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// TELEPORT
-// ═══════════════════════════════════════════════════════════════════
-for (const [x, z] of [[0, -2], [-3, -2], [3, -2], [0, 2]]) {
-  const m = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.4, 0.4, 0.02, 32),
-    new THREE.MeshBasicMaterial({ color: 0x20c8fa, transparent: true, opacity: 0.6 })
+  ease=Math.max(
+   1.3,
+   ease+(
+    .1-(5-quality)*(.08+(5-quality)*.02)
+   )
   );
-  m.position.set(x, 0.02, z);
-  m.userData.isTeleport = true;
-  m.userData.onClick = () => {
-    const h = new THREE.Vector3();
-    if (renderer.xr.isPresenting) renderer.xr.getCamera().getWorldPosition(h);
-    else camera.getWorldPosition(h);
-    rig.position.x += x - h.x;
-    rig.position.z += z - h.z;
-    $('status').textContent = '🌀 Teletransporte';
+
+  state.reviews[id]={
+   repetitions,
+   interval,
+   ease,
+   due:now()+interval*86400000
   };
-  scene.add(m);
-  interactive.push(m);
+
+  save();
+ }
+};
+
+/* ==================================================
+   8. INTERFACE
+================================================== */
+
+function element(tag,text,parent,className){
+
+ const node=document.createElement(tag);
+
+ if(text!==undefined&&text!==null){
+  node.textContent=String(text);
+ }
+
+ if(className)node.className=className;
+
+ if(parent)parent.append(node);
+
+ return node;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// ANIMATION LOOP
-// ═══════════════════════════════════════════════════════════════════
-const clock = new THREE.Clock();
-let _debugHoverLeft = null;
-let _debugHoverRight = null;
+function button(text,callback,parent){
 
-renderer.setAnimationLoop(() => {
-  const dt = Math.min(clock.getDelta(), 0.05);
+ const node=element("button",text,parent);
 
-  // Atualiza hover de cada controller/hand (se em VR)
-  if (renderer.xr.isPresenting) {
-    const c0 = renderer.xr.getController(0);
-    const c1 = renderer.xr.getController(1);
-    updateHover(c0);
-    updateHover(c1);
+ node.addEventListener("click",callback);
 
-    // Atualiza posição de painéis em grab
-    updateGrab(c0);
-    updateGrab(c1);
+ return node;
+}
 
-    const h0 = renderer.xr.getHand(0);
-    const h1 = renderer.xr.getHand(1);
-    updateGrab(h0);
-    updateGrab(h1);
+function clearContent(title){
 
-    // Locomotion (se nenhum grab ativo)
-    const anyGrab = c0.userData.grabState || c1.userData.grabState ||
-                    h0.userData.grabState || h1.userData.grabState;
-    if (!anyGrab) {
-      const sess = renderer.xr.getSession();
-      for (const src of sess.inputSources) {
-        if (!src.gamepad || src.handedness !== 'left') continue;
-        const ax = src.gamepad.axes;
-        const x = ax[2] || 0, z = ax[3] || 0;
-        if (Math.abs(x) < 0.15 && Math.abs(z) < 0.15) continue;
-        const dir = new THREE.Vector3();
-        renderer.xr.getCamera().getWorldDirection(dir);
-        dir.y = 0; dir.normalize();
-        const right = new THREE.Vector3(-dir.z, 0, dir.x);
-        const mv = dir.multiplyScalar(-z).addScaledVector(right, x).multiplyScalar(dt * 1.5);
-        rig.position.x = THREE.MathUtils.clamp(rig.position.x + mv.x, -7, 7);
-        rig.position.z = THREE.MathUtils.clamp(rig.position.z + mv.z, -7, 7);
+ const root=$("content");
+
+ root.replaceChildren();
+
+ element("h2",title,root);
+
+ return root;
+}
+
+function paragraph(text,parent){
+
+ return element("p",text,parent);
+}
+
+function sectionTitle(text,parent){
+
+ return element("h3",text,parent);
+}
+
+function field(label,type,value,parent){
+
+ const wrap=element("div",null,parent,"field");
+
+ element("label",label,wrap);
+
+ const input=element("input",null,wrap);
+
+ input.type=type;
+ input.value=value;
+
+ return input;
+}
+
+function selectField(label,values,parent){
+
+ const wrap=element("div",null,parent,"field");
+
+ element("label",label,wrap);
+
+ const select=element("select",null,wrap);
+
+ for(const value of values){
+
+  const option=document.createElement("option");
+
+  option.value=value;
+  option.textContent=value;
+
+  select.append(option);
+ }
+
+ return select;
+}
+
+function metric(label,value,parent){
+
+ const card=element("div",null,parent,"metric");
+
+ element("strong",value,card);
+ element("span",label,card);
+}
+
+function renderSidebar(){
+
+ const s=StatisticsManager.summary();
+
+ $("sidebarMetrics").replaceChildren();
+
+ const box=$("sidebarMetrics");
+
+ sectionTitle("Seu desempenho",box);
+
+ paragraph(`Questões: ${s.total}`,box);
+ paragraph(`Acertos: ${s.correct}`,box);
+ paragraph(`Erros: ${s.wrong}`,box);
+ paragraph(`Aproveitamento: ${s.rate}%`,box);
+ paragraph(`Revisões pendentes: ${s.pending}`,box);
+}
+
+function navigate(destination){
+
+ page=destination;
+
+ document.querySelectorAll("#menu button")
+  .forEach(b=>{
+   b.classList.toggle(
+    "active",
+    b.textContent===destination
+   );
+  });
+
+ render();
+}
+
+function render(){
+
+ renderSidebar();
+
+ switch(page){
+
+  case "Início":
+   renderHome();
+   break;
+
+  case "Estudos":
+   renderStudies();
+   break;
+
+  case "Simulados":
+   renderExams();
+   break;
+
+  case "Flashcards":
+   renderFlashcards();
+   break;
+
+  case "Revisões":
+   renderReviews();
+   break;
+
+  case "Desempenho":
+   renderStatistics();
+   break;
+
+  case "Banco de Questões":
+   renderBank();
+   break;
+
+  case "Configurações":
+   renderSettings();
+   break;
+ }
+}
+
+/* ==================================================
+   9. CENTRAL INTELIGENTE
+================================================== */
+
+function renderHome(){
+
+ const root=clearContent("Central Inteligente de Estudos");
+
+ const s=StatisticsManager.summary();
+
+ const grid=element("div",null,root,"grid");
+
+ metric("Questões respondidas",s.total,grid);
+ metric("Aproveitamento",s.rate+"%",grid);
+ metric("Simulados",s.exams,grid);
+ metric("Revisões pendentes",s.pending,grid);
+
+ sectionTitle("Próxima atividade recomendada",root);
+
+ const subjects=StatisticsManager.bySubject();
+
+ const ranking=Object.entries(subjects)
+  .filter(([,v])=>v.total>0)
+  .sort((a,b)=>
+   a[1].correct/a[1].total-
+   b[1].correct/b[1].total
+  );
+
+ if(ranking.length){
+
+  paragraph(
+   "Disciplina para reforçar: "+ranking[0][0],
+   root
+  );
+
+ }else{
+
+  paragraph(
+   "Comece respondendo questões para gerar recomendações.",
+   root
+  );
+ }
+
+ paragraph(
+  `Banco disponível: ${questions.length} questões.`,
+  root
+ );
+
+ const actions=element("div",null,root,"controls");
+
+ button(
+  "Iniciar estudos",
+  ()=>navigate("Estudos"),
+  actions
+ );
+
+ button(
+  "Revisar erros",
+  ()=>navigate("Revisões"),
+  actions
+ );
+
+ button(
+  "Criar simulado",
+  ()=>navigate("Simulados"),
+  actions
+ );
+
+ if(state.session?.id){
+
+  button(
+   "Continuar última questão",
+   ()=>{
+    studyPool=questions.filter(q=>
+     q.id===state.session.id
+    );
+
+    currentIndex=0;
+
+    navigate("Estudos");
+   },
+   actions
+  );
+ }
+}
+
+/* ==================================================
+   10. ESTUDO DE QUESTÕES
+================================================== */
+
+function getFilteredQuestions(subject,topic,difficulty,search){
+
+ const term=(search||"").toLowerCase();
+
+ return questions.filter(q=>
+
+  (!subject||q.disciplina===subject)&&
+  (!topic||q.assunto===topic)&&
+  (!difficulty||q.dificuldade===difficulty)&&
+
+  (!term||
+   [
+    q.id,
+    q.enunciado,
+    q.assunto,
+    q.disciplina,
+    q.referencia
+   ].join(" ").toLowerCase().includes(term)
+  )
+ );
+}
+
+function renderStudies(){
+
+ const root=clearContent("Estudo de Questões");
+
+ const subjects=[
+  "",
+  ...new Set(questions.map(q=>q.disciplina))
+ ];
+
+ const topics=[
+  "",
+  ...new Set(questions.map(q=>q.assunto))
+ ];
+
+ const subject=selectField(
+  "Disciplina",
+  subjects,
+  root
+ );
+
+ const topic=selectField(
+  "Assunto",
+  topics,
+  root
+ );
+
+ const difficulty=selectField(
+  "Dificuldade",
+  ["","facil","media","dificil"],
+  root
+ );
+
+ const search=field(
+  "Pesquisar",
+  "search",
+  "",
+  root
+ );
+
+ button("Aplicar filtros",()=>{
+
+  studyPool=getFilteredQuestions(
+   subject.value,
+   topic.value,
+   difficulty.value,
+   search.value
+  );
+
+  currentIndex=0;
+
+  showStudyQuestion();
+
+ },root);
+
+ const area=element("div",null,root);
+
+ area.id="studyArea";
+
+ if(!studyPool.length){
+  studyPool=[...questions];
+ }
+
+ showStudyQuestion();
+}
+
+function showStudyQuestion(){
+
+ const area=$("studyArea");
+
+ if(!area)return;
+
+ area.replaceChildren();
+
+ if(!studyPool.length){
+
+  paragraph(
+   "Nenhuma questão encontrada. Atualize o banco.",
+   area
+  );
+
+  return;
+ }
+
+ currentIndex=Math.max(
+  0,
+  Math.min(currentIndex,studyPool.length-1)
+ );
+
+ const q=studyPool[currentIndex];
+
+ state.session={
+  id:q.id,
+  index:currentIndex
+ };
+
+ save();
+
+ renderQuestion(
+  q,
+  area,
+  currentIndex+1,
+  studyPool.length,
+  "study"
+ );
+
+ const controls=element(
+  "div",null,area,"controls"
+ );
+
+ button("◀ Anterior",()=>{
+
+  currentIndex=Math.max(0,currentIndex-1);
+  showStudyQuestion();
+
+ },controls);
+
+ button("Próxima ▶",()=>{
+
+  currentIndex=Math.min(
+   studyPool.length-1,
+   currentIndex+1
+  );
+
+  showStudyQuestion();
+
+ },controls);
+
+ button(
+  state.favorites.includes(q.id)
+   ?"★ Remover favorito"
+   :"☆ Favoritar",
+  ()=>{
+
+   if(state.favorites.includes(q.id)){
+
+    state.favorites=state.favorites.filter(
+     id=>id!==q.id
+    );
+
+   }else{
+
+    state.favorites.push(q.id);
+   }
+
+   save();
+   showStudyQuestion();
+
+  },
+  controls
+ );
+
+ button("Marcar para revisão",()=>{
+
+  ReviewManager.mark(q.id);
+
+  status("Questão marcada para revisão.");
+
+ },controls);
+}
+
+function renderQuestion(q,parent,number,total,mode,answers){
+
+ const meta=element("div",null,parent);
+
+ element(
+  "span",
+  q.disciplina,
+  meta,
+  "badge"
+ );
+
+ element(
+  "span",
+  q.assunto,
+  meta,
+  "badge"
+ );
+
+ element(
+  "span",
+  q.dificuldade,
+  meta,
+  "badge"
+ );
+
+ paragraph(
+  `Questão ${number} de ${total}`,
+  parent
+ );
+
+ const progress=element("progress",null,parent);
+
+ progress.max=total;
+ progress.value=number;
+
+ element(
+  "div",
+  q.enunciado,
+  parent,
+  "question"
+ );
+
+ const options=element("div",null,parent);
+
+ const existing=mode==="exam"
+  ?answers[q.id]
+  :undefined;
+
+ let answered=false;
+
+ q.alternativas.forEach((text,i)=>{
+
+  const option=button(
+   `${String.fromCharCode(65+i)}. ${text}`,
+   ()=>{
+
+    if(mode==="exam"){
+
+     answers[q.id]=i;
+
+     state.activeExam=exam;
+
+     save();
+
+     options.querySelectorAll("button")
+      .forEach((b,j)=>{
+       b.classList.toggle(
+        "selected",
+        j===i
+       );
+      });
+
+     return;
+    }
+
+    if(answered)return;
+
+    answered=true;
+
+    StatisticsManager.record(q,i,mode);
+
+    options.querySelectorAll("button")
+     .forEach((b,j)=>{
+
+      b.disabled=true;
+
+      if(j===q.correta){
+       b.classList.add("correct");
       }
+
+      if(j===i&&i!==q.correta){
+       b.classList.add("wrong");
+      }
+     });
+
+    const explanation=element(
+     "div",
+     null,
+     parent,
+     "explanation"
+    );
+
+    paragraph(
+     i===q.correta
+      ?"Resposta correta!"
+      :"Resposta incorreta.",
+     explanation
+    );
+
+    paragraph(
+     "Gabarito: "+
+     String.fromCharCode(65+q.correta),
+     explanation
+    );
+
+    paragraph(
+     q.explicacao||
+     "Explicação não disponível no banco.",
+     explanation
+    );
+
+    if(q.referencia){
+     paragraph(
+      "Referência: "+q.referencia,
+      explanation
+     );
     }
+
+    renderSidebar();
+
+   },
+   options
+  );
+
+  option.classList.add("option");
+
+  if(existing===i){
+   option.classList.add("selected");
+  }
+ });
+}
+
+/* ==================================================
+   11. SIMULADOS
+================================================== */
+
+function renderExams(){
+
+ const root=clearContent("Simulados");
+
+ if(exam){
+  showExam(root);
+  return;
+ }
+
+ const count=field(
+  "Quantidade de questões",
+  "number",
+  20,
+  root
+ );
+
+ count.min=1;
+
+ const minutes=field(
+  "Tempo em minutos (0 = livre)",
+  "number",
+  60,
+  root
+ );
+
+ minutes.min=0;
+
+ const subjects=[
+  "",
+  ...new Set(questions.map(q=>q.disciplina))
+ ];
+
+ const subject=selectField(
+  "Disciplina",
+  subjects,
+  root
+ );
+
+ button("Iniciar simulado",()=>{
+
+  const pool=questions.filter(q=>
+   !subject.value||
+   q.disciplina===subject.value
+  );
+
+  if(!pool.length){
+   status("Nenhuma questão disponível.");
+   return;
   }
 
-  renderer.render(scene, camera);
-});
+  const shuffled=[...pool];
 
-window.addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
+  for(let i=shuffled.length-1;i>0;i--){
 
-// ═══════════════════════════════════════════════════════════════════
-// ENTER VR
-// ═══════════════════════════════════════════════════════════════════
-$('enter').onclick = async () => {
-  try {
-    if (renderer.xr.isPresenting) {
-      await renderer.xr.getSession().end();
-      $('enter').textContent = 'ENTRAR EM VR';
-      $('menu').classList.remove('hidden');
-      return;
-    }
-    if (!navigator.xr) throw new Error('WebXR não disponível');
-    const ok = await navigator.xr.isSessionSupported('immersive-vr');
-    if (!ok) throw new Error('VR não suportada');
-    const sess = await navigator.xr.requestSession('immersive-vr', {
-      optionalFeatures: ['local-floor', 'hand-tracking']
-    });
-    await renderer.xr.setSession(sess);
-    $('enter').textContent = 'SAIR DO VR';
-    $('menu').classList.add('hidden');
-    sess.addEventListener('end', () => {
-      $('enter').textContent = 'ENTRAR EM VR';
-      $('menu').classList.remove('hidden');
-    });
-  } catch (e) { $('status').textContent = '❌ ' + e.message; }
-};
+   const j=Math.floor(Math.random()*(i+1));
 
-// ═══════════════════════════════════════════════════════════════════
-// UI LOGIC
-// ═══════════════════════════════════════════════════════════════════
-function updateHUD() {
-  $('hud-total').textContent = DB.stats.total;
-  $('hud-ok').textContent = DB.stats.correct;
-  $('hud-err').textContent = DB.stats.total - DB.stats.correct;
-  $('hud-pct').textContent = DB.stats.total > 0 ? Math.round(DB.stats.correct*100/DB.stats.total)+'%' : '0%';
-  $('stats-summary').innerHTML =
-    `📊 <b>${DB.stats.total}</b> · ✅ <b>${DB.stats.correct}</b> · 🎯 <b>${DB.stats.total > 0 ? Math.round(DB.stats.correct*100/DB.stats.total) : 0}%</b><br>` +
-    `❌ Revisar: <b>${DB.wrongIds.length}</b> · ⭐ Favoritas: <b>${DB.favorites.length}</b>`;
-  updateStatsChart();
-}
-
-function updateStatsChart() {
-  const svg = $('stats-chart');
-  const bySubj = DB.stats.bySubject;
-  const entries = Object.entries(bySubj).filter(([_, v]) => v.total > 0).slice(0, 8);
-  if (entries.length === 0) {
-    svg.innerHTML = '<text x="200" y="70" text-anchor="middle" fill="#8ab0d0" font-size="12">Sem dados</text>';
-    $('stats-detail').innerHTML = ''; return;
+   [shuffled[i],shuffled[j]]=
+   [shuffled[j],shuffled[i]];
   }
-  const w = 400, h = 140, pad = 20;
-  const barW = (w - pad*2) / entries.length;
-  let html = `<line class="axis" x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}"/>`;
-  entries.forEach(([subj, v], i) => {
-    const pct = v.correct / v.total;
-    const bh = (h - pad*2) * pct;
-    const x = pad + i*barW + 4;
-    const y = h - pad - bh;
-    html += `<rect class="bar" x="${x}" y="${y}" width="${barW-8}" height="${bh}" rx="2">
-      <title>${subj}: ${v.correct}/${v.total}</title></rect>`;
-    html += `<text class="label" x="${x + (barW-8)/2}" y="${h-8}" text-anchor="middle">${subj.slice(0,6)}</text>`;
-    html += `<text class="label" x="${x + (barW-8)/2}" y="${y-3}" text-anchor="middle">${Math.round(pct*100)}%</text>`;
-  });
-  svg.innerHTML = html;
-  let detail = '<h3 style="margin-top:12px">Detalhes</h3>';
-  entries.forEach(([subj, v]) => {
-    detail += `<div style="padding:4px 0;border-bottom:1px solid rgba(73,186,255,.15)">
-      <b>${subj}</b>: ${v.correct}/${v.total}</div>`;
-  });
-  $('stats-detail').innerHTML = detail;
-}
 
-function updateReviewSummary() {
-  $('review-summary').innerHTML = `
-    <div style="padding:10px;background:rgba(255,68,68,.1);border-radius:6px;margin-bottom:8px">
-      ❌ <b>${DB.wrongIds.length}</b> questões erradas</div>
-    <div style="padding:10px;background:rgba(255,170,0,.1);border-radius:6px">
-      📇 <b>${Object.keys(DB.flashcards).length}</b> flashcards</div>`;
-}
+  const amount=Math.min(
+   shuffled.length,
+   Math.max(1,Number(count.value)||20)
+  );
 
-function populateSubjects() {
-  const s = $('subject');
-  const cur = s.value;
-  while (s.options.length > 1) s.remove(1);
-  const subs = [...new Set(QUESTIONS.map(q => q.subject))].sort();
-  for (const sub of subs) {
-    const o = document.createElement('option');
-    o.value = sub; o.textContent = sub;
-    s.appendChild(o);
-  }
-  if ([...s.options].some(o => o.value === cur)) s.value = cur;
-}
-
-function updateFlashcardSRS(id, grade) {
-  const now = Date.now();
-  const c = DB.flashcards[id] || { interval: 0, ease: 2.5, reps: 0, due: now };
-  if (grade < 1) { c.reps = 0; c.interval = 1; }
-  else {
-    c.reps++;
-    if (c.reps === 1) c.interval = 1;
-    else if (c.reps === 2) c.interval = 3;
-    else c.interval = Math.round(c.interval * c.ease);
-    c.ease = Math.max(1.3, c.ease + (grade - 1) * 0.15);
-  }
-  c.due = now + c.interval * 86400000;
-  DB.flashcards[id] = c;
-}
-
-let currentFlashcard = null;
-function openFlashcardHTML(q) {
-  if (!q) return;
-  currentFlashcard = q;
-  const c = DB.flashcards[q.id] || { interval: 0, reps: 0 };
-  $('fc-disc').textContent = q.subject;
-  $('fc-front').textContent = q.question;
-  $('fc-back').textContent = 'ABCDE'[q.correct];
-  $('fc-exp').textContent = q.explanation || 'Sem explicação.';
-  $('fc-progress').textContent = `Reps: ${c.reps} · Intervalo: ${c.interval}d`;
-  $('flashcard').classList.remove('flipped');
-  $('fc-controls').style.display = 'none';
-  $('flashcard-stage').classList.add('open');
-}
-$('fc-flip').onclick = () => {
-  $('flashcard').classList.toggle('flipped');
-  if ($('flashcard').classList.contains('flipped')) $('fc-controls').style.display = 'flex';
-};
-$('fc-next').onclick = () => {
-  const i = currentPool.indexOf(currentFlashcard);
-  openFlashcardHTML(currentPool[(i+1) % currentPool.length]);
-};
-$('fc-close').onclick = () => $('flashcard-stage').classList.remove('open');
-document.querySelectorAll('[data-grade]').forEach(b => {
-  b.onclick = () => {
-    if (!currentFlashcard) return;
-    updateFlashcardSRS(currentFlashcard.id, parseInt(b.dataset.grade));
-    STORAGE.save(DB);
-    $('fc-next').click();
+  exam={
+   id:uid(),
+   ids:shuffled.slice(0,amount).map(q=>q.id),
+   answers:{},
+   index:0,
+   start:now(),
+   duration:Math.max(
+    0,
+    Number(minutes.value)||0
+   )*60000
   };
-});
 
-function selectAnswer(idx) {
-  const q = currentPool[currentIndex];
-  if (!q || currentAnswer !== null) return;
-  currentAnswer = idx;
-  const correct = idx === q.correct;
-  if (!responsesLocked.has(q.id)) {
-    responsesLocked.add(q.id);
-    recordAnswer(q, correct);
+  state.activeExam=exam;
+  save();
+
+  render();
+
+ },root);
+
+ if(state.activeExam){
+
+  button("Retomar simulado salvo",()=>{
+
+   exam=state.activeExam;
+   render();
+
+  },root);
+ }
+}
+
+function showExam(root){
+
+ const pool=exam.ids
+  .map(id=>QuestionManager.find(id))
+  .filter(Boolean);
+
+ if(!pool.length){
+
+  paragraph(
+   "As questões deste simulado não estão disponíveis.",
+   root
+  );
+
+  button("Encerrar",()=>{
+   exam=null;
+   state.activeExam=null;
+   save();
+   render();
+  },root);
+
+  return;
+ }
+
+ exam.index=Math.max(
+  0,
+  Math.min(exam.index,pool.length-1)
+ );
+
+ const q=pool[exam.index];
+
+ const timer=element("p","",root);
+
+ function updateTimer(){
+
+  if(!exam||!timer.isConnected)return;
+
+  if(!exam.duration){
+
+   timer.textContent="Simulado sem limite de tempo.";
+   return;
   }
-  renderQuestionPanel();
-  showFeedback(q, idx, correct);
-}
 
-function recordAnswer(q, correct) {
-  DB.stats.total++;
-  if (correct) DB.stats.correct++;
-  if (!DB.stats.bySubject[q.subject]) DB.stats.bySubject[q.subject] = { total: 0, correct: 0 };
-  DB.stats.bySubject[q.subject].total++;
-  if (correct) DB.stats.bySubject[q.subject].correct++;
-  if (correct) {
-    const i = DB.wrongIds.indexOf(q.id);
-    if (i >= 0) DB.wrongIds.splice(i, 1);
-  } else {
-    if (!DB.wrongIds.includes(q.id)) DB.wrongIds.push(q.id);
+  const remaining=Math.max(
+   0,
+   exam.duration-(now()-exam.start)
+  );
+
+  const seconds=Math.ceil(remaining/1000);
+
+  timer.textContent=
+   "Tempo restante: "+
+   Math.floor(seconds/60)+":"+
+   String(seconds%60).padStart(2,"0");
+
+  if(remaining<=0){
+   finishExam();
   }
-  updateFlashcardSRS(q.id, correct ? 2 : 0);
-  STORAGE.save(DB);
-  updateHUD();
-  updateReviewSummary();
-}
+ }
 
-function showModal(q, sel, ok) {
-  $('modal').classList.add('open');
-  $('modal-disc').textContent = q.subject;
-  $('modal-q-num').textContent = `Questão ${currentIndex+1} de ${currentPool.length}`;
-  $('modal-q-text').textContent = q.question;
-  const opts = $('modal-options');
-  opts.innerHTML = '';
-  q.options.forEach((o, i) => {
-    const d = document.createElement('div');
-    d.className = 'option';
-    if (i === q.correct) d.classList.add('correct');
-    else if (i === sel) d.classList.add('wrong');
-    d.textContent = `${'ABCDE'[i]}) ${o}`;
-    opts.appendChild(d);
-  });
-  if (q.explanation) {
-    $('modal-exp').style.display = 'block';
-    $('modal-exp').textContent = '📖 ' + q.explanation;
-  } else $('modal-exp').style.display = 'none';
-}
-$('modal-close').onclick = () => {
-  $('modal').classList.remove('open');
-  nextQuestion();
-};
+ updateTimer();
 
-function nextQuestion() {
-  closeFeedback3D();
-  if (currentIndex < currentPool.length - 1) {
-    currentIndex++;
-    currentAnswer = null;
-    renderQuestionPanel();
-  } else {
-    finishSession();
+ const timerId=setInterval(()=>{
+
+  if(!timer.isConnected||!exam){
+   clearInterval(timerId);
+   return;
   }
+
+  updateTimer();
+
+ },1000);
+
+ renderQuestion(
+  q,
+  root,
+  exam.index+1,
+  pool.length,
+  "exam",
+  exam.answers
+ );
+
+ const controls=element(
+  "div",null,root,"controls"
+ );
+
+ button("◀ Anterior",()=>{
+
+  exam.index=Math.max(0,exam.index-1);
+  state.activeExam=exam;
+  save();
+  render();
+
+ },controls);
+
+ button("Próxima ▶",()=>{
+
+  exam.index=Math.min(
+   pool.length-1,
+   exam.index+1
+  );
+
+  state.activeExam=exam;
+  save();
+  render();
+
+ },controls);
+
+ paragraph(
+  `Respondidas: ${
+   Object.keys(exam.answers).length
+  }/${pool.length}`,
+  root
+ );
+
+ button("Finalizar simulado",finishExam,root);
 }
 
-function finishSession() {
-  const total = currentPool.length;
-  const pct = DB.stats.total > 0 ? Math.round(DB.stats.correct*100/DB.stats.total) : 0;
-  alert(`✅ Sessão finalizada!\n\nQuestões: ${total}\nAproveitamento: ${pct}%\nRevisar: ${DB.wrongIds.length}`);
-  examActive = false;
-}
+function finishExam(){
 
-function toggleFavorite() {
-  const q = currentPool[currentIndex];
-  if (!q) return;
-  const i = DB.favorites.indexOf(q.id);
-  if (i >= 0) DB.favorites.splice(i, 1); else DB.favorites.push(q.id);
-  STORAGE.save(DB);
-  $('status').textContent = i >= 0 ? '⭐ Removido' : '⭐ Favoritado';
-  renderQuestionPanel();
-}
+ if(!exam)return;
 
-function toggleFocus() {
-  $('menu').classList.add('hidden');
-  $('hud').style.opacity = '0.3';
-  $('status').textContent = '🎯 Modo foco';
-  setTimeout(() => { $('menu').classList.remove('hidden'); $('hud').style.opacity = '1'; }, 30000);
-}
+ const pool=exam.ids
+  .map(id=>QuestionManager.find(id))
+  .filter(Boolean);
 
-function toggleReading() {
-  const g = panelRegistry.get('center');
-  if (g) { g.position.set(0, 1.6, -1.8); g.scale.setScalar(1.4); }
-  $('status').textContent = '📖 Modo leitura';
-}
+ let correct=0;
+ let wrong=0;
+ let blank=0;
 
-function resetView() {
-  for (const [id, g] of panelRegistry) {
-    const defaults = {
-      center: [0, 1.5, PANEL_Z, 0],
-      left: [-1.5, 1.5, PANEL_Z + 0.2, 0.35],
-      right: [1.5, 1.5, PANEL_Z + 0.2, -0.35]
-    };
-    if (defaults[id]) {
-      g.position.set(defaults[id][0], defaults[id][1], defaults[id][2]);
-      g.rotation.y = defaults[id][3];
-      g.scale.setScalar(1);
-    }
+ const bySubject={};
+
+ for(const q of pool){
+
+  const choice=exam.answers[q.id];
+
+  if(!bySubject[q.disciplina]){
+   bySubject[q.disciplina]={
+    total:0,
+    correct:0
+   };
   }
-  DB.panels = {};
-  STORAGE.save(DB);
-  $('status').textContent = '🔄 Vista resetada';
-}
 
-function cycleEnv() {
-  const envs = ['academy','living','beach','library','future','nature','penthouse','space','minimal'];
-  const i = envs.indexOf(DB.environment);
-  const next = envs[(i+1) % envs.length];
-  DB.environment = next;
-  STORAGE.save(DB);
-  buildEnvironment(next);
-  $('environment').value = next;
-  $('status').textContent = `🌍 Ambiente: ${next}`;
-}
+  bySubject[q.disciplina].total++;
 
-function startReview() {
-  currentPool = QUESTIONS.filter(q => DB.wrongIds.includes(q.id));
-  if (!currentPool.length) { $('status').textContent = '✅ Nenhum erro'; return; }
-  currentIndex = 0;
-  currentAnswer = null;
-  responsesLocked.clear();
-  renderQuestionPanel();
-  $('status').textContent = `🔄 Revisando ${currentPool.length} erros`;
-}
+  if(choice===undefined){
 
-function buildPool(mode, subj, limit = 9999) {
-  let p = QUESTIONS.slice();
-  if (subj && subj !== 'Todas') p = p.filter(q => q.subject === subj);
-  switch (mode) {
-    case 'random': p = p.sort(() => Math.random() - 0.5); break;
-    case 'unanswered': p = p.filter(q => !DB.wrongIds.includes(q.id)); break;
-    case 'difficult': p = p.filter(q => DB.wrongIds.includes(q.id)); break;
-    case 'favorites': p = p.filter(q => DB.favorites.includes(q.id)); break;
+   blank++;
+   continue;
   }
-  return p.slice(0, limit);
+
+  if(choice===q.correta){
+
+   correct++;
+   bySubject[q.disciplina].correct++;
+
+  }else{
+
+   wrong++;
+  }
+
+  StatisticsManager.record(
+   q,
+   choice,
+   "Simulado"
+  );
+ }
+
+ const result={
+  id:exam.id,
+  date:now(),
+  total:pool.length,
+  correct,
+  wrong,
+  blank,
+  duration:now()-exam.start,
+  bySubject
+ };
+
+ state.exams.push(result);
+
+ exam=null;
+ state.activeExam=null;
+
+ save();
+
+ page="Desempenho";
+
+ render();
+
+ status(
+  `Simulado finalizado: ${correct} acertos, `+
+  `${wrong} erros e ${blank} em branco.`
+ );
 }
 
-$('start').onclick = () => {
-  currentPool = buildPool($('mode').value, $('subject').value);
-  if (!currentPool.length) { $('status').textContent = '⚠️ Sem questões'; return; }
-  currentIndex = 0; currentAnswer = null; responsesLocked.clear();
-  renderQuestionPanel();
-  $('status').textContent = `✅ ${currentPool.length} questões`;
-};
+/* ==================================================
+   12. FLASHCARDS
+================================================== */
 
-$('demo').onclick = () => {
-  QUESTIONS = [
-    { id: 'd1', question: 'Qual é a Constituição Federal atualmente vigente no Brasil?', options: ['Constituição de 1967','Constituição de 1988','Constituição de 1946','Constituição de 1937'], correct: 1, subject: 'Direito Constitucional', explanation: 'A Constituição de 1988 é a atual.' },
-    { id: 'd2', question: 'Qual princípio exige que a Administração Pública atue conforme a lei?', options: ['Publicidade','Legalidade','Impessoalidade','Eficiência'], correct: 1, subject: 'Direito Constitucional', explanation: 'A legalidade vincula toda atuação administrativa.' },
-    { id: 'd3', question: 'Qual artigo do Código Penal trata do furto?', options: ['Art. 121','Art. 155','Art. 157','Art. 171'], correct: 1, subject: 'Direito Penal Comum', explanation: 'O furto está no art. 155.' },
-    { id: 'd4', question: 'Qual placa indica parada obrigatória?', options: ['Placa PARE','Estacionamento','Velocidade máxima','Pedestres'], correct: 0, subject: 'Legislação de Trânsito', explanation: 'A placa R-1 indica parada obrigatória.' }
+function renderFlashcards(){
+
+ const root=clearContent("Flashcards Inteligentes");
+
+ if(!questions.length){
+
+  paragraph("Banco de questões vazio.",root);
+  return;
+ }
+
+ currentIndex=Math.max(
+  0,
+  Math.min(currentIndex,questions.length-1)
+ );
+
+ const q=questions[currentIndex];
+
+ paragraph(
+  `${currentIndex+1} de ${questions.length}`,
+  root
+ );
+
+ const card=element(
+  "div",
+  "",
+  root,
+  "flashcard"
+ );
+
+ function updateCard(){
+
+  card.textContent=flashBack
+   ?q.alternativas[q.correta]+
+    "\n\n"+q.explicacao
+   :q.enunciado;
+ }
+
+ updateCard();
+
+ card.onclick=()=>{
+
+  flashBack=!flashBack;
+  updateCard();
+
+ };
+
+ const controls=element(
+  "div",null,root,"controls"
+ );
+
+ button("Virar cartão",()=>{
+
+  flashBack=!flashBack;
+  updateCard();
+
+ },controls);
+
+ for(const [label,grade] of [
+  ["Difícil",2],
+  ["Bom",4],
+  ["Fácil",5]
+ ]){
+
+  button(label,()=>{
+
+   SpacedRepetition.grade(q.id,grade);
+
+   currentIndex=(
+    currentIndex+1
+   )%questions.length;
+
+   flashBack=false;
+
+   render();
+
+  },controls);
+ }
+
+ button("◀ Anterior",()=>{
+
+  currentIndex=Math.max(0,currentIndex-1);
+  flashBack=false;
+  render();
+
+ },controls);
+
+ button("Próximo ▶",()=>{
+
+  currentIndex=Math.min(
+   questions.length-1,
+   currentIndex+1
+  );
+
+  flashBack=false;
+  render();
+
+ },controls);
+}
+
+/* ==================================================
+   13. REVISÕES
+================================================== */
+
+function renderReviews(){
+
+ const root=clearContent("Revisão Inteligente");
+
+ const due=ReviewManager.due();
+ const all=ReviewManager.all();
+
+ paragraph(
+  `Revisões pendentes: ${due.length}`,
+  root
+ );
+
+ paragraph(
+  `Questões marcadas: ${all.length}`,
+  root
+ );
+
+ const controls=element(
+  "div",null,root,"controls"
+ );
+
+ button("Revisar pendentes",()=>{
+
+  studyPool=due;
+  currentIndex=0;
+  navigate("Estudos");
+
+ },controls);
+
+ button("Revisar todas",()=>{
+
+  studyPool=all;
+  currentIndex=0;
+  navigate("Estudos");
+
+ },controls);
+
+ button("Caderno de erros",()=>{
+
+  const ids=new Set(
+   state.history
+    .filter(x=>!x.correct)
+    .map(x=>x.id)
+  );
+
+  studyPool=questions.filter(q=>ids.has(q.id));
+
+  currentIndex=0;
+  navigate("Estudos");
+
+ },controls);
+}
+
+/* ==================================================
+   14. DESEMPENHO
+================================================== */
+
+function renderStatistics(){
+
+ const root=clearContent("Desempenho");
+
+ const s=StatisticsManager.summary();
+
+ const grid=element("div",null,root,"grid");
+
+ metric("Respondidas",s.total,grid);
+ metric("Acertos",s.correct,grid);
+ metric("Erros",s.wrong,grid);
+ metric("Aproveitamento",s.rate+"%",grid);
+
+ sectionTitle("Desempenho por disciplina",root);
+
+ const subjects=StatisticsManager.bySubject();
+
+ for(const [name,data] of Object.entries(subjects)){
+
+  const rate=Math.round(
+   data.correct/data.total*100
+  );
+
+  paragraph(
+   `${name}: ${rate}% (${data.correct}/${data.total})`,
+   root
+  );
+
+  const bar=element("div",null,root,"bar");
+
+  const fill=element("span",null,bar);
+
+  fill.style.width=rate+"%";
+ }
+
+ sectionTitle("Histórico de simulados",root);
+
+ for(const examResult of state.exams.slice(-10).reverse()){
+
+  paragraph(
+   `${new Date(examResult.date).toLocaleDateString("pt-BR")} — `+
+   `${examResult.correct}/${examResult.total} acertos`,
+   root
+  );
+ }
+
+ button("Exportar estatísticas JSON",()=>{
+
+  download(
+   "estatisticas-pmsc.json",
+   JSON.stringify({
+    summary:s,
+    subjects,
+    exams:state.exams
+   },null,2),
+   "application/json"
+  );
+
+ },root);
+
+ button("Exportar histórico CSV",()=>{
+
+  const rows=[
+   "id,disciplina,assunto,acerto,modo,data"
   ];
-  populateSubjects();
-  currentPool = QUESTIONS.slice();
-  currentIndex = 0; currentAnswer = null; responsesLocked.clear();
-  renderQuestionPanel();
-  $('status').textContent = '✅ Demo carregada';
-};
 
-$('refresh').onclick = async () => {
-  $('status').textContent = '🔄 Recarregando...';
-  QUESTIONS = await loadFromGitHub();
-  if (QUESTIONS.length > 0) {
-    try { localStorage.setItem('pmsc_questions_cache', JSON.stringify(QUESTIONS)); } catch (e) {}
-    populateSubjects();
+  for(const x of state.history){
+
+   rows.push([
+    x.id,
+    x.disciplina,
+    x.assunto,
+    x.correct,
+    x.mode,
+    new Date(x.date).toISOString()
+   ].map(csv).join(","));
   }
-};
 
-$('exam-start').onclick = () => {
-  const qty = parseInt($('exam-qty').value);
-  const time = parseInt($('exam-time').value);
-  currentPool = QUESTIONS.sort(() => Math.random() - 0.5).slice(0, qty);
-  if (!currentPool.length) { $('status').textContent = '⚠️ Sem questões'; return; }
-  currentIndex = 0; currentAnswer = null;
-  examActive = true;
-  examEndsAt = time > 0 ? Date.now() + time*60000 : 0;
-  responsesLocked.clear();
-  renderQuestionPanel();
-  $('exam-status').textContent = `⏱ ${qty}q ${time > 0 ? '/ '+time+'min' : ''}`;
-  $('status').textContent = '✅ Simulado';
-};
+  download(
+   "historico-pmsc.csv",
+   rows.join("\n"),
+   "text/csv"
+  );
 
-setInterval(() => {
-  if (!examActive || examEndsAt === 0) return;
-  const r = examEndsAt - Date.now();
-  if (r <= 0) { examActive = false; alert('⏱ Tempo esgotado!'); finishSession(); return; }
-  $('exam-status').textContent = `⏱ ${Math.floor(r/60000)}:${Math.floor((r%60000)/1000).toString().padStart(2,'0')}`;
-}, 1000);
-
-$('review-start').onclick = startReview;
-$('reset-stats').onclick = () => {
-  if (!confirm('Zerar TODAS as estatísticas?')) return;
-  DB.stats = { total: 0, correct: 0, bySubject: {} };
-  DB.wrongIds = []; DB.favorites = []; DB.flashcards = []; DB.history = [];
-  STORAGE.save(DB);
-  updateHUD(); updateReviewSummary();
-  $('status').textContent = '🗑 Zerado';
-};
-
-$('environment').onchange = (e) => {
-  let t = e.target.value;
-  if (t === 'random') {
-    const opts = ['academy','living','beach','library','future','nature','penthouse','space','minimal'];
-    t = opts[Math.floor(Math.random()*opts.length)];
-  }
-  DB.environment = t;
-  STORAGE.save(DB);
-  buildEnvironment(t);
-};
-$('lighting').onchange = (e) => { DB.lighting = e.target.value; STORAGE.save(DB); buildEnvironment(DB.environment); };
-$('reset-panels').onclick = () => { resetView(); renderQuestionPanel(); };
-
-function renderThemeSwatches() {
-  const g = $('theme-grid');
-  g.innerHTML = '';
-  for (const [name, c] of Object.entries(THEMES)) {
-    const s = document.createElement('div');
-    s.className = 'theme-swatch' + (name === DB.theme ? ' active' : '');
-    s.style.background = `linear-gradient(135deg, ${c.bg}, ${c.accent})`;
-    s.title = name;
-    s.onclick = () => { applyTheme(name); renderThemeSwatches(); };
-    g.appendChild(s);
-  }
+ },root);
 }
-$('repo-apply').onclick = async () => {
-  DB.repo = $('repo-input').value.trim();
-  STORAGE.save(DB);
-  $('status').textContent = '🔄 Recarregando...';
-  QUESTIONS = await loadFromGitHub();
-  populateSubjects();
-};
-$('export-data').onclick = () => {
-  const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `pmsc-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
+
+/* ==================================================
+   15. BANCO DE QUESTÕES
+================================================== */
+
+function renderBank(){
+
+ const root=clearContent("Banco de Questões");
+
+ paragraph(
+  "Repositório: "+APP.repo,
+  root
+ );
+
+ paragraph(
+  "Questões carregadas: "+questions.length,
+  root
+ );
+
+ button(
+  "Atualizar automaticamente",
+  ()=>ContentRepository.load(),
+  root
+ );
+
+ sectionTitle("Disciplinas disponíveis",root);
+
+ const counts={};
+
+ for(const q of questions){
+
+  counts[q.disciplina]=(
+   counts[q.disciplina]||0
+  )+1;
+ }
+
+ for(const [name,total] of Object.entries(counts)){
+
+  paragraph(`${name}: ${total} questões`,root);
+ }
+
+ if(!questions.length){
+
+  paragraph(
+   "Nenhum banco compatível foi encontrado. "+
+   "Confira a estrutura dos JSONs no repositório.",
+   root
+  );
+ }
+}
+
+/* ==================================================
+   16. CONFIGURAÇÕES
+================================================== */
+
+function renderSettings(){
+
+ const root=clearContent("Configurações");
+
+ const font=field(
+  "Tamanho da fonte em pixels",
+  "number",
+  parseInt(
+   getComputedStyle(document.body).fontSize
+  ),
+  root
+ );
+
+ font.min=14;
+ font.max=30;
+
+ button("Aplicar tamanho",()=>{
+
+  const size=Math.max(
+   14,
+   Math.min(30,Number(font.value)||16)
+  );
+
+  document.documentElement.style.setProperty(
+   "--font",
+   size+"px"
+  );
+
+ },root);
+
+ button("Ativar/desativar modo foco",()=>{
+
+  document.body.classList.toggle("focus");
+
+ },root);
+
+ button("Exportar backup completo",()=>{
+
+  StorageManager.export();
+
+ },root);
+
+ const upload=element("input",null,root);
+
+ upload.type="file";
+ upload.accept=".json";
+
+ upload.onchange=async()=>{
+
+  try{
+
+   await StorageManager.restore(
+    upload.files[0]
+   );
+
+   status("Backup restaurado.");
+
+  }catch(e){
+
+   status("Erro: "+e.message);
+  }
+ };
+}
+
+/* ==================================================
+   17. DOWNLOAD
+================================================== */
+
+function csv(value){
+
+ return '"'+String(value??"")
+  .replace(/"/g,'""')+'"';
+}
+
+function download(name,content,type){
+
+ const blob=new Blob(
+  [content],
+  {type}
+ );
+
+ const url=URL.createObjectURL(blob);
+
+ const link=document.createElement("a");
+
+ link.href=url;
+ link.download=name;
+
+ document.body.append(link);
+
+ link.click();
+ link.remove();
+
+ setTimeout(()=>{
   URL.revokeObjectURL(url);
-};
-$('import-data').onclick = () => $('import-file').click();
-$('import-file').onchange = async (e) => {
-  const f = e.target.files[0];
-  if (!f) return;
-  try {
-    const d = JSON.parse(await f.text());
-    if (d.version !== STORAGE.VERSION && !confirm('Versão diferente. Continuar?')) return;
-    DB = Object.assign(STORAGE.defaults(), d);
-    STORAGE.save(DB);
-    applyTheme(DB.theme);
-    buildEnvironment(DB.environment);
-    updateHUD(); updateReviewSummary(); renderThemeSwatches();
-    $('status').textContent = '✅ Importado';
-  } catch (err) { $('status').textContent = '❌ ' + err.message; }
-};
+ },1000);
+}
 
-document.querySelectorAll('.tabs button').forEach(b => {
-  b.onclick = () => {
-    document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-    $(`tab-${b.dataset.tab}`).classList.add('active');
-  };
-});
+/* ==================================================
+   18. MOTOR TRIDIMENSIONAL
+================================================== */
 
-$('tutorial-close').onclick = () => $('tutorial').classList.remove('open');
-$('show-tutorial').onclick = () => $('tutorial').classList.add('open');
+let scene;
+let camera;
+let renderer;
+let rig;
+let room;
 
-(async function init() {
-  applyTheme(DB.theme);
-  renderThemeSwatches();
-  buildEnvironment(DB.environment);
-  $('environment').value = DB.environment;
-  $('lighting').value = DB.lighting;
-  $('repo-input').value = DB.repo;
-  updateHUD();
-  updateReviewSummary();
+const materials=new Map();
 
-  QUESTIONS = await loadFromGitHub();
-  if (QUESTIONS.length > 0) {
-    try { localStorage.setItem('pmsc_questions_cache', JSON.stringify(QUESTIONS)); } catch (e) {}
-    populateSubjects();
-    currentPool = QUESTIONS.slice();
-    currentIndex = 0;
-    renderQuestionPanel();
-  } else {
-    $('status').textContent = '⚠️ Sem questões. Use Demo.';
-    ensurePanel('center', 0, 1.5, PANEL_Z);
-    addPanelLabel('center', 'Bem-vindo!\nUse 🧪 Demo\nou configure repo.', 0, {
-      width3D: 2, maxLines: 3, fontSizeMax: 60, padding: 40
-    });
-    renderSidePanels();
+function material(color){
+
+ if(!materials.has(color)){
+
+  materials.set(
+   color,
+   new THREE.MeshStandardMaterial({
+    color,
+    roughness:.8
+   })
+  );
+ }
+
+ return materials.get(color);
+}
+
+function cube(x,y,z,w,h,d,color){
+
+ const geometry=new THREE.BoxGeometry(w,h,d);
+
+ const mesh=new THREE.Mesh(
+  geometry,
+  material(color)
+ );
+
+ mesh.position.set(x,y,z);
+
+ room.add(mesh);
+
+ return mesh;
+}
+
+function cylinder(x,y,z,r,h,color){
+
+ const geometry=new THREE.CylinderGeometry(
+  r,r,h,12
+ );
+
+ const mesh=new THREE.Mesh(
+  geometry,
+  material(color)
+ );
+
+ mesh.position.set(x,y,z);
+
+ room.add(mesh);
+
+ return mesh;
+}
+
+function brazilFlag(x,z){
+
+ // Representação geométrica simplificada
+ // da bandeira brasileira.
+
+ cylinder(
+  x,2,z,
+  .045,4,
+  "#cccccc"
+ );
+
+ cube(
+  x+.7,3.25,z,
+  1.4,.9,.04,
+  "#169b45"
+ );
+
+ const diamond=cube(
+  x+.7,3.25,z+.04,
+  .75,.6,.025,
+  "#ffdf00"
+ );
+
+ diamond.rotation.z=Math.PI/4;
+
+ const sphere=new THREE.Mesh(
+  new THREE.SphereGeometry(.25,16,12),
+  material("#002776")
+ );
+
+ sphere.scale.z=.12;
+
+ sphere.position.set(
+  x+.7,3.25,z+.09
+ );
+
+ room.add(sphere);
+}
+
+function tree(x,z){
+
+ cylinder(
+  x,.9,z,
+  .14,1.8,
+  "#725333"
+ );
+
+ const crown=new THREE.Mesh(
+  new THREE.ConeGeometry(1.1,3,8),
+  material("#315e36")
+ );
+
+ crown.position.set(x,3,z);
+
+ room.add(crown);
+}
+
+function bed(x,z){
+
+ cube(x,.45,z,1.6,.18,2.2,"#667e77");
+ cube(x,1.45,z,1.6,.18,2.2,"#667e77");
+
+ for(const dx of [-.7,.7]){
+  for(const dz of [-1,1]){
+
+   cube(
+    x+dx,1,z+dz,
+    .09,2,.09,
+    "#a3aaa7"
+   );
+  }
+ }
+}
+
+function disposeRoom(){
+
+ if(!room)return;
+
+ scene.remove(room);
+
+ room.traverse(object=>{
+
+  if(object.geometry){
+   object.geometry.dispose();
   }
 
-  if (!localStorage.getItem('pmsc_tutorial_seen')) {
-    $('tutorial').classList.add('open');
-    localStorage.setItem('pmsc_tutorial_seen', '1');
+  // Os materiais são compartilhados
+  // e permanecem reutilizáveis.
+ });
+
+ room=null;
+}
+
+/* ==================================================
+   19. AMBIENTES MILITARES
+================================================== */
+
+function changeEnvironment(index){
+
+ state.environment=index;
+ save();
+
+ disposeRoom();
+
+ room=new THREE.Group();
+ scene.add(room);
+
+ scene.background=new THREE.Color(
+  index===3?"#8bb9d3":"#7e9da9"
+ );
+
+ cube(
+  0,-.12,0,
+  30,.24,30,
+  index===3?"#607b47":"#7a8177"
+ );
+
+ if(index!==3){
+
+  cube(
+   0,3,-11,
+   26,6,.35,
+   "#a5aaa1"
+  );
+ }
+
+ if(index===0){
+
+  // Pátio de formatura.
+
+  cube(
+   0,2,-10.5,
+   10,4,.5,
+   "#586d61"
+  );
+
+  for(let x=-4;x<=4;x+=2){
+
+   cube(
+    x,.015,-2,
+    .1,.03,6,
+    "#e2dfca"
+   );
   }
 
-  console.log('[PMSC v4] iniciado');
-})();
+  brazilFlag(-7,-9);
+  brazilFlag(7,-9);
+
+  for(let x=-9;x<=9;x+=3){
+
+   cylinder(
+    x,.7,-7,
+    .2,1.4,
+    "#788b7c"
+   );
+  }
+ }
+
+ if(index===1){
+
+  // Sala de instrução.
+
+  cube(
+   0,2.5,-10.7,
+   7,2.5,.08,
+   "#1e4c37"
+  );
+
+  for(let x=-4;x<=4;x+=2){
+
+   for(let z=-5;z<=2;z+=2){
+
+    cube(
+     x,.75,z,
+     1.4,.15,.8,
+     "#765a3e"
+    );
+
+    cube(
+     x,.38,z,
+     .1,.7,.1,
+     "#596b65"
+    );
+   }
+  }
+
+  brazilFlag(-8,-9);
+ }
+
+ if(index===2){
+
+  // Entrada do quartel.
+
+  cube(
+   -5,1.6,-7,
+   3,3.2,3,
+   "#c4b9a4"
+  );
+
+  cube(
+   -5,3.35,-7,
+   3.7,.3,3.7,
+   "#596a5e"
+  );
+
+  for(let x=-2;x<=7;x+=.8){
+
+   cube(
+    x,1.4,-8,
+    .09,2.8,.09,
+    "#43574e"
+   );
+  }
+
+  brazilFlag(8,-7);
+ }
+
+ if(index===3){
+
+  // Campo de treinamento.
+
+  for(let x=-8;x<=8;x+=4){
+
+   cube(
+    x,.55,-5,
+    2,1.1,1,
+    "#9a8057"
+   );
+
+   tree(x+1.8,-9);
+  }
+
+  for(let z=-2;z<=5;z+=2){
+
+   cube(
+    -5,.15,z,
+    3,.3,.18,
+    "#92734d"
+   );
+  }
+
+  brazilFlag(7,-8);
+ }
+
+ if(index===4){
+
+  // Alojamento militar.
+
+  for(let x=-6;x<=6;x+=3){
+
+   bed(x,-5);
+   bed(x,1);
+  }
+
+  cube(
+   0,2.5,-10.7,
+   4,1.5,.1,
+   "#345849"
+  );
+
+  brazilFlag(8,-9);
+ }
+
+ renderer.render(scene,camera);
+}
+
+/* ==================================================
+   20. THREE.JS E WEBXR
+================================================== */
+
+function init3D(){
+
+ scene=new THREE.Scene();
+
+ camera=new THREE.PerspectiveCamera(
+  70,
+  1,
+  .1,
+  100
+ );
+
+ rig=new THREE.Group();
+
+ rig.position.set(0,1.65,7);
+
+ rig.add(camera);
+ scene.add(rig);
+
+ renderer=new THREE.WebGLRenderer({
+  antialias:true,
+  powerPreference:"high-performance"
+ });
+
+ renderer.xr.enabled=true;
+
+ const quality=state.quality;
+
+ renderer.setPixelRatio(
+  quality==="low"
+   ?1
+   :quality==="high"
+    ?Math.min(devicePixelRatio,2)
+    :Math.min(devicePixelRatio,1.5)
+ );
+
+ $("scene").append(renderer.domElement);
+
+ const ambient=new THREE.HemisphereLight(
+  0xffffff,
+  0x405344,
+  2.2
+ );
+
+ scene.add(ambient);
+
+ const sunlight=new THREE.DirectionalLight(
+  0xffffff,
+  2
+ );
+
+ sunlight.position.set(5,10,5);
+
+ scene.add(sunlight);
+
+ changeEnvironment(state.environment);
+
+ const vrButton=VRButton.createButton(renderer);
+
+ vrButton.style.display="none";
+
+ document.body.append(vrButton);
+
+ $("vr").onclick=()=>{
+
+  if(!navigator.xr){
+
+   status(
+    "WebXR não está disponível neste navegador."
+   );
+
+   return;
+  }
+
+  vrButton.click();
+ };
+
+ renderer.xr.addEventListener(
+  "sessionstart",
+  ()=>status("Sessão VR iniciada.")
+ );
+
+ renderer.xr.addEventListener(
+  "sessionend",
+  ()=>status("Sessão VR encerrada.")
+ );
+
+ renderer.setAnimationLoop(()=>{
+
+  const container=$("scene");
+
+  const width=container.clientWidth;
+  const height=container.clientHeight;
+
+  if(width&&height){
+
+   const canvas=renderer.domElement;
+
+   const pixelRatio=renderer.getPixelRatio();
+
+   const targetWidth=Math.floor(
+    width*pixelRatio
+   );
+
+   const targetHeight=Math.floor(
+    height*pixelRatio
+   );
+
+   if(
+    canvas.width!==targetWidth||
+    canvas.height!==targetHeight
+   ){
+
+    renderer.setSize(width,height,false);
+
+    camera.aspect=width/height;
+
+    camera.updateProjectionMatrix();
+   }
+  }
+
+  renderer.render(scene,camera);
+ });
+
+ $("rotateLeft").onclick=()=>{
+  rig.rotation.y+=Math.PI/8;
+ };
+
+ $("rotateRight").onclick=()=>{
+  rig.rotation.y-=Math.PI/8;
+ };
+
+ $("resetView").onclick=()=>{
+  rig.rotation.y=0;
+  rig.position.set(0,1.65,7);
+ };
+}
+
+/* ==================================================
+   21. CONFIG MANAGER
+================================================== */
+
+function applySettings(){
+
+ document.body.className="";
+
+ if(state.theme!=="dark"){
+  document.body.classList.add(state.theme);
+ }
+
+ $("theme").value=state.theme;
+ $("environment").value=state.environment;
+ $("quality").value=state.quality;
+}
+
+function initializeMenus(){
+
+ for(const name of pages){
+
+  button(
+   name,
+   ()=>navigate(name),
+   $("menu")
+  );
+ }
+
+ environments.forEach((name,i)=>{
+
+  const option=document.createElement("option");
+
+  option.value=i;
+  option.textContent=name;
+
+  $("environment").append(option);
+ });
+
+ $("environment").onchange=e=>{
+
+  changeEnvironment(Number(e.target.value));
+
+ };
+
+ $("theme").onchange=e=>{
+
+  state.theme=e.target.value;
+
+  save();
+  applySettings();
+ };
+
+ $("quality").onchange=e=>{
+
+  state.quality=e.target.value;
+
+  save();
+
+  status(
+   "Qualidade salva. Recarregue a página para aplicar."
+  );
+ };
+
+ $("refresh").onclick=()=>{
+  ContentRepository.load();
+ };
+}
+
+/* ==================================================
+   22. APP CORE
+================================================== */
+
+const AppCore={
+
+ async start(){
+
+  try{
+
+   initializeMenus();
+
+   applySettings();
+
+   init3D();
+
+   navigate("Início");
+
+   await ContentRepository.load();
+
+  }catch(error){
+
+   console.error(error);
+
+   status(
+    "Falha na inicialização: "+error.message
+   );
+  }
+ }
+};
+
+AppCore.start();
+
 </script>
+
 </body>
 </html>
