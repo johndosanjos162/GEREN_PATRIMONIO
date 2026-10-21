@@ -1,7 +1,7 @@
 """
-PMSC Arena VR — Aplicativo imersivo WebXR para Meta Quest 3/3S
-Concurso PMSC · Banca Instituto AOCP
-Backend: Streamlit | Frontend: A-Frame 1.5.0 (iframe com allow WebXR)
+PMSC Arena VR — Versão com correções de orientação e click
+- Mãos: laser-controls + hand-tracking-controls (auto-detect)
+- Click: raycaster via atributo + duplo listener + walk-up + feedback
 """
 import streamlit as st
 import streamlit.components.v1 as components
@@ -12,14 +12,7 @@ import pathlib
 import html as html_module
 from datetime import datetime
 
-# ═══════════════════════════════════════════════════════════════════════
-# CONFIGURAÇÃO
-# ═══════════════════════════════════════════════════════════════════════
-st.set_page_config(
-    page_title="PMSC Arena VR",
-    page_icon="🎯",
-    layout="wide",
-)
+st.set_page_config(page_title="PMSC Arena VR", page_icon="🎯", layout="wide")
 
 DISTRIBUICAO = {
     "Legislação Institucional": 10,
@@ -32,12 +25,9 @@ DISTRIBUICAO = {
     "Legislação de Trânsito": 5,
     "Informática": 5,
 }
-TOTAL_OFICIAL = sum(DISTRIBUICAO.values())  # 60
+TOTAL_OFICIAL = sum(DISTRIBUICAO.values())
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# CARREGADOR TOLERANTE (aceita JSONs concatenados + deduplica)
-# ═══════════════════════════════════════════════════════════════════════
 def _parse_concatenado(conteudo: str) -> dict:
     decoder = json.JSONDecoder()
     idx, n = 0, len(conteudo)
@@ -94,14 +84,13 @@ def load_json():
                     bruto += len(un) + r
                     removidas += r
                 return parsed, {
-                    "arquivo": path.name,
-                    "bruto": bruto,
+                    "arquivo": path.name, "bruto": bruto,
                     "removidas": removidas,
                     "unicas": sum(len(v) for v in parsed.values()),
                 }
             except Exception as e:
                 return None, {"erro": str(e)}
-    return None, {"erro": "json.json não encontrado na raiz"}
+    return None, {"erro": "json.json não encontrado"}
 
 
 def montar_simulado(banco):
@@ -120,71 +109,38 @@ def montar_simulado(banco):
     return sim
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# SESSION STATE
-# ═══════════════════════════════════════════════════════════════════════
 for key, default in [
     ("simulado", None), ("treino", []), ("hist", []), ("vr_ready", False),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
 
-
-# ═══════════════════════════════════════════════════════════════════════
-# CARREGA BANCO
-# ═══════════════════════════════════════════════════════════════════════
 banco, info = load_json()
 if not banco:
     st.error(f"❌ Erro ao carregar json.json: {info.get('erro', '?')}")
-    try:
-        st.write("Arquivos na raiz:",
-                 [f.name for f in pathlib.Path(__file__).parent.iterdir()])
-    except Exception:
-        pass
     st.stop()
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# EMBED COM PERMISSÕES WEBXR
-# ═══════════════════════════════════════════════════════════════════════
 def embed_with_webxr_permissions(inner_html: str, height: int = 950):
-    """
-    Renderiza um iframe A-Frame com allow de WebXR.
-    O components.html() do Streamlit não expõe o atributo 'allow',
-    então envolvemos o conteúdo em um <iframe srcdoc="..." allow="...">.
-    O browser decodifica o srcdoc e aplica as permissões ao A-Frame.
-    """
+    """Duplo iframe: interno com allow='xr-spatial-tracking; ...'."""
     escaped = html_module.escape(inner_html, quote=True)
-
-    wrapper_template = r'''<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-html, body { margin: 0; padding: 0; width: 100%; height: 100%;
-  overflow: hidden; background: #050a14; }
-iframe { width: 100%; height: 100%; border: none; display: block; }
-</style>
-</head>
-<body>
+    wrapper = r'''<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#050a14}
+iframe{width:100%;height:100%;border:none;display:block}</style>
+</head><body>
 <iframe srcdoc="__INNER__"
-  allow="xr-spatial-tracking; camera; microphone; accelerometer; gyroscope; fullscreen; autoplay; clipboard-write"
-  style="width:100%; height:100%; border:none;"></iframe>
-</body>
-</html>'''
-
-    wrapper = wrapper_template.replace("__INNER__", escaped)
+ allow="xr-spatial-tracking; camera; microphone; accelerometer; gyroscope; fullscreen; autoplay"
+ style="width:100%;height:100%;border:none;"></iframe>
+</body></html>'''
+    wrapper = wrapper.replace("__INNER__", escaped)
     components.html(wrapper, height=height, scrolling=False)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# RENDER VR — gera o HTML do A-Frame e envolve com allow WebXR
-# ═══════════════════════════════════════════════════════════════════════
 def render_vr(questoes, modo="ARENA", height=950):
     if not st.session_state.vr_ready:
         st.info(f"{len(questoes)} questões prontas para a arena VR.")
-        if st.button(f"🥽 CARREGAR VR — {modo}", type="primary",
-                     use_container_width=True):
+        if st.button(f"🥽 CARREGAR VR — {modo}", type="primary", use_container_width=True):
             st.session_state.vr_ready = True
             st.rerun()
         return
@@ -200,105 +156,111 @@ def render_vr(questoes, modo="ARENA", height=950):
         })
     q_json = json.dumps(safe, ensure_ascii=False).replace("</", "<\\/")
 
-    # Template HTML SEM f-string — usa r"""...""" + .replace()
     html_template = r"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
-<title>Arena VR</title>
+<title>PMSC Arena VR</title>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════
-// vr-hand: grab à distância (offset real) + click preciso
+// vr-hand v8 — leitura do raycaster A-Frame + duplo evento + feedback
 // ═══════════════════════════════════════════════════════════════════
 AFRAME.registerComponent('vr-hand', {
   init: function() {
     const hand = this.el;
-    const raycaster = new THREE.Raycaster();
-    raycaster.far = 100;
-
     let grabbed = null;
     let offset = new THREE.Vector3();
     let distAdjust = 0;
-    let currentGrab = null;
-    let currentClick = null;
+    const FALLBACK_FAR = 20;
 
-    const acharBloco = function(el) {
-      let cur = el;
-      while (cur) {
-        if (cur.id && cur.id.indexOf('block-') === 0) return cur;
-        cur = cur.parentEl;
-      }
-      return null;
-    };
-    const acharClickable = function(el) {
-      let cur = el;
-      while (cur) {
-        if (cur.classList && cur.classList.contains('clickable')) return cur;
-        cur = cur.parentEl;
-      }
-      return null;
+    // Garante que o raycaster exista (laser-controls já monta, mas reforçamos)
+    if (!hand.components.raycaster) {
+      hand.setAttribute('raycaster', 'objects: .clickable, .ui-btn, .grabbable; far: 20; interval: 100');
+    }
+
+    const getPos = function() {
+      const p = new THREE.Vector3();
+      hand.object3D.getWorldPosition(p);
+      return p;
     };
     const getDir = function() {
       const q = new THREE.Quaternion();
       hand.object3D.getWorldQuaternion(q);
       return new THREE.Vector3(0, 0, -1).applyQuaternion(q).normalize();
     };
-    const getPos = function() {
-      const p = new THREE.Vector3();
-      hand.object3D.getWorldPosition(p);
-      return p;
-    };
 
-    const atualizarAlvo = function() {
-      if (grabbed) return;
-      raycaster.set(getPos(), getDir());
-      raycaster.far = 100;
-      const objetos = [];
-      hand.sceneEl.object3D.traverse((o) => {
-        if (o.el && o.el.classList) {
-          if (o.el.classList.contains('grabbable') ||
-              o.el.classList.contains('clickable')) {
-            objetos.push(o);
+    // Percorre as interseções atuais e sobe até o alvo desejado
+    const findInIntersections = function(predicate) {
+      const rc = hand.components.raycaster;
+      let list = [];
+      if (rc && rc.intersections && rc.intersections.length > 0) {
+        list = rc.intersections;
+      } else {
+        // Fallback: raycast manual
+        const objs = [];
+        hand.sceneEl.object3D.traverse(function(o) {
+          if (o.el && o.el.classList) {
+            if (o.el.classList.contains('clickable') ||
+                o.el.classList.contains('ui-btn') ||
+                o.el.classList.contains('grabbable')) {
+              objs.push(o);
+            }
           }
-        }
-      });
-      const hits = raycaster.intersectObjects(objetos, true);
-      currentGrab = null;
-      currentClick = null;
-      if (hits.length > 0) {
-        const hit = hits[0];
-        const elHit = hit.object.el;
-        if (elHit) {
-          const bloco = acharBloco(elHit);
-          if (bloco) currentGrab = { el: bloco, distance: hit.distance };
-          const clickEl = acharClickable(elHit);
-          if (clickEl) currentClick = clickEl;
+        });
+        const ray = new THREE.Raycaster(getPos(), getDir(), 0, FALLBACK_FAR);
+        list = ray.intersectObjects(objs, true);
+      }
+      for (const hit of list) {
+        let el = hit.object ? hit.object.el : null;
+        let cur = el;
+        while (cur) {
+          if (predicate(cur)) {
+            return { el: cur, distance: hit.distance, hit: hit };
+          }
+          cur = cur.parentEl;
         }
       }
+      return null;
+    };
+
+    const findClickable = function() {
+      return findInIntersections(function(el) {
+        return el.classList && (el.classList.contains('clickable') ||
+                                el.classList.contains('ui-btn'));
+      });
+    };
+    const findBlock = function() {
+      return findInIntersections(function(el) {
+        return el.id && el.id.indexOf('block-') === 0;
+      });
+    };
+
+    const atualizarHUD = function() {
       const dbg = document.getElementById('debugAlvo');
-      if (dbg) {
-        if (currentClick) {
-          const letra = currentClick.getAttribute('data-letra') || '?';
-          const d = currentGrab ? currentGrab.distance : 0;
-          dbg.setAttribute('value', '🎯 CLICK [' + letra + '] ' + d.toFixed(1) + 'm');
-        } else if (currentGrab) {
-          dbg.setAttribute('value', '🎯 ' + currentGrab.el.id + ' ' +
-            currentGrab.distance.toFixed(1) + 'm');
-        } else {
-          dbg.setAttribute('value', '🎯 (nada)');
-        }
+      if (!dbg) return;
+      const c = findClickable();
+      const b = findBlock();
+      if (c) {
+        const letra = c.el.getAttribute('data-letra') || '?';
+        dbg.setAttribute('value', '🎯 CLICK [' + letra + '] ' + c.distance.toFixed(1) + 'm');
+      } else if (b) {
+        dbg.setAttribute('value', '🎯 ' + b.el.id + ' ' + b.distance.toFixed(1) + 'm');
+      } else {
+        dbg.setAttribute('value', '🎯 (nada)');
       }
     };
 
     const startGrab = function() {
-      if (grabbed || !currentGrab) return;
-      grabbed = currentGrab.el;
-      const handPos = getPos();
-      const blockPos = new THREE.Vector3();
-      grabbed.object3D.getWorldPosition(blockPos);
-      offset.copy(blockPos).sub(handPos);
+      if (grabbed) return;
+      const b = findBlock();
+      if (!b) return;
+      grabbed = b.el;
+      const hp = getPos();
+      const bp = new THREE.Vector3();
+      grabbed.object3D.getWorldPosition(bp);
+      offset.copy(bp).sub(hp);
       distAdjust = 0;
       grabbed.setAttribute('material', 'emissive', '#ffaa00');
       grabbed.setAttribute('material', 'emissiveIntensity', '1');
@@ -319,46 +281,81 @@ AFRAME.registerComponent('vr-hand', {
     };
 
     const doClick = function() {
-      if (currentClick) {
-        currentClick.emit('click', { target: currentClick });
-        if (navigator.vibrate) navigator.vibrate(60);
+      const c = findClickable();
+      if (!c) {
+        showToast('⚠️ Aponte para uma alternativa A–E', 800);
         return;
       }
-      showToast('⚠️ Aponte para uma alternativa A–E', 800);
+      c.el.emit('click', { target: c.el, cursorEl: hand });
+      if (navigator.vibrate) navigator.vibrate(60);
     };
 
     this.tick = function() {
-      atualizarAlvo();
+      atualizarHUD();
       if (grabbed) {
-        const handPos = getPos();
+        const hp = getPos();
         const dir = getDir();
-        const targetPos = handPos.clone()
+        const target = hp.clone()
           .add(offset)
           .add(dir.clone().multiplyScalar(distAdjust));
         const parent = grabbed.object3D.parent;
         if (parent) {
-          const local = parent.worldToLocal(targetPos.clone());
+          const local = parent.worldToLocal(target.clone());
           grabbed.object3D.position.copy(local);
         }
       }
     };
 
+    // ═══════════════ EVENTOS DUPLOS ═══════════════
+    // Controle físico
+    hand.addEventListener('triggerdown', doClick);
     hand.addEventListener('gripdown', startGrab);
     hand.addEventListener('gripup', endGrab);
-    hand.addEventListener('pinchstarted', startGrab);
+    hand.addEventListener('abuttondown', doClick);   // Botão A/X extra
+    // Hand tracking
+    hand.addEventListener('pinchstarted', function() {
+      // Se há clickable no foco → click. Senão → grab.
+      const c = findClickable();
+      if (c) {
+        doClick();
+      } else {
+        startGrab();
+      }
+    });
     hand.addEventListener('pinchended', endGrab);
-    hand.addEventListener('triggerdown', doClick);
-    hand.addEventListener('thumbstickmoved', (evt) => {
+
+    // Thumbstick (ajuste distância + rotação)
+    hand.addEventListener('thumbstickmoved', function(evt) {
       if (!grabbed) return;
       const x = evt.detail.x, y = evt.detail.y;
       if (Math.abs(x) > 0.15) grabbed.object3D.rotation.y += x * 0.03;
       if (Math.abs(y) > 0.15) {
         distAdjust -= y * 0.05;
         distAdjust = Math.max(-8, Math.min(8, distAdjust));
-        const dbg = document.getElementById('debugAlvo');
-        if (dbg) {
-          const total = offset.length() + distAdjust;
-          dbg.setAttribute('value', '📏 ' + total.toFixed(1) + 'm');
+      }
+    });
+
+    // ═══════════════ FEEDBACK VISUAL NO LASER ═══════════════
+    hand.addEventListener('raycaster-intersection', function(evt) {
+      const els = evt.detail.els || [];
+      for (const el of els) {
+        if (el.classList && (el.classList.contains('clickable') ||
+                             el.classList.contains('ui-btn'))) {
+          if (!el.dataset.hl) {
+            el.dataset.hl = 'true';
+            el.setAttribute('material', 'emissive', '#00ff88');
+            el.setAttribute('material', 'emissiveIntensity', '0.6');
+          }
+        }
+      }
+    });
+    hand.addEventListener('raycaster-intersection-cleared', function(evt) {
+      const els = evt.detail.clearedEls || [];
+      for (const el of els) {
+        if (el.dataset && el.dataset.hl) {
+          el.setAttribute('material', 'emissive', '#000000');
+          el.setAttribute('material', 'emissiveIntensity', '0');
+          delete el.dataset.hl;
         }
       }
     });
@@ -366,7 +363,7 @@ AFRAME.registerComponent('vr-hand', {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// hand-live: calibrador em tempo real
+// hand-live: calibrador
 // ═══════════════════════════════════════════════════════════════════
 AFRAME.registerComponent('hand-live', {
   schema: { hand: { type: 'string', default: 'left' } },
@@ -383,10 +380,13 @@ AFRAME.registerComponent('hand-live', {
     if (!tEl) return;
     const p = this.el.object3D.position;
     const s = this.el.object3D.scale.x;
-    const isTrack = !!this.el.components['hand-tracking-controls'];
-    const tracking = isTrack ? 'TRACKING' : 'CONTROLE';
+    const hasTracking = !!this.el.components['hand-tracking-controls'];
+    const hasController = !!this.el.components['oculus-touch-controls'];
+    let mode = 'CTRL';
+    if (hasTracking && !hasController) mode = 'HAND';
+    else if (hasTracking && hasController) mode = 'BOTH';
     tEl.setAttribute('value',
-      this.data.hand.toUpperCase() + ': ' + tracking +
+      this.data.hand.toUpperCase() + ': ' + mode +
       '\nPos ' + p.x.toFixed(2) + ' ' + p.y.toFixed(2) + ' ' + p.z.toFixed(2) +
       '\nEscala ' + s.toFixed(2) +
       ' | ' + (this.pinch ? 'PINCH' : 'ABERTA') +
@@ -414,8 +414,7 @@ AFRAME.registerComponent('painel-sistema', {
         if (a === 'passthrough') { window.enablePassthrough(); return; }
         if (a === 'dark') {
           sky.setAttribute('visible', 'true');
-          sky.setAttribute('color', '#050a14');
-          sky.removeAttribute('src');
+          sky.setAttribute('color', '#050a14'); sky.removeAttribute('src');
           stars.setAttribute('visible', 'false');
           showToast('ESCURO');
         }
@@ -442,13 +441,10 @@ AFRAME.registerComponent('painel-sistema', {
         }
         if (a === 'space') {
           sky.setAttribute('visible', 'true');
-          sky.setAttribute('color', '#000005');
-          sky.removeAttribute('src');
-          createStars();
-          stars.setAttribute('visible', 'true');
+          sky.setAttribute('color', '#000005'); sky.removeAttribute('src');
+          createStars(); stars.setAttribute('visible', 'true');
           showToast('ESPAÇO');
         }
-
         if (a === 'organizar') window.organizarGrade();
         if (a === 'porMateria') window.organizarPorMateria();
         if (a === 'espalhar') window.espalhar();
@@ -456,7 +452,7 @@ AFRAME.registerComponent('painel-sistema', {
         if (a === 'carregar') window.carregarLayout();
 
         if (a === 'maoMais') {
-          handScale += 0.1;
+          handScale = Math.min(2.0, handScale + 0.1);
           const v = handScale + ' ' + handScale + ' ' + handScale;
           left.setAttribute('scale', v); right.setAttribute('scale', v);
           showToast('Mão + (' + handScale.toFixed(1) + ')');
@@ -468,7 +464,7 @@ AFRAME.registerComponent('painel-sistema', {
           showToast('Mão - (' + handScale.toFixed(1) + ')');
         }
         if (a === 'alturaMais') {
-          headH += 0.1;
+          headH = Math.min(2.5, headH + 0.1);
           head.setAttribute('position', '0 ' + headH + ' 0');
           showToast('Altura ' + headH.toFixed(1) + 'm');
         }
@@ -496,13 +492,13 @@ AFRAME.registerComponent('painel-sistema', {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// PASSTHROUGH
+// Passthrough / Stars / Toast
 // ═══════════════════════════════════════════════════════════════════
 window.enablePassthrough = async function() {
   if (!navigator.xr) { showToast('❌ WebXR não suportado'); return; }
   try {
     const ok = await navigator.xr.isSessionSupported('immersive-ar');
-    if (!ok) { showToast('❌ Use Meta Quest Browser no headset', 4000); return; }
+    if (!ok) { showToast('❌ Use Meta Quest Browser', 4000); return; }
     const sceneEl = document.querySelector('a-scene');
     const renderer = sceneEl.renderer;
     const cur = renderer.xr.getSession();
@@ -553,7 +549,7 @@ function showToast(msg, ms) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CRIA BLOCO DE QUESTÃO
+// CRIA BLOCO — alternativas com .clickable .ui-btn + geometria explícita
 // ═══════════════════════════════════════════════════════════════════
 function createBlock(q, i) {
   const cols = 4, spacing = 3.0;
@@ -593,33 +589,36 @@ function createBlock(q, i) {
     const letra = alt.trim().charAt(0).toUpperCase();
     const row = document.createElement('a-entity');
     row.setAttribute('position', '0 ' + (-0.05 - idx * 0.28) + ' 0.15');
-    row.setAttribute('class', 'clickable');
+    row.setAttribute('class', 'clickable ui-btn');
     row.setAttribute('data-i', i);
     row.setAttribute('data-letra', letra);
 
+    // PLACA com geometria explícita + .clickable .ui-btn
     const bg = document.createElement('a-plane');
-    bg.setAttribute('width', '2.0');
-    bg.setAttribute('height', '0.22');
-    bg.setAttribute('color', '#0a1933');
-    bg.setAttribute('class', 'clickable');
+    bg.setAttribute('geometry', 'primitive: plane; width: 2.0; height: 0.22');
+    bg.setAttribute('material', 'color: #0a1933; emissive: #000000; emissiveIntensity: 0; side: double');
+    bg.setAttribute('class', 'clickable ui-btn');
 
     const txt = document.createElement('a-text');
     txt.setAttribute('value', alt.length > 60 ? alt.slice(0, 57) + '...' : alt);
     txt.setAttribute('color', '#cfe0ff');
     txt.setAttribute('width', '1.9');
-    txt.setAttribute('position', '-0.95 0 0.01');
-    txt.setAttribute('class', 'clickable');
+    txt.setAttribute('position', '-0.95 0 0.02');
+    txt.setAttribute('class', 'clickable ui-btn');
 
     bg.appendChild(txt);
     row.appendChild(bg);
 
+    // ═══════════════ EVENTO DE CLICK (recebe o .emit('click') do vr-hand) ═══════════════
     row.addEventListener('click', (e) => {
       e.stopPropagation();
       if (root.userData.respondida) return;
       root.userData.respondida = true;
       root.userData.letraEscolhida = letra;
       const ok = letra === q.correta;
-      bg.setAttribute('color', ok ? '#00c853' : '#d50000');
+      bg.setAttribute('material', 'color', ok ? '#00c853' : '#d50000');
+      bg.setAttribute('material', 'emissive', ok ? '#00ff88' : '#ff2222');
+      bg.setAttribute('material', 'emissiveIntensity', '0.7');
       updateHUD();
       showToast(ok ? '✅ Correto!' : '❌ Errado (correta: ' + q.correta + ')');
     });
@@ -640,13 +639,12 @@ function updateHUD() {
     if (c === '#00c853' || c === '#d50000') respondidas++;
   });
   const txt = respondidas + '/' + total;
-  document.getElementById('status').textContent = txt + ' respondidas';
-  document.getElementById('hudVRText')?.setAttribute('value', txt);
+  const st = document.getElementById('status');
+  if (st) st.textContent = txt + ' respondidas';
+  const hd = document.getElementById('hudVRText');
+  if (hd) hd.setAttribute('value', txt);
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// ORGANIZAÇÃO
-// ═══════════════════════════════════════════════════════════════════
 window.organizarGrade = function() {
   document.querySelectorAll('[id^="block-"]').forEach((b, i) => {
     const cols = 4, sp = 3.0;
@@ -689,11 +687,7 @@ window.espalhar = function() {
   showToast('🎲 ESPALHADO');
 };
 
-// ═══════════════════════════════════════════════════════════════════
-// SAVE / LOAD
-// ═══════════════════════════════════════════════════════════════════
 const STORAGE_KEY = 'pmsc_arena_layout';
-
 function savePos(id) {
   if (!id) return;
   const el = document.getElementById(id);
@@ -739,18 +733,13 @@ window.carregarLayout = function() {
   } catch (e) { showToast('❌ Erro'); }
 };
 
-// ═══════════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════════
 const QUESTIONS = __Q_JSON__;
-
 window.addEventListener('load', () => {
   const world = document.getElementById('world');
   if (!world) return;
   QUESTIONS.forEach((q, i) => world.appendChild(createBlock(q, i)));
   setTimeout(updateHUD, 500);
 });
-
 document.getElementById('enter').addEventListener('click', () => {
   document.querySelector('a-scene').enterVR().catch(e => showToast('❌ ' + e.message));
 });
@@ -825,22 +814,24 @@ html, body {
       </a-entity>
     </a-entity>
 
+    <!-- MÃO ESQUERDA: laser-controls (posiciona o controle) + hand-tracking-controls (posiciona a mão) -->
     <a-entity id="leftHand"
-      hand-controls="hand: left; handModelStyle: lowPoly; color: #00d1ff"
-      hand-tracking-controls="hand: left"
+      laser-controls="hand: left"
+      hand-tracking-controls="hand: left; modelStyle: dots; color: #00d1ff"
       hand-live="hand: left"
       vr-hand
-      raycaster="objects: .grabbable, .clickable; far: 100"
-      line="color: #00d1ff; opacity: 0.85; start: 0 0 0; end: 0 0 -50">
+      raycaster="objects: .clickable, .ui-btn, .grabbable; far: 20; interval: 100"
+      line="color: #00d1ff; opacity: 0.85">
     </a-entity>
 
+    <!-- MÃO DIREITA -->
     <a-entity id="rightHand"
-      hand-controls="hand: right; handModelStyle: lowPoly; color: #ff8a00"
-      hand-tracking-controls="hand: right"
+      laser-controls="hand: right"
+      hand-tracking-controls="hand: right; modelStyle: dots; color: #ff8a00"
       hand-live="hand: right"
       vr-hand
-      raycaster="objects: .grabbable, .clickable; far: 100"
-      line="color: #ff8a00; opacity: 0.85; start: 0 0 0; end: 0 0 -50">
+      raycaster="objects: .clickable, .ui-btn, .grabbable; far: 20; interval: 100"
+      line="color: #ff8a00; opacity: 0.85">
     </a-entity>
   </a-entity>
 
@@ -851,43 +842,43 @@ html, body {
     painel-sistema>
     <a-text value="PMSC 2026 — ARENA VR" color="#00e5ff" width="5.5" align="center" position="0 1.35 0.05"></a-text>
 
-    <a-entity class="grabbable clickable calib-btn" data-action="dark"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="dark"
       position="-2.0 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
       material="color: #1a3a6a"><a-text value="ESCURO" color="white" width="0.9" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="beach"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="beach"
       position="-1.05 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
       material="color: #1a5a6a"><a-text value="PRAIA" color="white" width="0.9" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="office"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="office"
       position="-0.1 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
       material="color: #2a4a6a"><a-text value="ESCRITÓRIO" color="white" width="0.9" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="library"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="library"
       position="0.85 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
       material="color: #5a3a1a"><a-text value="BIBLIOTECA" color="white" width="0.9" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="space"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="space"
       position="1.8 0.9 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
       material="color: #2a0a5a"><a-text value="ESPAÇO" color="white" width="0.9" align="center"></a-text></a-entity>
 
-    <a-entity class="grabbable clickable calib-btn" data-action="passthrough"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="passthrough"
       position="-2.0 0.55 0.05" geometry="primitive: plane; width: 1.05; height: 0.26"
       material="color: #7a1fa2"><a-text value="PASSTHROUGH" color="white" width="1.1" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="organizar"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="organizar"
       position="-0.85 0.55 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
       material="color: #1a6a3a"><a-text value="ORGANIZAR" color="white" width="0.9" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="porMateria"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="porMateria"
       position="0.1 0.55 0.05" geometry="primitive: plane; width: 1.0; height: 0.26"
       material="color: #1a6a5a"><a-text value="POR MATÉRIA" color="white" width="1.05" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="espalhar"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="espalhar"
       position="1.1 0.55 0.05" geometry="primitive: plane; width: 0.85; height: 0.26"
       material="color: #6a1a1a"><a-text value="ESPALHAR" color="white" width="0.9" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="salvar"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="salvar"
       position="2.0 0.55 0.05" geometry="primitive: plane; width: 0.7; height: 0.26"
       material="color: #00aa44"><a-text value="SALVAR" color="white" width="0.75" align="center"></a-text></a-entity>
 
-    <a-entity class="grabbable clickable calib-btn" data-action="carregar"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="carregar"
       position="-2.0 0.2 0.05" geometry="primitive: plane; width: 0.95; height: 0.26"
       material="color: #aa8800"><a-text value="CARREGAR" color="white" width="1.0" align="center"></a-text></a-entity>
 
-    <a-text value="Grip=pegar à distância · Trigger=responder · Stick=ajustar"
+    <a-text value="Grip=pegar · Trigger=responder · Stick=ajustar"
       color="#ffaa00" width="4.8" align="center" position="0 -0.95 0.05"></a-text>
   </a-entity>
 
@@ -901,22 +892,22 @@ html, body {
     <a-text id="rightData" value="RIGHT: aguardando" color="#ff8a00" width="1.9"
       align="left" position="-0.85 0.15 0.05" wrap-count="34"></a-text>
 
-    <a-entity class="grabbable clickable calib-btn" data-action="maoMais"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="maoMais"
       position="-0.55 -0.2 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
       material="color: #2a5a1a"><a-text value="MÃO +" color="white" width="0.85" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="maoMenos"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="maoMenos"
       position="0.4 -0.2 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
       material="color: #2a5a1a"><a-text value="MÃO -" color="white" width="0.85" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="alturaMais"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="alturaMais"
       position="-0.55 -0.5 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
       material="color: #1a3a6a"><a-text value="ALT +" color="white" width="0.85" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="alturaMenos"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="alturaMenos"
       position="0.4 -0.5 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
       material="color: #1a3a6a"><a-text value="ALT -" color="white" width="0.85" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="resetPos"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="resetPos"
       position="-0.55 -0.8 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
       material="color: #1a3a6a"><a-text value="RESET POS" color="white" width="0.85" align="center"></a-text></a-entity>
-    <a-entity class="grabbable clickable calib-btn" data-action="sairVR"
+    <a-entity class="grabbable clickable ui-btn calib-btn" data-action="sairVR"
       position="0.4 -0.8 0.05" geometry="primitive: plane; width: 0.8; height: 0.24"
       material="color: #a00000"><a-text value="SAIR VR" color="white" width="0.85" align="center"></a-text></a-entity>
   </a-entity>
@@ -934,7 +925,6 @@ html, body {
         .replace("__LEN__", str(len(safe)))
     )
 
-    # Envolve com iframe allow="xr-spatial-tracking; ..."
     embed_with_webxr_permissions(html, height=height)
 
     if st.button(f"❌ Fechar VR — {modo}", key=f"close_{modo}",
@@ -943,30 +933,18 @@ html, body {
         st.rerun()
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# HEADER
-# ═══════════════════════════════════════════════════════════════════════
 st.title("🎯 PMSC Arena VR")
 st.caption(
     f"✅ {info['arquivo']} · {info['unicas']} questões únicas "
     f"({info['removidas']} duplicatas) · Meta Quest 3/3S"
 )
 
-
-# ═══════════════════════════════════════════════════════════════════════
-# SIDEBAR
-# ═══════════════════════════════════════════════════════════════════════
 with st.sidebar:
     st.success(f"📚 {info['unicas']} questões únicas")
-    if info["removidas"] > 0:
-        st.caption(f"🧹 {info['removidas']} duplicatas removidas")
-
     if st.button("🔄 Recarregar json.json", use_container_width=True):
         load_json.clear()
         st.rerun()
-
     st.divider()
-
     st.subheader("📚 Treino")
     mat = st.selectbox("Matéria", list(banco.keys()))
     maximo = len(banco.get(mat, []))
@@ -981,117 +959,80 @@ with st.sidebar:
             st.session_state.simulado = None
             st.session_state.vr_ready = False
             st.rerun()
-    else:
-        st.warning(f"Sem questões em {mat}")
-
     st.divider()
-
     st.subheader("📝 Simulado")
     st.caption(f"{TOTAL_OFICIAL} questões oficiais do edital")
     if st.button("Iniciar Simulado 60q", type="primary", use_container_width=True):
         st.session_state.simulado = {
             "questoes": montar_simulado(banco),
-            "inicio": time.time(),
-            "respostas": {},
-            "finalizado": False,
+            "inicio": time.time(), "respostas": {}, "finalizado": False,
         }
         st.session_state.treino = []
         st.session_state.vr_ready = False
         st.rerun()
-
     if st.session_state.simulado and not st.session_state.simulado["finalizado"]:
         if st.button("❌ Cancelar simulado", use_container_width=True):
             st.session_state.simulado = None
             st.session_state.vr_ready = False
             st.rerun()
-
     st.divider()
-
     st.subheader("📜 Histórico")
     if st.session_state.hist:
         for h in reversed(st.session_state.hist[-5:]):
-            st.caption(
-                f"{h['data']} — {h['acertos']}/{h['total']} "
-                f"({h['nota']}%) {'✅' if h['aprovado'] else '❌'}"
-            )
+            st.caption(f"{h['data']} — {h['acertos']}/{h['total']} ({h['nota']}%)")
     else:
         st.caption("Nenhum simulado finalizado ainda.")
 
-
-# ═══════════════════════════════════════════════════════════════════════
-# TABS
-# ═══════════════════════════════════════════════════════════════════════
 tab_vr, tab_sim = st.tabs(["🥽 Arena VR", "📝 Simulado"])
 
 with tab_vr:
     if st.session_state.simulado:
         qs = st.session_state.simulado["questoes"]
-        st.markdown(f"### Simulado ({len(qs)} questões)")
         render_vr(qs, modo="SIMULADO", height=950)
     elif st.session_state.treino:
-        st.markdown(f"### Treino ({len(st.session_state.treino)} questões)")
         render_vr(st.session_state.treino, modo="TREINO", height=950)
     else:
         todas = []
         for v in banco.values():
             todas.extend(v)
         random.shuffle(todas)
-        st.markdown("### Arena Livre")
-        st.caption("Use a sidebar para treino por matéria ou simulado completo.")
         render_vr(todas, modo="ARENA", height=950)
 
 with tab_sim:
     if st.session_state.simulado:
         sim = st.session_state.simulado
         qs = sim["questoes"]
-
         if not sim["finalizado"]:
             rest = max(0, 4 * 3600 - int(time.time() - sim["inicio"]))
             h, m, s = rest // 3600, (rest % 3600) // 60, rest % 60
-            st.warning(f"⏱️ **Tempo restante:** {h:02d}:{m:02d}:{s:02d} · {len(qs)} questões")
-
+            st.warning(f"⏱️ **Tempo:** {h:02d}:{m:02d}:{s:02d} · {len(qs)}q")
             with st.form("form_sim"):
                 resp = {}
                 for i, q in enumerate(qs):
                     st.markdown(f"**{i+1}. [{q.get('materia', '')}]** {q['pergunta']}")
-                    esc = st.radio(
-                        f"q_{i}", q["alternativas"], index=None,
-                        key=f"sim_{i}", label_visibility="collapsed",
-                    )
+                    esc = st.radio(f"q_{i}", q["alternativas"], index=None,
+                                   key=f"sim_{i}", label_visibility="collapsed")
                     if esc:
                         resp[i] = esc[0].upper()
                     st.divider()
-
                 c1, c2 = st.columns(2)
-                if c1.form_submit_button("💾 Salvar respostas", use_container_width=True):
+                if c1.form_submit_button("💾 Salvar", use_container_width=True):
                     sim["respostas"] = resp
-                    st.success("Respostas salvas.")
+                    st.success("Salvo.")
                     st.rerun()
-
-                if c2.form_submit_button("✅ Finalizar simulado",
-                                          type="primary",
+                if c2.form_submit_button("✅ Finalizar", type="primary",
                                           use_container_width=True):
-                    acertos, detalhes = 0, []
+                    ac, dets = 0, []
                     for i, q in enumerate(qs):
-                        r = resp.get(i, "")
-                        ok = r == q["correta"].upper()
-                        if ok:
-                            acertos += 1
-                        detalhes.append({
-                            "pergunta": q["pergunta"],
-                            "materia": q.get("materia", ""),
-                            "resposta": r,
-                            "correta": q["correta"],
-                            "acertou": ok,
-                        })
-                    nota = (acertos / len(qs)) * 100
+                        r = resp.get(i, ""); ok = r == q["correta"].upper()
+                        if ok: ac += 1
+                        dets.append({"pergunta": q["pergunta"], "materia": q.get("materia", ""),
+                                     "resposta": r, "correta": q["correta"], "acertou": ok})
+                    nota = (ac / len(qs)) * 100
                     st.session_state.hist.append({
                         "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                        "acertos": acertos,
-                        "total": len(qs),
-                        "nota": round(nota, 2),
-                        "aprovado": nota >= 50,
-                        "detalhes": detalhes,
+                        "acertos": ac, "total": len(qs), "nota": round(nota, 2),
+                        "aprovado": nota >= 50, "detalhes": dets,
                         "tempo": time.time() - sim["inicio"],
                     })
                     sim["finalizado"] = True
@@ -1103,15 +1044,12 @@ with tab_sim:
                 c1, c2, c3 = st.columns(3)
                 c1.metric("📊 Nota", f"{ult['nota']}%")
                 c2.metric("✅ Acertos", f"{ult['acertos']}/{ult['total']}")
-                c3.metric("🏁 Status",
-                          "APROVADO ✅" if ult["aprovado"] else "REPROVADO ❌")
-                st.caption(f"Tempo: {int(ult['tempo']//60)} min · {ult['data']}")
-                with st.expander("Ver gabarito comentado"):
+                c3.metric("🏁 Status", "APROVADO ✅" if ult["aprovado"] else "REPROVADO ❌")
+                with st.expander("Ver gabarito"):
                     for i, d in enumerate(ult["detalhes"]):
                         ic = "✅" if d["acertou"] else "❌"
                         st.markdown(f"{ic} **{i+1}. [{d['materia']}]** {d['pergunta']}")
                         st.caption(f"Sua: {d['resposta'] or '—'} · Correta: {d['correta']}")
-
             if st.button("🔄 Novo simulado", type="primary"):
                 st.session_state.simulado = None
                 st.session_state.vr_ready = False
