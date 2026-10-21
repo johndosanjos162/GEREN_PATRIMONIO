@@ -527,7 +527,6 @@ function makeSurfaceTexture(kind){
   const ctx=canvas.getContext('2d');const img=ctx.createImageData(S,S);
   for(let y=0;y<S;y++)for(let x=0;x<S;x++){
     const i=(y*S+x)*4;
-    // Multi-octave value noise
     let n=0,amp=.5,freq=.06;
     for(let o=0;o<4;o++){
       const s=Math.sin(x*freq*12.9898+y*freq*78.233+o*3.7)*43758.5453;
@@ -566,39 +565,68 @@ const surfaceMaps={
   ao:makeSurfaceTexture('ao')
 };
 
+// ---------- WOOD 2048 PBR ----------
 function makeWoodTexture(){
-  const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=1024;
+  const S=2048;
+  const canvas=document.createElement('canvas');canvas.width=S;canvas.height=S;
   const ctx=canvas.getContext('2d');
-  const base=ctx.createLinearGradient(0,0,1024,0);
-  base.addColorStop(0,'#5a4028');base.addColorStop(.25,'#8a6b46');
-  base.addColorStop(.5,'#7a5a38');base.addColorStop(.75,'#8a6b46');base.addColorStop(1,'#5a4028');
-  ctx.fillStyle=base;ctx.fillRect(0,0,1024,1024);
-  // Grãos finos
-  for(let i=0;i<900;i++){
-    const y=Math.random()*1024,alpha=.04+Math.random()*.32;
-    ctx.strokeStyle=`rgba(30,18,8,${alpha})`;
-    ctx.lineWidth=.3+Math.random()*2.6;
+  const base=ctx.createLinearGradient(0,0,S,0);
+  base.addColorStop(0,'#4d3520');base.addColorStop(.2,'#8a6b46');
+  base.addColorStop(.45,'#6b4c2e');base.addColorStop(.7,'#8a6b46');
+  base.addColorStop(.9,'#5a4028');base.addColorStop(1,'#4d3520');
+  ctx.fillStyle=base;ctx.fillRect(0,0,S,S);
+  // Long grain lines
+  for(let i=0;i<3200;i++){
+    const y=Math.random()*S,alpha=.03+Math.random()*.30;
+    ctx.strokeStyle=`rgba(25,14,6,${alpha})`;
+    ctx.lineWidth=.3+Math.random()*2.4;
     ctx.beginPath();
-    for(let x=0;x<=1024;x+=4){
-      const wave=Math.sin(x*.02+i*.7)*3+Math.sin(x*.008+i)*5;
+    for(let x=0;x<=S;x+=3){
+      const wave=Math.sin(x*.012+i*.7)*4+Math.sin(x*.004+i)*7+Math.sin(x*.03+i*2.1)*1.5;
       if(x===0)ctx.moveTo(x,y+wave);else ctx.lineTo(x,y+wave);
     }
     ctx.stroke();
   }
-  // Nós
-  for(let k=0;k<6;k++){
-    const kx=Math.random()*1024,ky=Math.random()*1024;
-    for(let r=40;r>0;r--){
-      ctx.strokeStyle=`rgba(22,10,4,${.05+r*.008})`;
-      ctx.beginPath();ctx.ellipse(kx,ky,r,r*.7,0,0,Math.PI*2);ctx.stroke();
+  // Subtle light grain highlights
+  for(let i=0;i<600;i++){
+    const y=Math.random()*S;
+    ctx.strokeStyle=`rgba(255,230,190,${.02+Math.random()*.06})`;
+    ctx.lineWidth=.3+Math.random()*1.2;
+    ctx.beginPath();
+    for(let x=0;x<=S;x+=4){
+      const wave=Math.sin(x*.015+i*.5)*3;
+      if(x===0)ctx.moveTo(x,y+wave);else ctx.lineTo(x,y+wave);
     }
+    ctx.stroke();
+  }
+  // Knots with concentric rings
+  for(let k=0;k<8;k++){
+    const kx=Math.random()*S,ky=Math.random()*S,rad=30+Math.random()*50;
+    for(let r=rad;r>0;r-=1.5){
+      ctx.strokeStyle=`rgba(18,8,3,${.06+r*.006})`;
+      ctx.lineWidth=1+Math.random()*.8;
+      ctx.beginPath();
+      ctx.ellipse(kx+Math.sin(r*.3)*2,ky,r,r*(.6+Math.random()*.2),Math.random()*.5,0,Math.PI*2);
+      ctx.stroke();
+    }
+    // Dark center
+    const g=ctx.createRadialGradient(kx,ky,0,kx,ky,rad*.4);
+    g.addColorStop(0,'rgba(15,6,2,.8)');g.addColorStop(1,'rgba(15,6,2,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(kx,ky,rad*.4,0,Math.PI*2);ctx.fill();
+  }
+  // Occasional pinholes
+  for(let p=0;p<40;p++){
+    const x=Math.random()*S,y=Math.random()*S,r=.8+Math.random()*1.5;
+    ctx.fillStyle=`rgba(10,4,2,${.4+Math.random()*.5})`;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
   }
   const t=new THREE.CanvasTexture(canvas);t.colorSpace=THREE.SRGBColorSpace;
-  t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.RepeatWrapping;t.anisotropy=16;t.repeat.set(1.5,1.5);
+  t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.RepeatWrapping;t.anisotropy=16;t.repeat.set(1.4,1.4);
   return t;
 }
 const woodTexture=makeWoodTexture();
 
+// ---------- FLOOR 1024 PBR ----------
 function makeFloorTexture(){
   const S=1024;
   const c=document.createElement('canvas');c.width=S;c.height=S;
@@ -608,34 +636,51 @@ function makeFloorTexture(){
   for(let p=0;p<6;p++){
     const cy=p*plankH;
     ctx.fillStyle=colors[p];ctx.fillRect(0,cy,S,plankH);
-    // Grãos por tábua
-    for(let g=0;g<180;g++){
-      ctx.strokeStyle=`rgba(28,16,8,${.08+Math.random()*.22})`;
-      ctx.lineWidth=.4+Math.random()*1.6;
+    // Fine grain per plank
+    for(let g=0;g<420;g++){
+      ctx.strokeStyle=`rgba(28,16,8,${.06+Math.random()*.22})`;
+      ctx.lineWidth=.4+Math.random()*1.4;
       const y=cy+Math.random()*plankH;
       ctx.beginPath();ctx.moveTo(0,y);
-      for(let x=0;x<S;x+=8)ctx.lineTo(x,y+Math.sin(x*.02+g*.5)*1.4+Math.sin(x*.006+g)*2);
+      for(let x=0;x<S;x+=6)ctx.lineTo(x,y+Math.sin(x*.025+g*.5)*1.6+Math.sin(x*.008+g)*2.4);
       ctx.stroke();
     }
-    // Sombra de borda
+    // Light grain highlights
+    for(let g=0;g<80;g++){
+      ctx.strokeStyle=`rgba(255,225,180,${.02+Math.random()*.05})`;
+      ctx.lineWidth=.3+Math.random()*.7;
+      const y=cy+Math.random()*plankH;
+      ctx.beginPath();ctx.moveTo(0,y);
+      for(let x=0;x<S;x+=8)ctx.lineTo(x,y+Math.sin(x*.03+g)*1.2);
+      ctx.stroke();
+    }
+    // Border shadow
     ctx.strokeStyle='rgba(15,8,3,.85)';ctx.lineWidth=2.5;
     ctx.strokeRect(0,cy,S,plankH);
-    // Brilho
-    ctx.strokeStyle='rgba(255,220,180,.06)';ctx.lineWidth=1;
+    // Highlight at top of plank
+    ctx.strokeStyle='rgba(255,220,180,.08)';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,cy+1);ctx.lineTo(S,cy+1);ctx.stroke();
   }
-  // Juntas verticais
-  for(let s=0;s<6;s++){
+  // Vertical joints
+  for(let s=0;s<8;s++){
     const x=Math.random()*S,p=Math.floor(Math.random()*6);
     ctx.strokeStyle='rgba(15,8,3,.75)';ctx.lineWidth=1.8;
     ctx.beginPath();ctx.moveTo(x,p*plankH);ctx.lineTo(x,(p+1)*plankH);ctx.stroke();
   }
-  // Desgaste
-  for(let w=0;w<40;w++){
-    const x=Math.random()*S,y=Math.random()*S,r=10+Math.random()*30;
+  // Wear circles (heel marks, scuffs)
+  for(let w=0;w<60;w++){
+    const x=Math.random()*S,y=Math.random()*S,r=15+Math.random()*45;
     const g=ctx.createRadialGradient(x,y,0,x,y,r);
     g.addColorStop(0,'rgba(0,0,0,.10)');g.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  }
+  // Scratches
+  for(let s=0;s<25;s++){
+    const x1=Math.random()*S,y1=Math.random()*S;
+    const len=20+Math.random()*80,ang=Math.random()*Math.PI*2;
+    ctx.strokeStyle=`rgba(30,18,8,${.15+Math.random()*.25})`;
+    ctx.lineWidth=.5+Math.random()*1;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1+Math.cos(ang)*len,y1+Math.sin(ang)*len);ctx.stroke();
   }
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
   t.repeat.set(6,6);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=16;
@@ -654,7 +699,6 @@ function makeWallTexture(){
     img.data[i]+=n;img.data[i+1]+=n;img.data[i+2]+=n;
   }
   ctx.putImageData(img,0,0);
-  // Manchas de umidade
   for(let k=0;k<8;k++){
     const x=Math.random()*S,y=Math.random()*S,r=20+Math.random()*60;
     const g=ctx.createRadialGradient(x,y,0,x,y,r);
@@ -672,7 +716,6 @@ function makeGrassTexture(){
   const c=document.createElement('canvas');c.width=S;c.height=S;
   const ctx=c.getContext('2d');
   ctx.fillStyle='#4a6b32';ctx.fillRect(0,0,S,S);
-  // Base de variação
   for(let i=0;i<200;i++){
     const x=Math.random()*S,y=Math.random()*S,r=30+Math.random()*70;
     const g=ctx.createRadialGradient(x,y,0,x,y,r);
@@ -681,7 +724,6 @@ function makeGrassTexture(){
     g.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
   }
-  // Folhas
   for(let i=0;i<12000;i++){
     const x=Math.random()*S,y=Math.random()*S,h=3+Math.random()*9;
     const hue=85+Math.random()*45,sat=35+Math.random()*40,lit=20+Math.random()*30;
@@ -705,7 +747,6 @@ function makeBarkTexture(){
     const x=Math.random()*512,y=Math.random()*1024,h=20+Math.random()*70;
     ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+(Math.random()-.5)*10,y+h);ctx.stroke();
   }
-  // Rachaduras verticais
   for(let k=0;k<12;k++){
     const x=Math.random()*512;
     ctx.strokeStyle='rgba(15,8,3,.7)';ctx.lineWidth=1.5+Math.random()*2;
@@ -762,10 +803,41 @@ function mat(color){
       params.roughness=.92;
       params.envMapIntensity=.55;
     }
-    mats.set(color,new THREE.MeshStandardMaterial(params));
+    if(isMetal){
+      params.clearcoat=0.72;
+      params.clearcoatRoughness=0.10;
+      params.envMapIntensity=1.35;
+      mats.set(color,new THREE.MeshPhysicalMaterial(params));
+    }else{
+      mats.set(color,new THREE.MeshStandardMaterial(params));
+    }
   }
   return mats.get(color);
 }
+
+// Materiais exclusivos da bandeira (realismo máximo)
+const poleMat=new THREE.MeshPhysicalMaterial({
+  color:0xe3e8eb,
+  metalness:1.0,
+  roughness:0.06,
+  clearcoat:1.0,
+  clearcoatRoughness:0.03,
+  envMapIntensity:2.2
+});
+const brassMat=new THREE.MeshPhysicalMaterial({
+  color:0xd4af37,
+  metalness:1.0,
+  roughness:0.14,
+  clearcoat:0.9,
+  clearcoatRoughness:0.06,
+  envMapIntensity:1.8
+});
+const ropeMat=new THREE.MeshStandardMaterial({
+  color:0xb8a070,
+  roughness:0.94,
+  metalness:0,
+  envMapIntensity:0.4
+});
 
 function withAO(geo){if(geo.attributes.uv)geo.setAttribute('uv2',geo.attributes.uv.clone());return geo;}
 function box(x,y,z,w,h,d,color){const o=new THREE.Mesh(withAO(new THREE.BoxGeometry(w,h,d)),mat(color));o.castShadow=w<=6&&h<=5&&d<=6&&Math.max(w,h,d)>.4;o.receiveShadow=true;o.position.set(x,y,z);world.add(o);return o;}
@@ -778,58 +850,224 @@ function lightCone(x,y,z,radius=.7,height=2.6){
   m.position.set(x,y-height/2,z);world.add(m);return m;
 }
 
-// BANDEIRA
+// =====================================================
+// BANDEIRA — REALISMO MÁXIMO
+// =====================================================
+
+// Bandeira do Brasil em 2048x1360 com textura de tecido sutil
 function flagTexture(){
-  const c=document.createElement('canvas');c.width=1024;c.height=680;
+  const W=2048,H=1360;
+  const c=document.createElement('canvas');c.width=W;c.height=H;
   const a=c.getContext('2d');
-  a.fillStyle='#169b62';a.fillRect(0,0,1024,680);
-  a.fillStyle='#ffdf00';a.beginPath();a.moveTo(512,64);a.lineTo(962,340);a.lineTo(512,616);a.lineTo(62,340);a.closePath();a.fill();
-  a.fillStyle='#002776';a.beginPath();a.arc(512,340,192,0,Math.PI*2);a.fill();
-  a.save();a.translate(512,340);a.rotate(-.16);
-  a.fillStyle='#fff';a.fillRect(-200,-20,400,42);
-  a.fillStyle='#072a58';a.font='bold 32px Arial';a.textAlign='center';a.fillText('ORDEM E PROGRESSO',0,12);
+  // Verde base
+  a.fillStyle='#169b62';a.fillRect(0,0,W,H);
+  // Overlay de fibra de tecido (ruído sutil)
+  const img=a.getImageData(0,0,W,H);
+  for(let i=0;i<img.data.length;i+=4){
+    const n=(Math.random()-.5)*9;
+    img.data[i]=clamp(img.data[i]+n,0,255);
+    img.data[i+1]=clamp(img.data[i+1]+n,0,255);
+    img.data[i+2]=clamp(img.data[i+2]+n,0,255);
+  }
+  a.putImageData(img,0,0);
+  // Losango amarelo
+  a.fillStyle='#ffdf00';
+  a.beginPath();
+  a.moveTo(W/2,128);
+  a.lineTo(W-124,680);
+  a.lineTo(W/2,1232);
+  a.lineTo(124,680);
+  a.closePath();
+  a.fill();
+  // Círculo azul
+  a.fillStyle='#002776';
+  a.beginPath();a.arc(W/2,680,384,0,Math.PI*2);a.fill();
+  // Faixa branca
+  a.save();a.translate(W/2,680);a.rotate(-.16);
+  a.fillStyle='#fff';a.fillRect(-400,-40,800,84);
+  a.fillStyle='#072a58';a.font='bold 62px Arial';a.textAlign='center';a.fillText('ORDEM E PROGRESSO',0,22);
   a.restore();
+  // Estrelas espalhadas (posições determinísticas, visual natural)
   a.fillStyle='white';
-  for(let i=0;i<27;i++){const xx=380+(i*74)%264,yy=216+(i*106)%254;a.beginPath();a.arc(xx,yy,4.8,0,Math.PI*2);a.fill();}
-  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
-  t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
+  const cx=W/2, cy=680, R=384;
+  for(let i=0;i<27;i++){
+    const angle=(i/27)*Math.PI*2+(i%3)*.42+(i%5)*.18;
+    const radius=R*(.18+.72*((i*7)%13)/13);
+    const xx=cx+Math.cos(angle)*radius;
+    const yy=cy+Math.sin(angle)*radius;
+    const size=7+((i*3)%6);
+    a.beginPath();a.arc(xx,yy,size,0,Math.PI*2);a.fill();
+  }
+  const t=new THREE.CanvasTexture(c);
+  t.colorSpace=THREE.SRGBColorSpace;
+  t.generateMipmaps=true;
+  t.minFilter=THREE.LinearMipmapLinearFilter;
+  t.magFilter=THREE.LinearFilter;
+  t.anisotropy=16;
+  return t;
+}
+
+// Mapa de normais do tecido (trama visível de perto)
+function makeClothNormalTexture(){
+  const S=1024;
+  const c=document.createElement('canvas');c.width=S;c.height=S;
+  const ctx=c.getContext('2d');
+  const img=ctx.createImageData(S,S);
+  for(let y=0;y<S;y++){
+    for(let x=0;x<S;x++){
+      const i=(y*S+x)*4;
+      // Warp (fios horizontais) + weft (fios verticais)
+      const warpH=Math.sin(x*Math.PI/2)*.5;
+      const weftH=Math.sin(y*Math.PI/2)*.5;
+      const warpD=Math.cos(x*Math.PI/2)*.5;
+      const weftD=Math.cos(y*Math.PI/2)*.5;
+      // Fibra fina
+      const fiber=(Math.random()-.5)*.12;
+      img.data[i]=clamp(128+warpD*70+fiber*40,0,255);
+      img.data[i+1]=clamp(128+weftD*70+fiber*40,0,255);
+      img.data[i+2]=255;
+      img.data[i+3]=255;
+    }
+  }
+  ctx.putImageData(img,0,0);
+  const t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(14,10);
+  t.colorSpace=THREE.NoColorSpace;
   t.anisotropy=8;
   return t;
 }
+
 const flagTex=flagTexture();
-const staticFlagMaterial=new THREE.MeshStandardMaterial({map:flagTex,side:THREE.DoubleSide,roughness:.68,metalness:.05,envMapIntensity:.5});
-const flagMaterial=new THREE.MeshStandardMaterial({map:flagTex,side:THREE.DoubleSide,roughness:.68,metalness:.05,envMapIntensity:.5});
+const clothNormalTex=makeClothNormalTexture();
+
+// Materiais de bandeira realistas (cloth + sheen)
+const staticFlagMaterial=new THREE.MeshPhysicalMaterial({
+  map:flagTex,
+  normalMap:clothNormalTex,
+  normalScale:new THREE.Vector2(.45,.45),
+  side:THREE.DoubleSide,
+  roughness:.84,
+  metalness:0,
+  sheen:.35,
+  sheenRoughness:.65,
+  sheenColor:new THREE.Color(0xffffff),
+  clearcoat:.08,
+  clearcoatRoughness:.85,
+  envMapIntensity:.55
+});
+
+const flagMaterial=new THREE.MeshPhysicalMaterial({
+  map:flagTex,
+  normalMap:clothNormalTex,
+  normalScale:new THREE.Vector2(.5,.5),
+  side:THREE.DoubleSide,
+  roughness:.82,
+  metalness:0,
+  sheen:.35,
+  sheenRoughness:.6,
+  sheenColor:new THREE.Color(0xffffff),
+  clearcoat:.08,
+  clearcoatRoughness:.85,
+  envMapIntensity:.6
+});
 flagMaterial.onBeforeCompile=(shader)=>{
   shader.uniforms.uTime={value:0};shader.uniforms.uWind={value:1.0};
   shader.vertexShader=`uniform float uTime;uniform float uWind;${shader.vertexShader}`.replace('#include <begin_vertex>',`
     #include <begin_vertex>
     float progress=clamp((position.x+0.825)/1.65,0.0,1.0);
-    float envelope=smoothstep(0.0,0.32,progress);
-    float w1=sin(progress*7.0+uTime*3.4);
-    float w2=sin(progress*14.0+uTime*5.7)*0.42;
-    float w3=sin(progress*3.2+position.y*5.5+uTime*2.2)*0.55;
-    float gust=0.75+0.25*sin(uTime*0.8+progress*3.0);
-    float displace=(w1+w2+w3)*0.085*envelope*uWind*gust;
+    float envelope=smoothstep(0.0,0.22,progress);
+
+    // Harmônicos múltiplos para simular pano real
+    float billow=sin(progress*4.5+uTime*2.0)*0.5;
+    float wave1=sin(progress*9.0+position.y*3.0+uTime*3.5)*0.35;
+    float wave2=sin(progress*15.0-position.y*2.5+uTime*5.0)*0.2;
+    float wave3=sin(progress*3.2+position.y*5.5+uTime*2.2)*0.28;
+    float ripple=sin(progress*24.0+uTime*7.0)*0.09;
+    float ripple2=sin(position.y*8.0+uTime*4.0)*0.05;
+    float edgeFlutter=(abs(position.y)/0.535)*sin(progress*12.0+uTime*6.0)*0.11;
+
+    float gust=0.72+0.28*sin(uTime*0.6+progress*2.5);
+    float gust2=0.90+0.10*sin(uTime*1.3+progress*7.0);
+
+    float displace=(billow+wave1+wave2+wave3+ripple+ripple2+edgeFlutter)*0.09*envelope*uWind*gust*gust2;
     transformed.z+=displace;
-    transformed.x+=cos(progress*5.5+uTime*2.8)*0.012*envelope*uWind;
-    transformed.y+=sin(progress*4.5+uTime*2.1)*0.014*envelope*uWind;
+    transformed.x+=cos(progress*6.0+uTime*2.5)*0.012*envelope*uWind;
+    transformed.y+=sin(progress*5.0+uTime*2.0)*0.018*envelope*uWind;
+
+    // Vertical sag natural
+    float droop=progress*progress*0.02*(1.0-uWind*0.6);
+    transformed.y-=droop;
   `);
   flagMaterial.userData.shader=shader;
 };
+
+// Bandeira hasteada em mastro de cromo polido
 function flag(x,z){
-  const pole=cyl(x,2,z,.042,4,'#c9cfc9',16);pole.castShadow=true;
-  const base=new THREE.Mesh(withAO(new THREE.CylinderGeometry(.26,.32,.20,20)),mat('#4a4f4a'));
-  base.position.set(x,.10,z);base.castShadow=true;base.receiveShadow=true;world.add(base);
-  const finial=new THREE.Mesh(new THREE.SphereGeometry(.10,16,14),mat('#d4af37'));
+  // Mastro cromado polido
+  const poleGeo=new THREE.CylinderGeometry(0.042,0.048,4,24);
+  const pole=new THREE.Mesh(withAO(poleGeo),poleMat);
+  pole.position.set(x,2,z);
+  pole.castShadow=true;pole.receiveShadow=true;
+  world.add(pole);
+
+  // Base pesada com anel de latão
+  const base=new THREE.Mesh(withAO(new THREE.CylinderGeometry(0.28,0.34,0.22,28)),mat('#4a4f4a'));
+  base.position.set(x,0.11,z);base.castShadow=true;base.receiveShadow=true;world.add(base);
+  const baseRing=new THREE.Mesh(withAO(new THREE.TorusGeometry(0.30,0.012,10,40)),brassMat);
+  baseRing.position.set(x,0.22,z);baseRing.rotation.x=Math.PI/2;world.add(baseRing);
+  const baseTopRing=new THREE.Mesh(withAO(new THREE.TorusGeometry(0.20,0.010,10,36)),brassMat);
+  baseTopRing.position.set(x,0.045,z);baseTopRing.rotation.x=Math.PI/2;world.add(baseTopRing);
+
+  // Ponteira de latão (finial)
+  const finialStem=new THREE.Mesh(new THREE.CylinderGeometry(0.016,0.022,0.07,14),brassMat);
+  finialStem.position.set(x,4.02,z);world.add(finialStem);
+  const finial=new THREE.Mesh(new THREE.SphereGeometry(0.10,20,16),brassMat);
   finial.position.set(x,4.10,z);finial.castShadow=true;world.add(finial);
-  const rope=new THREE.Mesh(new THREE.TorusGeometry(.058,.007,8,16),mat('#a8895a'));
-  rope.position.set(x,1.4,z);rope.rotation.x=Math.PI/2;world.add(rope);
-  const rope2=new THREE.Mesh(new THREE.TorusGeometry(.058,.007,8,16),mat('#a8895a'));
-  rope2.position.set(x,1.5,z);rope2.rotation.x=Math.PI/2;world.add(rope2);
-  const geom=new THREE.PlaneGeometry(1.65,1.07,48,24);
+
+  // Anéis de adriça (rope rings) — realistas com torus maior
+  for(const yy of [1.4,1.5]){
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(0.058,0.009,10,24),ropeMat);
+    ring.position.set(x,yy,z);ring.rotation.x=Math.PI/2;world.add(ring);
+  }
+  // Corda subindo e descendo
+  const ropeGeo=new THREE.CylinderGeometry(0.006,0.006,2.6,8);
+  const ropeUp=new THREE.Mesh(ropeGeo,ropeMat);
+  ropeUp.position.set(x+0.062,2.72,z);world.add(ropeUp);
+  const ropeDown=new THREE.Mesh(ropeGeo,ropeMat);
+  ropeDown.position.set(x-0.062,1.20,z);world.add(ropeDown);
+
+  // Bandeira com alta resolução de segmentos (pano suave)
+  const geom=new THREE.PlaneGeometry(1.65,1.07,80,50);
   const mesh=new THREE.Mesh(geom,flagMaterial);
-  mesh.position.set(x+.9,3.25,z);mesh.castShadow=true;world.add(mesh);
+  mesh.position.set(x+0.9,3.25,z);
+  mesh.castShadow=true;
+  world.add(mesh);
+
+  // Pequenas fixações visíveis onde o pano toca o mastro (ganchos)
+  for(const yy of [2.78,3.72]){
+    const hook=new THREE.Mesh(new THREE.TorusGeometry(0.012,0.004,6,10),brassMat);
+    hook.position.set(x+0.075,yy,z);
+    world.add(hook);
+  }
+
   contactShadow(x,z,1.7,1.7);
+}
+
+// Mantida a mesma assinatura e função original — apenas materiais atualizados
+function standingFlag(x,z){
+  const base=new THREE.Mesh(withAO(new THREE.CylinderGeometry(.30,.34,.06,24)),mat('#3a2a1c'));
+  base.position.set(x,0.03,z);base.castShadow=true;base.receiveShadow=true;world.add(base);
+  // Mastro mini cromado
+  const poleGeo=new THREE.CylinderGeometry(0.024,0.028,2.7,20);
+  const pole=new THREE.Mesh(withAO(poleGeo),poleMat);
+  pole.position.set(x,1.35,z);pole.castShadow=true;pole.receiveShadow=true;world.add(pole);
+  const finial=new THREE.Mesh(new THREE.SphereGeometry(.055,16,12),brassMat);
+  finial.position.set(x,2.72,z);finial.castShadow=true;world.add(finial);
+  // Mini bandeira
+  const miniFlag=new THREE.Mesh(new THREE.PlaneGeometry(.6,.4,20,14),staticFlagMaterial);
+  miniFlag.position.set(x+.32,2.3,z);miniFlag.castShadow=true;world.add(miniFlag);
+  contactShadow(x,z,1,1);
 }
 
 function windowFrame(x,y,z,w,h,rotY=0){
@@ -857,7 +1095,7 @@ function doorFrame(x,y,z,w,h,rotY=0){
   const top=new THREE.Mesh(withAO(new THREE.BoxGeometry(w+fw*2,fw,.1)),frameMat);top.position.y=h/2+fw/2;g.add(top);
   const left=new THREE.Mesh(withAO(new THREE.BoxGeometry(fw,h,.1)),frameMat);left.position.x=-w/2-fw/2;g.add(left);
   const right=new THREE.Mesh(withAO(new THREE.BoxGeometry(fw,h,.1)),frameMat);right.position.x=w/2+fw/2;g.add(right);
-  const knob=new THREE.Mesh(new THREE.SphereGeometry(.045,14,10),mat('#d4af37'));knob.position.set(w*.35,0,.1);g.add(knob);
+  const knob=new THREE.Mesh(new THREE.SphereGeometry(.045,14,10),brassMat);knob.position.set(w*.35,0,.1);g.add(knob);
   g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
   world.add(g);return g;
 }
@@ -925,7 +1163,7 @@ function table(x,z){
     box(x+dx,.02,z+dz,.1,.04,.1,'#3a3a3a');
   }
   box(x-.4,.72,z+.42,.55,.18,.02,'#6b5334');
-  const p=new THREE.Mesh(new THREE.SphereGeometry(.025,10,8),mat('#d4af37'));p.position.set(x-.4,.72,z+.44);world.add(p);
+  const p=new THREE.Mesh(new THREE.SphereGeometry(.025,10,8),brassMat);p.position.set(x-.4,.72,z+.44);world.add(p);
   box(x+.4,.87,z-.15,.25,.02,.18,'#f5f0e0');
   box(x+.35,.91,z-.1,.15,.02,.22,'#a8433d');
   const cup=new THREE.Mesh(withAO(new THREE.CylinderGeometry(.05,.045,.09,14)),mat('#c8c4b8'));
@@ -960,23 +1198,13 @@ function bunk(x,z){
   for(let i=0;i<3;i++)box(x+.85,.4+i*.35,z-.7,.05,.03,.5,'#8b9398');
   contactShadow(x,z,2.2,2.6);
 }
-function standingFlag(x,z){
-  const base=new THREE.Mesh(withAO(new THREE.CylinderGeometry(.30,.34,.06,22)),mat('#3a2a1c'));
-  base.position.set(x,0.03,z);base.castShadow=true;base.receiveShadow=true;world.add(base);
-  cyl(x,1.35,z,.024,2.7,'#c9cfc9',12);
-  const finial=new THREE.Mesh(new THREE.SphereGeometry(.055,12,10),mat('#d4af37'));
-  finial.position.set(x,2.72,z);finial.castShadow=true;world.add(finial);
-  const miniFlag=new THREE.Mesh(new THREE.PlaneGeometry(.6,.4,1,1),staticFlagMaterial);
-  miniFlag.position.set(x+.32,2.3,z);miniFlag.castShadow=true;world.add(miniFlag);
-  contactShadow(x,z,1,1);
-}
 function militaryPoster(x,y,z,rotY=0){
   const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=rotY;
   const poster=new THREE.Mesh(new THREE.PlaneGeometry(.9,1.3),new THREE.MeshStandardMaterial({color:0x2a4a2a,roughness:.82,metalness:.05}));
   g.add(poster);
   const frame=new THREE.Mesh(new THREE.BoxGeometry(.94,1.34,.02),mat('#1a1a1a'));
   frame.position.z=-.012;g.add(frame);
-  const star=new THREE.Mesh(new THREE.CircleGeometry(.18,5),mat('#d4af37'));
+  const star=new THREE.Mesh(new THREE.CircleGeometry(.18,5),brassMat);
   star.position.z=.011;g.add(star);
   world.add(g);return g;
 }
@@ -1047,7 +1275,7 @@ function makeRoom(){
 }
 
 // =====================================================
-// SOLDADOS — geometria aprimorada
+// SOLDADOS
 // =====================================================
 let soldiers=[];
 function getPatrolRoute(n){
@@ -1062,7 +1290,6 @@ function makeSoldier(x,z,route,startIdx){
   const torso=new THREE.Mesh(withAO(new THREE.BoxGeometry(0.44,0.57,0.26)),mat(uniform));
   torso.position.y=0.30;torso.castShadow=true;hips.add(torso);
 
-  // Detalhes do uniforme
   const pocketL=new THREE.Mesh(withAO(new THREE.BoxGeometry(0.16,0.13,0.012)),mat(uniformDark));
   pocketL.position.set(-0.12,0.40,0.135);hips.add(pocketL);
   const pocketR=new THREE.Mesh(withAO(new THREE.BoxGeometry(0.16,0.13,0.012)),mat(uniformDark));
@@ -1072,9 +1299,8 @@ function makeSoldier(x,z,route,startIdx){
 
   const beltM=new THREE.Mesh(withAO(new THREE.BoxGeometry(0.46,0.065,0.28)),mat(belt));
   beltM.position.y=0.03;hips.add(beltM);
-  const buckle=new THREE.Mesh(withAO(new THREE.BoxGeometry(0.055,0.065,0.022)),mat(brass));
+  const buckle=new THREE.Mesh(withAO(new THREE.BoxGeometry(0.055,0.065,0.022)),brassMat);
   buckle.position.set(0,0.03,0.15);hips.add(buckle);
-  // Bolsas laterais
   for(const side of [-1,1]){
     const pouch=new THREE.Mesh(withAO(new THREE.BoxGeometry(0.10,0.11,0.06)),mat(belt));
     pouch.position.set(side*0.22,0.03,0.10);hips.add(pouch);
@@ -1090,7 +1316,7 @@ function makeSoldier(x,z,route,startIdx){
   capM.position.y=0.81;capM.castShadow=true;hips.add(capM);
   const brim=new THREE.Mesh(withAO(new THREE.CylinderGeometry(0.135,0.135,0.016,18)),mat(cap));
   brim.position.y=0.765;hips.add(brim);
-  const badge=new THREE.Mesh(new THREE.CircleGeometry(0.018,10),mat(brass));
+  const badge=new THREE.Mesh(new THREE.CircleGeometry(0.018,10),brassMat);
   badge.position.set(0,0.81,0.135);hips.add(badge);
 
   function makeArm(side){
@@ -1125,7 +1351,6 @@ function makeSoldier(x,z,route,startIdx){
   const legL=makeLeg(-1),legR=makeLeg(1);
   hips.add(legL.group);hips.add(legR.group);
 
-  // Rifle
   const rifleBody=new THREE.Mesh(withAO(new THREE.BoxGeometry(0.05,0.56,0.045)),mat('#1a1a1a'));
   rifleBody.position.set(0.16,0.42,-0.17);
   rifleBody.rotation.x=0.2;rifleBody.rotation.z=0.1;
@@ -1135,7 +1360,6 @@ function makeSoldier(x,z,route,startIdx){
   rifleBarrel.rotation.x=0.2;rifleBarrel.rotation.z=0.1;
   hips.add(rifleBarrel);
 
-  // Mochila
   const pack=new THREE.Mesh(withAO(new THREE.BoxGeometry(0.30,0.34,0.16)),mat(uniformDark));
   pack.position.set(0,0.36,-0.20);pack.castShadow=true;hips.add(pack);
 
@@ -1219,6 +1443,7 @@ function buildWorld(n){
     for(let i=0;i<14;i++)tree(-30+Math.random()*60,-15-Math.random()*25);
   }
 
+  // Bandeiras hasteadas — MESMA POSIÇÃO original (-8,-9) e (8,-9), visual aprimorado
   flag(-8,-9);
   flag(8,-9);
 
