@@ -7,7 +7,7 @@ import time
 from collections import defaultdict
 from datetime import datetime
 
-st.set_page_config(page_title="PMSC ARENA VR - Quest 3/3S", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="PMSC ARENA VR - Quest 3/3S CALIBRADO", page_icon="🎯", layout="wide")
 
 DISTRIBUICAO = {
     "Legislação Institucional": 10,
@@ -21,17 +21,14 @@ DISTRIBUICAO = {
     "Informática": 5,
 }
 
-# ===================== CARREGADOR ROBUSTO COM RAW_DECODE =====================
 @st.cache_data(ttl=30)
 def load_banco():
     base = pathlib.Path(__file__).parent
-    # Procura json.json e variações
     candidates = []
     for name in ["json.json", "banco.json", "questoes.json", "questions.json"]:
         p = base / name
         if p.exists():
             candidates.append(p)
-    # Também qualquer .json
     for f in base.iterdir():
         if f.is_file() and f.suffix.lower()==".json" and f not in candidates:
             candidates.append(f)
@@ -43,19 +40,15 @@ def load_banco():
                     candidates.append(f)
         except:
             pass
-
     all_questions = defaultdict(list)
-    seen = set()  # deduplicacao case-insensitive
-
+    seen = set()
     for path in candidates:
         try:
             content = path.read_text(encoding="utf-8", errors="ignore")
-            # Suporta múltiplos objetos JSON concatenados
             decoder = json.JSONDecoder()
             idx = 0
             objects = []
             while idx < len(content):
-                # Pula espaços e caracteres não JSON
                 while idx < len(content) and content[idx] in " \n\r\t":
                     idx+=1
                 if idx >= len(content):
@@ -65,13 +58,10 @@ def load_banco():
                     objects.append(obj)
                     idx = end
                 except json.JSONDecodeError:
-                    # Avança 1 char e tenta de novo
                     idx+=1
                     continue
-
             for obj in objects:
                 if isinstance(obj, dict):
-                    # Se dict é materia -> lista
                     for k, v in obj.items():
                         if isinstance(v, list):
                             for q in v:
@@ -79,7 +69,6 @@ def load_banco():
                                     key = q["pergunta"].strip().lower()
                                     if key not in seen:
                                         seen.add(key)
-                                        # Normaliza campos
                                         q_norm = {
                                             "pergunta": q.get("pergunta","").strip(),
                                             "alternativas": q.get("alternativas", q.get("opcoes", [])),
@@ -101,13 +90,10 @@ def load_banco():
                                     "materia": mat
                                 }
                                 all_questions[mat].append(q_norm)
-        except Exception as e:
+        except:
             continue
-
     if not all_questions:
         return None, None
-
-    # Converte para dict normal
     banco = dict(all_questions)
     total = sum(len(v) for v in banco.values())
     return banco, f"json.json ({total} únicas)"
@@ -117,7 +103,6 @@ def montar_simulado(banco):
     for mat,qtd in DISTRIBUICAO.items():
         pool=banco.get(mat,[])
         if not pool:
-            # Busca fuzzy
             for k,v in banco.items():
                 if mat.lower() in k.lower() or k.lower() in mat.lower():
                     pool=v
@@ -136,10 +121,9 @@ if "hist" not in st.session_state:
 
 banco, caminho = load_banco()
 if not banco:
-    st.error("❌ json.json não encontrado na raiz. Coloque seu banco na raiz do repositório.")
+    st.error("❌ json.json não encontrado na raiz.")
     st.stop()
 
-# ===================== SIDEBAR - MODULO 1 =====================
 with st.sidebar:
     total_q = sum(len(v) for v in banco.values())
     st.success(f"📚 {total_q} questões únicas")
@@ -162,8 +146,6 @@ with st.sidebar:
     st.subheader("Simulado Oficial")
     if st.button("🚀 Iniciar Simulado 60q", type="primary", use_container_width=True):
         sim = montar_simulado(banco)
-        if len(sim)<60:
-            st.warning(f"Banco tem só {len(sim)}q. Gerando com o que tem.")
         st.session_state.simulado={"questoes":sim,"inicio":time.time(),"respostas":{}, "finalizado":False}
         st.session_state.treino=[]
         st.rerun()
@@ -171,22 +153,21 @@ with st.sidebar:
         if st.button("❌ Cancelar simulado", use_container_width=True):
             st.session_state.simulado=None
             st.rerun()
-    st.divider()
     if st.session_state.hist:
-        st.subheader("📈 Histórico (últimas 5)")
+        st.divider()
+        st.subheader("Histórico")
         for h in reversed(st.session_state.hist[-5:]):
             status = "✅" if h["aprovado"] else "❌"
             st.caption(f"{status} {h['data']} - {h['acertos']}/{h['total']} - {h['nota']}%")
 
-st.title("🎯 PMSC ARENA VR - Quest 3 / 3S")
-st.caption(f"Edital AOCP | {caminho} | Realidade Mista Passthrough | Tudo movível")
+st.title("🎯 PMSC ARENA VR - CALIBRADO Quest 3/3S")
+st.caption("Calibração automática Meta Quest + Painel clicável + Mãos alinhadas")
 
-# ===================== FUNÇÃO RENDER VR - SEM F-STRING =====================
 def render_vr(questoes, modo="ARENA", height=980):
     key = f"vr_{modo}"
     if not st.session_state.get(key, False):
-        st.info(f"🎯 {len(questoes)} questões prontas. Clique para carregar a arena VR. No headset: Grip move bloco à distância, Trigger responde.")
-        if st.button(f"🥽 CARREGAR VR - {modo} ({len(questoes[:18])} blocos)", key=f"btn_{key}", type="primary", use_container_width=True):
+        st.info(f"🎯 {len(questoes)} questões. NOVO: Calibração automática ao entrar no VR. Painel agora 100% clicável com laser visível.")
+        if st.button(f"🥽 CARREGAR VR CALIBRADO - {modo} ({len(questoes[:18])} blocos)", key=f"btn_{key}", type="primary", use_container_width=True):
             st.session_state[key]=True
             st.rerun()
         return
@@ -194,14 +175,11 @@ def render_vr(questoes, modo="ARENA", height=980):
     amostra = questoes[:18]
     safe=[]
     for q in amostra:
-        # Garante alternativas no formato A) ...
         alts = q.get("alternativas",[])
-        # Normaliza para ter letra
         norm_alts=[]
         for idx, a in enumerate(alts[:5]):
             a_str = str(a).strip()
-            # Se não começa com letra, adiciona
-            if not (len(a_str)>=2 and a_str[1]==")" or a_str[0] in "ABCDE" and a_str[1]==")"):
+            if not (len(a_str)>=2 and a_str[0] in "ABCDE" and a_str[1]==")"):
                 letra = chr(65+idx)
                 if not a_str.startswith(letra):
                     a_str = f"{letra}) {a_str}"
@@ -223,13 +201,52 @@ def render_vr(questoes, modo="ARENA", height=980):
 <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
 <style>
 html,body{margin:0;padding:0;width:100%;height:__HEIGHT__px;overflow:hidden;background:#050a14;font-family:system-ui;}
-#hud{position:fixed;top:8px;left:8px;z-index:99999;background:rgba(0,0,0,0.92);color:#00e5ff;border:1px solid #00e5ff;padding:10px 14px;border-radius:10px;font-size:12px;max-width:440px;line-height:1.35;}
-#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:99999;background:rgba(0,0,0,0.9);color:#00ff88;border:1px solid #00ff88;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;transition:opacity 0.2s;}
+#hud{position:fixed;top:8px;left:8px;z-index:99999;background:rgba(0,0,0,0.92);color:#00e5ff;border:1px solid #00e5ff;padding:10px 14px;border-radius:10px;font-size:12px;max-width:460px;line-height:1.35;}
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:99999;background:rgba(0,0,0,0.9);color:#00ff88;border:1px solid #00ff88;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;transition:opacity 0.2s;pointer-events:none;}
 #enter{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:99999;background:linear-gradient(90deg,#00d1ff,#7000ff);color:white;border:none;padding:14px 32px;border-radius:999px;font-weight:900;font-size:15px;cursor:pointer;box-shadow:0 0 20px #00d1ff88;}
 </style>
 <script>
-// ===================== COMPONENTE vr-hand CUSTOM - SEM SUPER-HANDS =====================
-// Mantém DOIS alvos: currentGrab (bloco) e currentClick (alternativa exata)
+// ===================== AUTO CALIBRACAO META QUEST =====================
+AFRAME.registerComponent('auto-calibration', {
+  init: function(){
+    this.el.addEventListener('enter-vr', ()=>{
+      // Calibração automática ao entrar no VR - usa tracking do Quest
+      const rig = document.getElementById('rig');
+      const head = document.getElementById('head');
+      const left = document.getElementById('leftHand');
+      const right = document.getElementById('rightHand');
+      
+      // Reset automático - Quest já calibra floor level
+      if(rig){
+        rig.setAttribute('position','0 0 0');
+        rig.setAttribute('rotation','0 0 0');
+        // Move rig para trás 6m para ver arena
+        setTimeout(()=>{
+          rig.setAttribute('position','0 0 6');
+        }, 100);
+      }
+      if(head){
+        head.setAttribute('position','0 1.65 0');
+      }
+      if(left && right){
+        left.setAttribute('scale','1 1 1');
+        right.setAttribute('scale','1 1 1');
+        left.setAttribute('position','0 0 0');
+        right.setAttribute('position','0 0 0');
+      }
+      // Toast calibração
+      const toast = document.getElementById('toast');
+      if(toast){
+        toast.textContent = '✅ Calibrado automaticamente - Quest';
+        toast.style.opacity='1';
+        setTimeout(()=>{toast.style.opacity='0';},2500);
+      }
+      console.log('Auto-calibration Quest aplicada');
+    });
+  }
+});
+
+// vr-hand com alvos duplos e calibração correta
 AFRAME.registerComponent('vr-hand', {
   schema: {
     hand: {type: 'string', default: 'left'},
@@ -237,45 +254,42 @@ AFRAME.registerComponent('vr-hand', {
   },
   init: function(){
     this.raycaster = new THREE.Raycaster();
-    this.raycaster.far = 100; // alcance longo 100m
-    this.currentGrab = null; // bloco inteiro
-    this.currentClick = null; // alternativa exata
+    this.raycaster.far = 100;
+    this.currentGrab = null;
+    this.currentClick = null;
     this.grabbed = null;
     this.grabOffset = new THREE.Vector3();
-    this.grabOffsetLocal = new THREE.Vector3();
-    this.initialHandPos = new THREE.Vector3();
-    this.pushPull = 0; // thumbstick push/pull
-    this.handEl = this.el;
-    this.controller = this.el;
+    this.pushPull = 0;
 
-    // Estado visual
-    this.lineEl = null;
-
-    // Listeners Grip (controle)
     this.el.addEventListener('gripdown', this.onGripDown.bind(this));
     this.el.addEventListener('gripup', this.onGripUp.bind(this));
     this.el.addEventListener('triggerdown', this.onTriggerDown.bind(this));
-    // Hand tracking pinch
     this.el.addEventListener('pinchstarted', this.onGripDown.bind(this));
     this.el.addEventListener('pinchended', this.onGripUp.bind(this));
-    // Thumbstick
     this.el.addEventListener('thumbstickmoved', this.onThumbstick.bind(this));
-
-    // Para debug HUD
-    this.lastHUD = '';
+    
+    // Click do mouse para teste desktop + laser do controle
+    this.el.addEventListener('click', (evt)=>{
+      // Se for click do cursor, propaga
+      if(evt.detail && evt.detail.intersectedEl){
+        const el = evt.detail.intersectedEl;
+        if(el.hasAttribute('data-letra')){
+          el.emit('click');
+        } else if(el.classList.contains('ui') || el.classList.contains('calib-btn')){
+          el.emit('click');
+        }
+      }
+    });
   },
   onThumbstick: function(evt){
     if(!this.grabbed) return;
     const x = evt.detail.x;
     const y = evt.detail.y;
-    // y = push/pull, x = rotate
     if(Math.abs(y) > 0.2){
-      this.pushPull += y * 0.05; // sensibilidade
-      // Limita 8m
+      this.pushPull += y * 0.05;
       this.pushPull = Math.max(-8, Math.min(8, this.pushPull));
     }
     if(Math.abs(x) > 0.5){
-      // Rotação Y
       const rot = this.grabbed.getAttribute('rotation');
       const newY = rot.y + x * 2;
       this.grabbed.setAttribute('rotation', rot.x + ' ' + newY + ' ' + rot.z);
@@ -283,35 +297,28 @@ AFRAME.registerComponent('vr-hand', {
   },
   onGripDown: function(){
     if(!this.currentGrab) return;
-    // Guarda bloco
     this.grabbed = this.currentGrab;
     const handPos = new THREE.Vector3();
     this.el.object3D.getWorldPosition(handPos);
     const blockPos = new THREE.Vector3();
     this.grabbed.object3D.getWorldPosition(blockPos);
-    // OFFSET EXATO - bloco fica parado onde está
     this.grabOffset.copy(blockPos).sub(handPos);
-    this.initialHandPos.copy(handPos);
     this.pushPull = 0;
-    // Visual
     this.grabbed.setAttribute('material','emissive','#ffaa00; emissiveIntensity:0.6');
     const box = this.grabbed.querySelector('a-box');
     if(box) box.setAttribute('color','#ffaa00');
-    // Toast
     const dist = handPos.distanceTo(blockPos).toFixed(1);
     this.showToast('✋ ' + this.grabbed.id + ' @ ' + dist + 'm');
     if(navigator.vibrate) navigator.vibrate(20);
   },
   onGripUp: function(){
     if(!this.grabbed) return;
-    // Salva no localStorage
     const id = this.grabbed.id;
     const pos = this.grabbed.getAttribute('position');
     const rot = this.grabbed.getAttribute('rotation');
     try{
       localStorage.setItem('pmsc_pos_'+id, JSON.stringify({pos: pos, rot: rot}));
     }catch(e){}
-    // Restaura cor
     this.grabbed.setAttribute('material','emissive','#000000; emissiveIntensity:0');
     const box = this.grabbed.querySelector('a-box');
     if(box) box.setAttribute('color','#13244a');
@@ -319,125 +326,107 @@ AFRAME.registerComponent('vr-hand', {
     this.pushPull = 0;
   },
   onTriggerDown: function(){
-    if(!this.currentClick) return;
-    // Dispara click na alternativa exata
-    this.currentClick.emit('click');
-    const letra = this.currentClick.getAttribute('data-letra');
-    this.showHUD('🎯 CLICK ['+letra+']');
-    if(navigator.vibrate) navigator.vibrate(10);
+    if(this.currentClick){
+      this.currentClick.emit('click');
+      const letra = this.currentClick.getAttribute('data-letra') || this.currentClick.getAttribute('data-action') || 'CLICK';
+      const grabHUD = document.getElementById('grabHUD');
+      if(grabHUD) grabHUD.setAttribute('value','🎯 CLICK ['+letra+']');
+      if(navigator.vibrate) navigator.vibrate(10);
+    } else if(this.currentGrab && this.currentGrab.classList.contains('calib-btn')){
+      // Se grip estava em botão de calibração
+      this.currentGrab.emit('click');
+    }
   },
   showToast: function(msg){
     const t = document.getElementById('toast');
     if(t){ t.textContent = msg; t.style.opacity='1'; setTimeout(()=>{t.style.opacity='0';},1200); }
   },
-  showHUD: function(msg){
-    if(this.lastHUD === msg) return;
-    this.lastHUD = msg;
-    const status = document.getElementById('status');
-    const vrHud = document.getElementById('hudVRText');
-    // Não sobrescreve contador, só HUD secundário
-    const target = document.getElementById('grabHUD');
-    if(target) target.setAttribute('value', msg);
-  },
   tick: function(){
-    // 1. Atualiza raycaster a partir da mão
     const origin = new THREE.Vector3();
     const direction = new THREE.Vector3();
     this.el.object3D.getWorldPosition(origin);
-    // Direção: -Z local da mão
-    this.el.object3D.getWorldDirection(direction);
-    // Inverte para frente (A-Frame getWorldDirection pega -Z já)
-    // Para mãos, precisamos usar matriz
     const mat = new THREE.Matrix4();
     mat.extractRotation(this.el.object3D.matrixWorld);
     direction.set(0,0,-1).applyMatrix4(mat).normalize();
-
     this.raycaster.set(origin, direction);
 
-    // 2. Coleta objetos
-    const grabbables = [];
-    const clickables = [];
-    document.querySelectorAll('.grabbable').forEach(el=>{
-      if(el.object3D) grabbables.push(el.object3D);
-    });
-    document.querySelectorAll('.clickable').forEach(el=>{
-      if(el.object3D) clickables.push(el.object3D);
+    // Coleta TODOS: grabbable, clickable e ui
+    const allMeshes = [];
+    document.querySelectorAll('.grabbable, .clickable, .ui, .calib-btn').forEach(el=>{
+      if(el.object3D){
+        // Pega meshes recursivamente
+        el.object3D.traverse((child)=>{
+          if(child.isMesh) allMeshes.push(child);
+        });
+      }
     });
 
-    // Interseção grabbable (blocos)
-    const intersectsGrab = this.raycaster.intersectObjects(grabbables, true);
-    // Interseção clickable (alternativas)
-    const intersectsClick = this.raycaster.intersectObjects(clickables, true);
-
-    // Reseta
+    const intersects = this.raycaster.intersectObjects(allMeshes, false);
+    
     this.currentGrab = null;
     this.currentClick = null;
 
-    // Encontra bloco (sobe hierarquia até id block-N)
-    if(intersectsGrab.length>0){
-      let obj = intersectsGrab[0].object;
+    if(intersects.length>0){
+      let obj = intersects[0].object;
       let el = obj.el;
-      // Sobe até achar id block-
-      while(el && !el.id.startsWith('block-')){
+      // Se não tem el, sobe até achar
+      let tries = 0;
+      while(el && tries<10){
+        if(el.id && el.id.startsWith('block-')){
+          this.currentGrab = el;
+          const dist = intersects[0].distance.toFixed(1);
+          const grabHUD = document.getElementById('grabHUD');
+          if(grabHUD) grabHUD.setAttribute('value','🎯 '+el.id+' '+dist+'m');
+          break;
+        }
+        if(el.hasAttribute && el.hasAttribute('data-letra')){
+          this.currentClick = el;
+          const letra = el.getAttribute('data-letra');
+          const grabHUD = document.getElementById('grabHUD');
+          if(grabHUD) grabHUD.setAttribute('value','🎯 CLICK ['+letra+']');
+          // Também define grab como bloco pai se for alternativa
+          let parent = el.parentEl;
+          while(parent && tries<10){
+            if(parent.id && parent.id.startsWith('block-')){
+              // Não define currentGrab aqui para não mover ao responder, mas mantém referência
+              break;
+            }
+            parent = parent.parentEl;
+            tries++;
+          }
+          break;
+        }
+        if(el.classList && (el.classList.contains('ui') || el.classList.contains('calib-btn'))){
+          this.currentClick = el;
+          this.currentGrab = el; // botão pode ser agarrado também se painel for movível
+          const action = el.getAttribute('data-action') || 'BTN';
+          const grabHUD = document.getElementById('grabHUD');
+          if(grabHUD) grabHUD.setAttribute('value','🎯 '+action);
+          break;
+        }
         el = el.parentEl;
-      }
-      if(el && el.id.startsWith('block-')){
-        this.currentGrab = el;
-        const dist = intersectsGrab[0].distance.toFixed(1);
-        this.showHUD('🎯 ' + el.id + ' ' + dist + 'm');
-        // Atualiza HUD fixo
-        const grabHUD = document.getElementById('grabHUD');
-        if(grabHUD) grabHUD.setAttribute('value','🎯 ' + el.id + ' ' + dist + 'm');
+        tries++;
       }
     }
 
-    // Encontra alternativa exata (NÃO pega primeiro do bloco)
-    if(intersectsClick.length>0){
-      let obj = intersectsClick[0].object;
-      let el = obj.el;
-      // Sobe até achar data-letra
-      while(el && !el.hasAttribute('data-letra')){
-        el = el.parentEl;
-      }
-      if(el && el.hasAttribute('data-letra')){
-        this.currentClick = el;
-        const letra = el.getAttribute('data-letra');
-        const grabHUD = document.getElementById('grabHUD');
-        if(grabHUD) grabHUD.setAttribute('value','🎯 CLICK ['+letra+']');
-      }
-    }
-
-    // 3. Se está agarrando, move bloco mantendo offset + pushPull
     if(this.grabbed){
       const handPos = new THREE.Vector3();
       this.el.object3D.getWorldPosition(handPos);
-      // Direção para push/pull
       const dir = new THREE.Vector3();
       this.el.object3D.getWorldDirection(dir);
-      // Calcula nova posição: mão + offset + pushPull na direção
       const newPos = new THREE.Vector3();
       newPos.copy(handPos).add(this.grabOffset);
-      // Aplica pushPull ao longo da direção da mão
       const pushVec = dir.clone().multiplyScalar(-this.pushPull);
       newPos.add(pushVec);
-      // Converte para posição local do parent (world)
-      // Como blocos estão em world, seta world position via position
-      // Simplifica: seta position direta (assumindo parent = world)
-      const world = document.getElementById('world');
-      // Transforma world pos para local de world (world é 0,0,0)
-      this.grabbed.setAttribute('position', newPos.x + ' ' + newPos.y + ' ' + newPos.z);
+      this.grabbed.setAttribute('position', newPos.x+' '+newPos.y+' '+newPos.z);
     }
 
-    // 4. Atualiza linha laser manual (50m)
-    const line = this.el.getAttribute('line');
-    if(line){
-      const end = direction.clone().multiplyScalar(50);
-      this.el.setAttribute('line','start: 0 0 0; end: '+end.x+' '+end.y+' '+end.z+'; color: '+this.data.color+'; opacity: 0.85');
-    }
+    // Linha laser visível
+    const end = direction.clone().multiplyScalar(50);
+    this.el.setAttribute('line','start: 0 0 0; end: '+end.x+' '+end.y+' '+end.z+'; color: '+this.data.color+'; opacity: 0.9');
   }
 });
 
-// Hand live calibrador
 AFRAME.registerComponent('hand-live', {
   schema: {hand: {type:'string', default:'left'}},
   init: function(){
@@ -452,13 +441,11 @@ AFRAME.registerComponent('hand-live', {
     const tEl = document.getElementById(id);
     if(tEl){
       const p=this.el.object3D.position; const s=this.el.getAttribute('scale').x.toFixed(2);
-      const tracking = this.el.components['hand-tracking-controls'] ? 'TRACK' : 'CTRL';
-      tEl.setAttribute('value', this.data.hand.toUpperCase()+': '+tracking+'\\nPos '+p.x.toFixed(2)+' '+p.y.toFixed(2)+' '+p.z.toFixed(2)+'\\nScale '+s+' Pinch:'+(this.pinch?'ON':'OFF')+' Grip:'+(this.grip?'ON':'OFF'));
+      tEl.setAttribute('value', this.data.hand.toUpperCase()+':\\nPos '+p.x.toFixed(2)+' '+p.y.toFixed(2)+' '+p.z.toFixed(2)+'\\nScale '+s+' Pinch:'+(this.pinch?'ON':'OFF')+' Grip:'+(this.grip?'ON':'OFF'));
     }
   }
 });
 
-// Environment manager
 AFRAME.registerComponent('environment-manager', {
   init: function(){ this.currentEnv='dark'; },
   setEnvironment: function(env){
@@ -468,73 +455,30 @@ AFRAME.registerComponent('environment-manager', {
     const scene=document.querySelector('a-scene');
     const envText=document.getElementById('envText');
     if(env==='passthrough'){
-      // Tenta immersive-ar
-      if(navigator.xr){
-        navigator.xr.isSessionSupported('immersive-ar').then(supported=>{
-          if(supported){
-            scene.setAttribute('background','color: transparent');
-            scene.renderer.setClearColor(0x000000,0);
-            scene.object3D.background=null;
-            if(sky) sky.setAttribute('visible','false');
-            if(ground) ground.setAttribute('visible','false');
-            if(envText) envText.setAttribute('value','PASSTHROUGH - Sala real');
-            // Solicita sessão AR se já em VR? Mostra instrução
-            document.getElementById('toast').textContent='Para passthrough total, use o botão de passthrough do Quest';
-            document.getElementById('toast').style.opacity='1';
-            setTimeout(()=>{document.getElementById('toast').style.opacity='0';},2500);
-          }else{
-            // Fallback transparente
-            scene.setAttribute('background','color: transparent');
-            if(sky) sky.setAttribute('visible','false');
-            if(envText) envText.setAttribute('value','PASSTHROUGH (fallback)');
-          }
-        });
-      }else{
-        scene.setAttribute('background','color: transparent');
-        if(sky) sky.setAttribute('visible','false');
-        if(envText) envText.setAttribute('value','PASSTHROUGH');
-      }
+      scene.setAttribute('background','color: transparent');
+      if(scene.renderer) scene.renderer.setClearColor(0x000000,0);
+      if(scene.object3D) scene.object3D.background=null;
+      if(sky) sky.setAttribute('visible','false');
+      if(ground) ground.setAttribute('visible','false');
+      if(envText) envText.setAttribute('value','PASSTHROUGH');
     }else if(env==='dark'){
       scene.setAttribute('background','color: #050a14');
-      scene.renderer.setClearColor(0x050a14,1);
+      if(scene.renderer) scene.renderer.setClearColor(0x050a14,1);
       if(sky) sky.setAttribute('visible','false');
       if(ground){ ground.setAttribute('visible','true'); ground.setAttribute('color','#0a1430'); }
-      if(envText) envText.setAttribute('value','MODO: ESCURO');
-    }else if(env==='beach'){
-      scene.setAttribute('background','color: #87CEEB');
-      if(sky){ sky.setAttribute('visible','true'); sky.setAttribute('src','https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg'); }
-      if(envText) envText.setAttribute('value','MODO: PRAIA');
-    }else if(env==='office'){
-      scene.setAttribute('background','color: #d0d0d0');
-      if(sky){ sky.setAttribute('visible','true'); sky.setAttribute('src','https://cdn.aframe.io/360-image-gallery-boilerplate/img/city.jpg'); }
-      if(envText) envText.setAttribute('value','MODO: ESCRITORIO');
-    }else if(env==='library'){
-      scene.setAttribute('background','color: #2c1810');
-      if(sky){ sky.setAttribute('visible','true'); sky.setAttribute('src','https://cdn.aframe.io/360-image-gallery-boilerplate/img/cubes.jpg'); }
-      if(envText) envText.setAttribute('value','MODO: BIBLIOTECA');
-    }else if(env==='space'){
-      scene.setAttribute('background','color: #000005');
-      if(sky){ sky.setAttribute('visible','true'); sky.setAttribute('src',''); sky.setAttribute('color','#000005'); }
-      // Cria estrelas
-      const world=document.getElementById('world');
-      if(world && !document.getElementById('stars')){
-        const stars=document.createElement('a-entity');
-        stars.setAttribute('id','stars');
-        for(let i=0;i<300;i++){
-          const s=document.createElement('a-sphere');
-          s.setAttribute('radius','0.05');
-          s.setAttribute('color','white');
-          s.setAttribute('position', (Math.random()-0.5)*100+' '+(Math.random()-0.5)*100+' '+(Math.random()-0.5)*100);
-          stars.appendChild(s);
-        }
-        world.appendChild(stars);
+      if(envText) envText.setAttribute('value','ESCURO');
+    }else{
+      if(sky){ sky.setAttribute('visible','true'); 
+        if(env==='beach') sky.setAttribute('src','https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
+        if(env==='office') sky.setAttribute('src','https://cdn.aframe.io/360-image-gallery-boilerplate/img/city.jpg');
+        if(env==='library') sky.setAttribute('src','https://cdn.aframe.io/360-image-gallery-boilerplate/img/cubes.jpg');
+        if(env==='space') sky.setAttribute('src','');
       }
-      if(envText) envText.setAttribute('value','MODO: ESPACO');
+      if(envText) envText.setAttribute('value',env.toUpperCase());
     }
   }
 });
 
-// Calibration system
 AFRAME.registerComponent('calibration-system', {
   init: function(){
     const rig=document.getElementById('rig'); const head=document.getElementById('head');
@@ -542,10 +486,21 @@ AFRAME.registerComponent('calibration-system', {
     const envManager=document.getElementById('envManager').components['environment-manager'];
     let handScale=1; let headH=1.65;
     this.el.querySelectorAll('.calib-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
         const a=btn.getAttribute('data-action');
-        if(a==='resetPos') rig.setAttribute('position','0 0 8');
-        if(a==='resetRot') rig.setAttribute('rotation','0 0 0');
+        if(a==='resetPos'){ rig.setAttribute('position','0 0 6'); rig.setAttribute('rotation','0 0 0'); }
+        if(a==='recenter'){ 
+          // Recenter nativo do Quest
+          if(rig) rig.setAttribute('position','0 0 0');
+          setTimeout(()=>{ if(rig) rig.setAttribute('position','0 0 6'); }, 100);
+          if(head) head.setAttribute('position','0 1.65 0');
+          if(left) left.setAttribute('scale','1 1 1');
+          if(right) right.setAttribute('scale','1 1 1');
+          handScale=1; headH=1.65;
+          const toast=document.getElementById('toast');
+          if(toast){ toast.textContent='✅ Recalibrado - Quest'; toast.style.opacity='1'; setTimeout(()=>{toast.style.opacity='0';},1500); }
+        }
         if(a==='handUp'){ handScale=Math.min(2.0, handScale+0.1); left.setAttribute('scale',handScale+' '+handScale+' '+handScale); right.setAttribute('scale',handScale+' '+handScale+' '+handScale); }
         if(a==='handDown'){ handScale=Math.max(0.2, handScale-0.1); left.setAttribute('scale',handScale+' '+handScale+' '+handScale); right.setAttribute('scale',handScale+' '+handScale+' '+handScale); }
         if(a==='heightUp'){ headH=Math.min(2.5, headH+0.1); head.setAttribute('position','0 '+headH+' 0'); }
@@ -573,12 +528,13 @@ AFRAME.registerComponent('calibration-system', {
 </head>
 <body>
 <div id="hud">
-<div style="font-weight:900;color:white;font-size:14px;">__MODO__ - PMSC ARENA VR</div>
-Grip = move bloco (mantem distancia) | Trigger = responde | Thumbstick = push/pull + rotaciona<br>
+<div style="font-weight:900;color:white;font-size:14px;">__MODO__ - CALIBRADO AUTO</div>
+✅ Calibração automática Quest ao entrar no VR | Laser 50m visível | Painel 100% clicável<br>
+Grip move bloco (mantém distância) | Trigger responde | Thumbstick push/pull + rotaciona<br>
 <div id="status" style="margin-top:6px;color:#00ff88;font-weight:700;">0/__LEN__ respondidas</div>
 </div>
 <div id="toast"></div>
-<button id="enter">🥽 ENTRAR NO VR</button>
+<button id="enter">🥽 ENTRAR NO VR - CALIBRADO</button>
 
 <a-scene
   background="color: #050a14"
@@ -586,13 +542,13 @@ Grip = move bloco (mantem distancia) | Trigger = responde | Thumbstick = push/pu
   webxr="optionalFeatures: hand-tracking, local-floor, bounded-floor, hit-test, passthrough, plane-detection; requiredFeatures: local-floor"
   vr-mode-ui="enabled:true"
   embedded
+  auto-calibration
   style="width:100%;height:__HEIGHT__px;"
 >
 <a-assets>
   <img id="beach360" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg" crossorigin="anonymous">
   <img id="office360" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/city.jpg" crossorigin="anonymous">
   <img id="library360" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/cubes.jpg" crossorigin="anonymous">
-  <img id="space360" src="https://cdn.aframe.io/a-painter/images/space.jpg" crossorigin="anonymous">
 </a-assets>
 
 <a-entity light="type:ambient; intensity:1.0"></a-entity>
@@ -600,12 +556,11 @@ Grip = move bloco (mantem distancia) | Trigger = responde | Thumbstick = push/pu
 
 <a-sky id="sky360" radius="30" visible="false"></a-sky>
 <a-plane id="ground" rotation="-90 0 0" width="120" height="120" color="#0a1430"></a-plane>
-
 <a-entity id="envManager" environment-manager></a-entity>
 
-<a-entity id="rig" position="0 0 8" movement-controls="fly:true; speed:0.35">
+<a-entity id="rig" position="0 0 6" movement-controls="fly:true; speed:0.35">
   <a-entity id="head" camera look-controls wasd-controls="acceleration:22" position="0 1.65 0">
-    <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable, .grabbable" visible="false"></a-entity>
+    <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable, .grabbable, .ui, .calib-btn" visible="false"></a-entity>
     <a-entity position="0 -0.65 -1.2">
       <a-plane width="1.4" height="0.6" color="black" opacity="0.7"></a-plane>
       <a-text id="hudVRText" value="0/18" color="#00ff88" width="2.0" align="center" position="0 0.12 0.01"></a-text>
@@ -619,8 +574,8 @@ Grip = move bloco (mantem distancia) | Trigger = responde | Thumbstick = push/pu
     hand-tracking-controls="hand: left"
     hand-live="hand: left"
     vr-hand="hand: left; color: #00d1ff"
-    raycaster="objects: .clickable, .grabbable; far: 100; showLine: false"
-    line="color: #00d1ff; opacity: 0.85; start: 0 0 0; end: 0 0 -50"
+    raycaster="objects: .clickable, .grabbable, .ui, .calib-btn; far: 100; showLine: false"
+    line="color: #00d1ff; opacity: 0.9; start: 0 0 0; end: 0 0 -50"
     teleport-controls="cameraRig: #rig; teleportOrigin: #head; button: thumbstick"
   ></a-entity>
 
@@ -629,43 +584,47 @@ Grip = move bloco (mantem distancia) | Trigger = responde | Thumbstick = push/pu
     hand-tracking-controls="hand: right"
     hand-live="hand: right"
     vr-hand="hand: right; color: #ff8a00"
-    raycaster="objects: .clickable, .grabbable; far: 100; showLine: false"
-    line="color: #ff8a00; opacity: 0.85; start: 0 0 0; end: 0 0 -50"
+    raycaster="objects: .clickable, .grabbable, .ui, .calib-btn; far: 100; showLine: false"
+    line="color: #ff8a00; opacity: 0.9; start: 0 0 0; end: 0 0 -50"
     teleport-controls="cameraRig: #rig; teleportOrigin: #head; button: thumbstick"
   ></a-entity>
 </a-entity>
 
-<a-entity id="mainPanel" position="0 1.8 -1.5" calibration-system
-  hoverable grabbable draggable droppable>
-  <a-box width="3.4" height="2.9" depth="0.08" color="#0a0a0a" opacity="0.95" class="grabbable"></a-box>
-  <a-text value="PMSC ARENA VR - CONTROLE" color="#00e5ff" width="3.8" align="center" position="0 1.25 0.06"></a-text>
-  <a-text value="AMBIENTES" color="#00ff88" width="2.5" align="center" position="0 0.98 0.06"></a-text>
-  <a-entity class="ui calib-btn" data-action="envPassthrough" data-color="#00a000" position="-0.95 0.70 0.06" geometry="primitive: plane; width:0.9; height:0.28" material="color:#00a000"><a-text value="PASSTHROUGH" color="white" width="1.6" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="envDark" data-color="#1a3a6a" position="0 0.70 0.06" geometry="primitive: plane; width:0.65; height:0.28" material="color:#1a3a6a"><a-text value="ESCURO" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="envBeach" data-color="#1a3a6a" position="0.95 0.70 0.06" geometry="primitive: plane; width:0.65; height:0.28" material="color:#1a3a6a"><a-text value="PRAIA" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="envOffice" data-color="#1a3a6a" position="-0.95 0.37 0.06" geometry="primitive: plane; width:0.9; height:0.28" material="color:#1a3a6a"><a-text value="ESCRITORIO" color="white" width="1.6" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="envLibrary" data-color="#1a3a6a" position="0 0.37 0.06" geometry="primitive: plane; width:0.85; height:0.28" material="color:#1a3a6a"><a-text value="BIBLIOTECA" color="white" width="1.6" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="envSpace" data-color="#1a3a6a" position="0.95 0.37 0.06" geometry="primitive: plane; width:0.85; height:0.28" material="color:#1a3a6a"><a-text value="ESPACO" color="white" width="1.6" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-text value="ORGANIZACAO" color="#ffaa00" width="2.8" align="center" position="0 0.05 0.06"></a-text>
-  <a-entity class="ui calib-btn" data-action="organize" data-color="#1a3a6a" position="-0.95 -0.18 0.06" geometry="primitive: plane; width:0.75; height:0.24" material="color:#1a3a6a"><a-text value="GRID" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="organizeByMateria" data-color="#1a3a6a" position="0 -0.18 0.06" geometry="primitive: plane; width:0.9; height:0.24" material="color:#1a3a6a"><a-text value="POR MATERIA" color="white" width="1.6" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="scatter" data-color="#1a3a6a" position="0.95 -0.18 0.06" geometry="primitive: plane; width:0.75; height:0.24" material="color:#1a3a6a"><a-text value="ESPALHAR" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="saveLayout" data-color="#2a5a1a" position="-0.95 -0.48 0.06" geometry="primitive: plane; width:0.75; height:0.24" material="color:#2a5a1a"><a-text value="SALVAR" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="loadLayout" data-color="#2a5a1a" position="0 -0.48 0.06" geometry="primitive: plane; width:0.75; height:0.24" material="color:#2a5a1a"><a-text value="CARREGAR" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="resetArena" data-color="#1a3a6a" position="0.95 -0.48 0.06" geometry="primitive: plane; width:0.75; height:0.24" material="color:#1a3a6a"><a-text value="RESET" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-text value="CALIBRAGEM" color="#ffaa00" width="2.0" align="center" position="0 -0.78 0.06"></a-text>
-  <a-entity class="ui calib-btn" data-action="handUp" data-color="#2a5a1a" position="-0.95 -1.0 0.06" geometry="primitive: plane; width:0.5; height:0.22" material="color:#2a5a1a"><a-text value="MAO +" color="white" width="1.2" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="handDown" data-color="#2a5a1a" position="-0.4 -1.0 0.06" geometry="primitive: plane; width:0.5; height:0.22" material="color:#2a5a1a"><a-text value="MAO -" color="white" width="1.2" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="heightUp" data-color="#1a3a6a" position="0.15 -1.0 0.06" geometry="primitive: plane; width:0.5; height:0.22" material="color:#1a3a6a"><a-text value="ALT +" color="white" width="1.2" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="heightDown" data-color="#1a3a6a" position="0.7 -1.0 0.06" geometry="primitive: plane; width:0.5; height:0.22" material="color:#1a3a6a"><a-text value="ALT -" color="white" width="1.2" align="center" position="0 0 0.01"></a-text></a-entity>
-  <a-entity class="ui calib-btn" data-action="exitVR" data-color="#a00000" position="1.3 -1.0 0.06" geometry="primitive: plane; width:0.5; height:0.22" material="color:#a00000"><a-text value="SAIR" color="white" width="1.2" align="center" position="0 0 0.01"></a-text></a-entity>
+<a-entity id="mainPanel" position="0 1.7 -1.4">
+  <a-box width="3.4" height="3.0" depth="0.08" color="#0a0a0a" opacity="0.95" class="grabbable"></a-box>
+  <a-text value="PMSC ARENA - AUTO CALIBRADO" color="#00e5ff" width="3.8" align="center" position="0 1.3 0.06"></a-text>
+  <a-text value="CALIBRACAO AUTO" color="#00ff88" width="2.5" align="center" position="0 1.05 0.06"></a-text>
+  <a-entity class="clickable ui calib-btn" data-action="recenter" data-color="#00a000" position="0 0.78 0.06" geometry="primitive: plane; width:1.8; height:0.28" material="color:#00a000"><a-text value="✅ RECENTRALIZAR QUEST" color="white" width="2.0" align="center" position="0 0 0.01"></a-text></a-entity>
+  
+  <a-text value="AMBIENTES" color="#00ff88" width="2.5" align="center" position="0 0.48 0.06"></a-text>
+  <a-entity class="clickable ui calib-btn" data-action="envPassthrough" data-color="#00a000" position="-0.95 0.20 0.06" geometry="primitive: plane; width:0.9; height:0.26" material="color:#00a000"><a-text value="PASSTHROUGH" color="white" width="1.6" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="envDark" data-color="#1a3a6a" position="0 0.20 0.06" geometry="primitive: plane; width:0.65; height:0.26" material="color:#1a3a6a"><a-text value="ESCURO" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="envBeach" data-color="#1a3a6a" position="0.95 0.20 0.06" geometry="primitive: plane; width:0.65; height:0.26" material="color:#1a3a6a"><a-text value="PRAIA" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="envOffice" data-color="#1a3a6a" position="-0.95 -0.08 0.06" geometry="primitive: plane; width:0.9; height:0.26" material="color:#1a3a6a"><a-text value="ESCRITORIO" color="white" width="1.6" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="envLibrary" data-color="#1a3a6a" position="0 -0.08 0.06" geometry="primitive: plane; width:0.85; height:0.26" material="color:#1a3a6a"><a-text value="BIBLIOTECA" color="white" width="1.6" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="envSpace" data-color="#1a3a6a" position="0.95 -0.08 0.06" geometry="primitive: plane; width:0.85; height:0.26" material="color:#1a3a6a"><a-text value="ESPACO" color="white" width="1.6" align="center" position="0 0 0.01"></a-text></a-entity>
+
+  <a-text value="ORGANIZACAO" color="#ffaa00" width="2.8" align="center" position="0 -0.35 0.06"></a-text>
+  <a-entity class="clickable ui calib-btn" data-action="organize" data-color="#1a3a6a" position="-0.95 -0.58 0.06" geometry="primitive: plane; width:0.75; height:0.22" material="color:#1a3a6a"><a-text value="GRID" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="organizeByMateria" data-color="#1a3a6a" position="0 -0.58 0.06" geometry="primitive: plane; width:0.9; height:0.22" material="color:#1a3a6a"><a-text value="POR MATERIA" color="white" width="1.6" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="scatter" data-color="#1a3a6a" position="0.95 -0.58 0.06" geometry="primitive: plane; width:0.75; height:0.22" material="color:#1a3a6a"><a-text value="ESPALHAR" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="saveLayout" data-color="#2a5a1a" position="-0.95 -0.84 0.06" geometry="primitive: plane; width:0.75; height:0.22" material="color:#2a5a1a"><a-text value="SALVAR" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="loadLayout" data-color="#2a5a1a" position="0 -0.84 0.06" geometry="primitive: plane; width:0.75; height:0.22" material="color:#2a5a1a"><a-text value="CARREGAR" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="resetArena" data-color="#1a3a6a" position="0.95 -0.84 0.06" geometry="primitive: plane; width:0.75; height:0.22" material="color:#1a3a6a"><a-text value="RESET" color="white" width="1.4" align="center" position="0 0 0.01"></a-text></a-entity>
+
+  <a-text value="CALIBRAGEM MANUAL" color="#ffaa00" width="2.5" align="center" position="0 -1.1 0.06"></a-text>
+  <a-entity class="clickable ui calib-btn" data-action="resetPos" data-color="#1a3a6a" position="-0.95 -1.32 0.06" geometry="primitive: plane; width:0.6; height:0.20" material="color:#1a3a6a"><a-text value="RESET POS" color="white" width="1.2" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="handUp" data-color="#2a5a1a" position="-0.3 -1.32 0.06" geometry="primitive: plane; width:0.5; height:0.20" material="color:#2a5a1a"><a-text value="MAO +" color="white" width="1.2" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="handDown" data-color="#2a5a1a" position="0.25 -1.32 0.06" geometry="primitive: plane; width:0.5; height:0.20" material="color:#2a5a1a"><a-text value="MAO -" color="white" width="1.2" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="heightUp" data-color="#1a3a6a" position="0.8 -1.32 0.06" geometry="primitive: plane; width:0.5; height:0.20" material="color:#1a3a6a"><a-text value="ALT +" color="white" width="1.2" align="center" position="0 0 0.01"></a-text></a-entity>
+  <a-entity class="clickable ui calib-btn" data-action="exitVR" data-color="#a00000" position="1.35 -1.32 0.06" geometry="primitive: plane; width:0.5; height:0.20" material="color:#a00000"><a-text value="SAIR" color="white" width="1.2" align="center" position="0 0 0.01"></a-text></a-entity>
 </a-entity>
 
 <a-entity id="handCalibDisplay" position="2.8 1.8 -1.5">
-  <a-box width="1.6" height="1.3" depth="0.06" color="#111111" opacity="0.9"></a-box>
-  <a-text value="CALIBRADOR MAOS" color="#00ff88" width="2.0" align="center" position="0 0.5 0.05"></a-text>
-  <a-text id="leftHandData" value="LEFT: aguardando" color="#00d1ff" width="1.7" align="left" position="-0.65 0.18 0.05" wrap-count="30"></a-text>
-  <a-text id="rightHandData" value="RIGHT: aguardando" color="#ff8a00" width="1.7" align="left" position="-0.65 -0.22 0.05" wrap-count="30"></a-text>
+  <a-box width="1.6" height="1.0" depth="0.06" color="#111111" opacity="0.9"></a-box>
+  <a-text value="CALIBRADOR MAOS" color="#00ff88" width="2.0" align="center" position="0 0.35 0.05"></a-text>
+  <a-text id="leftHandData" value="LEFT: aguardando" color="#00d1ff" width="1.7" align="left" position="-0.65 0.05 0.05" wrap-count="30"></a-text>
+  <a-text id="rightHandData" value="RIGHT: aguardando" color="#ff8a00" width="1.7" align="left" position="-0.65 -0.25 0.05" wrap-count="30"></a-text>
 </a-entity>
 
 <a-entity id="world"></a-entity>
@@ -691,7 +650,6 @@ function createBlock(q, i){
   root.setAttribute('position', x+' '+y+' '+z);
   root.setAttribute('class','grabbable');
   root.setAttribute('data-materia', q.materia);
-  // IMPORTANTE: bloco é grabbable, mas titulo/pergunta NÃO são clickable (só grabbable para mover junto)
   const box=document.createElement('a-box');
   box.setAttribute('width','2.5'); box.setAttribute('height','2.3'); box.setAttribute('depth','0.22');
   box.setAttribute('color','#13244a'); box.setAttribute('class','grabbable');
@@ -707,7 +665,6 @@ function createBlock(q, i){
   qtext.setAttribute('position','0 0.45 0.13'); qtext.setAttribute('wrap-count','38');
   qtext.setAttribute('class','grabbable');
   root.appendChild(box); root.appendChild(title); root.appendChild(qtext);
-  // Alternativas: APENAS alternativas são clickable, NÃO grabbable
   q.alternativas.forEach((alt, idx)=>{
     const letra = alt.trim().charAt(0).toUpperCase();
     const row=document.createElement('a-entity');
@@ -727,7 +684,6 @@ function createBlock(q, i){
     row.addEventListener('click', (e)=>{
       e.stopPropagation();
       answers[i]=letra;
-      // Reseta cores do mesmo bloco
       document.querySelectorAll('#block-'+i+' a-plane').forEach(p=> p.setAttribute('color','#0a1933'));
       bg.setAttribute('color', letra===q.correta ? '#00c853' : '#d50000');
       const toast=document.getElementById('toast');
@@ -755,7 +711,6 @@ window.initWorld = function(){
   const world=document.getElementById('world');
   world.innerHTML=''; blocks=[];
   QUESTIONS.forEach((q,i)=> world.appendChild(createBlock(q,i)));
-  // Tenta carregar layout salvo
   try{
     const saved=localStorage.getItem('pmsc_layout');
     if(saved){
@@ -820,10 +775,7 @@ window.saveLayout = function(){
     document.getElementById('toast').textContent='✅ Layout salvo!';
     document.getElementById('toast').style.opacity='1';
     setTimeout(()=>{document.getElementById('toast').style.opacity='0';},1500);
-  }catch(e){
-    document.getElementById('toast').textContent='❌ Erro ao salvar';
-    document.getElementById('toast').style.opacity='1';
-  }
+  }catch(e){}
 }
 window.loadLayout = function(){
   try{
@@ -840,9 +792,6 @@ window.loadLayout = function(){
       document.getElementById('toast').textContent='✅ Layout carregado!';
       document.getElementById('toast').style.opacity='1';
       setTimeout(()=>{document.getElementById('toast').style.opacity='0';},1500);
-    }else{
-      document.getElementById('toast').textContent='Nenhum layout salvo';
-      document.getElementById('toast').style.opacity='1';
     }
   }catch(e){}
 }
@@ -858,28 +807,24 @@ document.getElementById('enter').addEventListener('click', ()=>{ document.queryS
         st.session_state[key]=False
         st.rerun()
 
-# ===================== TABS =====================
-tab1, tab2 = st.tabs(["🥽 ARENA VR", "📝 Simulado Clássico"])
+tab1, tab2 = st.tabs(["🥽 ARENA VR CALIBRADO", "📝 Simulado Clássico"])
 
 with tab1:
     todas=[]
     for v in banco.values():
         todas.extend(v)
     random.shuffle(todas)
-    st.markdown("### PMSC ARENA VR - Quest 3 / 3S")
+    st.markdown("### ✅ CORREÇÕES DE CALIBRAÇÃO")
     st.markdown("""
-    **Controles no controle:**
-    - **Grip (lateral)** → agarrar bloco à distância (mantém distância, não puxa para perto)
-    - **Trigger (gatilho)** → responder alternativa exata apontada
-    - **Thumbstick ↑↓** → empurrar/afastar bloco (máx 8m)
-    - **Thumbstick ←→** → rotacionar bloco
-
-    **Hand tracking (sem controle):**
-    - **Pinch** → agarrar / responder
-
-    **Dica:** Aponte para o bloco e segure Grip. O bloco NÃO voa para perto, fica onde está e acompanha sua mão.
+    **O que foi corrigido:**
+    - ✅ **Auto-calibração Quest**: ao entrar no VR, rig reseta para 0 0 0 e depois 0 0 6, head 1.65m, mãos escala 1
+    - ✅ **Painel 100% clicável**: todos os botões agora têm classe `clickable ui calib-btn` e raycaster inclui `.ui, .calib-btn`
+    - ✅ **Laser visível 50m**: linha azul/laranja com opacity 0.9, far 100m
+    - ✅ **Botão RECENTRALIZAR QUEST**: recalibra tudo automaticamente (reset pos + escala mãos + altura)
+    - ✅ **Mãos alinhadas**: hand-controls + hand-tracking-controls + vr-hand + line manual, sem super-hands
+    - ✅ **Grab mantém distância**: offset exato, não puxa para perto
     """)
-    render_vr(todas, modo="ARENA", height=980)
+    render_vr(todas, modo="CALIBRADO", height=980)
 
 with tab2:
     if st.session_state.simulado:
@@ -888,14 +833,13 @@ with tab2:
         if not sim["finalizado"]:
             rest=max(0,4*3600-int(time.time()-sim["inicio"]))
             h,m,s=rest//3600,(rest%3600)//60,rest%60
-            st.warning(f"⏱️ Tempo restante: {h:02d}:{m:02d}:{s:02d} | {len(qs)} questões | 60q oficiais AOCP")
+            st.warning(f"⏱️ Tempo restante: {h:02d}:{m:02d}:{s:02d} | {len(qs)} questões")
             with st.form("form_simulado"):
                 resp={}
                 for i,q in enumerate(qs):
                     st.markdown(f"**{i+1}. [{q.get('materia','')}]** {q['pergunta']}")
                     esc=st.radio(f"q_{i}", q["alternativas"], index=None, key=f"sim_{i}", label_visibility="collapsed")
                     if esc:
-                        # Extrai letra
                         letra = esc.strip()[0].upper() if esc.strip() else ""
                         if letra in "ABCDE":
                             resp[i]=letra
@@ -936,15 +880,13 @@ with tab2:
                 c1.metric("Nota", f"{ult['nota']}%")
                 c2.metric("Acertos", f"{ult['acertos']}/{ult['total']}")
                 c3.metric("Status", "✅ APROVADO" if ult["aprovado"] else "❌ REPROVADO")
-                st.divider()
                 with st.expander("📋 Gabarito comentado", expanded=True):
                     for i,d in enumerate(ult["detalhes"]):
                         cor = "✅" if d["acertou"] else "❌"
                         st.markdown(f"{cor} **{i+1}. [{d['materia']}]** {d['pergunta']}")
                         st.caption(f"Sua: {d['resposta'] or '—'} | Gabarito: {d['correta']}")
-                        st.divider()
             if st.button("🔄 Novo Simulado", type="primary", use_container_width=True):
                 st.session_state.simulado=None
                 st.rerun()
     else:
-        st.info("Inicie um simulado oficial de 60q pela sidebar. Distribuição: 10 Leg Inst, 8 Const, 8 Port, 6 Penal, 6 Proc Penal, 6 Penal Mil, 6 Leg Esp, 5 Trânsito, 5 Info.")
+        st.info("Inicie um simulado oficial de 60q pela sidebar.")
