@@ -92,7 +92,7 @@ def carregar_banco_questoes():
 banco_dados = carregar_banco_questoes()
 
 if not banco_dados:
-    st.error("❌ ERRO CRÍTICO: Nenhum arquivo `json.json` válido encontrado na raiz do aplicativo. Certifique-se de enviar o arquivo JSON com as questões.")
+    st.error("❌ ERRO CRÍTICO: Nenhum arquivo `json.json` válido encontrado na raiz do aplicativo.")
     st.stop()
 
 total_questoes_unicas = sum(len(q_list) for q_list in banco_dados.values())
@@ -100,7 +100,7 @@ total_questoes_unicas = sum(len(q_list) for q_list in banco_dados.values())
 # ==================== SIDEBAR ====================
 with st.sidebar:
     st.title("🛡️ PMSC 2026 VR")
-    st.caption("Banca Instituto AOCP • Quest 3/3S")
+    st.caption("Banca Instituto AOCP • Meta Quest 3/3S")
     
     st.metric("Total de Questões Únicas", total_questoes_unicas)
     
@@ -233,7 +233,7 @@ with aba_treino:
 
 with aba_livre:
     st.header(f"Arena de Estudos VR — Modo: {st.session_state['modo_atual']}")
-    st.markdown("Ambiente imersivo com suporte a controles e **Hand Tracking** no Meta Quest 3/3S. Use o Grip/Pinch para mover blocos na distância exata e o Trigger para responder.")
+    st.markdown("Ambiente imersivo completo para **Meta Quest 3 / 3S**. Pegue blocos, responda com o controle ou hand tracking, configure layouts e altere cenários em Realidade Mista.")
     
     num_blocos = len(questoes_ativas)
     
@@ -256,6 +256,7 @@ with aba_livre:
             <title>PMSC 2026 Arena VR</title>
             <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
             <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.4.0/dist/aframe-extras.min.js"></script>
+            <script src="https://unpkg.com/super-hands@3.0.5/dist/super-hands.min.js"></script>
             <style>
               html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
               a-scene { width: 100%; height: 100%; }
@@ -269,7 +270,7 @@ with aba_livre:
             </style>
           </head>
           <body>
-            <div id="hud-overlay">🎯 PMSC Arena VR | Grip/Pinch para mover blocos | Trigger para responder</div>
+            <div id="hud-overlay">🎯 PMSC Arena VR | Aponte o laser ou use o Grip/Pinch para mover blocos e responder</div>
 
             <a-scene embedded vr-mode-ui="enabled: true"
                      webxr="optionalFeatures: hand-tracking, local-floor, bounded-floor, hit-test, passthrough, plane-detection"
@@ -284,53 +285,70 @@ with aba_livre:
 
               <a-sky id="main-sky" color="#050a14"></a-sky>
 
-              <a-entity id="rig" movement-controls="fly: false">
+              <!-- Rig e Controles Interativos Meta Quest 3/3S -->
+              <a-entity id="rig" movement-controls="fly: false; speed: 0.2">
                 <a-entity id="camera" camera look-controls position="0 1.6 0">
-                  <a-cursor fuse="false" raycaster="objects: .clickable, .grabbable"></a-cursor>
+                  <a-cursor fuse="false" raycaster="objects: .clickable, .grabbable, .ui-btn"></a-cursor>
                 </a-entity>
                 
-                <a-entity id="left-hand" hand-controls="hand: left" hand-tracking-controls="hand: left" vr-hand="side: left" raycaster="objects: .clickable, .grabbable; far: 100" line="color: #00d1ff; opacity: 0.85; start: 0 0 0; end: 0 0 -50"></a-entity>
-                <a-entity id="right-hand" hand-controls="hand: right" hand-tracking-controls="hand: right" vr-hand="side: right" raycaster="objects: .clickable, .grabbable; far: 100" line="color: #00d1ff; opacity: 0.85; start: 0 0 0; end: 0 0 -50"></a-entity>
+                <a-entity id="left-hand"
+                          hand-controls="hand: left; handModelStyle: lowPoly"
+                          hand-tracking-controls="hand: left"
+                          laser-controls="hand: left"
+                          raycaster="objects: .clickable, .grabbable, .ui-btn; far: 25"
+                          super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstart; grabEndButtons: gripup, pinchend">
+                </a-entity>
+                
+                <a-entity id="right-hand"
+                          hand-controls="hand: right; handModelStyle: lowPoly"
+                          hand-tracking-controls="hand: right"
+                          laser-controls="hand: right"
+                          raycaster="objects: .clickable, .grabbable, .ui-btn; far: 25"
+                          super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstart; grabEndButtons: gripup, pinchend">
+                </a-entity>
               </a-entity>
 
-              <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
+              <a-light type="ambient" color="#ffffff" intensity="0.9"></a-light>
               <a-light type="directional" position="2 4 2" intensity="0.6"></a-light>
 
-              <a-entity id="control-panel" position="0 2 -2.2">
+              <!-- PAINEL DE CONTROLE AMBIENTAL E LAYOUT (3D E INTERATIVO) -->
+              <a-entity id="control-panel" class="grabbable" position="0 2 -2.2" hoverable grabbable stretchable draggable droppable>
                 <a-plane width="2.4" height="1.4" color="#0b132b" opacity="0.95" material="shader: flat">
-                  <a-text value="PMSC 2026 - PAINEL DE CONTROLE" position="0 0.55 0.01" align="center" color="#00d1ff" width="2.2" scale="0.7 0.7 0.7"></a-text>
+                  <a-text value="PMSC 2026 - PAINEL DE CONTROLE VR" position="0 0.55 0.01" align="center" color="#00d1ff" width="2.2" scale="0.7 0.7 0.7"></a-text>
                   
                   <a-text value="Ambientes & MR:" position="-1.05 0.28 0.01" align="left" color="#ffffff" width="2" scale="0.5 0.5 0.5"></a-text>
-                  <a-plane class="clickable" onclick="setEnvironment('passthrough')" width="0.7" height="0.18" position="-0.7 0.12 0.02" color="#00aa55"><a-text value="Passthrough" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="setEnvironment('dark')" width="0.5" height="0.18" position="0.0 0.12 0.02" color="#111"><a-text value="Escuro" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="setEnvironment('beach')" width="0.5" height="0.18" position="0.55 0.12 0.02" color="#0066cc"><a-text value="Praia" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="setEnvironment('office')" width="0.5" height="0.18" position="-0.7 -0.08 0.02" color="#444"><a-text value="Escritorio" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="setEnvironment('library')" width="0.5" height="0.18" position="-0.15 -0.08 0.02" color="#663300"><a-text value="Biblioteca" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="setEnvironment('space')" width="0.5" height="0.18" position="0.4 -0.08 0.02" color="#220033"><a-text value="Espaço" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="env-passthrough" width="0.7" height="0.18" position="-0.7 0.12 0.02" color="#00aa55"><a-text value="Passthrough" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="env-dark" width="0.5" height="0.18" position="0.0 0.12 0.02" color="#111"><a-text value="Escuro" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="env-beach" width="0.5" height="0.18" position="0.55 0.12 0.02" color="#0066cc"><a-text value="Praia" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="env-office" width="0.5" height="0.18" position="-0.7 -0.08 0.02" color="#444"><a-text value="Escritorio" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="env-library" width="0.5" height="0.18" position="-0.15 -0.08 0.02" color="#663300"><a-text value="Biblioteca" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="env-space" width="0.5" height="0.18" position="0.4 -0.08 0.02" color="#220033"><a-text value="Espaço" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
 
                   <a-text value="Organização & Layout:" position="-1.05 -0.26 0.01" align="left" color="#ffffff" width="2" scale="0.5 0.5 0.5"></a-text>
-                  <a-plane class="clickable" onclick="organizarGrid()" width="0.5" height="0.18" position="-0.7 -0.42 0.02" color="#2b2d42"><a-text value="GRADE" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="organizarPorMateria()" width="0.5" height="0.18" position="-0.15 -0.42 0.02" color="#2b2d42"><a-text value="MATERIA" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="espalharBlocos()" width="0.5" height="0.18" position="0.4 -0.42 0.02" color="#2b2d42"><a-text value="ESPALHAR" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="salvarLayout()" width="0.32" height="0.15" position="-0.8 -0.62 0.02" color="#006633"><a-text value="Salvar" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="carregarLayout()" width="0.32" height="0.15" position="-0.4 -0.62 0.02" color="#663300"><a-text value="Carregar" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="resetArena()" width="0.32" height="0.15" position="0.0 -0.62 0.02" color="#aa2222"><a-text value="Reset" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="layout-grid" width="0.5" height="0.18" position="-0.7 -0.42 0.02" color="#2b2d42"><a-text value="GRADE" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="layout-materia" width="0.5" height="0.18" position="-0.15 -0.42 0.02" color="#2b2d42"><a-text value="MATERIA" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="layout-esparso" width="0.5" height="0.18" position="0.4 -0.42 0.02" color="#2b2d42"><a-text value="ESPALHAR" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="save-layout" width="0.32" height="0.15" position="-0.8 -0.62 0.02" color="#006633"><a-text value="Salvar" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="load-layout" width="0.32" height="0.15" position="-0.4 -0.62 0.02" color="#663300"><a-text value="Carregar" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="reset-layout" width="0.32" height="0.15" position="0.0 -0.62 0.02" color="#aa2222"><a-text value="Reset" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
                 </a-plane>
               </a-entity>
 
-              <a-entity id="calibrator-panel" position="1.8 1.8 -1.8" rotation="0 -25 0">
+              <!-- PAINEL CALIBRADOR DE MÃOS E CÂMERA (3D E INTERATIVO) -->
+              <a-entity id="calibrator-panel" class="grabbable" position="1.8 1.8 -1.8" rotation="0 -25 0" hoverable grabbable stretchable draggable droppable>
                 <a-plane width="1.3" height="1.4" color="#111122" opacity="0.95" material="shader: flat">
                   <a-text value="CALIBRADOR VR" position="0 0.56 0.01" align="center" color="#ffaa00" width="1.8" scale="0.6 0.6 0.6"></a-text>
                   <a-text id="leftHandData" value="Mão Esq: Tracking OK" position="-0.55 0.3 0.01" align="left" color="#00d1ff" width="1.5" scale="0.4 0.4 0.4"></a-text>
                   <a-text id="rightHandData" value="Mão Dir: Tracking OK" position="-0.55 0.1 0.01" align="left" color="#00d1ff" width="1.5" scale="0.4 0.4 0.4"></a-text>
                   
-                  <a-plane class="clickable" onclick="ajustarAltura(0.1)" width="0.5" height="0.16" position="-0.3 -0.12 0.02" color="#333"><a-text value="ALTURA +" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="ajustarAltura(-0.1)" width="0.5" height="0.16" position="0.3 -0.12 0.02" color="#333"><a-text value="ALTURA -" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="resetPos()" width="1.1" height="0.16" position="0 -0.32 0.02" color="#aa2222"><a-text value="RESET CÂMERA" align="center" width="1.5" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
-                  <a-plane class="clickable" onclick="sairVR()" width="1.1" height="0.16" position="0 -0.52 0.02" color="#444444"><a-text value="SAIR VR" align="center" width="1.5" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="height-up" width="0.5" height="0.16" position="-0.3 -0.12 0.02" color="#333"><a-text value="ALTURA +" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="height-down" width="0.5" height="0.16" position="0.3 -0.12 0.02" color="#333"><a-text value="ALTURA -" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="reset-cam" width="1.1" height="0.16" position="0 -0.32 0.02" color="#aa2222"><a-text value="RESET CÂMERA" align="center" width="1.5" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn" data-action="exit-vr" width="1.1" height="0.16" position="0 -0.52 0.02" color="#444444"><a-text value="SAIR VR" align="center" width="1.5" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
                 </a-plane>
               </a-entity>
 
+              <!-- CONTAINER DOS BLOCOS DE QUESTÕES -->
               <a-entity id="questoes-container"></a-entity>
             </a-scene>
 
@@ -338,121 +356,7 @@ with aba_livre:
               const questoesData = __Q_JSON__;
               const modoStr = "__MODO__";
 
-              AFRAME.registerComponent('vr-hand', {
-                schema: { side: { type: 'string', default: 'right' } },
-                init: function () {
-                  this.el.addEventListener('gripdown', () => { this.startGrab(); });
-                  this.el.addEventListener('gripup', () => { this.endGrab(); });
-                  this.el.addEventListener('pinchstarted', () => { this.startGrab(); });
-                  this.el.addEventListener('pinchended', () => { this.endGrab(); });
-                  this.el.addEventListener('triggerdown', () => { this.clickTarget(); });
-                  this.el.addEventListener('thumbstickmoved', (evt) => {
-                    this.thumbX = evt.detail.x;
-                    this.thumbY = evt.detail.y;
-                  });
-                  this.isGrabbing = false;
-                  this.grabbedBlock = null;
-                  this.grabDistance = 0;
-                  this.thumbX = 0;
-                  this.thumbY = 0;
-                  this.raycaster = new THREE.Raycaster();
-                  this.raycaster.far = 100;
-                },
-                tick: function () {
-                  const handObj = this.el.object3D;
-                  const worldPos = new THREE.Vector3();
-                  const worldDir = new THREE.Vector3(0, 0, -1);
-                  handObj.getWorldPosition(worldPos);
-                  handObj.getWorldDirection(worldDir);
-                  worldDir.negate();
-
-                  const intersectables = [];
-                  document.querySelectorAll('.clickable, .grabbable').forEach(el => {
-                    if (el.object3D) intersectables.push(el.object3D);
-                  });
-
-                  this.raycaster.set(worldPos, worldDir);
-                  const intersects = this.raycaster.intersectObjects(intersectables, true);
-
-                  window.currentClick = null;
-                  window.currentGrabCandidate = null;
-
-                  if (intersects.length > 0) {
-                    let hit = intersects[0].object;
-                    let curr = hit;
-                    while (curr) {
-                      if (curr.el) {
-                        if (curr.el.classList.contains('clickable')) {
-                          window.currentClick = curr.el;
-                        }
-                        if (curr.el.classList.contains('grabbable')) {
-                          window.currentGrabCandidate = curr.el;
-                          break;
-                        }
-                      }
-                      curr = curr.parent;
-                    }
-                  }
-
-                  let hudText = "🎯 Apontando...";
-                  if (window.currentClick) hudText = "🎯 CLICK [Alternativa]";
-                  if (window.currentGrabCandidate) hudText = "✋ " + window.currentGrabCandidate.id;
-                  document.getElementById('hud-overlay').innerText = hudText;
-
-                  if (this.isGrabbing && this.grabbedBlock) {
-                    if (Math.abs(this.thumbY) > 0.1) {
-                      this.grabDistance += this.thumbY * 0.05;
-                      this.grabDistance = Math.max(1.0, Math.min(8.0, this.grabDistance));
-                    }
-                    if (Math.abs(this.thumbX) > 0.1) {
-                      this.grabbedBlock.object3D.rotation.y += this.thumbX * 0.03;
-                    }
-
-                    const newPos = worldPos.clone().add(worldDir.clone().multiplyScalar(this.grabDistance));
-                    this.grabbedBlock.object3D.position.copy(newPos);
-                  }
-                },
-                startGrab: function() {
-                  if (window.currentGrabCandidate) {
-                    this.isGrabbing = true;
-                    this.grabbedBlock = window.currentGrabCandidate;
-                    const handPos = new THREE.Vector3();
-                    this.el.object3D.getWorldPosition(handPos);
-                    const blockPos = new THREE.Vector3();
-                    this.grabbedBlock.object3D.getWorldPosition(blockPos);
-                    this.grabDistance = handPos.distanceTo(blockPos);
-                    
-                    this.grabbedBlock.setAttribute('material', 'emissive', '#ffaa00');
-                    document.getElementById('hud-overlay').innerText = "✋ Agarrado " + this.grabbedBlock.id;
-                  }
-                },
-                endGrab: function() {
-                  if (this.isGrabbing && this.grabbedBlock) {
-                    this.grabbedBlock.removeAttribute('material');
-                    this.isGrabbing = false;
-                    this.grabbedBlock = null;
-                    salvarLayoutAutomatico();
-                  }
-                },
-                clickTarget: function() {
-                  if (window.currentClick) {
-                    const letra = window.currentClick.getAttribute('data-letra');
-                    const correta = window.currentClick.getAttribute('data-correta');
-                    if (letra) {
-                      if (letra === correta) {
-                        window.currentClick.setAttribute('color', '#00aa55');
-                        if (navigator.vibrate) navigator.vibrate(200);
-                        document.getElementById('hud-overlay').innerText = "✅ Resposta Correta!";
-                      } else {
-                        window.currentClick.setAttribute('color', '#aa2222');
-                        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-                        document.getElementById('hud-overlay').innerText = "❌ Incorreto! Correta: " + correta;
-                      }
-                    }
-                  }
-                }
-              });
-
+              // CONSTRUÇÃO E REORGANIZAÇÃO DOS BLOCOS 3D
               function construirBlocos(modoLayout = 'grid') {
                 const container = document.getElementById('questoes-container');
                 if (!container) return;
@@ -487,7 +391,17 @@ with aba_livre:
                   block.setAttribute('position', `${x} ${y} ${z}`);
                   block.setAttribute('geometry', 'primitive: box; width: 1.6; height: 1.15; depth: 0.08');
                   block.setAttribute('material', 'color: #16213e; shader: flat');
+                  block.setAttribute('hoverable', '');
+                  block.setAttribute('grabbable', '');
+                  block.setAttribute('stretchable', '');
+                  block.setAttribute('draggable', '');
+                  block.setAttribute('droppable', '');
                   block.setAttribute('data-materia', q.materia_origem || 'Geral');
+
+                  // Salva posição ao soltar o bloco
+                  block.addEventListener('grab-end', () => {
+                    salvarLayoutAutomatico();
+                  });
 
                   const titulo = document.createElement('a-text');
                   titulo.setAttribute('value', `Q.${index+1} [${q.materia_origem || 'Geral'}]`);
@@ -518,6 +432,19 @@ with aba_livre:
                     altPlane.setAttribute('data-letra', letra);
                     altPlane.setAttribute('data-correta', q.correta.toUpperCase());
 
+                    altPlane.addEventListener('click', function () {
+                      const correta = this.getAttribute('data-correta');
+                      if (letra === correta) {
+                        this.setAttribute('color', '#00aa55');
+                        document.getElementById('hud-overlay').innerText = "✅ Resposta Correta!";
+                        if (navigator.vibrate) navigator.vibrate(200);
+                      } else {
+                        this.setAttribute('color', '#aa2222');
+                        document.getElementById('hud-overlay').innerText = `❌ Incorreto! Correta: ${correta}`;
+                        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                      }
+                    });
+
                     const altText = document.createElement('a-text');
                     altText.setAttribute('value', alt);
                     altText.setAttribute('position', '-0.68 0 0.01');
@@ -533,26 +460,16 @@ with aba_livre:
                 });
               }
 
-              function setEnvironment(tipo) {
+              // SISTEMA DE BOTÕES E AÇÕES VR NATIVAS
+              document.addEventListener('click', (e) => {
+                const target = e.target.closest('.ui-btn');
+                if (!target) return;
+                
+                const action = target.getAttribute('data-action');
                 const sky = document.getElementById('main-sky');
                 const sceneEl = document.querySelector('a-scene');
-                
-                if (tipo === 'dark') {
-                  sky.setAttribute('color', '#050a14');
-                  sky.removeAttribute('src');
-                } else if (tipo === 'beach') {
-                  sky.setAttribute('src', '#beach360');
-                  sky.removeAttribute('color');
-                } else if (tipo === 'office') {
-                  sky.setAttribute('src', '#office360');
-                  sky.removeAttribute('color');
-                } else if (tipo === 'library') {
-                  sky.setAttribute('src', '#library360');
-                  sky.removeAttribute('color');
-                } else if (tipo === 'space') {
-                  sky.setAttribute('src', '#space360');
-                  sky.removeAttribute('color');
-                } else if (tipo === 'passthrough') {
+
+                if (action === 'env-passthrough') {
                   if (navigator.xr) {
                     navigator.xr.requestSession('immersive-ar', {
                       requiredFeatures: ['local-floor'],
@@ -561,16 +478,52 @@ with aba_livre:
                       sceneEl.renderer.xr.setSession(session);
                       sky.setAttribute('color', 'transparent');
                       sky.removeAttribute('src');
-                    }).catch(err => alert("Passthrough ativado ou não suportado neste dispositivo."));
-                  } else {
-                    alert("WebXR não suportado.");
+                    }).catch(err => alert("Passthrough ativo ou indisponível."));
                   }
+                } else if (action === 'env-dark') {
+                  sky.setAttribute('color', '#050a14');
+                  sky.removeAttribute('src');
+                } else if (action === 'env-beach') {
+                  sky.setAttribute('src', '#beach360');
+                  sky.removeAttribute('color');
+                } else if (action === 'env-office') {
+                  sky.setAttribute('src', '#office360');
+                  sky.removeAttribute('color');
+                } else if (action === 'env-library') {
+                  sky.setAttribute('src', '#library360');
+                  sky.removeAttribute('color');
+                } else if (action === 'env-space') {
+                  sky.setAttribute('src', '#space360');
+                  sky.removeAttribute('color');
+                } else if (action === 'layout-grid') {
+                  construirBlocos('grid');
+                } else if (action === 'layout-materia') {
+                  construirBlocos('materia');
+                } else if (action === 'layout-esparso') {
+                  construirBlocos('esparso');
+                } else if (action === 'save-layout') {
+                  salvarLayout();
+                } else if (action === 'load-layout') {
+                  carregarLayout();
+                } else if (action === 'reset-layout') {
+                  localStorage.removeItem('pmsc_vr_layout');
+                  construirBlocos('grid');
+                  document.getElementById('hud-overlay').innerText = "🔄 Arena reiniciada!";
+                } else if (action === 'height-up') {
+                  const cam = document.getElementById('camera');
+                  const pos = cam.getAttribute('position');
+                  cam.setAttribute('position', `${pos.x} ${Math.min(2.5, pos.y + 0.1)} ${pos.z}`);
+                } else if (action === 'height-down') {
+                  const cam = document.getElementById('camera');
+                  const pos = cam.getAttribute('position');
+                  cam.setAttribute('position', `${pos.x} ${Math.max(0.5, pos.y - 0.1)} ${pos.z}`);
+                } else if (action === 'reset-cam') {
+                  document.getElementById('rig').setAttribute('position', '0 0 0');
+                  document.getElementById('camera').setAttribute('position', '0 1.6 0');
+                } else if (action === 'exit-vr') {
+                  if (sceneEl && sceneEl.exitVR) sceneEl.exitVR();
                 }
-              }
-
-              function organizarGrid() { construirBlocos('grid'); }
-              function organizarPorMateria() { construirBlocos('materia'); }
-              function espalharBlocos() { construirBlocos('esparso'); }
+              });
 
               function salvarLayout() {
                 const layout = {};
@@ -584,7 +537,7 @@ with aba_livre:
                   }
                 });
                 localStorage.setItem('pmsc_vr_layout', JSON.stringify(layout));
-                document.getElementById('hud-overlay').innerText = "💾 Layout salvo!";
+                document.getElementById('hud-overlay').innerText = "💾 Layout salvo com sucesso!";
               }
 
               function salvarLayoutAutomatico() {
@@ -614,61 +567,36 @@ with aba_livre:
                   }
                   document.getElementById('hud-overlay').innerText = "📂 Layout restaurado!";
                 } else {
-                  document.getElementById('hud-overlay').innerText = "⚠️ Nenhum layout salvo.";
+                  document.getElementById('hud-overlay').innerText = "⚠️ Nenhum layout salvo encontrado.";
                 }
               }
 
-              function resetArena() {
-                localStorage.removeItem('pmsc_vr_layout');
-                construirBlocos('grid');
-                document.getElementById('hud-overlay').innerText = "🔄 Arena reiniciada!";
-              }
-
-              function ajustarAltura(val) {
-                const cam = document.getElementById('camera');
-                const pos = cam.getAttribute('position');
-                cam.setAttribute('position', `${pos.x} ${Math.max(0.5, Math.min(2.5, pos.y + val))} ${pos.z}`);
-              }
-
-              function resetPos() {
-                document.getElementById('rig').setAttribute('position', '0 0 0');
-                document.getElementById('camera').setAttribute('position', '0 1.6 0');
-              }
-
-              function sairVR() {
-                const scene = document.querySelector('a-scene');
-                if (scene && scene.exitVR) {
-                  scene.exitVR();
-                }
-              }
-
+              // MONITORA POSIÇÃO DAS MÃOS NO CALIBRADOR 3D
               setInterval(() => {
                 const leftHand = document.getElementById('left-hand');
                 const rightHand = document.getElementById('right-hand');
                 if (leftHand && leftHand.object3D) {
                   const p = leftHand.object3D.position;
-                  document.getElementById('leftHandData').setAttribute('value', `Esq: X=${p.x.toFixed(1)} Y=${p.y.toFixed(1)} Z=${p.z.toFixed(1)}`);
+                  const el = document.getElementById('leftHandData');
+                  if (el) el.setAttribute('value', `Esq: X=${p.x.toFixed(1)} Y=${p.y.toFixed(1)} Z=${p.z.toFixed(1)}`);
                 }
                 if (rightHand && rightHand.object3D) {
                   const p = rightHand.object3D.position;
-                  document.getElementById('rightHandData').setAttribute('value', `Dir: X=${p.x.toFixed(1)} Y=${p.y.toFixed(1)} Z=${p.z.toFixed(1)}`);
+                  const el = document.getElementById('rightHandData');
+                  if (el) el.setAttribute('value', `Dir: X=${p.x.toFixed(1)} Y=${p.y.toFixed(1)} Z=${p.z.toFixed(1)}`);
                 }
               }, 500);
 
-              // Inicialização robusta para data URIs (evita falha se DOMContentLoaded já disparou)
+              // INICIALIZAÇÃO DA CENA VR
               if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => {
-                  construirBlocos('grid');
-                });
+                document.addEventListener('DOMContentLoaded', () => construirBlocos('grid'));
               } else {
                 construirBlocos('grid');
               }
 
               window.addEventListener('load', () => {
                 const saved = localStorage.getItem('pmsc_vr_layout');
-                if (saved) {
-                  carregarLayout();
-                }
+                if (saved) carregarLayout();
               });
             </script>
           </body>
