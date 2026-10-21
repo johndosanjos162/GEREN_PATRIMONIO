@@ -2,140 +2,513 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PMSC 2026 | Academia Virtual VR</title>
-
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<title>PMSC Immersive Academy 2026</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;overflow:hidden;background:#07111e;color:white;font-family:Arial,sans-serif}
-#menu{position:fixed;top:12px;left:12px;z-index:10;width:min(390px,94vw);max-height:85vh;overflow:auto;padding:18px;background:rgba(7,25,46,.96);border:1px solid #49baff;border-radius:14px}
-h2{margin:0 0 12px;color:#8ad8ff}
-h3{margin:14px 0 6px;color:#c5eaff}
-button,select,input{font:inherit}
-button,select{background:#155b96;color:white;border:1px solid #5da9e2;padding:10px;border-radius:8px;margin:5px 0;cursor:pointer}
-select{width:100%}
-button:hover{background:#247bc0}
-button#refresh{background:#0d6b4f;border-color:#2fbf8f}
-button#refresh:hover{background:#108a63}
-button#resetPanels{background:#7a4a10;border-color:#d19a3a}
-button#resetPanels:hover{background:#a86413}
-#status{font-size:14px;color:#c4e9ff}
-#stats{line-height:1.6;font-size:14px}
-#enter{position:fixed;right:16px;bottom:16px;z-index:20;background:#1478c5;padding:15px 22px}
-small{color:#b9d0e5;line-height:1.5}
+:root{
+  --bg:#060913; --panel:#0d2740; --panel-alt:#123c60;
+  --border:#49baff; --accent:#00d1ff; --ok:#00ff88;
+  --warn:#ffaa00; --err:#ff4444; --text:#e8f4ff; --muted:#8ab0d0;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;
+  font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text)}
+canvas{display:block;outline:none}
+
+/* MENU LATERAL */
+#menu{
+  position:fixed;top:12px;left:12px;z-index:100;
+  width:min(400px,94vw);max-height:calc(100vh - 100px);overflow-y:auto;
+  padding:16px;background:rgba(6,9,19,.96);
+  border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 8px 32px rgba(0,209,255,.15);
+  backdrop-filter:blur(12px);
+}
+#menu.hidden{display:none}
+h2{margin:0 0 4px;font-size:16px;color:var(--accent);letter-spacing:1px}
+h3{margin:12px 0 6px;font-size:13px;color:#c5eaff;text-transform:uppercase;letter-spacing:1px}
+button,select,input,textarea{
+  font:inherit;width:100%;padding:10px 12px;margin:4px 0;
+  background:var(--panel-alt);color:#fff;
+  border:1px solid var(--border);border-radius:8px;
+  cursor:pointer;transition:all .15s ease;
+}
+button:hover,select:hover{background:#1a6aa0;transform:translateY(-1px)}
+button:active{transform:translateY(0)}
+button.primary{background:linear-gradient(90deg,#0066cc,#00d1ff);border-color:#00d1ff;font-weight:700}
+button.ok{background:#0d6b4f;border-color:#2fbf8f}
+button.warn{background:#7a4a10;border-color:#d19a3a}
+button.err{background:#7a1a1a;border-color:#ff4444}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.row button{margin:0}
+
+/* STATUS BAR */
+#status{
+  margin-top:8px;padding:8px 10px;background:rgba(0,209,255,.1);
+  border-left:3px solid var(--accent);border-radius:4px;
+  font-size:12px;color:#c4e9ff;min-height:20px
+}
+#stats-summary{
+  margin-top:8px;padding:10px;background:rgba(0,255,136,.08);
+  border-radius:6px;font-size:12px;line-height:1.6
+}
+#stats-summary b{color:var(--ok)}
+hr{border:none;border-top:1px solid rgba(73,186,255,.2);margin:12px 0}
+
+/* BOTÃO ENTRAR VR */
+#enter{
+  position:fixed;right:16px;bottom:16px;z-index:100;
+  width:auto;padding:14px 28px;
+  background:linear-gradient(90deg,#0050a8,#00d1ff);
+  border:2px solid #00d1ff;border-radius:32px;
+  font-weight:900;font-size:14px;letter-spacing:1px;
+  box-shadow:0 0 20px rgba(0,209,255,.6);
+}
+#enter.hidden{display:none}
+
+/* HUD */
+#hud{
+  position:fixed;top:12px;right:12px;z-index:90;
+  padding:10px 16px;background:rgba(6,9,19,.9);
+  border:1px solid var(--accent);border-radius:8px;
+  font-size:12px;color:var(--accent);
+  display:flex;gap:16px;align-items:center;
+}
+#hud .k{color:#fff;font-weight:700}
+
+/* MODAL */
+.modal{
+  position:fixed;top:0;left:0;width:100%;height:100%;z-index:200;
+  background:rgba(0,0,0,.85);display:none;
+  align-items:center;justify-content:center;padding:20px;
+}
+.modal.open{display:flex}
+.modal-content{
+  background:var(--bg);border:1px solid var(--border);border-radius:12px;
+  padding:24px;max-width:600px;width:100%;max-height:80vh;overflow-y:auto;
+}
+.modal h2{font-size:20px;margin-bottom:16px}
+.modal .q-text{font-size:16px;line-height:1.5;margin-bottom:16px;color:#fff}
+.modal .options{display:flex;flex-direction:column;gap:8px}
+.modal .option{
+  padding:12px;border:1px solid var(--border);border-radius:8px;
+  cursor:pointer;transition:.15s
+}
+.modal .option:hover{background:var(--panel-alt)}
+.modal .option.correct{border-color:var(--ok);background:rgba(0,255,136,.15)}
+.modal .option.wrong{border-color:var(--err);background:rgba(255,68,68,.15)}
+.modal .explanation{
+  margin-top:16px;padding:12px;background:var(--panel-alt);
+  border-left:3px solid var(--accent);border-radius:4px;
+  font-size:13px;line-height:1.5
+}
+.modal button.close{margin-top:16px;width:auto;padding:10px 24px}
+
+/* TABS MENU */
+.tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.tabs button{
+  flex:1;min-width:80px;padding:8px;font-size:11px;
+  background:var(--panel);border-color:transparent;
+}
+.tabs button.active{
+  background:var(--panel-alt);border-color:var(--accent);
+  color:var(--accent);font-weight:700
+}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* THEME SWATCHES */
+.themes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
+.theme-swatch{
+  height:36px;border-radius:6px;border:2px solid transparent;
+  cursor:pointer;transition:.2s
+}
+.theme-swatch.active{border-color:#fff;transform:scale(1.05)}
+
+/* FLASHCARD STAGE */
+.flashcard-stage{
+  position:fixed;top:0;left:0;width:100%;height:100%;z-index:150;
+  background:rgba(0,0,0,.95);display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;
+}
+.flashcard-stage.open{display:flex}
+.flashcard{
+  width:min(600px,90vw);height:min(400px,60vh);
+  background:linear-gradient(135deg,var(--panel),var(--panel-alt));
+  border:2px solid var(--accent);border-radius:16px;
+  padding:32px;display:flex;flex-direction:column;
+  justify-content:center;cursor:pointer;
+  box-shadow:0 20px 60px rgba(0,209,255,.3);
+  transition:transform .4s ease;
+  position:relative;
+}
+.flashcard.flipped{transform:rotateY(180deg)}
+.flashcard .front,.flashcard .back{
+  position:absolute;inset:0;padding:32px;
+  display:flex;flex-direction:column;justify-content:center;
+  backface-visibility:hidden;
+}
+.flashcard .back{transform:rotateY(180deg)}
+.flashcard.disabled{opacity:.5;cursor:not-allowed}
+.fc-controls{margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.fc-controls button{width:auto;padding:10px 20px}
+.fc-progress{margin-top:12px;color:var(--muted);font-size:13px}
+
+/* EXAM RESULT */
+.exam-result{
+  background:var(--panel);border:1px solid var(--accent);
+  border-radius:12px;padding:20px;margin:12px 0;
+}
+.exam-result .score{
+  font-size:32px;font-weight:900;color:var(--ok);
+  text-align:center;margin:12px 0
+}
+.exam-result .detail{font-size:13px;color:var(--muted);text-align:center}
+
+/* SVG CHART */
+.chart{width:100%;height:120px;margin:8px 0}
+.chart .bar{fill:var(--accent);transition:.3s}
+.chart .bar:hover{fill:var(--ok)}
+.chart .axis{stroke:var(--muted);stroke-width:1}
+.chart .label{fill:var(--text);font-size:10px}
+
+@media(max-width:600px){
+  #menu{width:94vw;max-height:60vh}
+  #hud{font-size:10px;gap:10px}
+  .row{grid-template-columns:1fr}
+}
 </style>
 
 <script type="importmap">
-{"imports":{
-"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
-"three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
-}}
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+  }
+}
 </script>
 </head>
-
 <body>
 
+<!-- MENU LATERAL -->
 <div id="menu">
-<h2>PMSC 2026 | Academia Virtual</h2>
-<p id="status">Preparando ambiente...</p>
+  <h2>🎓 PMSC Academy 2026</h2>
+  <div class="tabs">
+    <button class="active" data-tab="study">📚 Estudo</button>
+    <button data-tab="exam">📝 Simulado</button>
+    <button data-tab="review">🔄 Revisão</button>
+    <button data-tab="env">🌍 Ambientes</button>
+    <button data-tab="theme">🎨 Temas</button>
+    <button data-tab="config">⚙️ Config</button>
+  </div>
 
-<h3>Escolher ambiente</h3>
-<select id="environment">
-<option value="academy">Academia PMSC</option>
-<option value="living">Sala de estar moderna</option>
-<option value="beach">Praia</option>
-<option value="library">Biblioteca</option>
-<option value="future">Escritório futurista</option>
-<option value="nature">Natureza</option>
-<option value="penthouse">Cobertura de luxo</option>
-<option value="space">Estação espacial</option>
-<option value="minimal">Sala minimalista</option>
-<option value="random">Ambiente aleatório</option>
-</select>
+  <!-- TAB: ESTUDO -->
+  <div class="tab-content active" id="tab-study">
+    <h3>Disciplina</h3>
+    <select id="subject"><option value="Todas">Todas</option></select>
+    <h3>Modo</h3>
+    <select id="mode">
+      <option value="study">Estudo livre</option>
+      <option value="random">Aleatório</option>
+      <option value="unanswered">Não respondidas</option>
+      <option value="difficult">Difíceis</option>
+    </select>
+    <div class="row">
+      <button id="start" class="primary">▶ Iniciar</button>
+      <button id="refresh" class="ok">🔄 Atualizar</button>
+    </div>
+    <div class="row">
+      <button id="flashcards">📇 Flashcards</button>
+      <button id="demo">🧪 Demo</button>
+    </div>
+  </div>
 
-<h3>Iluminação</h3>
-<select id="lighting">
-<option value="day">Dia</option>
-<option value="night">Noite</option>
-</select>
+  <!-- TAB: SIMULADO -->
+  <div class="tab-content" id="tab-exam">
+    <h3>Configuração do Simulado</h3>
+    <select id="exam-qty">
+      <option value="10">10 questões</option>
+      <option value="20">20 questões</option>
+      <option value="40">40 questões</option>
+      <option value="60" selected>60 questões (edital)</option>
+    </select>
+    <select id="exam-time">
+      <option value="0">Sem cronômetro</option>
+      <option value="60">60 minutos</option>
+      <option value="120">120 minutos</option>
+      <option value="240" selected>240 minutos (4h)</option>
+    </select>
+    <button id="exam-start" class="primary">▶ Iniciar Simulado</button>
+    <div id="exam-status"></div>
+  </div>
 
-<h3>Modo de estudo</h3>
-<select id="mode">
-<option value="study">Estudo por disciplina</option>
-<option value="exam">Simulado</option>
-<option value="review">Revisão dos erros</option>
-</select>
+  <!-- TAB: REVISÃO -->
+  <div class="tab-content" id="tab-review">
+    <h3>Revisar Erros</h3>
+    <div id="review-summary"></div>
+    <button id="review-start" class="warn">🔄 Revisar erros</button>
+    <button id="reset-stats" class="err">🗑 Zerar estatísticas</button>
+  </div>
 
-<h3>Disciplina</h3>
-<select id="subject">
-<option value="Todas">Todas as disciplinas</option>
-</select>
+  <!-- TAB: AMBIENTES -->
+  <div class="tab-content" id="tab-env">
+    <h3>Cenário</h3>
+    <select id="environment">
+      <option value="academy">🏢 Academia PMSC</option>
+      <option value="living">🛋 Sala de estar</option>
+      <option value="beach">🏖 Praia tropical</option>
+      <option value="library">📚 Biblioteca</option>
+      <option value="future">💻 Escritório futurista</option>
+      <option value="nature">🌳 Natureza</option>
+      <option value="penthouse">🏙 Cobertura</option>
+      <option value="space">🚀 Estação espacial</option>
+      <option value="minimal">◻ Sala minimalista</option>
+      <option value="random">🎲 Aleatório</option>
+    </select>
+    <h3>Iluminação</h3>
+    <select id="lighting">
+      <option value="day">☀ Dia</option>
+      <option value="night">🌙 Noite</option>
+    </select>
+    <button id="reset-panels" class="warn">🔄 Restaurar painéis</button>
+  </div>
 
-<button id="demo">Carregar demonstração</button>
-<button id="start">Iniciar / Reiniciar</button>
-<button id="refresh">🔄 Atualizar banco de questões</button>
-<button id="resetPanels">🔄 Restaurar painéis</button>
+  <!-- TAB: TEMAS -->
+  <div class="tab-content" id="tab-theme">
+    <h3>Paleta de Cores</h3>
+    <div class="themes" id="theme-grid"></div>
+    <h3>Textos</h3>
+    <label style="font-size:12px;color:var(--muted)">Escala: <span id="font-scale-val">100%</span></label>
+    <input type="range" id="font-scale" min="80" max="150" value="100" step="5">
+  </div>
 
-<h3>Importar questões JSON</h3>
-<input id="file" type="file" accept=".json,application/json" multiple>
+  <!-- TAB: CONFIG -->
+  <div class="tab-content" id="tab-config">
+    <h3>Repositório GitHub</h3>
+    <input id="repo-input" placeholder="owner/repo" value="johndosanjos162/PMSC">
+    <button id="repo-apply" class="ok">Aplicar</button>
+    <h3>Configurações</h3>
+    <select id="quality">
+      <option value="low">Econômico</option>
+      <option value="medium" selected>Equilibrado</option>
+      <option value="high">Alto</option>
+    </select>
+    <h3>Exportar / Importar</h3>
+    <div class="row">
+      <button id="export-data">📤 Exportar JSON</button>
+      <button id="import-data">📥 Importar</button>
+    </div>
+    <input id="import-file" type="file" accept=".json" style="display:none">
+  </div>
 
-<h3>Desempenho</h3>
-<div id="stats"></div>
-<button id="reset">Zerar estatísticas</button>
+  <div id="status">Pronto</div>
+  <div id="stats-summary"></div>
+</div>
 
-<hr>
-<small>
-Analógico esquerdo: caminhar.<br><br>
-Gatilho: selecionar resposta.<br><br>
-Grip + segurar alça ☰: mover painel.<br><br>
-Grip + analógico ↕: aumentar/diminuir.<br><br>
-Grip + analógico ↔: rotacionar.<br><br>
-Mãos: pinça na alça ☰ = mover.<br><br>
-Marcadores luminosos: teletransporte.<br><br>
-O progresso fica salvo no navegador.
-</small>
+<!-- HUD TOP-RIGHT -->
+<div id="hud">
+  <span>📊 <span class="k" id="hud-total">0</span> q</span>
+  <span>✅ <span class="k" id="hud-ok">0</span></span>
+  <span>❌ <span class="k" id="hud-err">0</span></span>
+  <span>🎯 <span class="k" id="hud-pct">0%</span></span>
 </div>
 
 <button id="enter">ENTRAR EM VR</button>
 
+<!-- MODAL DE QUESTÃO -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <div id="modal-disc" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+    <h2 id="modal-q-num"></h2>
+    <div class="q-text" id="modal-q-text"></div>
+    <div class="options" id="modal-options"></div>
+    <div class="explanation" id="modal-exp" style="display:none"></div>
+    <button class="close" id="modal-close">Próxima →</button>
+  </div>
+</div>
+
+<!-- FLASHCARD STAGE -->
+<div class="flashcard-stage" id="flashcard-stage">
+  <div class="flashcard" id="flashcard">
+    <div class="front">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="fc-disc"></div>
+      <div style="font-size:18px;line-height:1.4" id="fc-front"></div>
+    </div>
+    <div class="back">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">RESPOSTA</div>
+      <div style="font-size:22px;font-weight:700;color:var(--ok)" id="fc-back"></div>
+      <div style="margin-top:16px;font-size:13px;line-height:1.5;color:var(--text)" id="fc-exp"></div>
+    </div>
+  </div>
+  <div class="fc-controls" id="fc-controls" style="display:none">
+    <button class="err" data-grade="0">Difícil</button>
+    <button class="warn" data-grade="1">Médio</button>
+    <button class="ok" data-grade="2">Fácil</button>
+  </div>
+  <div class="fc-progress" id="fc-progress"></div>
+  <div class="fc-controls">
+    <button id="fc-close">Fechar</button>
+    <button id="fc-flip" class="primary">Virar cartão</button>
+    <button id="fc-next">Próximo →</button>
+  </div>
+</div>
+
 <script type="module">
+// ═══════════════════════════════════════════════════════════════════
+// IMPORTS
+// ═══════════════════════════════════════════════════════════════════
+import * as THREE from 'three';
+import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
 
-import * as THREE from "three";
-import {XRControllerModelFactory} from "three/addons/webxr/XRControllerModelFactory.js";
-import {XRHandModelFactory} from "three/addons/webxr/XRHandModelFactory.js";
-
-const $=id=>document.getElementById(id);
+const $ = id => document.getElementById(id);
 
 // ═══════════════════════════════════════════════════════════════════
-// AUTO-LOAD DO JSON
+// STORAGE — Versionado
 // ═══════════════════════════════════════════════════════════════════
-const JSON_CANDIDATES = ["questoes.json", "json.json", "questions.json"];
-const JSON_CACHE_KEY = "pmsc_json_cache_v1";
+const STORAGE = {
+  KEY: 'pmsc_academy_v1',
+  VERSION: 1,
 
-function stripPrefix(s){
-  return String(s).replace(/^[A-Ea-e]\s*[\)\.\-\:]\s*/, "").trim();
-}
+  load() {
+    try {
+      const raw = localStorage.getItem(this.KEY);
+      if (!raw) return this.defaults();
+      const data = JSON.parse(raw);
+      if (data.version !== this.VERSION) return this.defaults();
+      return Object.assign(this.defaults(), data);
+    } catch { return this.defaults(); }
+  },
 
-function autoStripPrefixes(options){
-  const pattern = /^([A-Ea-e])\s*[\)\.\-\:]\s*/;
-  const expected = "ABCDE";
-  for (let i = 0; i < options.length; i++){
-    const m = String(options[i]).match(pattern);
-    if (!m || m[1].toUpperCase() !== expected[i]) return options;
+  save(data) {
+    try {
+      data.version = this.VERSION;
+      localStorage.setItem(this.KEY, JSON.stringify(data));
+    } catch (e) { console.warn('Storage save failed:', e); }
+  },
+
+  defaults() {
+    return {
+      version: this.VERSION,
+      theme: 'cyan',
+      environment: 'academy',
+      lighting: 'day',
+      quality: 'medium',
+      fontScale: 100,
+      repo: 'johndosanjos162/PMSC',
+      stats: { total: 0, correct: 0, bySubject: {} },
+      wrongIds: [],
+      favorites: [],
+      flashcards: {},  // { questionId: { interval, due, ease, reps } }
+      history: [],     // [{ date, mode, correct, total, duration }]
+      panels: {},      // posições dos painéis
+    };
   }
-  return options.map(o => String(o).replace(pattern, "").trim());
+};
+
+let DB = STORAGE.load();
+
+// ═══════════════════════════════════════════════════════════════════
+// TEMAS
+// ═══════════════════════════════════════════════════════════════════
+const THEMES = {
+  cyan:     { bg:'#060913', panel:'#0d2740', border:'#49baff', accent:'#00d1ff' },
+  green:    { bg:'#061a10', panel:'#0d301e', border:'#49ff9e', accent:'#00ff88' },
+  purple:   { bg:'#100620', panel:'#251040', border:'#b449ff', accent:'#c800ff' },
+  white:    { bg:'#f0f4f8', panel:'#e0e8f0', border:'#3080c0', accent:'#0066cc' },
+  black:    { bg:'#000000', panel:'#1a1a1a', border:'#808080', accent:'#ffffff' },
+  night:    { bg:'#0a0a1a', panel:'#1a1a3a', border:'#8080ff', accent:'#aa88ff' },
+  contrast: { bg:'#000000', panel:'#000000', border:'#ffff00', accent:'#ffff00' },
+  sunset:   { bg:'#1a0808', panel:'#3a1810', border:'#ff8855', accent:'#ff6600' }
+};
+
+function applyTheme(name) {
+  const t = THEMES[name] || THEMES.cyan;
+  const root = document.documentElement;
+  root.style.setProperty('--bg', t.bg);
+  root.style.setProperty('--panel', t.panel);
+  root.style.setProperty('--border', t.border);
+  root.style.setProperty('--accent', t.accent);
+  DB.theme = name;
+  STORAGE.save(DB);
 }
 
-function flattenQuestions(data){
+// ═══════════════════════════════════════════════════════════════════
+// QUESTION NORMALIZER
+// ═══════════════════════════════════════════════════════════════════
+function stripPrefix(s) {
+  return String(s).replace(/^[A-Ea-e]\s*[\)\.\-\:]\s*/, '').trim();
+}
+
+function normalizeOptions(options) {
+  if (!Array.isArray(options)) return [];
+  const pattern = /^([A-Ea-e])\s*[\)\.\-\:]\s*/;
+  const hasUniformPrefix = options.every((o, i) => {
+    const m = String(o).match(pattern);
+    return m && m[1].toUpperCase() === 'ABCDE'[i];
+  });
+  return options.map(o => hasUniformPrefix ? stripPrefix(o) : String(o).trim());
+}
+
+function extractCorrect(q, options, keys) {
+  const answer = q.correta ?? q.resposta ?? q.gabarito ?? q.correct ?? q.answer;
+  if (typeof answer === 'number') return answer;
+  if (typeof answer === 'string') {
+    const v = answer.trim();
+    if (/^[A-E]$/i.test(v)) return v.toUpperCase().charCodeAt(0) - 65;
+    if (keys && keys.includes(v)) return keys.indexOf(v);
+    if (/^\d+$/.test(v)) return Number(v);
+    const clean = stripPrefix(v);
+    let idx = options.indexOf(v);
+    if (idx === -1) idx = options.indexOf(clean);
+    return idx;
+  }
+  return -1;
+}
+
+function normalizeQuestion(q, fallbackSubject) {
+  if (!q || typeof q !== 'object') return null;
+  const text = q.enunciado ?? q.pergunta ?? q.questao ?? q.question;
+  const rawOpts = q.alternativas ?? q.opcoes ?? q.options;
+  if (!text || !rawOpts) return null;
+  if (typeof text !== 'string' || text.length < 3) return null;
+
+  const keys = Array.isArray(rawOpts) ? null : Object.keys(rawOpts);
+  const raw = Array.isArray(rawOpts) ? rawOpts : keys.map(k => rawOpts[k]);
+  if (raw.length < 2 || raw.length > 5) return null;
+
+  const options = normalizeOptions(raw);
+  const correct = extractCorrect(q, options, keys);
+  if (correct < 0 || correct >= options.length) return null;
+
+  const subject = String(q.disciplina ?? q.materia ?? q.subject ?? fallbackSubject ?? 'Geral');
+  const id = String(q.id ?? `${subject}|${text}`.slice(0, 200));
+
+  return {
+    id,
+    question: text,
+    options,
+    correct,
+    subject,
+    difficulty: String(q.dificuldade ?? q.difficulty ?? 'media'),
+    topic: String(q.assunto ?? q.topic ?? ''),
+    explanation: String(q.explicacao ?? q.comentario ?? q.explanation ?? ''),
+    reference: String(q.referencia ?? q.reference ?? '')
+  };
+}
+
+function flattenJSON(data) {
   if (Array.isArray(data)) return data;
-  if (data && typeof data === "object"){
+  if (data && typeof data === 'object') {
     if (Array.isArray(data.questoes)) return data.questoes;
     if (Array.isArray(data.questions)) return data.questions;
     const flat = [];
-    for (const [subject, list] of Object.entries(data)){
-      if (Array.isArray(list)){
-        for (const q of list){
-          flat.push({...q, subject: q.subject || q.materia || q.disciplina || subject});
+    for (const [subject, list] of Object.entries(data)) {
+      if (Array.isArray(list)) {
+        for (const q of list) {
+          flat.push({ ...q, materia: q.materia || subject });
         }
       }
     }
@@ -144,190 +517,317 @@ function flattenQuestions(data){
   return [];
 }
 
-async function loadQuestionsFromURL(url){
-  try{
-    const response = await fetch(url, {cache:"no-cache"});
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    try{localStorage.setItem(JSON_CACHE_KEY, JSON.stringify(data));}catch(e){}
-    const flat = flattenQuestions(data);
-    return flat.map(normalize).filter(Boolean);
-  }catch(e){
-    try{
-      const cached = localStorage.getItem(JSON_CACHE_KEY);
-      if (cached){
-        const data = JSON.parse(cached);
-        const flat = flattenQuestions(data);
-        const valid = flat.map(normalize).filter(Boolean);
-        if (valid.length > 0){
-          $("status").textContent = "⚠️ Offline: usando cache local";
-          return valid;
+// ═══════════════════════════════════════════════════════════════════
+// GITHUB API LOADER
+// ═══════════════════════════════════════════════════════════════════
+async function loadFromGitHub() {
+  const repo = DB.repo;
+  const CANDIDATES = [
+    'questoes.json', 'json.json', 'questions.json',
+    'banco.json', 'pmsc.json'
+  ];
+
+  // Tentativa 1: API de contents
+  try {
+    $('status').textContent = `🔍 Consultando github.com/${repo}...`;
+    const resp = await fetch(`https://api.github.com/repos/${repo}/contents/`, {
+      headers: { 'Accept': 'application/vnd.github+json' }
+    });
+
+    if (resp.ok) {
+      const files = await resp.json();
+      if (Array.isArray(files)) {
+        const jsonFiles = files.filter(f =>
+          f.type === 'file' && f.name.endsWith('.json') &&
+          !f.name.startsWith('.') &&
+          !['package.json', 'tsconfig.json'].includes(f.name)
+        );
+
+        if (jsonFiles.length > 0) {
+          let allQuestions = [];
+          let loadedFiles = 0;
+
+          for (const file of jsonFiles) {
+            try {
+              const content = await fetch(file.download_url).then(r => r.json());
+              const flat = flattenJSON(content);
+              const normalized = flat.map(q => normalizeQuestion(q)).filter(Boolean);
+              if (normalized.length > 0) {
+                allQuestions.push(...normalized);
+                loadedFiles++;
+              }
+            } catch (e) { console.warn('Failed:', file.name, e); }
+          }
+
+          if (allQuestions.length > 0) {
+            $('status').textContent = `✅ ${allQuestions.length} questões de ${loadedFiles} arquivo(s)`;
+            return allQuestions;
+          }
         }
       }
-    }catch(ce){}
-    throw e;
-  }
-}
-
-function mergeQuestions(newQuestions){
-  const existing = new Set(questions.map(q => q.id));
-  let added = 0;
-  for (const q of newQuestions){
-    if (!existing.has(q.id)){ questions.push(q); existing.add(q.id); added++; }
-  }
-  return added;
-}
-
-function updateSubjectDropdown(){
-  const select = $("subject");
-  const current = select.value;
-  while (select.options.length > 1) select.remove(1);
-  for (const subject of new Set(questions.map(q => q.subject))){
-    const option = document.createElement("option");
-    option.value = subject;
-    option.textContent = subject;
-    select.appendChild(option);
-  }
-  if ([...select.options].some(o => o.value === current)) select.value = current;
-}
-
-async function autoLoadQuestions(){
-  const params = new URLSearchParams(location.search);
-  const override = params.get("json");
-  const candidates = override ? [override, ...JSON_CANDIDATES] : [...JSON_CANDIDATES];
-
-  for (const file of candidates){
-    try{
-      $("status").textContent = `Buscando ${file}...`;
-      const valid = await loadQuestionsFromURL(file);
-      if (valid.length === 0){
-        $("status").textContent = `${file} sem questões válidas.`;
-        continue;
-      }
-      mergeQuestions(valid);
-      updateSubjectDropdown();
-      start();
-      $("status").textContent = `✅ ${valid.length} questões carregadas de ${file}.`;
-      window._loadedFile = file;
-      return;
-    }catch(e){}
-  }
-  $("status").textContent = "⚠️ Nenhum JSON encontrado. Use Importar JSON.";
-}
-
-async function refreshQuestions(){
-  const file = window._loadedFile || JSON_CANDIDATES[0];
-  const btn = $("refresh");
-  btn.disabled = true;
-  const original = btn.textContent;
-  btn.textContent = "⏳ Atualizando...";
-  try{
-    $("status").textContent = `Atualizando ${file}...`;
-    const fresh = await loadQuestionsFromURL(file);
-    if (fresh.length === 0){
-      $("status").textContent = "❌ Nenhuma questão válida no arquivo.";
-      return;
     }
-    questions = fresh;
-    window._loadedFile = file;
-    updateSubjectDropdown();
-    start();
-    $("status").textContent = `✅ Banco atualizado: ${fresh.length} questões de ${file}.`;
-  }catch(e){
-    $("status").textContent = "❌ Erro ao atualizar: " + e.message;
-  }finally{
-    btn.disabled = false;
-    btn.textContent = original;
+  } catch (e) {
+    console.warn('GitHub API failed:', e);
   }
+
+  // Tentativa 2: raw.githubusercontent com nomes conhecidos
+  $('status').textContent = '🔍 Tentando nomes conhecidos...';
+  for (const name of CANDIDATES) {
+    for (const branch of ['main', 'master']) {
+      try {
+        const url = `https://raw.githubusercontent.com/${repo}/${branch}/${name}`;
+        const content = await fetch(url).then(r => {
+          if (!r.ok) throw new Error('404');
+          return r.json();
+        });
+        const flat = flattenJSON(content);
+        const normalized = flat.map(q => normalizeQuestion(q)).filter(Boolean);
+        if (normalized.length > 0) {
+          $('status').textContent = `✅ ${normalized.length} questões de ${name}`;
+          return normalized;
+        }
+      } catch (e) { /* try next */ }
+    }
+  }
+
+  // Fallback: cache
+  try {
+    const cached = localStorage.getItem('pmsc_questions_cache');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      $('status').textContent = `⚠️ Offline: ${parsed.length} questões em cache`;
+      return parsed;
+    }
+  } catch (e) {}
+
+  return [];
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CENA / RENDERER
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+let QUESTIONS = [];
+let currentPool = [];
+let currentIndex = 0;
+let currentAnswer = null;
+let examActive = false;
+let examEndsAt = 0;
+
+// ═══════════════════════════════════════════════════════════════════
+// THREE.JS — CENA
 // ═══════════════════════════════════════════════════════════════════
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x06111e);
+scene.background = new THREE.Color(0x060913);
 
-const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, .05, 150);
-camera.position.set(0, 1.65, 0);
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.05, 200);
+camera.position.set(0, 1.65, 3);
 
 const rig = new THREE.Group();
 rig.add(camera);
 scene.add(rig);
 
-const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:"high-performance"});
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.xr.enabled = true;
-renderer.xr.setFramebufferScaleFactor(1.2);
+renderer.xr.setFramebufferScaleFactor(1.0);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
 
-const ambient = new THREE.HemisphereLight(0xffffff, 0x304b6b, 2.4);
+const ambient = new THREE.HemisphereLight(0xffffff, 0x304b6b, 2.0);
 scene.add(ambient);
-const sunlight = new THREE.DirectionalLight(0xffffff, 2);
-sunlight.position.set(3, 8, 4);
-scene.add(sunlight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+dirLight.position.set(5, 10, 5);
+scene.add(dirLight);
 
-const environmentGroup = new THREE.Group();
-scene.add(environmentGroup);
+const envGroup = new THREE.Group();
+scene.add(envGroup);
 
-// ═══════════════════════════════════════════════════════════════════
-// PAINÉIS MÓVEIS
-// ═══════════════════════════════════════════════════════════════════
 const panelRegistry = new Map();
-const PANEL_STORAGE_KEY = "pmsc_panels_positions";
-
-function getOrCreatePanelGroup(panelId){
-  if (!panelRegistry.has(panelId)){
-    const group = new THREE.Group();
-    group.userData.panelId = panelId;
-    scene.add(group);
-    panelRegistry.set(panelId, group);
-  }
-  return panelRegistry.get(panelId);
-}
-
-function detectPanelId(x){
-  if (x < -2) return "env";
-  if (x > 2) return "stats";
-  return "question";
-}
-
-function savePanelState(panelId, group){
-  try{
-    const saved = JSON.parse(localStorage.getItem(PANEL_STORAGE_KEY) || "{}");
-    saved[panelId] = {
-      pos: [group.position.x, group.position.y, group.position.z],
-      scale: group.scale.x,
-      rotY: group.rotation.y,
-    };
-    localStorage.setItem(PANEL_STORAGE_KEY, JSON.stringify(saved));
-  }catch(e){}
-}
-
-function restorePanelStates(){
-  try{
-    const saved = JSON.parse(localStorage.getItem(PANEL_STORAGE_KEY) || "{}");
-    for (const [panelId, data] of Object.entries(saved)){
-      const group = panelRegistry.get(panelId);
-      if (!group) continue;
-      if (Array.isArray(data.pos)) group.position.set(data.pos[0], data.pos[1], data.pos[2]);
-      if (typeof data.scale === "number") group.scale.setScalar(data.scale);
-      if (typeof data.rotY === "number") group.rotation.y = data.rotY;
-    }
-  }catch(e){}
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// ⭐ NÚCLEO DO FIX: CANVAS COM AUTO-FIT
-// ═══════════════════════════════════════════════════════════════════
-const dynamic = [];
 const interactive = [];
-const teleportMarkers = [];
-const raycaster = new THREE.Raycaster();
-const rotation = new THREE.Matrix4();
 
-// Escolhe altura do canvas baseado no número de linhas
-function pickCanvasHeight(maxLines){
+// ═══════════════════════════════════════════════════════════════════
+// AMBIENTES (10)
+// ═══════════════════════════════════════════════════════════════════
+function clearEnv() {
+  envGroup.traverse(o => {
+    if (!o.isMesh) return;
+    o.geometry.dispose();
+    if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+    else o.material.dispose();
+  });
+  envGroup.clear();
+}
+
+function box(w, h, d, color, x, y, z) {
+  const m = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.8 })
+  );
+  m.position.set(x, y, z);
+  envGroup.add(m);
+  return m;
+}
+
+function sphere(r, color, x, y, z) {
+  const m = new THREE.Mesh(
+    new THREE.SphereGeometry(r, 16, 12),
+    new THREE.MeshStandardMaterial({ color })
+  );
+  m.position.set(x, y, z);
+  envGroup.add(m);
+  return m;
+}
+
+function cyl(r1, r2, h, color, x, y, z) {
+  const m = new THREE.Mesh(
+    new THREE.CylinderGeometry(r1, r2, h, 12),
+    new THREE.MeshStandardMaterial({ color })
+  );
+  m.position.set(x, y, z);
+  envGroup.add(m);
+  return m;
+}
+
+function room(floorColor, wallColor) {
+  box(16, 0.1, 16, floorColor, 0, 0, 0);
+  box(16, 5, 0.1, wallColor, 0, 2.5, -8);
+  box(0.1, 5, 16, wallColor, -8, 2.5, 0);
+  box(0.1, 5, 16, wallColor, 8, 2.5, 0);
+  box(16, 5, 0.1, wallColor, 0, 2.5, 8);
+  box(16, 0.1, 16, wallColor, 0, 5, 0);
+}
+
+function desk(x, z, color = 0x795548) {
+  box(2, 0.1, 1, color, x, 0.85, z);
+  for (const dx of [-0.8, 0.8]) for (const dz of [-0.4, 0.4]) {
+    box(0.08, 0.8, 0.08, 0x333333, x + dx, 0.4, z + dz);
+  }
+}
+
+function tree(x, z) {
+  cyl(0.15, 0.2, 2, 0x6b4423, x, 1, z);
+  sphere(0.9, 0x2d8b4e, x, 2.2, z);
+}
+
+function bookshelf(x, z) {
+  box(1.5, 2.5, 0.4, 0x5c3a21, x, 1.25, z);
+  for (let r = 0; r < 4; r++) {
+    box(1.4, 0.05, 0.4, 0x3d2415, x, 0.4 + r * 0.55, z);
+    for (let c = 0; c < 5; c++) {
+      const colors = [0x2255aa, 0xaa2233, 0x22aa55, 0xcc9933];
+      box(0.2, 0.4, 0.25, colors[(r + c) % 4], x - 0.55 + c * 0.28, 0.65 + r * 0.55, z);
+    }
+  }
+}
+
+function buildEnvironment(type) {
+  clearEnv();
+
+  switch (type) {
+    case 'academy':
+      scene.background = new THREE.Color(0x06111e);
+      room(0x183047, 0x10283f);
+      box(5, 0.15, 0.3, 0x2b9dd8, 0, 3.7, -7.9);
+      desk(-4, -5); desk(4, -5);
+      box(2, 0.5, 1, 0x4a7c9e, 0, 0.25, -6);
+      break;
+
+    case 'living':
+      scene.background = new THREE.Color(0xb4c7d8);
+      room(0xc4a682, 0xe0dcd5);
+      box(3, 0.5, 1.2, 0x526477, -4, 0.45, -4);
+      box(3, 0.9, 0.3, 0x394b60, -4, 0.85, -4.45);
+      desk(4, -4, 0x94765d);
+      box(4, 2, 0.05, 0x8bbad7, 0, 2.2, -7.9);
+      break;
+
+    case 'beach':
+      scene.background = new THREE.Color(0x87ceeb);
+      box(60, 0.1, 60, 0xe8d39b, 0, 0, 0);
+      box(60, 0.05, 20, 0x1e90ff, 0, 0.05, -25);
+      sphere(2, 0xffe9a0, -15, 12, -35);
+      for (const [x, z] of [[-8,-6],[-5,-8],[8,-6],[5,-8]]) tree(x, z);
+      box(0.05, 3, 0.05, 0x8b6b3f, 3, 1.5, -3);
+      box(2, 0.05, 2, 0xff6b6b, 3, 3, -3);
+      break;
+
+    case 'library':
+      scene.background = new THREE.Color(0x2b251f);
+      room(0x5b4332, 0x3b3027);
+      bookshelf(-6, -6); bookshelf(-4, -6); bookshelf(4, -6); bookshelf(6, -6);
+      desk(-4, -2); desk(4, -2);
+      box(3, 0.5, 2, 0x4a2c1a, 0, 0.25, -3);
+      break;
+
+    case 'future':
+      scene.background = new THREE.Color(0x050d1c);
+      room(0x111b35, 0x0b1630);
+      for (let x = -6; x <= 6; x += 2) box(0.05, 4, 0.05, 0x00cfff, x, 2, -7.9);
+      for (let x = -6; x <= 6; x += 2) box(0.05, 4, 0.05, 0x00cfff, x, 2, 7.9);
+      desk(-4, -4, 0x1a4366); desk(4, -4, 0x1a4366);
+      break;
+
+    case 'nature':
+      scene.background = new THREE.Color(0x87ceeb);
+      box(80, 0.1, 80, 0x4c9b53, 0, 0, 0);
+      for (const [x, z] of [[-8,-8],[8,-8],[-8,2],[8,2],[-5,-10],[5,-10],[0,-12]]) tree(x, z);
+      for (let i = 0; i < 20; i++) {
+        const fx = (Math.random() - 0.5) * 30;
+        const fz = (Math.random() - 0.5) * 30;
+        if (Math.abs(fx) < 3 && Math.abs(fz) < 3) continue;
+        box(0.1, 0.3, 0.1, 0xff6b9d, fx, 0.15, fz);
+      }
+      desk(4, -3, 0x8b6848);
+      break;
+
+    case 'penthouse':
+      scene.background = new THREE.Color(0x1a1a3a);
+      room(0xd2c9bd, 0xe6e0d9);
+      box(6, 3, 0.05, 0x4a6a8a, 0, 2.2, -7.9);
+      box(3, 0.5, 1.2, 0x303b48, -4, 0.45, -4);
+      desk(4, -4, 0x1a1a2e);
+      for (const x of [-6, 6]) {
+        box(0.1, 2.5, 0.1, 0xc6b17b, x, 1.25, -5);
+        sphere(0.3, 0xffdd88, x, 2.6, -5);
+      }
+      break;
+
+    case 'space':
+      scene.background = new THREE.Color(0x01040e);
+      room(0x293344, 0x1a2436);
+      sphere(4, 0x3a7bc3, 0, 4, -25);
+      for (let i = 0; i < 50; i++) {
+        const r = 30 + Math.random() * 40;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        sphere(0.05, 0xffffff, r * Math.sin(phi) * Math.cos(theta), 4 + r * Math.sin(phi) * Math.sin(theta), -5 + r * Math.cos(phi));
+      }
+      desk(-4, -4, 0x334b66); desk(4, -4, 0x334b66);
+      break;
+
+    case 'minimal':
+      scene.background = new THREE.Color(0xdde5ec);
+      room(0xe8e8e8, 0xf0f0f0);
+      box(2, 0.1, 2, 0xcccccc, -4, 0.05, -4);
+      desk(4, -4, 0xaaaaaa);
+      break;
+  }
+
+  applyLighting();
+}
+
+function applyLighting() {
+  const night = DB.lighting === 'night';
+  ambient.intensity = night ? 0.8 : 2.0;
+  dirLight.intensity = night ? 0.4 : 1.5;
+  if (DB.environment === 'space') { ambient.intensity = 1.2; dirLight.intensity = 0.6; }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TEXT RENDERING — AUTO-FIT (sem cortes)
+// ═══════════════════════════════════════════════════════════════════
+function pickCanvasHeight(maxLines) {
   if (maxLines <= 1) return 256;
   if (maxLines <= 2) return 384;
   if (maxLines <= 4) return 512;
@@ -336,902 +836,459 @@ function pickCanvasHeight(maxLines){
   return 1280;
 }
 
-// Escolhe fonte inicial baseado no número de linhas
-function pickFontSizeMax(maxLines){
-  if (maxLines <= 1) return 94;
-  if (maxLines <= 2) return 78;
-  if (maxLines <= 4) return 62;
-  if (maxLines <= 6) return 54;
-  if (maxLines <= 8) return 46;
-  return 40;
-}
-
-// Faz wrap REAL do texto usando measureText
-function wrapTextByPixels(text, maxWidth, ctx){
+function wrapByPixels(text, maxWidth, ctx) {
   const words = String(text).split(/\s+/);
   const lines = [];
-  let line = "";
-  for (const word of words){
-    const candidate = line ? line + " " + word : word;
-    if (ctx.measureText(candidate).width > maxWidth && line){
-      lines.push(line);
-      line = word;
-    } else {
-      line = candidate;
-    }
+  let line = '';
+  for (const word of words) {
+    const candidate = line ? line + ' ' + word : word;
+    if (ctx.measureText(candidate).width > maxWidth && line) {
+      lines.push(line); line = word;
+    } else line = candidate;
   }
   if (line) lines.push(line);
   return lines;
 }
 
-/**
- * ⭐ Função principal: desenha texto com auto-fit
- * Retorna canvas + metadata
- */
-function drawTextCanvas(text, opts = {}){
+function drawText(text, opts = {}) {
   const {
-    width = 2048,
-    maxLines = 1,
-    fontSizeMax = pickFontSizeMax(maxLines),
-    fontSizeMin = 22,
-    padding = 40,
-    bgColor = "#123c60",
-    textColor = "#ffffff",
-    borderColor = "#4289bb",
-    borderWidth = 7,
-    align = "center",
-    lineHeightFactor = 1.25,
-    bold = true,
+    width = 2048, maxLines = 4, fontSizeMax = 62, fontSizeMin = 22,
+    padding = 40, bgColor = '#123c60', borderColor = '#4289bb',
+    textColor = '#ffffff', borderWidth = 7
   } = opts;
 
-  const canvasHeight = opts.canvasHeight || pickCanvasHeight(maxLines);
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = canvasHeight;
-  const ctx = canvas.getContext("2d");
+  const H = pickCanvasHeight(maxLines);
+  const c = document.createElement('canvas');
+  c.width = width; c.height = H;
+  const ctx = c.getContext('2d');
 
-  // Fundo + borda
   ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, width, canvasHeight);
+  ctx.fillRect(0, 0, width, H);
   ctx.strokeStyle = borderColor;
   ctx.lineWidth = borderWidth;
-  ctx.strokeRect(borderWidth/2, borderWidth/2, width - borderWidth, canvasHeight - borderWidth);
+  ctx.strokeRect(borderWidth/2, borderWidth/2, width - borderWidth, H - borderWidth);
 
-  const fontWeight = bold ? "bold" : "normal";
-  const maxTextWidth = width - 2 * padding;
-  const maxTextHeight = canvasHeight - 2 * padding;
-
-  // Loop: reduz fonte até caber
+  const maxW = width - 2 * padding;
+  const maxH = H - 2 * padding;
   let fontSize = fontSizeMax;
   let lines = [];
   let lineHeight = 0;
 
-  while (fontSize >= fontSizeMin){
-    ctx.font = `${fontWeight} ${fontSize}px Arial`;
-    lines = wrapTextByPixels(text, maxTextWidth, ctx);
-    lineHeight = fontSize * lineHeightFactor;
-    const totalHeight = lines.length * lineHeight;
-
-    if (lines.length <= maxLines && totalHeight <= maxTextHeight){
-      break; // cabeu!
-    }
+  while (fontSize >= fontSizeMin) {
+    ctx.font = `bold ${fontSize}px Segoe UI, Arial`;
+    lines = wrapByPixels(text, maxW, ctx);
+    lineHeight = fontSize * 1.25;
+    if (lines.length <= maxLines && lines.length * lineHeight <= maxH) break;
     fontSize -= 2;
   }
 
-  // Se ainda estourou, trunca com … (último recurso)
-  let truncated = false;
-  if (lines.length > maxLines){
+  if (lines.length > maxLines) {
     lines = lines.slice(0, maxLines);
-    truncated = true;
-    let lastLine = lines[maxLines - 1];
-    while (ctx.measureText(lastLine + "…").width > maxTextWidth && lastLine.length > 0){
-      lastLine = lastLine.slice(0, -1);
-    }
-    lines[maxLines - 1] = lastLine.trimEnd() + "…";
-  } else if (lines.length * lineHeight > maxTextHeight){
-    const maxFit = Math.max(1, Math.floor(maxTextHeight / lineHeight));
-    if (maxFit < lines.length){
-      lines = lines.slice(0, maxFit);
-      truncated = true;
-      let lastLine = lines[lines.length - 1];
-      while (ctx.measureText(lastLine + "…").width > maxTextWidth && lastLine.length > 0){
-        lastLine = lastLine.slice(0, -1);
-      }
-      lines[lines.length - 1] = lastLine.trimEnd() + "…";
-    }
+    lines[maxLines - 1] = lines[maxLines - 1].slice(0, -3) + '…';
   }
 
-  // Renderiza final
-  ctx.font = `${fontWeight} ${fontSize}px Arial`;
+  ctx.font = `bold ${fontSize}px Segoe UI, Arial`;
   ctx.fillStyle = textColor;
-  ctx.textBaseline = "middle";
-  ctx.textAlign = align === "left" ? "left" : align === "right" ? "right" : "center";
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const totalH = lines.length * lineHeight;
+  const startY = (H - totalH) / 2 + lineHeight / 2;
+  lines.forEach((line, i) => ctx.fillText(line, width/2, startY + i * lineHeight));
 
-  const textHeight = lines.length * lineHeight;
-  const startY = (canvasHeight - textHeight) / 2 + lineHeight / 2;
-  const startX = align === "left" ? padding : align === "right" ? width - padding : width / 2;
-
-  lines.forEach((line, i) => {
-    ctx.fillText(line, startX, startY + i * lineHeight);
-  });
-
-  return { canvas, lines, fontSize, truncated, canvasHeight };
+  return c;
 }
 
-/**
- * ⭐ label() — agora usa drawTextCanvas e mantém proporção
- * IMPORTANTE: a altura física é calculada pela proporção do canvas,
- * NÃO pelo parâmetro height. Isso corrige o "achatamento".
- */
-function label(text, x, y, z, width = 4.8, height = 0.28, action = null, kind = "normal", panelIdOverride = null, opts = {}){
-  const bgColor =
-    kind === "correct" ? "#16684d" :
-    kind === "wrong" ? "#893440" :
-    kind === "handle" ? "#0a3a5a" :
-    kind === "question" ? "#0d2740" :
-    action ? "#176ca4" : "#123c60";
-  const borderColor =
-    action ? "#a4efff" :
-    kind === "question" ? "#49baff" :
-    kind === "correct" ? "#2fc77a" :
-    kind === "wrong" ? "#d15464" :
-    "#4289bb";
+function createPanelLabel(text, opts = {}) {
+  const canvas = drawText(text, opts);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
 
-  const maxLines = opts.maxLines || 1;
-  const result = drawTextCanvas(text, {
-    width: 2048,
-    maxLines,
-    fontSizeMax: opts.fontSizeMax || pickFontSizeMax(maxLines),
-    fontSizeMin: opts.fontSizeMin || 22,
-    padding: opts.padding || 40,
-    bgColor,
-    borderColor,
-    align: opts.align || "center",
-    bold: opts.bold !== false,
-  });
+  const width = opts.width3D || 2.0;
+  const height = width * (canvas.height / canvas.width);
 
-  const texture = new THREE.CanvasTexture(result.canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-
-  // ⭐ PROPORÇÃO CORRETA — sem esticar
-  const physicalHeight = width * (result.canvas.height / result.canvas.width);
-
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(width, physicalHeight),
-    new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
-  );
-  mesh.position.set(x, y, z);
-
-  const panelId = panelIdOverride || detectPanelId(x);
-  const group = getOrCreatePanelGroup(panelId);
-  group.add(mesh);
-  mesh.userData.panelId = panelId;
-  mesh.userData.truncated = result.truncated;
-  mesh.userData.fontSize = result.fontSize;
-
-  if (result.truncated){
-    console.warn("[TRUNCATED]", {text: String(text).slice(0, 60), fontSize: result.fontSize, lines: result.lines.length});
-  }
-
-  dynamic.push(mesh);
-  if (action){
-    mesh.userData.action = action;
-    interactive.push(mesh);
-  }
+  const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
+  mesh.userData.canvas = canvas;
+  mesh.userData.texture = tex;
   return mesh;
 }
 
-// Alça de arrastar
-function createGrabHandle(panelId, x, y, z, width){
-  const mesh = label(`☰ ${panelId.toUpperCase()}`, x, y, z, width, .22, null, "handle", panelId, {maxLines: 1});
-  mesh.userData.isGrabHandle = true;
-  if (!interactive.includes(mesh)) interactive.push(mesh);
-  return mesh;
+// ═══════════════════════════════════════════════════════════════════
+// PANEL SYSTEM — 3 painéis (esquerda, centro, direita)
+// ═══════════════════════════════════════════════════════════════════
+function ensurePanel(id, x, y, z, rotationY = 0) {
+  if (panelRegistry.has(id)) return panelRegistry.get(id);
+  const group = new THREE.Group();
+  group.userData.panelId = id;
+  group.position.set(x, y, z);
+  group.rotation.y = rotationY;
+  scene.add(group);
+  panelRegistry.set(id, group);
+
+  // Botão grab handle
+  const handle = createPanelLabel(`☰ ${id.toUpperCase()}`, {
+    width3D: 1.2, maxLines: 1, fontSizeMax: 60, padding: 20,
+    bgColor: '#0a3a5a', borderColor: '#00d1ff'
+  });
+  handle.position.set(0, 1.6, 0);
+  handle.userData.isGrabHandle = true;
+  handle.userData.panelId = id;
+  interactive.push(handle);
+  group.add(handle);
+
+  return group;
 }
 
-function clearPanels(){
-  for (const mesh of dynamic){
-    if (mesh.parent) mesh.parent.remove(mesh);
-    mesh.geometry.dispose();
-    if (mesh.material.map) mesh.material.map.dispose();
-    mesh.material.dispose();
-  }
-  dynamic.length = 0;
-  interactive.length = 0;
-  interactive.push(...teleportMarkers);
-
-  for (const [id, group] of panelRegistry){
+function clearPanels() {
+  for (const [id, group] of panelRegistry) {
+    group.traverse(o => {
+      if (o.userData.texture) o.userData.texture.dispose();
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) {
+        if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+        else o.material.dispose();
+      }
+    });
     scene.remove(group);
   }
   panelRegistry.clear();
+  for (let i = interactive.length - 1; i >= 0; i--) {
+    if (!interactive[i].userData.isTeleport) interactive.splice(i, 1);
+  }
 }
 
-function center(text, y, width=5.15, action=null, kind="normal", opts={}){
-  return label(text, 0, y, -3.52, width, .28, action, kind, "question", opts);
+function addPanelText(panelId, text, yOffset, opts = {}) {
+  const group = panelRegistry.get(panelId);
+  if (!group) return null;
+  const label = createPanelLabel(text, opts);
+  label.position.set(0, yOffset, 0.01);
+  if (opts.onClick) {
+    label.userData.onClick = opts.onClick;
+    interactive.push(label);
+  }
+  group.add(label);
+  return label;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// AMBIENTES
+// RENDER DO PAINEL DE QUESTÃO
 // ═══════════════════════════════════════════════════════════════════
-function createBox(w,h,d,color,x,y,z){
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color,roughness:.75}));
-  m.position.set(x,y,z);
-  environmentGroup.add(m);
-  return m;
-}
-function createSphere(r,color,x,y,z){
-  const m = new THREE.Mesh(new THREE.SphereGeometry(r,16,12), new THREE.MeshStandardMaterial({color}));
-  m.position.set(x,y,z);
-  environmentGroup.add(m);
-  return m;
-}
-function createCylinder(top,bottom,height,color,x,y,z){
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(top,bottom,height,12), new THREE.MeshStandardMaterial({color}));
-  m.position.set(x,y,z);
-  environmentGroup.add(m);
-  return m;
-}
-function disposeEnvironment(){
-  environmentGroup.traverse(o=>{
-    if (!o.isMesh) return;
-    o.geometry.dispose();
-    if (Array.isArray(o.material)){o.material.forEach(m=>m.dispose());}
-    else o.material.dispose();
-  });
-  environmentGroup.clear();
-}
-function room(floor,wall){
-  createBox(14,.12,14,floor,0,-.1,-2);
-  createBox(14,5,.12,wall,0,2.5,-8);
-  createBox(.12,5,14,wall,-7,2.5,-2);
-  createBox(.12,5,14,wall,7,2.5,-2);
-}
-function desk(x,z,color=0x795548){
-  createBox(1.7,.12,.8,color,x,.8,z);
-  for (const dx of [-.7,.7]) for (const dz of [-.3,.3]) createBox(.08,.75,.08,0x444444,x+dx,.38,z+dz);
-}
-function sofa(x,z){
-  createBox(2.8,.5,1.1,0x526477,x,.45,z);
-  createBox(2.8,.9,.3,0x394b60,x,.85,z-.45);
-  createBox(.3,.65,1.1,0x394b60,x-1.25,.65,z);
-  createBox(.3,.65,1.1,0x394b60,x+1.25,.65,z);
-}
-function tree(x,z){
-  createCylinder(.13,.18,1.7,0x775038,x,.85,z);
-  createSphere(.8,0x258344,x,2,z);
-  createSphere(.6,0x2e9c51,x-.4,1.8,z);
-}
-function bookshelf(x,z){
-  createBox(1.6,2.5,.45,0x67452e,x,1.25,z);
-  for (let row=0;row<4;row++){
-    createBox(1.5,.08,.5,0x3f2c20,x,.45+row*.55,z);
-    for (let col=0;col<6;col++){
-      const colors=[0x226699,0xa33939,0x28845a,0xc49b42];
-      createBox(.17,.35,.24,colors[(row+col)%4],x-.58+col*.22,.66+row*.55,z);
-    }
-  }
-}
-function windowView(color){
-  createBox(5,2.7,.08,0x263b50,0,2.2,-7.85);
-  createBox(4.7,2.4,.03,color,0,2.2,-7.78);
-  createBox(.09,2.4,.1,0xd8e2ec,0,2.2,-7.7);
-}
-
-const environments = [
-  ["academy","Academia PMSC"],["living","Sala de estar"],["beach","Praia"],
-  ["library","Biblioteca"],["future","Escritório futurista"],["nature","Natureza"],
-  ["penthouse","Cobertura de luxo"],["space","Estação espacial"],["minimal","Sala minimalista"]
-];
-
-let currentEnvironment = "academy";
-
-function buildEnvironment(type){
-  disposeEnvironment();
-  switch(type){
-    case "academy":
-      scene.background = new THREE.Color(0x06111e);
-      room(0x183047,0x10283f);
-      createBox(5,.12,.3,0x2b9dd8,0,3.7,-7.7);
-      desk(-3.8,-4.5,0x243c56); desk(3.8,-4.5,0x243c56);
-      break;
-    case "living":
-      scene.background = new THREE.Color(0xb4c7d8);
-      room(0xb8a28a,0xd7d4ce);
-      sofa(-3.8,-4); desk(3.8,-4,0x94765d); windowView(0x8bbad7);
-      break;
-    case "beach":
-      scene.background = new THREE.Color(0x86d5ff);
-      createBox(60,.12,60,0xe8d39b,0,-.1,-10);
-      createBox(60,.03,25,0x168fc4,0,-.02,-24);
-      createSphere(1.1,0xffe9a0,-15,12,-35);
-      for (const x of [-5,5]){createCylinder(.1,.18,3,0x926a41,x,1.5,-5);createSphere(1.2,0x278a53,x,3.1,-5);}
-      desk(3.5,-3,0xc6a16e);
-      break;
-    case "library":
-      scene.background = new THREE.Color(0x2b251f);
-      room(0x5b4332,0x3b3027);
-      bookshelf(-5,-5); bookshelf(-3,-5); bookshelf(3,-5); bookshelf(5,-5);
-      desk(-3.5,-2); desk(3.5,-2);
-      break;
-    case "future":
-      scene.background = new THREE.Color(0x050d1c);
-      room(0x111b35,0x0b1630);
-      for (const x of [-5,-3,3,5]) createBox(.08,3.2,.08,0x00cfff,x,1.7,-7.7);
-      desk(-3.8,-4,0x1a4366); desk(3.8,-4,0x1a4366);
-      break;
-    case "nature":
-      scene.background = new THREE.Color(0x9dd8ef);
-      createBox(80,.12,80,0x4c9b53,0,-.1,-10);
-      for (const [x,z] of [[-6,-6],[6,-6],[-6,1],[6,1],[-3,-7],[3,-7]]) tree(x,z);
-      desk(3.8,-4,0x8b6848);
-      break;
-    case "penthouse":
-      scene.background = new THREE.Color(0x6e9ac1);
-      room(0xd2c9bd,0xe6e0d9);
-      windowView(0x6291b5); sofa(-3.8,-4); desk(3.8,-4,0x303b48);
-      for (const x of [-5,5]) createCylinder(.05,.05,2.5,0xc6b17b,x,1.25,-5);
-      break;
-    case "space":
-      scene.background = new THREE.Color(0x01040e);
-      room(0x293344,0x1a2436);
-      createSphere(2.3,0x237fc3,0,4,-30);
-      for (let i=0;i<30;i++) createSphere(.04,0xffffff,Math.sin(i*2.7)*35,4+(i%7)*2,-15-(i%5)*8);
-      desk(3.8,-4,0x334b66);
-      break;
-    case "minimal":
-      scene.background = new THREE.Color(0xdde5ec);
-      room(0xe0e0e0,0xf0f0f0);
-      desk(3.8,-4,0xaaaaaa);
-      createBox(1.8,.2,1.8,0xbcbcbc,-4,.1,-4);
-      break;
-  }
-  applyLighting();
-}
-
-function applyLighting(){
-  const night = $("lighting").value === "night";
-  ambient.intensity = night ? 1.1 : 2.4;
-  sunlight.intensity = night ? .5 : 2;
-  if (currentEnvironment === "space"){ ambient.intensity = 1.4; sunlight.intensity = .8; }
-}
-
-function changeEnvironment(type){
-  if (type === "random"){
-    const available = environments.map(e => e[0]);
-    type = available[Math.floor(Math.random() * available.length)];
-  }
-  currentEnvironment = type;
-  buildEnvironment(type);
-  try{localStorage.setItem("pmsc_environment", type);}catch(e){}
-  $("environment").value = type;
-  $("status").textContent = "Ambiente: " + (environments.find(e => e[0] === type)?.[1] || type);
-  render();
-}
-
-$("environment").onchange = e => changeEnvironment(e.target.value);
-$("lighting").onchange = () => {applyLighting(); try{localStorage.setItem("pmsc_lighting", $("lighting").value);}catch(e){}};
-
-// ═══════════════════════════════════════════════════════════════════
-// PERGUNTAS
-// ═══════════════════════════════════════════════════════════════════
-const defaultSubjects = [
-  "Língua Portuguesa","Informática","Direito Constitucional",
-  "Constituição de Santa Catarina","Direito Penal Comum",
-  "Direito Processual Penal Comum","Direito Penal Militar",
-  "Legislação Especial","Legislação de Trânsito","Legislação Institucional"
-];
-for (const s of defaultSubjects){
-  const option = document.createElement("option");
-  option.value = s; option.textContent = s;
-  $("subject").appendChild(option);
-}
-
-let questions = [];
-let pool = [];
-let current = 0;
-let answered = false;
-let examCorrect = 0;
-let examDone = 0;
-let examEnded = false;
-let wrongQuestions = new Set();
-let stats = {total:0, correct:0, subjects:{}};
-
-try{
-  const saved = JSON.parse(localStorage.getItem("pmsc_2026_v5"));
-  if (saved){ stats = saved.stats || stats; wrongQuestions = new Set(saved.wrong || []); }
-}catch(e){}
-
-function saveProgress(){
-  try{localStorage.setItem("pmsc_2026_v5", JSON.stringify({stats, wrong:[...wrongQuestions]}));}catch(e){}
-  updateStats();
-}
-
-function updateStats(){
-  const percent = stats.total ? Math.round(stats.correct * 100 / stats.total) : 0;
-  let html = `Respondidas: ${stats.total}<br>Acertos: ${stats.correct}<br>Aproveitamento: ${percent}%<br>Revisar: ${wrongQuestions.size}`;
-  for (const [name, value] of Object.entries(stats.subjects)){
-    const safe = name.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-    html += `<br>${safe}: ${value.correct}/${value.total}`;
-  }
-  $("stats").innerHTML = html;
-}
-
-function environmentPanel(){
-  label("ESCOLHER AMBIENTE", -4.25, 3.42, -3.95, 2.25, .27, null, "normal", "env", {maxLines: 1});
-  createGrabHandle("env", -4.25, 3.72, -3.95, 2.25);
-  environments.forEach((item, index) => {
-    const [id, name] = item;
-    label(name, -4.25, 3.0 - index * .28, -3.94, 2.25, .24,
-      () => changeEnvironment(id),
-      currentEnvironment === id ? "correct" : "normal", "env", {maxLines: 1});
-  });
-  label("ALEATORIO", -4.25, .3, -3.94, 2.25, .24, () => changeEnvironment("random"), "normal", "env", {maxLines: 1});
-  label("DIA / NOITE", -4.25, -.05, -3.94, 2.25, .24, () => {
-    $("lighting").value = $("lighting").value === "day" ? "night" : "day";
-    $("lighting").dispatchEvent(new Event("change"));
-  }, "normal", "env", {maxLines: 1});
-}
-
-/**
- * ⭐ RENDER — layout vertical com altura DINÂMICA por label
- * Cada label ocupa sua própria altura, sem sobreposição
- */
-function render(message = ""){
-  for (let i = 0; i < 2; i++){
-    delete renderer.xr.getController(i).userData.grabState;
-    delete renderer.xr.getHand(i).userData.grabState;
-  }
-
+function renderQuestionPanel() {
   clearPanels();
 
-  // Alça + título
-  createGrabHandle("question", 0, 4.9, -3.52, 5.2);
-  center("PMSC 2026 | ACADEMIA VIRTUAL", 4.45, 5.2, null, "normal", {maxLines: 1, fontSizeMax: 80});
-
-  // Painel de ambiente
-  environmentPanel();
-
-  if (!pool.length){
-    center("CARREGUE QUESTÕES PARA INICIAR", 2.4, 5.2, null, "normal", {maxLines: 1});
-    center("USE O MENU PARA IMPORTAR JSON", 1.9, 5.2, null, "normal", {maxLines: 1});
-    restorePanelStates();
-    return;
-  }
-  if (examEnded){
-    center("SIMULADO FINALIZADO", 2.6, 5.2, null, "normal", {maxLines: 1});
-    center(`ACERTOS: ${examCorrect} DE ${examDone}`, 2.05, 5.2, null, "normal", {maxLines: 1});
-    center("REINICIAR SIMULADO", 1.4, 4.0, start, "normal", {maxLines: 1});
-    restorePanelStates();
-    return;
-  }
-
-  const q = pool[current];
-
-  // Disciplina
-  center(q.subject.toUpperCase(), 3.85, 5.1, null, "normal", {maxLines: 1, fontSizeMax: 68});
-
-  // ⭐ ENUNCIADO — um único label com auto-fit (até 6 linhas)
-  const enunciado = center(q.question, 2.65, 5.1, null, "question", {
-    maxLines: 6,
-    fontSizeMax: 56,
-    padding: 44,
-  });
-
-  // Altura do enunciado para calcular posições abaixo
-  const enunciadoAltura = 5.1 * (enunciado.geometry.parameters.height / enunciado.geometry.parameters.width);
-  const enunciadoBase = 2.65 - enunciadoAltura / 2;
-
-  // ⭐ ALTERNATIVAS — cada uma com auto-fit (até 3 linhas)
-  const gap = 0.12;
-  let yCursor = enunciadoBase - gap - 0.6;
-
-  q.options.forEach((option, index) => {
-    const letter = "ABCDE"[index];
-    const text = `${letter}) ${option}`;
-    let kind = "normal";
-    if (answered){
-      if (index === q.correct) kind = "correct";
-      else if (index === q.selected) kind = "wrong";
-    }
-    const alt = center(text, yCursor, 5.1, () => answer(index), kind, {
-      maxLines: 3,
-      fontSizeMax: 48,
-      padding: 32,
+  if (!currentPool.length) {
+    ensurePanel('center', 0, 2.0, -3.5);
+    addPanelText('center', 'Carregue questões\npara começar', 0, {
+      width3D: 5, maxLines: 2, fontSizeMax: 80, padding: 60
     });
-    const altAltura = 5.1 * (alt.geometry.parameters.height / alt.geometry.parameters.width);
-    yCursor -= (altAltura / 2) + gap + 0.06;
-    yCursor -= (altAltura / 2);
+    return;
+  }
+
+  const q = currentPool[currentIndex];
+  ensurePanel('center', 0, 2.0, -3.5);
+
+  // Cabeçalho
+  addPanelText('center', q.subject.toUpperCase(), 2.2, {
+    width3D: 5, maxLines: 1, fontSizeMax: 60, padding: 30,
+    bgColor: '#0d3a5a', borderColor: '#00d1ff'
   });
+
+  // Enunciado
+  addPanelText('center', q.question, 0.6, {
+    width3D: 5, maxLines: 6, fontSizeMax: 56, padding: 40
+  });
+
+  // Alternativas
+  const optionHeights = [];
+  q.options.forEach((opt, i) => {
+    const text = `${'ABCDE'[i]}) ${opt}`;
+    let bgColor = '#0d2740';
+    let borderColor = '#49baff';
+    if (currentAnswer !== null) {
+      if (i === q.correct) { bgColor = '#16684d'; borderColor = '#00ff88'; }
+      else if (i === currentAnswer) { bgColor = '#893440'; borderColor = '#ff4444'; }
+    }
+    const label = createPanelLabel(text, {
+      width3D: 4.5, maxLines: 3, fontSizeMax: 44, padding: 28,
+      bgColor, borderColor
+    });
+    label.userData.onClick = () => selectAnswer(i);
+    interactive.push(label);
+    const group = panelRegistry.get('center');
+    const yBase = -1.0 - optionHeights.reduce((a, b) => a + b, 0) - 0.15;
+    label.position.set(0, yBase, 0.01);
+    group.add(label);
+    optionHeights.push(label.geometry.parameters.height + 0.15);
+  });
+
+  // Explicação (se respondeu)
+  if (currentAnswer !== null && q.explanation) {
+    const totalOptH = optionHeights.reduce((a, b) => a + b, 0);
+    addPanelText('center', '📖 ' + q.explanation, -1.0 - totalOptH - 0.3, {
+      width3D: 4.5, maxLines: 4, fontSizeMax: 36, padding: 24,
+      bgColor: '#2a1a0a', borderColor: '#ffaa00'
+    });
+  }
 
   // Status
-  yCursor -= 0.1;
-  center(message || `QUESTÃO ${current + 1} DE ${pool.length}`, yCursor, 5.0, null, "normal", {
-    maxLines: 1, fontSizeMax: 64,
+  addPanelText('center', `Questão ${currentIndex + 1} de ${currentPool.length}`, -4.5, {
+    width3D: 4, maxLines: 1, fontSizeMax: 50, padding: 20,
+    bgColor: '#0a1a2a', borderColor: '#00d1ff'
   });
 
-  // Botão
-  yCursor -= 0.55;
-  center(
-    current === pool.length - 1 ? "FINALIZAR / REINICIAR" : "PRÓXIMA QUESTÃO",
-    yCursor, 3.8, next, "normal", {maxLines: 1, fontSizeMax: 60}
-  );
-
-  // ⭐ PAINEL DE STATS (direita)
-  label("DESEMPENHO", 4.25, 3.42, -3.94, 2.25, .27, null, "normal", "stats", {maxLines: 1});
-  createGrabHandle("stats", 4.25, 3.72, -3.94, 2.25);
-  label(`${stats.correct} / ${stats.total} ACERTOS`, 4.25, 3.0, -3.94, 2.25, .28, null, "normal", "stats", {maxLines: 1});
-  label("DISCIPLINA", 4.25, 2.55, -3.94, 2.25, .25, null, "normal", "stats", {maxLines: 1});
-
-  // Disciplina com auto-fit
-  const discLabel = label(q.subject, 4.25, 2.15, -3.94, 2.25, .28, null, "normal", "stats", {
-    maxLines: 2, fontSizeMax: 42,
+  // Próxima
+  const nextBtn = createPanelLabel('➡ PRÓXIMA', {
+    width3D: 3, maxLines: 1, fontSizeMax: 60, padding: 20,
+    bgColor: '#0066cc', borderColor: '#00d1ff'
   });
-  const discAltura = 2.25 * (discLabel.geometry.parameters.height / discLabel.geometry.parameters.width);
+  nextBtn.position.set(0, -5.0, 0.01);
+  nextBtn.userData.onClick = () => nextQuestion();
+  interactive.push(nextBtn);
+  panelRegistry.get('center').add(nextBtn);
 
-  // Explicação
-  if (answered && q.explanation){
-    let expY = 2.15 - discAltura / 2 - 0.2;
-    label("EXPLICAÇÃO", 4.25, expY, -3.94, 2.25, .22, null, "normal", "stats", {maxLines: 1, fontSizeMax: 40});
-    expY -= 0.35;
-    label(q.explanation, 4.25, expY, -3.94, 2.25, .22, null, "normal", "stats", {
-      maxLines: 6, fontSizeMax: 34,
+  // Painel esquerdo — info
+  ensurePanel('left', -3.5, 2.0, -3.0, 0.3);
+  addPanelText('left', 'DESEMPENHO', 1.4, {
+    width3D: 1.8, maxLines: 1, fontSizeMax: 50, padding: 15,
+    bgColor: '#0d3a5a', borderColor: '#00d1ff'
+  });
+  addPanelText('left', `${DB.stats.correct}/${DB.stats.total}`, 0.8, {
+    width3D: 1.8, maxLines: 1, fontSizeMax: 90, padding: 20
+  });
+  addPanelText('left', `Erros: ${DB.stats.total - DB.stats.correct}`, 0.2, {
+    width3D: 1.8, maxLines: 1, fontSizeMax: 45, padding: 15
+  });
+  addPanelText('left', `Revisar: ${DB.wrongIds.length}`, -0.4, {
+    width3D: 1.8, maxLines: 1, fontSizeMax: 45, padding: 15,
+    bgColor: '#3a1a0a', borderColor: '#ffaa00'
+  });
+
+  // Painel direito — controles
+  ensurePanel('right', 3.5, 2.0, -3.0, -0.3);
+  addPanelText('right', 'CONTROLES', 1.4, {
+    width3D: 1.8, maxLines: 1, fontSizeMax: 50, padding: 15,
+    bgColor: '#0d3a5a', borderColor: '#00d1ff'
+  });
+
+  const controls = [
+    { label: '📇 Flashcard', action: () => openFlashcard(currentPool[currentIndex]) },
+    { label: '📖 Explicar', action: () => showExplanation() },
+    { label: '⭐ Favoritar', action: () => toggleFavorite() },
+    { label: '🏠 Início', action: () => renderQuestionPanel() }
+  ];
+  controls.forEach((ctrl, i) => {
+    const label = createPanelLabel(ctrl.label, {
+      width3D: 1.8, maxLines: 1, fontSizeMax: 44, padding: 15,
+      bgColor: '#0d2740', borderColor: '#49baff'
     });
-  }
+    label.position.set(0, 0.8 - i * 0.55, 0.01);
+    label.userData.onClick = ctrl.action;
+    interactive.push(label);
+    panelRegistry.get('right').add(label);
+  });
 
   restorePanelStates();
 }
 
-function answer(index){
-  if (answered || examEnded || !pool.length) return;
-  const q = pool[current];
-  answered = true;
-  q.selected = index;
-  const right = index === q.correct;
-
-  examDone++;
-  if (right) examCorrect++;
-  stats.total++;
-  if (right) stats.correct++;
-  if (!stats.subjects[q.subject]) stats.subjects[q.subject] = {total:0, correct:0};
-  const s = stats.subjects[q.subject];
-  s.total++;
-  if (right) s.correct++;
-  if (right) wrongQuestions.delete(q.id); else wrongQuestions.add(q.id);
-  saveProgress();
-  render(right ? "RESPOSTA CORRETA!" : `GABARITO: ${"ABCDE"[q.correct]}`);
-}
-
-function next(){
-  if (!pool.length) return;
-  if ($("mode").value === "exam" && current === pool.length - 1){ examEnded = true; render(); return; }
-  current = (current + 1) % pool.length;
-  answered = false;
-  render();
-}
-
-function start(){
-  const mode = $("mode").value;
-  const subject = $("subject").value;
-  pool = questions.filter(q => {
-    const matchesSubject = subject === "Todas" || q.subject === subject;
-    const matchesReview = mode !== "review" || wrongQuestions.has(q.id);
-    return matchesSubject && matchesReview;
-  });
-  if (mode === "exam"){
-    pool = pool.slice();
-    for (let i = pool.length - 1; i > 0; i--){
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
+function showExplanation() {
+  const q = currentPool[currentIndex];
+  if (!q) return;
+  if (!q.explanation) {
+    alert('Esta questão não tem explicação cadastrada.');
+    return;
   }
-  current = 0; answered = false;
-  examCorrect = 0; examDone = 0; examEnded = false;
-  render();
-  $("status").textContent = pool.length
-    ? `${pool.length} questões disponíveis.`
-    : "Nenhuma questão neste filtro.";
+  alert(q.explanation);
 }
 
-$("start").onclick = start;
-$("mode").onchange = start;
-$("subject").onchange = start;
+function toggleFavorite() {
+  const q = currentPool[currentIndex];
+  if (!q) return;
+  const idx = DB.favorites.indexOf(q.id);
+  if (idx >= 0) DB.favorites.splice(idx, 1);
+  else DB.favorites.push(q.id);
+  STORAGE.save(DB);
+  $('status').textContent = idx >= 0 ? '⭐ Removido dos favoritos' : '⭐ Adicionado aos favoritos';
+}
 
-function normalize(q){
-  const question = q.enunciado ?? q.pergunta ?? q.questao ?? q.question;
-  const raw = q.alternativas ?? q.opcoes ?? q.options;
-  if (!question || !raw) return null;
-
-  const keys = Array.isArray(raw) ? null : Object.keys(raw);
-  const options = Array.isArray(raw) ? raw : keys.map(k => raw[k]);
-  if (options.length < 2 || options.length > 5) return null;
-
-  const cleanOptions = autoStripPrefixes(options);
-
-  const answer = q.correta ?? q.resposta ?? q.gabarito ?? q.correct;
-  let correct = -1;
-  if (typeof answer === "number") correct = answer;
-  else if (typeof answer === "string"){
-    const value = answer.trim();
-    if (/^[A-E]$/i.test(value)) correct = value.toUpperCase().charCodeAt(0) - 65;
-    else if (keys && keys.includes(value)) correct = keys.indexOf(value);
-    else if (/^\d+$/.test(value)) correct = Number(value);
-    else {
-      correct = cleanOptions.map(String).indexOf(value);
-      if (correct === -1) correct = options.map(String).indexOf(value);
-      if (correct === -1) correct = cleanOptions.map(String).indexOf(stripPrefix(value));
-    }
-  }
-  if (!Number.isInteger(correct) || correct < 0 || correct >= cleanOptions.length) return null;
-
-  const subject = String(q.disciplina ?? q.materia ?? q.subject ?? "Geral");
-  return {
-    id: String(q.id ?? `${subject}|${question}`),
-    question: String(question),
-    options: cleanOptions.map(String),
-    correct,
-    subject,
-    explanation: String(q.explicacao ?? q.comentario ?? q.explanation ?? "")
+// ═══════════════════════════════════════════════════════════════════
+// PANEL PERSISTENCE
+// ═══════════════════════════════════════════════════════════════════
+function savePanelState(id, group) {
+  DB.panels[id] = {
+    pos: group.position.toArray(),
+    rot: group.rotation.y,
+    scale: group.scale.x
   };
+  STORAGE.save(DB);
 }
 
-$("file").onchange = async event => {
-  try{
-    let count = 0;
-    for (const file of event.target.files){
-      const data = JSON.parse(await file.text());
-      const flat = flattenQuestions(data);
-      const valid = flat.map(normalize).filter(Boolean);
-      mergeQuestions(valid);
-      count += valid.length;
+function restorePanelStates() {
+  for (const [id, group] of panelRegistry) {
+    const saved = DB.panels[id];
+    if (saved) {
+      group.position.fromArray(saved.pos);
+      group.rotation.y = saved.rot;
+      group.scale.setScalar(saved.scale);
     }
-    updateSubjectDropdown();
-    start();
-    $("status").textContent = `${count} questões importadas.`;
-  }catch(error){
-    $("status").textContent = "Erro JSON: " + error.message;
   }
-};
-
-$("demo").onclick = () => {
-  questions = [
-    {question:"Qual Constituição está atualmente vigente no Brasil?",options:["Constituição de 1967","Constituição de 1988","Constituição de 1946","Constituição de 1937"],correct:1,subject:"Direito Constitucional",explanation:"A Constituição Federal vigente foi promulgada em 1988."},
-    {question:"Qual princípio exige atuação administrativa conforme o ordenamento jurídico?",options:["Publicidade","Legalidade","Impessoalidade","Eficiência"],correct:1,subject:"Direito Constitucional",explanation:"O princípio da legalidade orienta a Administração Pública."},
-    {question:"Qual artigo do Código Penal trata do furto?",options:["Artigo 121","Artigo 155","Artigo 157","Artigo 171"],correct:1,subject:"Direito Penal Comum",explanation:"O furto está previsto no artigo 155 do Código Penal."},
-    {question:"Qual sinalização indica parada obrigatória?",options:["Placa PARE","Placa de estacionamento","Placa de velocidade máxima","Placa de pedestres"],correct:0,subject:"Legislação de Trânsito",explanation:"A placa R-1 indica parada obrigatória."}
-  ].map(normalize).filter(Boolean);
-  updateSubjectDropdown();
-  start();
-  $("status").textContent = "Demonstração carregada.";
-};
-
-$("refresh").onclick = refreshQuestions;
-
-$("resetPanels").onclick = () => {
-  localStorage.removeItem(PANEL_STORAGE_KEY);
-  render();
-  $("status").textContent = "🔄 Painéis restaurados.";
-};
-
-$("reset").onclick = () => {
-  if (!confirm("Zerar estatísticas e revisão?")) return;
-  stats = {total:0, correct:0, subjects:{}};
-  wrongQuestions.clear();
-  saveProgress();
-  start();
-};
-
-// ═══════════════════════════════════════════════════════════════════
-// TELETRANSPORTE
-// ═══════════════════════════════════════════════════════════════════
-const markerPositions = [[0,-1.5],[-2.8,-2.5],[2.8,-2.5],[0,-4.8]];
-function teleport(x, z){
-  const head = new THREE.Vector3();
-  if (renderer.xr.isPresenting) renderer.xr.getCamera().getWorldPosition(head);
-  else camera.getWorldPosition(head);
-  rig.position.x += x - head.x;
-  rig.position.z += z - head.z;
-  $("status").textContent = "Teletransporte realizado.";
-}
-for (const [x, z] of markerPositions){
-  const marker = new THREE.Mesh(
-    new THREE.CylinderGeometry(.33, .33, .025, 40),
-    new THREE.MeshBasicMaterial({color:0x20c8fa, transparent:true, opacity:.75})
-  );
-  marker.position.set(x, .015, z);
-  marker.userData.action = () => teleport(x, z);
-  scene.add(marker);
-  teleportMarkers.push(marker);
-  interactive.push(marker);
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // GRAB SYSTEM
 // ═══════════════════════════════════════════════════════════════════
-function raycastFirst(source){
+const raycaster = new THREE.Raycaster();
+const rotation = new THREE.Matrix4();
+
+function raycastFirst(source) {
   source.updateWorldMatrix(true, false);
   rotation.extractRotation(source.matrixWorld);
   raycaster.ray.origin.setFromMatrixPosition(source.matrixWorld);
   raycaster.ray.direction.set(0, 0, -1).applyMatrix4(rotation).normalize();
   const hits = raycaster.intersectObjects(interactive, false);
-  if (!hits.length || hits[0].distance > 12) return null;
-  return hits[0];
+  return hits.length > 0 && hits[0].distance < 15 ? hits[0] : null;
 }
 
-function startGrab(source, panelId){
+function startGrab(source, panelId) {
   const group = panelRegistry.get(panelId);
   if (!group) return;
   if (source.userData.grabState) return;
-
-  const sourcePos = new THREE.Vector3();
-  source.getWorldPosition(sourcePos);
-
+  const pos = new THREE.Vector3();
+  source.getWorldPosition(pos);
   source.userData.grabState = {
-    panelId,
-    group,
-    startSourcePos: sourcePos.clone(),
-    startGroupPos: group.position.clone(),
+    panelId, group,
+    startSourcePos: pos.clone(),
+    startGroupPos: group.position.clone()
   };
-
   group.scale.multiplyScalar(1.03);
-  $("status").textContent = `✋ ${panelId.toUpperCase()} — analógico ↕ tamanho · ↔ rotação`;
 }
 
-function endGrab(source){
+function updateGrab(entity, inputSource) {
+  const state = entity.userData.grabState;
+  if (!state) return;
+  const pos = new THREE.Vector3();
+  entity.getWorldPosition(pos);
+  const delta = pos.clone().sub(state.startSourcePos);
+  state.group.position.copy(state.startGroupPos.clone().add(delta));
+
+  if (inputSource?.gamepad?.axes) {
+    const axes = inputSource.gamepad.axes;
+    const x = axes[2] || 0;
+    const y = axes[3] || 0;
+    if (Math.abs(y) > 0.2) {
+      const s = Math.max(0.5, Math.min(2, state.group.scale.x * (1 + y * 0.012)));
+      state.group.scale.setScalar(s);
+    }
+    if (Math.abs(x) > 0.2) state.group.rotation.y += x * 0.025;
+  }
+}
+
+function endGrab(source) {
   const state = source.userData.grabState;
   if (!state) return;
   state.group.scale.multiplyScalar(1 / 1.03);
   savePanelState(state.panelId, state.group);
   delete source.userData.grabState;
-  $("status").textContent = `📌 ${state.panelId.toUpperCase()} posicionado`;
 }
 
-function updateGrab(entity, inputSource){
-  const state = entity.userData.grabState;
-  if (!state) return;
-
-  const sourcePos = new THREE.Vector3();
-  entity.getWorldPosition(sourcePos);
-
-  const delta = sourcePos.clone().sub(state.startSourcePos);
-  state.group.position.copy(state.startGroupPos.clone().add(delta));
-
-  if (inputSource && inputSource.gamepad && inputSource.gamepad.axes){
-    const axes = inputSource.gamepad.axes;
-    const x = axes.length >= 4 ? axes[2] : (axes[0] || 0);
-    const y = axes.length >= 4 ? axes[3] : (axes[1] || 0);
-
-    if (Math.abs(y) > 0.2){
-      const factor = 1 + y * 0.012;
-      const s = Math.max(0.5, Math.min(2.0, state.group.scale.x * factor));
-      state.group.scale.setScalar(s);
-    }
-    if (Math.abs(x) > 0.2){
-      state.group.rotation.y += x * 0.025;
-    }
-  }
-}
-
-function anyGrabActive(){
-  for (let i = 0; i < 2; i++){
-    if (renderer.xr.getController(i).userData.grabState) return true;
-    if (renderer.xr.getHand(i).userData.grabState) return true;
-  }
-  return false;
-}
-
-function selectObject(source){
+function selectObject(source) {
   const hit = raycastFirst(source);
   if (!hit) return;
-  const action = hit.object.userData.action;
-  if (typeof action === "function") action();
+  const obj = hit.object;
+  if (obj.userData.isGrabHandle) startGrab(source, obj.userData.panelId);
+  else if (obj.userData.onClick) obj.userData.onClick();
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CONTROLLERS E HANDS
+// VR CONTROLLERS + HANDS
 // ═══════════════════════════════════════════════════════════════════
 const controllerFactory = new XRControllerModelFactory();
 const handFactory = new XRHandModelFactory();
 
-for (let i = 0; i < 2; i++){
-  const controller = renderer.xr.getController(i);
-
-  controller.addEventListener("selectstart", () => { selectObject(controller); });
-
-  controller.addEventListener("squeezestart", () => {
-    const hit = raycastFirst(controller);
-    if (hit && hit.object.userData.panelId){
-      startGrab(controller, hit.object.userData.panelId);
-    }
+for (let i = 0; i < 2; i++) {
+  const ctrl = renderer.xr.getController(i);
+  ctrl.addEventListener('selectstart', () => selectObject(ctrl));
+  ctrl.addEventListener('squeezestart', () => {
+    const hit = raycastFirst(ctrl);
+    if (hit?.object.userData.isGrabHandle) startGrab(ctrl, hit.object.userData.panelId);
   });
-  controller.addEventListener("squeezeend", () => { endGrab(controller); });
+  ctrl.addEventListener('squeezeend', () => endGrab(ctrl));
+  rig.add(ctrl);
 
-  rig.add(controller);
-
-  const pointer = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, -6)
-    ]),
-    new THREE.LineBasicMaterial({color:0x4cdeff})
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-5)]),
+    new THREE.LineBasicMaterial({ color: 0x4cdeff })
   );
-  controller.add(pointer);
+  ctrl.add(line);
 
   const grip = renderer.xr.getControllerGrip(i);
   grip.add(controllerFactory.createControllerModel(grip));
   rig.add(grip);
 
   const hand = renderer.xr.getHand(i);
-  hand.add(handFactory.createHandModel(hand, "mesh"));
-
-  hand.addEventListener("selectstart", () => {
-    const hit = raycastFirst(hand);
-    if (!hit) return;
-    const obj = hit.object;
-    if (obj.userData.isGrabHandle){
-      startGrab(hand, obj.userData.panelId);
-    } else if (obj.userData.action && typeof obj.userData.action === "function"){
-      obj.userData.action();
-    }
-  });
-  hand.addEventListener("selectend", () => { endGrab(hand); });
-
+  hand.add(handFactory.createHandModel(hand, 'mesh'));
+  hand.addEventListener('selectstart', () => selectObject(hand));
+  hand.addEventListener('selectend', () => endGrab(hand));
   rig.add(hand);
 }
 
-$("enter").onclick = async () => {
-  try{
-    if (renderer.xr.isPresenting){ await renderer.xr.getSession().end(); return; }
-    if (!navigator.xr) throw new Error("WebXR não disponível.");
-    const supported = await navigator.xr.isSessionSupported("immersive-vr");
-    if (!supported) throw new Error("Realidade virtual não suportada.");
-    const session = await navigator.xr.requestSession("immersive-vr", {
-      optionalFeatures: ["local-floor", "hand-tracking"]
-    });
-    await renderer.xr.setSession(session);
-    $("enter").textContent = "SAIR DO VR";
-    session.addEventListener("end", () => { $("enter").textContent = "ENTRAR EM VR"; });
-  }catch(error){
-    $("status").textContent = "Erro VR: " + error.message;
-  }
-};
+// ═══════════════════════════════════════════════════════════════════
+// TELETRANSPORTE
+// ═══════════════════════════════════════════════════════════════════
+for (const [x, z] of [[0, -2], [-3, -2], [3, -2], [0, 2]]) {
+  const marker = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.4, 0.02, 32),
+    new THREE.MeshBasicMaterial({ color: 0x20c8fa, transparent: true, opacity: 0.6 })
+  );
+  marker.position.set(x, 0.02, z);
+  marker.userData.isTeleport = true;
+  marker.userData.onClick = () => {
+    const head = new THREE.Vector3();
+    if (renderer.xr.isPresenting) renderer.xr.getCamera().getWorldPosition(head);
+    else camera.getWorldPosition(head);
+    rig.position.x += x - head.x;
+    rig.position.z += z - head.z;
+  };
+  scene.add(marker);
+  interactive.push(marker);
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // ANIMATION LOOP
 // ═══════════════════════════════════════════════════════════════════
 const clock = new THREE.Clock();
-const direction = new THREE.Vector3();
-const rightVector = new THREE.Vector3();
 
 renderer.setAnimationLoop(() => {
-  const dt = Math.min(clock.getDelta(), .05);
+  const dt = Math.min(clock.getDelta(), 0.05);
 
-  if (renderer.xr.isPresenting){
+  if (renderer.xr.isPresenting) {
     const session = renderer.xr.getSession();
-
-    for (let i = 0; i < session.inputSources.length; i++){
-      const source = session.inputSources[i];
-      const controller = renderer.xr.getController(i);
-      const hand = renderer.xr.getHand(i);
-      updateGrab(controller, source);
-      updateGrab(hand, source);
+    for (let i = 0; i < session.inputSources.length; i++) {
+      updateGrab(renderer.xr.getController(i), session.inputSources[i]);
+      updateGrab(renderer.xr.getHand(i), session.inputSources[i]);
     }
 
-    if (!anyGrabActive()){
-      for (const source of session.inputSources){
-        if (!source.gamepad || source.handedness !== "left") continue;
-        const axes = source.gamepad.axes;
-        const x = axes.length >= 4 ? axes[2] : (axes[0] || 0);
-        const z = axes.length >= 4 ? axes[3] : (axes[1] || 0);
-        if (Math.abs(x) < .18 && Math.abs(z) < .18) continue;
+    // Locomotion (se nenhum grab ativo)
+    const anyGrab = renderer.xr.getController(0).userData.grabState ||
+                    renderer.xr.getController(1).userData.grabState;
+    if (!anyGrab) {
+      for (const src of session.inputSources) {
+        if (!src.gamepad || src.handedness !== 'left') continue;
+        const axes = src.gamepad.axes;
+        const x = axes[2] || 0;
+        const z = axes[3] || 0;
+        if (Math.abs(x) < 0.15 && Math.abs(z) < 0.15) continue;
 
-        renderer.xr.getCamera().getWorldDirection(direction);
-        direction.y = 0; direction.normalize();
-        rightVector.set(-direction.z, 0, direction.x);
-        const move = direction.clone().multiplyScalar(-z).addScaledVector(rightVector, x).multiplyScalar(dt * 1.6);
+        const dir = new THREE.Vector3();
+        renderer.xr.getCamera().getWorldDirection(dir);
+        dir.y = 0; dir.normalize();
+        const right = new THREE.Vector3(-dir.z, 0, dir.x);
+        const move = dir.multiplyScalar(-z).addScaledVector(right, x).multiplyScalar(dt * 1.5);
 
-        rig.position.x = THREE.MathUtils.clamp(rig.position.x + move.x, -5.1, 5.1);
-        rig.position.z = THREE.MathUtils.clamp(rig.position.z + move.z, -5.5, 2.5);
+        rig.position.x = THREE.MathUtils.clamp(rig.position.x + move.x, -7, 7);
+        rig.position.z = THREE.MathUtils.clamp(rig.position.z + move.z, -7, 7);
       }
     }
   }
@@ -1239,30 +1296,524 @@ renderer.setAnimationLoop(() => {
   renderer.render(scene, camera);
 });
 
-window.addEventListener("resize", () => {
+window.addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
 
 // ═══════════════════════════════════════════════════════════════════
+// ENTER VR
+// ═══════════════════════════════════════════════════════════════════
+$('enter').onclick = async () => {
+  try {
+    if (renderer.xr.isPresenting) {
+      await renderer.xr.getSession().end();
+      $('enter').textContent = 'ENTRAR EM VR';
+      $('menu').classList.remove('hidden');
+      return;
+    }
+    if (!navigator.xr) throw new Error('WebXR não disponível');
+    const supported = await navigator.xr.isSessionSupported('immersive-vr');
+    if (!supported) throw new Error('VR não suportada neste dispositivo');
+
+    const session = await navigator.xr.requestSession('immersive-vr', {
+      optionalFeatures: ['local-floor', 'hand-tracking']
+    });
+    await renderer.xr.setSession(session);
+    $('enter').textContent = 'SAIR DO VR';
+    $('menu').classList.add('hidden');
+    session.addEventListener('end', () => {
+      $('enter').textContent = 'ENTRAR EM VR';
+      $('menu').classList.remove('hidden');
+    });
+  } catch (e) {
+    $('status').textContent = '❌ ' + e.message;
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// UI LOGIC
+// ═══════════════════════════════════════════════════════════════════
+function updateHUD() {
+  $('hud-total').textContent = DB.stats.total;
+  $('hud-ok').textContent = DB.stats.correct;
+  $('hud-err').textContent = DB.stats.total - DB.stats.correct;
+  $('hud-pct').textContent = DB.stats.total > 0
+    ? Math.round(DB.stats.correct * 100 / DB.stats.total) + '%'
+    : '0%';
+
+  const bySubj = DB.stats.bySubject;
+  let html = `📊 <b>${DB.stats.total}</b> respondidas · <b>${DB.stats.correct}</b> acertos · `;
+  html += `${DB.stats.total > 0 ? Math.round(DB.stats.correct * 100 / DB.stats.total) : 0}% aproveitamento`;
+  html += `<br>❌ Revisar: <b>${DB.wrongIds.length}</b> · ⭐ Favoritas: <b>${DB.favorites.length}</b>`;
+  $('stats-summary').innerHTML = html;
+}
+
+function updateReviewSummary() {
+  const totalWrong = DB.wrongIds.length;
+  $('review-summary').innerHTML = `
+    <div style="padding:10px;background:rgba(255,68,68,.1);border-radius:6px;margin-bottom:8px">
+      ❌ <b>${totalWrong}</b> questões erradas
+    </div>
+    <div style="padding:10px;background:rgba(255,170,0,.1);border-radius:6px">
+      📇 <b>${Object.keys(DB.flashcards).length}</b> flashcards cadastrados
+    </div>
+  `;
+}
+
+function populateSubjects() {
+  const select = $('subject');
+  const current = select.value;
+  while (select.options.length > 1) select.remove(1);
+  const subjects = [...new Set(QUESTIONS.map(q => q.subject))].sort();
+  for (const s of subjects) {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    select.appendChild(opt);
+  }
+  if ([...select.options].some(o => o.value === current)) select.value = current;
+}
+
+function recordAnswer(correct) {
+  DB.stats.total++;
+  if (correct) DB.stats.correct++;
+
+  const q = currentPool[currentIndex];
+  if (!DB.stats.bySubject[q.subject]) DB.stats.bySubject[q.subject] = { total: 0, correct: 0 };
+  DB.stats.bySubject[q.subject].total++;
+  if (correct) DB.stats.bySubject[q.subject].correct++;
+
+  if (correct) {
+    const idx = DB.wrongIds.indexOf(q.id);
+    if (idx >= 0) DB.wrongIds.splice(idx, 1);
+  } else {
+    if (!DB.wrongIds.includes(q.id)) DB.wrongIds.push(q.id);
+  }
+
+  // Atualiza flashcard (SM-2)
+  updateFlashcardSRS(q.id, correct ? 2 : 0);
+
+  STORAGE.save(DB);
+  updateHUD();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FLASHCARD SM-2 SIMPLIFICADO
+// ═══════════════════════════════════════════════════════════════════
+function updateFlashcardSRS(id, grade) {
+  const now = Date.now();
+  const card = DB.flashcards[id] || { interval: 0, ease: 2.5, reps: 0, due: now };
+
+  if (grade < 1) {
+    card.reps = 0;
+    card.interval = 1;
+  } else {
+    card.reps++;
+    if (card.reps === 1) card.interval = 1;
+    else if (card.reps === 2) card.interval = 3;
+    else card.interval = Math.round(card.interval * card.ease);
+    card.ease = Math.max(1.3, card.ease + (grade - 1) * 0.15);
+  }
+
+  card.due = now + card.interval * 24 * 3600 * 1000;
+  DB.flashcards[id] = card;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FLASHCARD UI
+// ═══════════════════════════════════════════════════════════════════
+let currentFlashcard = null;
+
+function openFlashcard(q) {
+  if (!q) return;
+  currentFlashcard = q;
+  const card = DB.flashcards[q.id] || { interval: 0, reps: 0 };
+  $('fc-disc').textContent = q.subject;
+  $('fc-front').textContent = q.question;
+  $('fc-back').textContent = 'ABCDE'[q.correct];
+  $('fc-exp').textContent = q.explanation || 'Sem explicação disponível.';
+  $('fc-progress').textContent = `Repetições: ${card.reps} · Intervalo: ${card.interval}d`;
+  $('flashcard').classList.remove('flipped');
+  $('fc-controls').style.display = 'none';
+  $('flashcard-stage').classList.add('open');
+}
+
+$('fc-flip').onclick = () => {
+  $('flashcard').classList.toggle('flipped');
+  if ($('flashcard').classList.contains('flipped')) {
+    $('fc-controls').style.display = 'flex';
+  }
+};
+
+$('fc-next').onclick = () => {
+  const idx = currentPool.indexOf(currentFlashcard);
+  const next = currentPool[(idx + 1) % currentPool.length];
+  openFlashcard(next);
+};
+
+$('fc-close').onclick = () => {
+  $('flashcard-stage').classList.remove('open');
+};
+
+document.querySelectorAll('[data-grade]').forEach(btn => {
+  btn.onclick = () => {
+    if (!currentFlashcard) return;
+    updateFlashcardSRS(currentFlashcard.id, parseInt(btn.dataset.grade));
+    STORAGE.save(DB);
+    $('fc-next').click();
+  };
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// RESPOSTA E NAVEGAÇÃO
+// ═══════════════════════════════════════════════════════════════════
+function selectAnswer(idx) {
+  if (currentAnswer !== null) return;
+  const q = currentPool[currentIndex];
+  currentAnswer = idx;
+  const correct = idx === q.correct;
+  recordAnswer(correct);
+  renderQuestionPanel();
+
+  // Modal desktop
+  showModal(q, idx, correct);
+}
+
+function showModal(q, selected, correct) {
+  const modal = $('modal');
+  $('modal-disc').textContent = q.subject;
+  $('modal-q-num').textContent = `Questão ${currentIndex + 1} de ${currentPool.length}`;
+  $('modal-q-text').textContent = q.question;
+
+  const opts = $('modal-options');
+  opts.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    if (i === q.correct) div.classList.add('correct');
+    else if (i === selected) div.classList.add('wrong');
+    div.textContent = `${'ABCDE'[i]}) ${opt}`;
+    opts.appendChild(div);
+  });
+
+  if (q.explanation) {
+    $('modal-exp').style.display = 'block';
+    $('modal-exp').textContent = '📖 ' + q.explanation;
+  } else {
+    $('modal-exp').style.display = 'none';
+  }
+
+  modal.classList.add('open');
+}
+
+$('modal-close').onclick = () => {
+  $('modal').classList.remove('open');
+  nextQuestion();
+};
+
+function nextQuestion() {
+  if (currentIndex < currentPool.length - 1) {
+    currentIndex++;
+    currentAnswer = null;
+    renderQuestionPanel();
+  } else {
+    // Fim da sessão
+    finishSession();
+  }
+}
+
+function finishSession() {
+  const total = currentPool.length;
+  const correct = DB.stats.correct;
+  alert(`Sessão finalizada!\n\nQuestões: ${total}\nAproveitamento geral: ${DB.stats.total > 0 ? Math.round(DB.stats.correct * 100 / DB.stats.total) : 0}%`);
+  $('status').textContent = '✅ Sessão finalizada';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SESSÃO / POOL
+// ═══════════════════════════════════════════════════════════════════
+function buildPool(mode, subject, limit = 9999) {
+  let pool = QUESTIONS.slice();
+
+  if (subject && subject !== 'Todas') {
+    pool = pool.filter(q => q.subject === subject);
+  }
+
+  switch (mode) {
+    case 'random':
+      pool = pool.sort(() => Math.random() - 0.5);
+      break;
+    case 'unanswered':
+      pool = pool.filter(q => !DB.wrongIds.includes(q.id) && q.id);
+      break;
+    case 'difficult':
+      pool = pool.filter(q => DB.wrongIds.includes(q.id));
+      break;
+  }
+
+  return pool.slice(0, limit);
+}
+
+$('start').onclick = () => {
+  const mode = $('mode').value;
+  const subject = $('subject').value;
+  currentPool = buildPool(mode, subject);
+  if (currentPool.length === 0) {
+    $('status').textContent = '⚠️ Nenhuma questão neste filtro';
+    return;
+  }
+  currentIndex = 0;
+  currentAnswer = null;
+  examActive = false;
+  renderQuestionPanel();
+  $('status').textContent = `✅ ${currentPool.length} questões carregadas`;
+};
+
+$('demo').onclick = () => {
+  QUESTIONS = [
+    { id: 'demo1', question: 'Qual é a Constituição Federal atualmente vigente no Brasil?', options: ['Constituição de 1967', 'Constituição de 1988', 'Constituição de 1946', 'Constituição de 1937'], correct: 1, subject: 'Direito Constitucional', explanation: 'A Constituição de 1988 é a atual.' },
+    { id: 'demo2', question: 'Qual princípio exige que a Administração Pública atue conforme a lei?', options: ['Publicidade', 'Legalidade', 'Impessoalidade', 'Eficiência'], correct: 1, subject: 'Direito Constitucional', explanation: 'A legalidade vincula toda atuação administrativa.' },
+    { id: 'demo3', question: 'Qual artigo do Código Penal trata do furto?', options: ['Art. 121', 'Art. 155', 'Art. 157', 'Art. 171'], correct: 1, subject: 'Direito Penal Comum', explanation: 'O furto está no art. 155 do CP.' },
+    { id: 'demo4', question: 'Qual placa indica parada obrigatória?', options: ['Placa PARE', 'Placa de estacionamento', 'Placa de velocidade máxima', 'Placa de pedestres'], correct: 0, subject: 'Legislação de Trânsito', explanation: 'A placa R-1 indica parada obrigatória.' }
+  ];
+  populateSubjects();
+  currentPool = QUESTIONS.slice();
+  currentIndex = 0;
+  currentAnswer = null;
+  renderQuestionPanel();
+  $('status').textContent = '✅ Demonstração carregada';
+};
+
+$('refresh').onclick = async () => {
+  $('status').textContent = '🔄 Recarregando...';
+  QUESTIONS = await loadFromGitHub();
+  if (QUESTIONS.length > 0) {
+    try { localStorage.setItem('pmsc_questions_cache', JSON.stringify(QUESTIONS)); } catch {}
+    populateSubjects();
+    $('status').textContent = `✅ ${QUESTIONS.length} questões carregadas`;
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// SIMULADO
+// ═══════════════════════════════════════════════════════════════════
+$('exam-start').onclick = () => {
+  const qty = parseInt($('exam-qty').value);
+  const time = parseInt($('exam-time').value);
+
+  currentPool = QUESTIONS.sort(() => Math.random() - 0.5).slice(0, qty);
+  if (currentPool.length === 0) {
+    $('status').textContent = '⚠️ Sem questões disponíveis';
+    return;
+  }
+  currentIndex = 0;
+  currentAnswer = null;
+  examActive = true;
+  examEndsAt = time > 0 ? Date.now() + time * 60 * 1000 : 0;
+
+  renderQuestionPanel();
+  $('exam-status').innerHTML = `⏱ ${qty} questões ${time > 0 ? '/ ' + time + 'min' : '(sem tempo)'}`;
+  $('status').textContent = '✅ Simulado iniciado';
+};
+
+// Timer do simulado
+setInterval(() => {
+  if (!examActive || examEndsAt === 0) return;
+  const remaining = examEndsAt - Date.now();
+  if (remaining <= 0) {
+    examActive = false;
+    alert('⏱ Tempo esgotado!');
+    finishSession();
+    return;
+  }
+  const min = Math.floor(remaining / 60000);
+  const sec = Math.floor((remaining % 60000) / 1000);
+  $('exam-status').innerHTML = `⏱ ${min}:${sec.toString().padStart(2, '0')} restantes`;
+}, 1000);
+
+// ═══════════════════════════════════════════════════════════════════
+// REVIEW
+// ═══════════════════════════════════════════════════════════════════
+$('review-start').onclick = () => {
+  currentPool = QUESTIONS.filter(q => DB.wrongIds.includes(q.id));
+  if (currentPool.length === 0) {
+    $('status').textContent = '✅ Nenhuma questão errada para revisar';
+    return;
+  }
+  currentIndex = 0;
+  currentAnswer = null;
+  examActive = false;
+  renderQuestionPanel();
+  $('status').textContent = `🔄 Revisando ${currentPool.length} questões erradas`;
+};
+
+$('reset-stats').onclick = () => {
+  if (!confirm('Zerar TODAS as estatísticas?')) return;
+  DB.stats = { total: 0, correct: 0, bySubject: {} };
+  DB.wrongIds = [];
+  DB.favorites = [];
+  DB.flashcards = {};
+  DB.history = [];
+  STORAGE.save(DB);
+  updateHUD();
+  updateReviewSummary();
+  $('status').textContent = '🗑 Estatísticas zeradas';
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// ENVIRONMENT SELECTOR
+// ═══════════════════════════════════════════════════════════════════
+$('environment').onchange = (e) => {
+  let type = e.target.value;
+  if (type === 'random') {
+    const opts = ['academy', 'living', 'beach', 'library', 'future', 'nature', 'penthouse', 'space', 'minimal'];
+    type = opts[Math.floor(Math.random() * opts.length)];
+  }
+  DB.environment = type;
+  STORAGE.save(DB);
+  buildEnvironment(type);
+};
+
+$('lighting').onchange = (e) => {
+  DB.lighting = e.target.value;
+  STORAGE.save(DB);
+  applyLighting();
+};
+
+$('reset-panels').onclick = () => {
+  DB.panels = {};
+  STORAGE.save(DB);
+  clearPanels();
+  renderQuestionPanel();
+  $('status').textContent = '🔄 Painéis restaurados';
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// THEMES
+// ═══════════════════════════════════════════════════════════════════
+function renderThemeSwatches() {
+  const grid = $('theme-grid');
+  grid.innerHTML = '';
+  for (const [name, colors] of Object.entries(THEMES)) {
+    const sw = document.createElement('div');
+    sw.className = 'theme-swatch';
+    if (name === DB.theme) sw.classList.add('active');
+    sw.style.background = `linear-gradient(135deg, ${colors.bg}, ${colors.accent})`;
+    sw.title = name;
+    sw.onclick = () => {
+      applyTheme(name);
+      renderThemeSwatches();
+    };
+    grid.appendChild(sw);
+  }
+}
+
+$('font-scale').oninput = (e) => {
+  DB.fontScale = parseInt(e.target.value);
+  $('font-scale-val').textContent = DB.fontScale + '%';
+  STORAGE.save(DB);
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// REPO CONFIG
+// ═══════════════════════════════════════════════════════════════════
+$('repo-apply').onclick = async () => {
+  DB.repo = $('repo-input').value.trim();
+  STORAGE.save(DB);
+  $('status').textContent = '🔄 Recarregando do repositório...';
+  QUESTIONS = await loadFromGitHub();
+  populateSubjects();
+};
+
+$('repo-input').value = DB.repo;
+
+// ═══════════════════════════════════════════════════════════════════
+// EXPORT/IMPORT
+// ═══════════════════════════════════════════════════════════════════
+$('export-data').onclick = () => {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pmsc-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+$('import-data').onclick = () => $('import-file').click();
+
+$('import-file').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (data.version !== STORAGE.VERSION) {
+      if (!confirm('Versão diferente. Continuar?')) return;
+    }
+    DB = Object.assign(STORAGE.defaults(), data);
+    STORAGE.save(DB);
+    applyTheme(DB.theme);
+    buildEnvironment(DB.environment);
+    updateHUD();
+    updateReviewSummary();
+    renderThemeSwatches();
+    $('status').textContent = '✅ Backup importado';
+  } catch (err) {
+    $('status').textContent = '❌ Erro: ' + err.message;
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// TABS MENU
+// ═══════════════════════════════════════════════════════════════════
+document.querySelectorAll('.tabs button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    $(`tab-${btn.dataset.tab}`).classList.add('active');
+  };
+});
+
+// ═══════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════
-let savedEnvironment = "academy";
-try{
-  savedEnvironment = localStorage.getItem("pmsc_environment") || "academy";
-  const savedLighting = localStorage.getItem("pmsc_lighting");
-  if (savedLighting === "day" || savedLighting === "night") $("lighting").value = savedLighting;
-}catch(e){}
-if (!environments.some(item => item[0] === savedEnvironment)) savedEnvironment = "academy";
+(async function init() {
+  // Aplica tema
+  applyTheme(DB.theme);
+  renderThemeSwatches();
+  $('font-scale').value = DB.fontScale;
+  $('font-scale-val').textContent = DB.fontScale + '%';
 
-changeEnvironment(savedEnvironment);
-updateStats();
-render();
+  // Aplica ambiente
+  buildEnvironment(DB.environment);
+  $('environment').value = DB.environment;
+  $('lighting').value = DB.lighting;
+  $('quality').value = DB.quality;
 
-$("status").textContent = "Buscando questões na raiz do repositório...";
-autoLoadQuestions();
+  // HUD
+  updateHUD();
+  updateReviewSummary();
 
+  // Auto-load GitHub
+  QUESTIONS = await loadFromGitHub();
+  if (QUESTIONS.length > 0) {
+    try { localStorage.setItem('pmsc_questions_cache', JSON.stringify(QUESTIONS)); } catch {}
+    populateSubjects();
+    currentPool = QUESTIONS.slice();
+    currentIndex = 0;
+    renderQuestionPanel();
+  } else {
+    $('status').textContent = '⚠️ Sem questões. Use "Demo" ou configure o repositório.';
+    ensurePanel('center', 0, 2.0, -3.5);
+    addPanelText('center', 'Bem-vindo!\n\nUse 🧪 Demo\nou configure\no repositório', 0, {
+      width3D: 5, maxLines: 4, fontSizeMax: 80, padding: 60
+    });
+  }
+
+  console.log('[PMSC Academy] Iniciado. Questões:', QUESTIONS.length);
+})();
 </script>
 </body>
 </html>
