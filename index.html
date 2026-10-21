@@ -2,454 +2,1006 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>PM-SC Immersive Academy</title>
 
 <style>
-*{box-sizing:border-box}
-body{
- margin:0;
- background:#07101f;
- color:white;
- font-family:Arial,sans-serif;
- overflow:hidden;
+* {
+  box-sizing: border-box;
 }
-#interface{
- position:absolute;
- top:15px;
- left:15px;
- z-index:10;
- width:min(360px,calc(100% - 30px));
- background:rgba(7,16,31,.94);
- border:1px solid #3c80ff;
- border-radius:15px;
- padding:18px;
- max-height:85vh;
- overflow:auto;
+
+body {
+  margin: 0;
+  background: #081425;
+  color: white;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
 }
-h2{color:#62b7ff;margin-top:0}
-button{
- background:#1764e8;
- color:white;
- border:0;
- border-radius:8px;
- padding:11px;
- margin:5px 3px;
- cursor:pointer;
+
+#hud {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(8,20,37,.95);
+  padding: 16px;
+  border: 1px solid #4ba8ff;
+  border-radius: 12px;
+  width: min(350px, 95vw);
+  max-height: 80vh;
+  overflow: auto;
 }
-button:hover{background:#3485ff}
-button:disabled{opacity:.45}
-input{max-width:100%}
-#status{font-size:13px;color:#a9c4df}
-#questao{margin-top:15px;line-height:1.5}
-.opcao{
- display:block;
- width:100%;
- text-align:left;
- background:#20324f;
+
+h2 {
+  color: #65c5ff;
+  margin-top: 0;
 }
-#resultado{margin-top:12px}
-#vrButton{
- position:absolute;
- bottom:20px;
- right:20px;
- z-index:20;
+
+button {
+  background: #1769d4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #3488ef;
+}
+
+input {
+  max-width: 100%;
+  margin: 8px 0;
+}
+
+#status {
+  color: #b8dbff;
+  font-size: 14px;
+}
+
+#vrButton {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 20;
 }
 </style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+  }
+}
+</script>
+
 </head>
 
 <body>
 
-<div id="interface">
+<div id="hud">
+
 <h2>PM-SC Immersive Academy</h2>
 
-<p id="status">Preparando ambiente 3D...</p>
+<p id="status">Preparando ambiente virtual...</p>
 
-<button id="iniciar">Iniciar estudos</button>
-<button id="proxima">Próxima questão</button>
+<h3>Banco de questões</h3>
 
-<p>
-<strong>Importar questões JSON</strong>
-</p>
+<input
+  type="file"
+  id="jsonFile"
+  accept=".json,application/json"
+>
 
-<input type="file" id="arquivo" accept=".json,application/json">
+<br>
 
-<div id="questao"></div>
-<div id="alternativas"></div>
-<div id="resultado"></div>
-
-<hr>
+<button id="demoButton">
+Testar questões
+</button>
 
 <h3>Desempenho</h3>
-<p id="estatisticas"></p>
 
-<button id="limpar">Limpar progresso</button>
+<p id="stats"></p>
+
+<p>
+Use o gatilho dos controles ou o gesto de pinça
+com as mãos para selecionar alternativas na sala.
+</p>
+
 </div>
 
-<button id="vrButton">Entrar em realidade virtual</button>
+<button id="vrButton">
+Entrar em realidade virtual
+</button>
 
 <script type="module">
 
-import * as THREE from
-"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js";
+import * as THREE from "three";
 
-import { VRButton } from
-"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/webxr/VRButton.js";
+import {
+  XRControllerModelFactory
+} from "three/addons/webxr/XRControllerModelFactory.js";
 
-const cena = new THREE.Scene();
-cena.background = new THREE.Color(0x07101f);
+import {
+  XRHandModelFactory
+} from "three/addons/webxr/XRHandModelFactory.js";
+
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0x081425);
 
 const camera = new THREE.PerspectiveCamera(
- 75,
- window.innerWidth/window.innerHeight,
- 0.1,
- 1000
+  70,
+  window.innerWidth / window.innerHeight,
+  0.05,
+  100
 );
 
-camera.position.set(0,1.65,4);
+camera.position.set(0, 1.6, 0);
 
 const renderer = new THREE.WebGLRenderer({
- antialias:true
+  antialias: true
 });
 
-renderer.setSize(window.innerWidth,window.innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.xr.enabled=true;
+renderer.setPixelRatio(
+  Math.min(window.devicePixelRatio, 2)
+);
+
+renderer.setSize(
+  window.innerWidth,
+  window.innerHeight
+);
+
+renderer.xr.enabled = true;
 
 document.body.appendChild(renderer.domElement);
 
-const luz = new THREE.HemisphereLight(
- 0xffffff,
- 0x273b65,
- 2
-);
-cena.add(luz);
+// ILUMINAÇÃO
 
-const luzDirecional = new THREE.DirectionalLight(
- 0xffffff,2
+scene.add(
+  new THREE.HemisphereLight(
+    0xffffff,
+    0x263653,
+    2.5
+  )
 );
-luzDirecional.position.set(3,7,5);
-cena.add(luzDirecional);
+
+const light = new THREE.DirectionalLight(
+  0xffffff,
+  2
+);
+
+light.position.set(2, 5, 3);
+
+scene.add(light);
+
+// CRIAÇÃO DA SALA
+
+function createBox(
+  width,
+  height,
+  depth,
+  color,
+  x,
+  y,
+  z
+) {
+
+  const geometry = new THREE.BoxGeometry(
+    width,
+    height,
+    depth
+  );
+
+  const material = new THREE.MeshStandardMaterial({
+    color: color
+  });
+
+  const mesh = new THREE.Mesh(
+    geometry,
+    material
+  );
+
+  mesh.position.set(x, y, z);
+
+  scene.add(mesh);
+
+  return mesh;
+}
 
 // PISO
 
-const piso = new THREE.Mesh(
- new THREE.PlaneGeometry(30,30),
- new THREE.MeshStandardMaterial({
-  color:0x14243c,
-  roughness:.8
- })
+createBox(
+  12, 0.1, 12,
+  0x16263c,
+  0, -0.07, -2
 );
 
-piso.rotation.x=-Math.PI/2;
-cena.add(piso);
+// PAREDE CENTRAL
 
-// PAREDES
+createBox(
+  12, 4, 0.12,
+  0x162c49,
+  0, 2, -6
+);
 
-function parede(x,y,z,w,h,d){
- const objeto=new THREE.Mesh(
-  new THREE.BoxGeometry(w,h,d),
-  new THREE.MeshStandardMaterial({
-   color:0x182c4b
-  })
- );
- objeto.position.set(x,y,z);
- cena.add(objeto);
+// PAREDES LATERAIS
+
+createBox(
+  0.12, 4, 12,
+  0x142943,
+  -6, 2, -2
+);
+
+createBox(
+  0.12, 4, 12,
+  0x142943,
+  6, 2, -2
+);
+
+// PAINEL CENTRAL
+
+createBox(
+  4.8, 3.1, 0.08,
+  0x12365c,
+  0, 1.8, -3.6
+);
+
+// PAINÉIS LATERAIS
+
+createBox(
+  2, 2, 0.08,
+  0x1a415c,
+  -3.4, 1.8, -4
+);
+
+createBox(
+  2, 2, 0.08,
+  0x1a415c,
+  3.4, 1.8, -4
+);
+
+// SISTEMA DE INTERAÇÃO
+
+const interactiveObjects = [];
+
+const dynamicObjects = [];
+
+const raycaster = new THREE.Raycaster();
+
+const rotationMatrix = new THREE.Matrix4();
+
+// CRIAÇÃO DE TEXTO E BOTÕES 3D
+
+function createLabel(
+  text,
+  x,
+  y,
+  z,
+  width = 3,
+  height = 0.3,
+  action = null
+) {
+
+  const canvas = document.createElement("canvas");
+
+  canvas.width = 1024;
+  canvas.height = 192;
+
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = action
+    ? "#215d91"
+    : "#12365c";
+
+  ctx.fillRect(
+    0, 0,
+    canvas.width,
+    canvas.height
+  );
+
+  ctx.strokeStyle = "#55c5ff";
+  ctx.lineWidth = 5;
+
+  ctx.strokeRect(
+    3, 3,
+    1018, 186
+  );
+
+  ctx.fillStyle = "white";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  let fontSize = 46;
+
+  ctx.font = `bold ${fontSize}px Arial`;
+
+  while (
+    ctx.measureText(text).width > 960 &&
+    fontSize > 16
+  ) {
+
+    fontSize -= 2;
+
+    ctx.font = `bold ${fontSize}px Arial`;
+  }
+
+  ctx.fillText(
+    text,
+    512,
+    96
+  );
+
+  const texture = new THREE.CanvasTexture(
+    canvas
+  );
+
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    side: THREE.DoubleSide
+  });
+
+  const geometry = new THREE.PlaneGeometry(
+    width,
+    height
+  );
+
+  const mesh = new THREE.Mesh(
+    geometry,
+    material
+  );
+
+  mesh.position.set(x, y, z);
+
+  scene.add(mesh);
+
+  if (action) {
+
+    mesh.userData.action = action;
+
+    interactiveObjects.push(mesh);
+  }
+
+  dynamicObjects.push(mesh);
+
+  return mesh;
 }
 
-parede(0,2,-7,16,4,.2);
-parede(-8,2,0,.2,4,16);
-parede(8,2,0,.2,4,16);
+// LIMPEZA DOS PAINÉIS
 
-// PAINÉIS 3D
+function clearPanel() {
 
-function criarPainel(x,y,z,w,h,cor){
- const mesh=new THREE.Mesh(
-  new THREE.BoxGeometry(w,h,.08),
-  new THREE.MeshStandardMaterial({
-   color:cor,
-   emissive:cor,
-   emissiveIntensity:.12
-  })
- );
- mesh.position.set(x,y,z);
- cena.add(mesh);
- return mesh;
+  for (const mesh of dynamicObjects) {
+
+    scene.remove(mesh);
+
+    const index = interactiveObjects.indexOf(mesh);
+
+    if (index >= 0) {
+      interactiveObjects.splice(index, 1);
+    }
+
+    mesh.material.map.dispose();
+    mesh.material.dispose();
+    mesh.geometry.dispose();
+  }
+
+  dynamicObjects.length = 0;
 }
-
-criarPainel(0,2,-5,5,2.8,0x123a72);
-criarPainel(-4,2,-4,2,2.5,0x174d65);
-criarPainel(4,2,-4,2,2.5,0x174d65);
-
-// TEXTO 3D POR CANVAS
-
-function texto3D(texto,x,y,z,largura=4){
- const canvas=document.createElement("canvas");
- canvas.width=1024;
- canvas.height=256;
-
- const ctx=canvas.getContext("2d");
-
- ctx.clearRect(0,0,1024,256);
- ctx.fillStyle="#ffffff";
- ctx.textAlign="center";
- ctx.font="bold 62px Arial";
- ctx.fillText(texto,512,140);
-
- const textura=new THREE.CanvasTexture(canvas);
-
- const material=new THREE.MeshBasicMaterial({
-  map:textura,
-  transparent:true,
-  side:THREE.DoubleSide
- });
-
- const mesh=new THREE.Mesh(
-  new THREE.PlaneGeometry(largura,largura/4),
-  material
- );
-
- mesh.position.set(x,y,z);
- cena.add(mesh);
-
- return mesh;
-}
-
-texto3D("PM-SC IMMERSIVE ACADEMY",0,2.7,-4.92,4.5);
-texto3D("DISCIPLINAS",-4,2.6,-3.9,1.8);
-texto3D("DESEMPENHO",4,2.6,-3.9,1.8);
 
 // QUESTÕES
 
-let questoes=[];
-let indice=0;
-let respondida=false;
+let questions = [];
 
-let desempenho;
+let questionIndex = 0;
 
-try{
- desempenho=JSON.parse(
-  localStorage.getItem("pmsc_desempenho")
- ) || {acertos:0,erros:0};
-}catch{
- desempenho={acertos:0,erros:0};
+let answered = false;
+
+let correctAnswers = 0;
+
+let totalAnswers = 0;
+
+// RECUPERA PROGRESSO LOCAL
+
+try {
+
+  const saved = JSON.parse(
+    localStorage.getItem("pmsc_vr_progress") || "{}"
+  );
+
+  correctAnswers = saved.correct || 0;
+
+  totalAnswers = saved.total || 0;
+
+} catch (error) {
+
+  correctAnswers = 0;
+  totalAnswers = 0;
 }
 
-const elementoQuestao=document.getElementById("questao");
-const alternativas=document.getElementById("alternativas");
-const resultado=document.getElementById("resultado");
+// ESTATÍSTICAS
 
-function atualizarEstatisticas(){
- const total=desempenho.acertos+desempenho.erros;
- const percentual=total
-  ?(desempenho.acertos/total*100).toFixed(1)
-  :0;
+function updateStats() {
 
- document.getElementById("estatisticas").innerHTML=
- `Respondidas: ${total}<br>
- Acertos: ${desempenho.acertos}<br>
- Erros: ${desempenho.erros}<br>
- Aproveitamento: ${percentual}%`;
+  const percentage = totalAnswers
+    ? (correctAnswers / totalAnswers * 100).toFixed(1)
+    : 0;
+
+  document.getElementById("stats").innerHTML =
+    `Respondidas: ${totalAnswers}<br>
+     Acertos: ${correctAnswers}<br>
+     Aproveitamento: ${percentage}%`;
 }
 
-function salvar(){
- localStorage.setItem(
-  "pmsc_desempenho",
-  JSON.stringify(desempenho)
- );
- atualizarEstatisticas();
+// SALVAR
+
+function saveProgress() {
+
+  localStorage.setItem(
+    "pmsc_vr_progress",
+    JSON.stringify({
+      correct: correctAnswers,
+      total: totalAnswers
+    })
+  );
+
+  updateStats();
 }
 
-function normalizarQuestao(q){
- const enunciado=q.enunciado||q.pergunta||q.questao;
- const opcoes=q.alternativas||q.opcoes;
+// ADICIONAR ELEMENTOS AO PAINEL
 
- if(!enunciado||!opcoes)return null;
+function addPanelText(
+  text,
+  x,
+  y,
+  width,
+  height,
+  action = null
+) {
 
- let lista;
-
- if(Array.isArray(opcoes)){
-  lista=opcoes.map(String);
- }else if(typeof opcoes==="object"){
-  lista=Object.values(opcoes).map(String);
- }else{
-  return null;
- }
-
- let correta=q.correta??q.resposta??q.gabarito;
-
- if(typeof correta==="string"){
-  const letra=correta.trim().toUpperCase();
-  if(/^[A-Z]$/.test(letra)){
-   correta=letra.charCodeAt(0)-65;
-  }else if(/^\d+$/.test(letra)){
-   correta=Number(letra);
-  }else{
-   correta=lista.indexOf(correta);
-  }
- }
-
- if(!Number.isInteger(correta)||
- correta<0||correta>=lista.length)return null;
-
- return{
-  enunciado:String(enunciado),
-  alternativas:lista,
-  correta,
-  explicacao:q.explicacao||""
- };
+  return createLabel(
+    text,
+    x,
+    y,
+    -3.51,
+    width,
+    height,
+    action
+  );
 }
 
-function mostrarQuestao(){
+// MOSTRAR QUESTÃO
 
- alternativas.innerHTML="";
- resultado.textContent="";
- respondida=false;
+function showQuestion(message = "") {
 
- if(!questoes.length){
-  elementoQuestao.textContent=
-  "Importe um arquivo JSON com questões.";
-  return;
- }
+  clearPanel();
 
- const q=questoes[indice];
+  addPanelText(
+    "PM-SC IMMERSIVE ACADEMY",
+    0, 3.04, 3.8, 0.28
+  );
 
- elementoQuestao.textContent=
- `Questão ${indice+1} de ${questoes.length}: ${q.enunciado}`;
+  if (!questions.length) {
 
- q.alternativas.forEach((opcao,i)=>{
-  const botao=document.createElement("button");
-  botao.className="opcao";
-  botao.textContent=
-  `${String.fromCharCode(65+i)}) ${opcao}`;
+    addPanelText(
+      "Importe JSON ou use a demonstracao",
+      0, 2.4, 3.8, 0.3
+    );
 
-  botao.onclick=()=>responder(i);
-
-  alternativas.appendChild(botao);
- });
-}
-
-function responder(escolha){
-
- if(respondida)return;
- respondida=true;
-
- const q=questoes[indice];
- const acertou=escolha===q.correta;
-
- if(acertou){
-  desempenho.acertos++;
- }else{
-  desempenho.erros++;
- }
-
- salvar();
-
- resultado.textContent=
- (acertou?"Resposta correta!":
- `Resposta incorreta. Correta: ${String.fromCharCode(65+q.correta)}.`)
- +(q.explicacao?" "+q.explicacao:"");
-
- alternativas.querySelectorAll("button")
- .forEach(b=>b.disabled=true);
-}
-
-document.getElementById("iniciar").onclick=()=>{
- indice=0;
- mostrarQuestao();
-};
-
-document.getElementById("proxima").onclick=()=>{
- if(!questoes.length)return;
- indice=(indice+1)%questoes.length;
- mostrarQuestao();
-};
-
-document.getElementById("arquivo").onchange=async(e)=>{
- const arquivo=e.target.files[0];
- if(!arquivo)return;
-
- try{
-  const dados=JSON.parse(await arquivo.text());
-
-  const lista=Array.isArray(dados)
-   ?dados
-   :dados.questoes;
-
-  if(!Array.isArray(lista)){
-   throw new Error("Formato JSON não reconhecido.");
+    return;
   }
 
-  const validas=lista
-   .map(normalizarQuestao)
-   .filter(Boolean);
+  const question = questions[questionIndex];
 
-  if(!validas.length){
-   throw new Error("Nenhuma questão válida encontrada.");
+  const words = question.question.split(/\s+/);
+
+  const lines = [];
+
+  let line = "";
+
+  for (const word of words) {
+
+    const candidate = line
+      ? line + " " + word
+      : word;
+
+    if (candidate.length > 49 && line) {
+
+      lines.push(line);
+
+      line = word;
+
+    } else {
+
+      line = candidate;
+    }
   }
 
-  questoes=validas;
-  indice=0;
-  mostrarQuestao();
+  if (line) {
+    lines.push(line);
+  }
 
-  document.getElementById("status").textContent=
-  `${questoes.length} questões carregadas.`;
+  lines.slice(0, 3).forEach((text, index) => {
 
- }catch(erro){
-  document.getElementById("status").textContent=
-  "Erro: "+erro.message;
- }
+    addPanelText(
+      text,
+      0,
+      2.75 - index * 0.22,
+      3.8,
+      0.2
+    );
+
+  });
+
+  // ALTERNATIVAS
+
+  question.options.slice(0, 5).forEach(
+    (option, index) => {
+
+      const letter = "ABCDE"[index];
+
+      addPanelText(
+        `${letter}) ${String(option).slice(0, 55)}`,
+        0,
+        1.88 - index * 0.32,
+        3.8,
+        0.26,
+        () => answerQuestion(index)
+      );
+
+    }
+  );
+
+  addPanelText(
+    message ||
+    `Questao ${questionIndex + 1} de ${questions.length}`,
+    0,
+    0.32,
+    3.8,
+    0.24
+  );
+
+  addPanelText(
+    "PROXIMA QUESTAO",
+    0,
+    0.03,
+    2.5,
+    0.24,
+    nextQuestion
+  );
+}
+
+// RESPONDER
+
+function answerQuestion(selected) {
+
+  if (answered) {
+    return;
+  }
+
+  answered = true;
+
+  const question = questions[questionIndex];
+
+  const isCorrect = selected === question.correct;
+
+  totalAnswers++;
+
+  if (isCorrect) {
+    correctAnswers++;
+  }
+
+  saveProgress();
+
+  const message = isCorrect
+    ? "RESPOSTA CORRETA!"
+    : `GABARITO: ${"ABCDE"[question.correct]}`;
+
+  showQuestion(message);
+}
+
+// PRÓXIMA QUESTÃO
+
+function nextQuestion() {
+
+  if (!questions.length) {
+    return;
+  }
+
+  questionIndex =
+    (questionIndex + 1) % questions.length;
+
+  answered = false;
+
+  showQuestion();
+}
+
+// NORMALIZAR JSON
+
+function normalizeQuestion(q) {
+
+  const question =
+    q.enunciado ||
+    q.pergunta ||
+    q.questao ||
+    q.question;
+
+  const raw =
+    q.alternativas ||
+    q.opcoes ||
+    q.options;
+
+  if (!question || !raw) {
+    return null;
+  }
+
+  const keys = Array.isArray(raw)
+    ? null
+    : Object.keys(raw);
+
+  const options = Array.isArray(raw)
+    ? raw
+    : Object.values(raw);
+
+  if (
+    !Array.isArray(options) ||
+    options.length < 2 ||
+    options.length > 5
+  ) {
+    return null;
+  }
+
+  const answer =
+    q.correta ??
+    q.resposta ??
+    q.gabarito ??
+    q.correct;
+
+  let correct = -1;
+
+  if (typeof answer === "number") {
+
+    correct = answer;
+
+  } else if (typeof answer === "string") {
+
+    const value = answer.trim();
+
+    if (/^[A-E]$/i.test(value)) {
+
+      correct =
+        value.toUpperCase().charCodeAt(0) - 65;
+
+    } else if (keys && keys.includes(value)) {
+
+      correct = keys.indexOf(value);
+
+    } else if (/^\d+$/.test(value)) {
+
+      correct = Number(value);
+
+    } else {
+
+      correct = options.indexOf(value);
+    }
+  }
+
+  if (
+    !Number.isInteger(correct) ||
+    correct < 0 ||
+    correct >= options.length
+  ) {
+    return null;
+  }
+
+  return {
+    question: String(question),
+    options: options.map(String),
+    correct: correct
+  };
+}
+
+// QUESTÕES DE DEMONSTRAÇÃO
+
+document.getElementById("demoButton").onclick = () => {
+
+  questions = [
+
+    {
+      question:
+        "Qual Constituicao esta atualmente vigente no Brasil?",
+
+      options: [
+        "Constituicao de 1967",
+        "Constituicao de 1988",
+        "Constituicao de 1946"
+      ],
+
+      correct: 1
+    },
+
+    {
+      question:
+        "Qual principio exige atuacao administrativa conforme a lei?",
+
+      options: [
+        "Legalidade",
+        "Publicidade",
+        "Eficiencia"
+      ],
+
+      correct: 0
+    }
+
+  ];
+
+  questionIndex = 0;
+
+  answered = false;
+
+  showQuestion();
+
+  document.getElementById("status").textContent =
+    "Questoes de demonstracao carregadas.";
 };
 
-document.getElementById("limpar").onclick=()=>{
- if(!confirm("Apagar estatísticas?"))return;
- desempenho={acertos:0,erros:0};
- salvar();
+// IMPORTAÇÃO JSON
+
+document.getElementById("jsonFile").onchange =
+async function(event) {
+
+  try {
+
+    const file = event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    const text = await file.text();
+
+    const data = JSON.parse(text);
+
+    const raw = Array.isArray(data)
+      ? data
+      : data.questoes;
+
+    if (!Array.isArray(raw)) {
+
+      throw new Error(
+        "O JSON precisa conter uma lista de questoes."
+      );
+    }
+
+    const validQuestions = raw
+      .map(normalizeQuestion)
+      .filter(Boolean);
+
+    if (!validQuestions.length) {
+
+      throw new Error(
+        "Nenhuma questao compativel encontrada."
+      );
+    }
+
+    questions = validQuestions;
+
+    questionIndex = 0;
+
+    answered = false;
+
+    showQuestion();
+
+    document.getElementById("status").textContent =
+      `${questions.length} questoes carregadas.`;
+
+  } catch (error) {
+
+    document.getElementById("status").textContent =
+      "Erro no JSON: " + error.message;
+  }
 };
 
-// REALIDADE VIRTUAL
+// CONTROLES E MÃOS
 
-const botaoVR=document.getElementById("vrButton");
+const controllerFactory =
+  new XRControllerModelFactory();
 
-botaoVR.onclick=async()=>{
+const handFactory =
+  new XRHandModelFactory();
 
- if(!navigator.xr){
-  alert("WebXR não está disponível neste navegador.");
-  return;
- }
+function selectObject(source) {
 
- const suportado=await navigator.xr
- .isSessionSupported("immersive-vr");
+  rotationMatrix.identity();
 
- if(!suportado){
-  alert("Modo VR não suportado.");
-  return;
- }
+  rotationMatrix.extractRotation(
+    source.matrixWorld
+  );
 
- const sessao=await navigator.xr.requestSession(
-  "immersive-vr",
-  {optionalFeatures:["local-floor"]}
- );
+  raycaster.ray.origin.setFromMatrixPosition(
+    source.matrixWorld
+  );
 
- await renderer.xr.setSession(sessao);
+  raycaster.ray.direction
+    .set(0, 0, -1)
+    .applyMatrix4(rotationMatrix);
+
+  const intersections =
+    raycaster.intersectObjects(
+      interactiveObjects,
+      false
+    );
+
+  if (!intersections.length) {
+    return;
+  }
+
+  const target = intersections[0];
+
+  if (target.distance > 10) {
+    return;
+  }
+
+  const action = target.object.userData.action;
+
+  if (typeof action === "function") {
+    action();
+  }
+}
+
+// CONFIGURAR OS DOIS LADOS
+
+for (let i = 0; i < 2; i++) {
+
+  const controller =
+    renderer.xr.getController(i);
+
+  controller.addEventListener(
+    "selectstart",
+    () => selectObject(controller)
+  );
+
+  scene.add(controller);
+
+  // PONTEIRO VISUAL
+
+  const points = [
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0, 0, -5)
+  ];
+
+  const lineGeometry =
+    new THREE.BufferGeometry()
+      .setFromPoints(points);
+
+  const lineMaterial =
+    new THREE.LineBasicMaterial({
+      color: 0x44dfff
+    });
+
+  const pointerLine = new THREE.Line(
+    lineGeometry,
+    lineMaterial
+  );
+
+  controller.add(pointerLine);
+
+  // MODELO DO CONTROLE
+
+  const grip =
+    renderer.xr.getControllerGrip(i);
+
+  grip.add(
+    controllerFactory.createControllerModel(grip)
+  );
+
+  scene.add(grip);
+
+  // RASTREAMENTO DAS MÃOS
+
+  const hand =
+    renderer.xr.getHand(i);
+
+  hand.add(
+    handFactory.createHandModel(
+      hand,
+      "mesh"
+    )
+  );
+
+  hand.addEventListener(
+    "selectstart",
+    () => selectObject(hand)
+  );
+
+  scene.add(hand);
+}
+
+// ENTRAR EM REALIDADE VIRTUAL
+
+document.getElementById("vrButton").onclick =
+async function() {
+
+  try {
+
+    if (!navigator.xr) {
+
+      throw new Error(
+        "WebXR indisponivel neste navegador."
+      );
+    }
+
+    const supported =
+      await navigator.xr.isSessionSupported(
+        "immersive-vr"
+      );
+
+    if (!supported) {
+
+      throw new Error(
+        "Modo VR nao suportado."
+      );
+    }
+
+    const session =
+      await navigator.xr.requestSession(
+        "immersive-vr",
+        {
+          optionalFeatures: [
+            "local-floor",
+            "hand-tracking"
+          ]
+        }
+      );
+
+    await renderer.xr.setSession(session);
+
+    document.getElementById("status").textContent =
+      "Realidade virtual iniciada.";
+
+  } catch (error) {
+
+    document.getElementById("status").textContent =
+      "Erro VR: " + error.message;
+  }
 };
 
-renderer.setAnimationLoop(()=>{
- renderer.render(cena,camera);
+// AJUSTE DE TELA
+
+window.addEventListener("resize", () => {
+
+  camera.aspect =
+    window.innerWidth / window.innerHeight;
+
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+  );
 });
 
-window.addEventListener("resize",()=>{
- camera.aspect=window.innerWidth/window.innerHeight;
- camera.updateProjectionMatrix();
- renderer.setSize(window.innerWidth,window.innerHeight);
+// INICIALIZAÇÃO
+
+updateStats();
+
+showQuestion();
+
+document.getElementById("status").textContent =
+  "Sala 3D preparada.";
+
+renderer.setAnimationLoop(() => {
+
+  renderer.render(scene, camera);
+
 });
-
-atualizarEstatisticas();
-mostrarQuestao();
-
-document.getElementById("status").textContent=
-"Ambiente 3D preparado.";
 
 </script>
+
 </body>
 </html>
