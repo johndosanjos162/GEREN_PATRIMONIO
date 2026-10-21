@@ -233,7 +233,7 @@ with aba_treino:
 
 with aba_livre:
     st.header(f"Arena de Estudos VR — Modo: {st.session_state['modo_atual']}")
-    st.markdown("Ambiente imersivo completo para **Meta Quest 3 / 3S**. Pegue blocos, responda com o controle ou hand tracking, configure layouts e altere cenários em Realidade Mista.")
+    st.markdown("Ambiente imersivo completo para **Meta Quest 3 / 3S**. Calibração automática de altura e mãos ativada. Pegue painéis e blocos com o Grip ou Pinch e selecione alternativas com o Trigger.")
     
     num_blocos = len(questoes_ativas)
     
@@ -260,6 +260,16 @@ with aba_livre:
             <style>
               html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
               a-scene { width: 100%; height: 100%; }
+              #vr-overlay-ui {
+                position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+                z-index: 1000; display: flex; gap: 15px;
+              }
+              .vr-btn {
+                background: #00d1ff; color: #000; border: none; padding: 14px 28px;
+                font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer;
+                box-shadow: 0 4px 15px rgba(0,209,255,0.5); transition: 0.2s;
+              }
+              .vr-btn:hover { background: #00ff88; }
               #hud-overlay {
                 position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
                 background: rgba(0, 20, 40, 0.9); color: #00d1ff; padding: 12px 24px;
@@ -270,7 +280,11 @@ with aba_livre:
             </style>
           </head>
           <body>
-            <div id="hud-overlay">🎯 PMSC Arena VR | Aponte o laser ou use o Grip/Pinch para mover blocos e responder</div>
+            <div id="hud-overlay">🎯 PMSC Arena VR | Calibrado e Pronto | Use Grip/Pinch para mover painéis e blocos</div>
+            
+            <div id="vr-overlay-ui">
+              <button class="vr-btn" onclick="entrarModoVR()">🥽 ENTRAR EM REALIDADE VIRTUAL (QUEST 3)</button>
+            </div>
 
             <a-scene embedded vr-mode-ui="enabled: true"
                      webxr="optionalFeatures: hand-tracking, local-floor, bounded-floor, hit-test, passthrough, plane-detection"
@@ -285,66 +299,68 @@ with aba_livre:
 
               <a-sky id="main-sky" color="#050a14"></a-sky>
 
-              <!-- Rig e Controles Interativos Meta Quest 3/3S -->
+              <!-- Rig com Calibração Automática de Chão e Altura (local-floor) -->
               <a-entity id="rig" movement-controls="fly: false; speed: 0.2">
-                <a-entity id="camera" camera look-controls position="0 1.6 0">
+                <a-entity id="camera" camera look-controls position="0 1.6 0" universal-controls>
                   <a-cursor fuse="false" raycaster="objects: .clickable, .grabbable, .ui-btn"></a-cursor>
                 </a-entity>
                 
+                <!-- Mão Esquerda (Controle + Hand Tracking + Super-Hands) -->
                 <a-entity id="left-hand"
                           hand-controls="hand: left; handModelStyle: lowPoly"
                           hand-tracking-controls="hand: left"
                           laser-controls="hand: left"
                           raycaster="objects: .clickable, .grabbable, .ui-btn; far: 25"
-                          super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstart; grabEndButtons: gripup, pinchend">
+                          super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstart, triggerdown; grabEndButtons: gripup, pinchend, triggerup">
                 </a-entity>
                 
+                <!-- Mão Direita (Controle + Hand Tracking + Super-Hands) -->
                 <a-entity id="right-hand"
                           hand-controls="hand: right; handModelStyle: lowPoly"
                           hand-tracking-controls="hand: right"
                           laser-controls="hand: right"
                           raycaster="objects: .clickable, .grabbable, .ui-btn; far: 25"
-                          super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstart; grabEndButtons: gripup, pinchend">
+                          super-hands="colliderEvent: raycaster-intersection; colliderEventProperty: els; colliderEndEvent: raycaster-intersection-cleared; colliderEndEventProperty: clearedEls; grabStartButtons: gripdown, pinchstart, triggerdown; grabEndButtons: gripup, pinchend, triggerup">
                 </a-entity>
               </a-entity>
 
               <a-light type="ambient" color="#ffffff" intensity="0.9"></a-light>
               <a-light type="directional" position="2 4 2" intensity="0.6"></a-light>
 
-              <!-- PAINEL DE CONTROLE AMBIENTAL E LAYOUT (3D E INTERATIVO) -->
+              <!-- PAINEL DE CONTROLE PRINCIPAL (MOVÍVEL E INTERATIVO) -->
               <a-entity id="control-panel" class="grabbable" position="0 2 -2.2" hoverable grabbable stretchable draggable droppable>
                 <a-plane width="2.4" height="1.4" color="#0b132b" opacity="0.95" material="shader: flat">
                   <a-text value="PMSC 2026 - PAINEL DE CONTROLE VR" position="0 0.55 0.01" align="center" color="#00d1ff" width="2.2" scale="0.7 0.7 0.7"></a-text>
                   
                   <a-text value="Ambientes & MR:" position="-1.05 0.28 0.01" align="left" color="#ffffff" width="2" scale="0.5 0.5 0.5"></a-text>
-                  <a-plane class="ui-btn" data-action="env-passthrough" width="0.7" height="0.18" position="-0.7 0.12 0.02" color="#00aa55"><a-text value="Passthrough" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="env-dark" width="0.5" height="0.18" position="0.0 0.12 0.02" color="#111"><a-text value="Escuro" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="env-beach" width="0.5" height="0.18" position="0.55 0.12 0.02" color="#0066cc"><a-text value="Praia" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="env-office" width="0.5" height="0.18" position="-0.7 -0.08 0.02" color="#444"><a-text value="Escritorio" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="env-library" width="0.5" height="0.18" position="-0.15 -0.08 0.02" color="#663300"><a-text value="Biblioteca" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="env-space" width="0.5" height="0.18" position="0.4 -0.08 0.02" color="#220033"><a-text value="Espaço" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="env-passthrough" width="0.7" height="0.18" position="-0.7 0.12 0.02" color="#00aa55"><a-text value="Passthrough" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="env-dark" width="0.5" height="0.18" position="0.0 0.12 0.02" color="#111"><a-text value="Escuro" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="env-beach" width="0.5" height="0.18" position="0.55 0.12 0.02" color="#0066cc"><a-text value="Praia" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="env-office" width="0.5" height="0.18" position="-0.7 -0.08 0.02" color="#444"><a-text value="Escritorio" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="env-library" width="0.5" height="0.18" position="-0.15 -0.08 0.02" color="#663300"><a-text value="Biblioteca" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="env-space" width="0.5" height="0.18" position="0.4 -0.08 0.02" color="#220033"><a-text value="Espaço" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
 
                   <a-text value="Organização & Layout:" position="-1.05 -0.26 0.01" align="left" color="#ffffff" width="2" scale="0.5 0.5 0.5"></a-text>
-                  <a-plane class="ui-btn" data-action="layout-grid" width="0.5" height="0.18" position="-0.7 -0.42 0.02" color="#2b2d42"><a-text value="GRADE" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="layout-materia" width="0.5" height="0.18" position="-0.15 -0.42 0.02" color="#2b2d42"><a-text value="MATERIA" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="layout-esparso" width="0.5" height="0.18" position="0.4 -0.42 0.02" color="#2b2d42"><a-text value="ESPALHAR" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="save-layout" width="0.32" height="0.15" position="-0.8 -0.62 0.02" color="#006633"><a-text value="Salvar" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="load-layout" width="0.32" height="0.15" position="-0.4 -0.62 0.02" color="#663300"><a-text value="Carregar" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="reset-layout" width="0.32" height="0.15" position="0.0 -0.62 0.02" color="#aa2222"><a-text value="Reset" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="layout-grid" width="0.5" height="0.18" position="-0.7 -0.42 0.02" color="#2b2d42"><a-text value="GRADE" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="layout-materia" width="0.5" height="0.18" position="-0.15 -0.42 0.02" color="#2b2d42"><a-text value="MATERIA" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="layout-esparso" width="0.5" height="0.18" position="0.4 -0.42 0.02" color="#2b2d42"><a-text value="ESPALHAR" align="center" width="1.5" color="#fff" scale="0.45 0.45 0.45"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="save-layout" width="0.32" height="0.15" position="-0.8 -0.62 0.02" color="#006633"><a-text value="Salvar" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="load-layout" width="0.32" height="0.15" position="-0.4 -0.62 0.02" color="#663300"><a-text value="Carregar" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="reset-layout" width="0.32" height="0.15" position="0.0 -0.62 0.02" color="#aa2222"><a-text value="Reset" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
                 </a-plane>
               </a-entity>
 
-              <!-- PAINEL CALIBRADOR DE MÃOS E CÂMERA (3D E INTERATIVO) -->
+              <!-- PAINEL CALIBRADOR DE MÃOS E ALTURA (MOVÍVEL E INTERATIVO) -->
               <a-entity id="calibrator-panel" class="grabbable" position="1.8 1.8 -1.8" rotation="0 -25 0" hoverable grabbable stretchable draggable droppable>
                 <a-plane width="1.3" height="1.4" color="#111122" opacity="0.95" material="shader: flat">
                   <a-text value="CALIBRADOR VR" position="0 0.56 0.01" align="center" color="#ffaa00" width="1.8" scale="0.6 0.6 0.6"></a-text>
                   <a-text id="leftHandData" value="Mão Esq: Tracking OK" position="-0.55 0.3 0.01" align="left" color="#00d1ff" width="1.5" scale="0.4 0.4 0.4"></a-text>
                   <a-text id="rightHandData" value="Mão Dir: Tracking OK" position="-0.55 0.1 0.01" align="left" color="#00d1ff" width="1.5" scale="0.4 0.4 0.4"></a-text>
                   
-                  <a-plane class="ui-btn" data-action="height-up" width="0.5" height="0.16" position="-0.3 -0.12 0.02" color="#333"><a-text value="ALTURA +" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="height-down" width="0.5" height="0.16" position="0.3 -0.12 0.02" color="#333"><a-text value="ALTURA -" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="reset-cam" width="1.1" height="0.16" position="0 -0.32 0.02" color="#aa2222"><a-text value="RESET CÂMERA" align="center" width="1.5" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
-                  <a-plane class="ui-btn" data-action="exit-vr" width="1.1" height="0.16" position="0 -0.52 0.02" color="#444444"><a-text value="SAIR VR" align="center" width="1.5" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="height-up" width="0.5" height="0.16" position="-0.3 -0.12 0.02" color="#333"><a-text value="ALTURA +" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="height-down" width="0.5" height="0.16" position="0.3 -0.12 0.02" color="#333"><a-text value="ALTURA -" align="center" width="1.2" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="reset-cam" width="1.1" height="0.16" position="0 -0.32 0.02" color="#aa2222"><a-text value="RESET CÂMERA" align="center" width="1.5" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
+                  <a-plane class="ui-btn clickable" data-action="exit-vr" width="1.1" height="0.16" position="0 -0.52 0.02" color="#444444"><a-text value="SAIR VR" align="center" width="1.5" color="#fff" scale="0.4 0.4 0.4"></a-text></a-plane>
                 </a-plane>
               </a-entity>
 
@@ -354,9 +370,15 @@ with aba_livre:
 
             <script>
               const questoesData = __Q_JSON__;
-              const modoStr = "__MODO__";
 
-              // CONSTRUÇÃO E REORGANIZAÇÃO DOS BLOCOS 3D
+              function entrarModoVR() {
+                const sceneEl = document.querySelector('a-scene');
+                if (sceneEl) {
+                  sceneEl.enterVR();
+                }
+              }
+
+              // CONSTRUÇÃO E REORGANIZAÇÃO DOS BLOCOS 3D COM SUPER-HANDS
               function construirBlocos(modoLayout = 'grid') {
                 const container = document.getElementById('questoes-container');
                 if (!container) return;
@@ -398,7 +420,6 @@ with aba_livre:
                   block.setAttribute('droppable', '');
                   block.setAttribute('data-materia', q.materia_origem || 'Geral');
 
-                  // Salva posição ao soltar o bloco
                   block.addEventListener('grab-end', () => {
                     salvarLayoutAutomatico();
                   });
@@ -424,7 +445,7 @@ with aba_livre:
                     const altY = 0.04 - (aIdx * 0.2);
 
                     const altPlane = document.createElement('a-plane');
-                    altPlane.setAttribute('class', 'clickable');
+                    altPlane.setAttribute('class', 'clickable ui-btn');
                     altPlane.setAttribute('position', `0 ${altY} 0.05`);
                     altPlane.setAttribute('width', '1.45');
                     altPlane.setAttribute('height', '0.17');
@@ -460,12 +481,14 @@ with aba_livre:
                 });
               }
 
-              // SISTEMA DE BOTÕES E AÇÕES VR NATIVAS
+              // GERENCIAMENTO GLOBAL DE CLIQUES NOS BOTÕES 3D (PAINÉIS)
               document.addEventListener('click', (e) => {
                 const target = e.target.closest('.ui-btn');
                 if (!target) return;
                 
                 const action = target.getAttribute('data-action');
+                if (!action) return;
+
                 const sky = document.getElementById('main-sky');
                 const sceneEl = document.querySelector('a-scene');
 
@@ -571,7 +594,7 @@ with aba_livre:
                 }
               }
 
-              // MONITORA POSIÇÃO DAS MÃOS NO CALIBRADOR 3D
+              // MONITORAMENTO DE POSIÇÃO E CALIBRAÇÃO AUTOMÁTICA DAS MÃOS
               setInterval(() => {
                 const leftHand = document.getElementById('left-hand');
                 const rightHand = document.getElementById('right-hand');
@@ -604,10 +627,9 @@ with aba_livre:
         """
 
         html_vr = html_template.replace("__Q_JSON__", q_json_str)
-        html_vr = html_vr.replace("__MODO__", st.session_state["modo_atual"])
         
         encoded_html = urllib.parse.quote(html_vr)
-        st.iframe(f"data:text/html;charset=utf-8,{encoded_html}", height=720)
+        st.iframe(f"data:text/html;charset=utf-8,{encoded_html}", height=750)
 
 # ==================== RODAPÉ ====================
 st.markdown("---")
