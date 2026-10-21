@@ -21,9 +21,7 @@
 }
 
 *{box-sizing:border-box}
-
 html{scroll-behavior:smooth}
-
 body{
  margin:0;
  background:var(--bg);
@@ -31,11 +29,7 @@ body{
  font-family:system-ui,Arial,sans-serif;
  font-size:var(--font);
 }
-
-button,input,select{
- font:inherit;
-}
-
+button,input,select{font:inherit}
 button,select,input{
  background:var(--panel2);
  color:var(--text);
@@ -43,26 +37,12 @@ button,select,input{
  border-radius:9px;
  padding:10px;
 }
-
-button{
- cursor:pointer;
- transition:.15s;
-}
-
-button:hover{
- border-color:var(--accent);
-}
-
-button:focus-visible,
-input:focus-visible,
-select:focus-visible{
+button{cursor:pointer;transition:.15s}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible{
  outline:3px solid var(--accent);
 }
-
-button:disabled{
- opacity:.5;
- cursor:not-allowed;
-}
+button:disabled{opacity:.5;cursor:not-allowed}
 
 header{
  background:#10261c;
@@ -74,46 +54,24 @@ header{
  gap:12px;
  flex-wrap:wrap;
 }
-
-header h1{
- margin:0;
- font-size:1.25rem;
-}
-
-header small{
- color:var(--muted);
-}
+header h1{margin:0;font-size:1.25rem}
+header small{color:var(--muted)}
 
 .layout{
  display:grid;
  grid-template-columns:280px minmax(0,1fr);
  min-height:calc(100vh - 80px);
 }
-
 aside{
  background:var(--panel);
  border-right:1px solid var(--border);
  padding:16px;
 }
+nav{display:grid;gap:7px}
+nav button{text-align:left}
+nav button.active{background:#24563d;border-color:var(--accent)}
 
-nav{
- display:grid;
- gap:7px;
-}
-
-nav button{
- text-align:left;
-}
-
-nav button.active{
- background:#24563d;
- border-color:var(--accent);
-}
-
-main{
- padding:16px;
- min-width:0;
-}
+main{padding:16px;min-width:0}
 
 .card{
  background:var(--panel);
@@ -122,49 +80,24 @@ main{
  padding:18px;
  margin-bottom:15px;
 }
-
-.card h2{
- margin-top:0;
-}
+.card h2{margin-top:0}
 
 .grid{
  display:grid;
  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
  gap:12px;
 }
-
 .metric{
  background:var(--panel2);
  border-radius:12px;
  padding:15px;
 }
+.metric strong{display:block;font-size:1.7rem;color:var(--accent)}
+.metric span{color:var(--muted)}
 
-.metric strong{
- display:block;
- font-size:1.7rem;
- color:var(--accent);
-}
-
-.metric span{
- color:var(--muted);
-}
-
-.controls{
- display:flex;
- flex-wrap:wrap;
- gap:9px;
- margin:12px 0;
-}
-
-.field{
- display:grid;
- gap:6px;
- margin:10px 0;
-}
-
-.field label{
- color:var(--muted);
-}
+.controls{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
+.field{display:grid;gap:6px;margin:10px 0}
+.field label{color:var(--muted)}
 
 .question{
  font-size:1.13rem;
@@ -172,7 +105,6 @@ main{
  white-space:pre-wrap;
  overflow-wrap:anywhere;
 }
-
 .option{
  display:block;
  width:100%;
@@ -183,20 +115,9 @@ main{
  white-space:pre-wrap;
  overflow-wrap:anywhere;
 }
-
-.option.selected{
- border:2px solid var(--accent);
-}
-
-.option.correct{
- border-color:#6affaa;
- background:#174c32;
-}
-
-.option.wrong{
- border-color:var(--danger);
- background:#4b2525;
-}
+.option.selected{border:2px solid var(--accent)}
+.option.correct{border-color:#6affaa;background:#174c32}
+.option.wrong{border-color:var(--danger);background:#4b2525}
 
 .explanation{
  border-left:4px solid var(--accent);
@@ -215,21 +136,11 @@ main{
  background:#162b25;
  position:relative;
 }
+#scene canvas{display:block}
 
-#scene canvas{
- display:block;
-}
+#status{color:var(--muted);font-size:.9rem}
 
-#status{
- color:var(--muted);
- font-size:.9rem;
-}
-
-progress{
- width:100%;
- height:15px;
- accent-color:var(--accent);
-}
+progress{width:100%;height:15px;accent-color:var(--accent)}
 
 .badge{
  display:inline-block;
@@ -262,12 +173,7 @@ progress{
  overflow:hidden;
  margin:7px 0 15px;
 }
-
-.bar span{
- display:block;
- height:100%;
- background:var(--accent);
-}
+.bar span{display:block;height:100%;background:var(--accent)}
 
 .notice{
  padding:12px;
@@ -278,53 +184,23 @@ progress{
 }
 
 body.light{
- --bg:#edf4ef;
- --panel:#ffffff;
- --panel2:#e1eee5;
- --text:#16291e;
- --muted:#42604c;
- --accent:#087b47;
- --border:#9db9a6;
+ --bg:#edf4ef;--panel:#ffffff;--panel2:#e1eee5;
+ --text:#16291e;--muted:#42604c;--accent:#087b47;--border:#9db9a6;
 }
-
 body.blue{
- --bg:#071323;
- --panel:#10243c;
- --panel2:#193856;
- --text:#f0f7ff;
- --muted:#b8d0e5;
- --accent:#64c8ff;
- --border:#345e80;
+ --bg:#071323;--panel:#10243c;--panel2:#193856;
+ --text:#f0f7ff;--muted:#b8d0e5;--accent:#64c8ff;--border:#345e80;
 }
-
 body.purple{
- --bg:#160d25;
- --panel:#281b3c;
- --panel2:#39264e;
- --text:#f8f2ff;
- --muted:#d2c2e8;
- --accent:#c69aff;
- --border:#6c4c89;
+ --bg:#160d25;--panel:#281b3c;--panel2:#39264e;
+ --text:#f8f2ff;--muted:#d2c2e8;--accent:#c69aff;--border:#6c4c89;
 }
-
 body.contrast{
- --bg:#000;
- --panel:#111;
- --panel2:#222;
- --text:#fff;
- --muted:#fff;
- --accent:#ffff00;
- --border:#fff;
+ --bg:#000;--panel:#111;--panel2:#222;
+ --text:#fff;--muted:#fff;--accent:#ffff00;--border:#fff;
 }
-
-body.focus aside,
-body.focus #sceneCard{
- display:none;
-}
-
-body.focus .layout{
- grid-template-columns:1fr;
-}
+body.focus aside,body.focus #sceneCard{display:none}
+body.focus .layout{grid-template-columns:1fr}
 
 @media(max-width:850px){
  .layout{grid-template-columns:1fr}
@@ -333,7 +209,6 @@ body.focus .layout{
  #scene{height:260px}
  main{padding:10px}
 }
-
 </style>
 </head>
 
@@ -351,7 +226,6 @@ body.focus .layout{
 
 <aside>
  <nav id="menu"></nav>
-
  <hr>
 
  <div class="field">
@@ -388,7 +262,6 @@ body.focus .layout{
 </aside>
 
 <main>
-
  <section class="card" id="sceneCard">
   <h2>Ambiente tridimensional</h2>
   <div id="scene"></div>
@@ -400,7 +273,6 @@ body.focus .layout{
  </section>
 
  <section id="content" class="card"></section>
-
 </main>
 </div>
 
@@ -450,17 +322,23 @@ const pages=[
  "Configurações"
 ];
 
+// ✅ CORREÇÃO #1 e #2: activeExam e fontSize adicionados aos defaults
 const defaults={
  environment:0,
  theme:"dark",
  quality:"medium",
+ fontSize:16,
  history:[],
  favorites:[],
  reviews:{},
  exams:[],
  flashcards:{},
- session:null
+ session:null,
+ activeExam:null
 };
+
+const VALID_THEMES=["dark","blue","purple","light","contrast"];
+const VALID_QUALITY=["low","medium","high"];
 
 let state;
 let questions=[];
@@ -468,23 +346,13 @@ let page="Início";
 let currentIndex=0;
 let studyPool=[];
 let exam=null;
+let examTimerId=null;           // ✅ CORREÇÃO #5
+let finishingExam=false;        // ✅ CORREÇÃO #4
 let flashBack=false;
 let loadBusy=false;
 
 const now=()=>Date.now();
-
 const uid=()=>Math.random().toString(36).slice(2);
-
-const escapeHTML=s=>String(s??"").replace(
- /[&<>"']/g,
- c=>({
-  "&":"&amp;",
-  "<":"&lt;",
-  ">":"&gt;",
-  '"':"&quot;",
-  "'":"&#39;"
- }[c])
-);
 
 function status(message){
  $("status").textContent=message;
@@ -492,10 +360,7 @@ function status(message){
 
 function save(){
  try{
-  localStorage.setItem(
-   APP.storageKey,
-   JSON.stringify(state)
-  );
+  localStorage.setItem(APP.storageKey,JSON.stringify(state));
  }catch(e){
   status("Não foi possível salvar os dados.");
  }
@@ -505,37 +370,42 @@ function save(){
    2. STORAGE MANAGER
 ================================================== */
 
+// ✅ CORREÇÃO #7: clone compatível sem structuredClone
+function cloneDefaults(){
+ return JSON.parse(JSON.stringify(defaults));
+}
+
 const StorageManager={
  load(){
   try{
-   const data=JSON.parse(
-    localStorage.getItem(APP.storageKey)||"{}"
-   );
-
-   return {
-    ...structuredClone(defaults),
-    ...data
-   };
+   const data=JSON.parse(localStorage.getItem(APP.storageKey)||"{}");
+   const merged={...cloneDefaults(),...data};
+   // ✅ CORREÇÃO #12 e #13: validação
+   if(!VALID_THEMES.includes(merged.theme)) merged.theme="dark";
+   if(!VALID_QUALITY.includes(merged.quality)) merged.quality="medium";
+   if(typeof merged.environment!=="number"||merged.environment<0||merged.environment>=environments.length){
+    merged.environment=0;
+   }
+   if(typeof merged.fontSize!=="number"||merged.fontSize<10||merged.fontSize>40){
+    merged.fontSize=16;
+   }
+   if(!merged.session) merged.session=null;
+   if(!merged.activeExam) merged.activeExam=null;
+   return merged;
   }catch{
-   return structuredClone(defaults);
+   return cloneDefaults();
   }
  },
 
  export(){
-  download(
-   "backup-pmsc.json",
-   JSON.stringify(state,null,2),
-   "application/json"
-  );
+  download("backup-pmsc.json",JSON.stringify(state,null,2),"application/json");
  },
 
  async restore(file){
   if(!file||file.size>3000000){
    throw Error("Arquivo inválido ou muito grande.");
   }
-
   const data=JSON.parse(await file.text());
-
   if(
    !data||
    !Array.isArray(data.history)||
@@ -544,12 +414,11 @@ const StorageManager={
   ){
    throw Error("Estrutura de backup incompatível.");
   }
-
-  state={
-   ...structuredClone(defaults),
-   ...data
-  };
-
+  // ✅ CORREÇÃO #8: resetar exam ativo e timer no restore
+  if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
+  exam=null;
+  state={...cloneDefaults(),...data};
+  state.activeExam=null;
   save();
   applySettings();
   render();
@@ -563,52 +432,26 @@ state=StorageManager.load();
 ================================================== */
 
 const QuestionManager={
-
  normalize(raw){
-
   if(!raw||typeof raw!=="object")return null;
-
-  const statement=
-   raw.enunciado??
-   raw.pergunta??
-   raw.question;
-
-  let options=
-   raw.alternativas??
-   raw.opcoes??
-   raw.options;
-
-  if(
-   options&&
-   !Array.isArray(options)&&
-   typeof options==="object"
-  ){
+  const statement=raw.enunciado??raw.pergunta??raw.question;
+  let options=raw.alternativas??raw.opcoes??raw.options;
+  if(options&&!Array.isArray(options)&&typeof options==="object"){
    options=Object.values(options);
   }
-
   if(!Array.isArray(options))return null;
-
   options=options.map(x=>
-   typeof x==="string"
-    ?x
-    :x?.texto??x?.text??""
+   typeof x==="string"?x:x?.texto??x?.text??""
   );
-
-  let correct=
-   raw.correta??
-   raw.gabarito??
-   raw.correct;
-
+  let correct=raw.correta??raw.gabarito??raw.correct;
   if(typeof correct==="string"){
    const letter=correct.trim().toUpperCase();
-
    if(/^[A-Z]$/.test(letter)){
     correct=letter.charCodeAt(0)-65;
    }else{
     correct=Number(letter);
    }
   }
-
   if(
    typeof statement!=="string"||
    !statement.trim()||
@@ -620,13 +463,9 @@ const QuestionManager={
   ){
    return null;
   }
-
   const id=String(
-   raw.id||
-   raw.codigo||
-   `${raw.disciplina||"Geral"}:${statement}`
+   raw.id||raw.codigo||`${raw.disciplina||"Geral"}:${statement}`
   );
-
   return {
    id,
    disciplina:String(raw.disciplina||"Geral"),
@@ -635,9 +474,7 @@ const QuestionManager={
    enunciado:statement,
    alternativas:options.map(String),
    correta:correct,
-   explicacao:String(
-    raw.explicacao??raw.comentario??""
-   ),
+   explicacao:String(raw.explicacao??raw.comentario??""),
    referencia:String(raw.referencia||""),
    banca:String(raw.banca||""),
    ano:raw.ano||""
@@ -646,13 +483,9 @@ const QuestionManager={
 
  deduplicate(list){
   const ids=new Set();
-
   return list.filter(q=>{
-   const key=q.id;
-
-   if(ids.has(key))return false;
-
-   ids.add(key);
+   if(ids.has(q.id))return false;
+   ids.add(q.id);
    return true;
   });
  },
@@ -667,154 +500,107 @@ const QuestionManager={
 ================================================== */
 
 const ContentRepository={
-
+ // ✅ CORREÇÃO #6: try/finally garante loadBusy=false
  async load(){
-
   if(loadBusy)return;
-
   loadBusy=true;
   status("Consultando GitHub...");
-
-  let files=[];
-  let rejected=0;
-  let loaded=[];
-
   try{
-
-   const response=await fetch(
-    `https://api.github.com/repos/${APP.repo}/contents/`,
-    {
-     headers:{
-      Accept:"application/vnd.github+json"
+   let files=[];
+   let rejected=0;
+   let loaded=[];
+   try{
+    const response=await fetch(
+     `https://api.github.com/repos/${APP.repo}/contents/`,
+     {headers:{Accept:"application/vnd.github+json"}}
+    );
+    if(!response.ok){
+     throw Error("GitHub API: "+response.status);
+    }
+    const listing=await response.json();
+    files=listing.filter(f=>
+     f.type==="file"&&f.name.toLowerCase().endsWith(".json")
+    );
+   }catch(e){
+    status("Tentando manifesto alternativo...");
+    try{
+     const response=await fetch("./manifest.json");
+     if(response.ok){
+      const manifest=await response.json();
+      const names=Array.isArray(manifest)?manifest:manifest.files||[];
+      files=names
+       .filter(name=>
+        typeof name==="string"&&/^[\w.-]+\.json$/i.test(name)
+       )
+       .map(name=>({
+        name,
+        download_url:`https://raw.githubusercontent.com/${APP.repo}/HEAD/${name}`
+       }));
      }
-    }
-   );
-
-   if(!response.ok){
-    throw Error("GitHub API: "+response.status);
+    }catch{}
    }
 
-   const listing=await response.json();
-
-   files=listing.filter(f=>
-    f.type==="file"&&
-    f.name.toLowerCase().endsWith(".json")
-   );
-
-  }catch(e){
-
-   status("Tentando manifesto alternativo...");
-
-   try{
-
-    const response=await fetch("./manifest.json");
-
-    if(response.ok){
-
-     const manifest=await response.json();
-
-     const names=Array.isArray(manifest)
-      ?manifest
-      :manifest.files||[];
-
-     files=names
-      .filter(name=>
-       typeof name==="string"&&
-       /^[\w.-]+\.json$/i.test(name)
-      )
-      .map(name=>({
-       name,
-       download_url:
-        `https://raw.githubusercontent.com/${APP.repo}/HEAD/${name}`
-      }));
-    }
-
-   }catch{}
-  }
-
-  for(const file of files){
-
-   try{
-
-    const response=await fetch(file.download_url);
-
-    if(!response.ok)continue;
-
-    const text=await response.text();
-
-    if(text.length>5000000){
+   for(const file of files){
+    try{
+     const response=await fetch(file.download_url);
+     if(!response.ok)continue;
+     const text=await response.text();
+     if(text.length>5000000){
+      rejected++;
+      continue;
+     }
+     const json=JSON.parse(text);
+     const items=Array.isArray(json)?json
+      :Array.isArray(json.questoes)?json.questoes
+      :Array.isArray(json.questions)?json.questions
+      :[];
+     for(const item of items){
+      const q=QuestionManager.normalize(item);
+      if(q)loaded.push(q);
+      else rejected++;
+     }
+    }catch{
      rejected++;
-     continue;
     }
-
-    const json=JSON.parse(text);
-
-    const items=Array.isArray(json)
-     ?json
-     :Array.isArray(json.questoes)
-      ?json.questoes
-      :Array.isArray(json.questions)
-       ?json.questions
-       :[];
-
-    for(const item of items){
-
-     const q=QuestionManager.normalize(item);
-
-     if(q)loaded.push(q);
-     else rejected++;
-    }
-
-   }catch{
-    rejected++;
-   }
-  }
-
-  loaded=QuestionManager.deduplicate(loaded);
-
-  if(loaded.length){
-
-   questions=loaded;
-
-   try{
-    localStorage.setItem(
-     APP.storageKey+"_BANK",
-     JSON.stringify(questions)
-    );
-   }catch{}
-
-   status(
-    `${files.length} arquivos | `+
-    `${questions.length} questões | `+
-    `${rejected} rejeitadas`
-   );
-
-  }else{
-
-   try{
-    questions=JSON.parse(
-     localStorage.getItem(
-      APP.storageKey+"_BANK"
-     )||"[]"
-    );
-   }catch{
-    questions=[];
    }
 
-   status(
-    questions.length
-     ?"Banco salvo recuperado."
-     :"Nenhuma questão compatível disponível."
-   );
+   loaded=QuestionManager.deduplicate(loaded);
+
+   if(loaded.length){
+    questions=loaded;
+    try{
+     localStorage.setItem(
+      APP.storageKey+"_BANK",
+      JSON.stringify(questions)
+     );
+    }catch{}
+    status(
+     `${files.length} arquivos | `+
+     `${questions.length} questões | `+
+     `${rejected} rejeitadas`
+    );
+   }else{
+    try{
+     questions=JSON.parse(
+      localStorage.getItem(APP.storageKey+"_BANK")||"[]"
+     );
+    }catch{
+     questions=[];
+    }
+    status(
+     questions.length
+      ?"Banco salvo recuperado."
+      :"Nenhuma questão compatível disponível."
+    );
+   }
+
+   if(page==="Estudos"){
+    studyPool=[];
+   }
+   render();
+  }finally{
+   loadBusy=false;
   }
-
-  loadBusy=false;
-
-  if(page==="Estudos"){
-   studyPool=[];
-  }
-
-  render();
  }
 };
 
@@ -823,20 +609,14 @@ const ContentRepository={
 ================================================== */
 
 const StatisticsManager={
-
  summary(){
-
   const history=state.history;
-
   const correct=history.filter(x=>x.correct).length;
-
   return {
    total:history.length,
    correct,
    wrong:history.length-correct,
-   rate:history.length
-    ?Math.round(correct/history.length*100)
-    :0,
+   rate:history.length?Math.round(correct/history.length*100):0,
    exams:state.exams.length,
    pending:Object.values(state.reviews)
     .filter(x=>x.due<=now()).length
@@ -844,27 +624,19 @@ const StatisticsManager={
  },
 
  bySubject(){
-
   const data={};
-
   for(const item of state.history){
-
    const key=item.disciplina||"Geral";
-
    if(!data[key]){
     data[key]={total:0,correct:0};
    }
-
    data[key].total++;
-
    if(item.correct)data[key].correct++;
   }
-
   return data;
  },
 
  record(question,choice,mode){
-
   state.history.push({
    id:question.id,
    disciplina:question.disciplina,
@@ -874,15 +646,12 @@ const StatisticsManager={
    mode,
    date:now()
   });
-
   if(state.history.length>10000){
    state.history=state.history.slice(-10000);
   }
-
   if(choice!==question.correta){
    ReviewManager.mark(question.id);
   }
-
   save();
  }
 };
@@ -892,16 +661,13 @@ const StatisticsManager={
 ================================================== */
 
 const ReviewManager={
-
  mark(id){
-
   state.reviews[id]={
    due:now(),
    interval:1,
    repetitions:0,
    ease:2.5
   };
-
   save();
  },
 
@@ -911,7 +677,6 @@ const ReviewManager={
  },
 
  due(){
-
   return questions.filter(q=>
    state.reviews[q.id]&&
    state.reviews[q.id].due<=now()
@@ -919,7 +684,6 @@ const ReviewManager={
  },
 
  all(){
-
   return questions.filter(q=>state.reviews[q.id]);
  }
 };
@@ -929,41 +693,25 @@ const ReviewManager={
 ================================================== */
 
 const SpacedRepetition={
-
  grade(id,quality){
-
-  const old=state.reviews[id]||{
-   interval:1,
-   repetitions:0,
-   ease:2.5
-  };
-
+  const old=state.reviews[id]||{interval:1,repetitions:0,ease:2.5};
   let repetitions=old.repetitions;
   let interval=old.interval;
   let ease=old.ease;
 
   if(quality<3){
-
    repetitions=0;
    interval=1;
-
   }else{
-
    repetitions++;
-
    if(repetitions===1)interval=1;
    else if(repetitions===2)interval=6;
-   else interval=Math.max(
-    1,
-    Math.round(interval*ease)
-   );
+   else interval=Math.max(1,Math.round(interval*ease));
   }
 
   ease=Math.max(
    1.3,
-   ease+(
-    .1-(5-quality)*(.08+(5-quality)*.02)
-   )
+   ease+(.1-(5-quality)*(.08+(5-quality)*.02))
   );
 
   state.reviews[id]={
@@ -972,113 +720,78 @@ const SpacedRepetition={
    ease,
    due:now()+interval*86400000
   };
-
   save();
  }
 };
 
 /* ==================================================
-   8. INTERFACE
+   8. INTERFACE HELPERS
 ================================================== */
 
 function element(tag,text,parent,className){
-
  const node=document.createElement(tag);
-
  if(text!==undefined&&text!==null){
   node.textContent=String(text);
  }
-
  if(className)node.className=className;
-
  if(parent)parent.append(node);
-
  return node;
 }
 
 function button(text,callback,parent){
-
  const node=element("button",text,parent);
-
  node.addEventListener("click",callback);
-
  return node;
 }
 
 function clearContent(title){
-
  const root=$("content");
-
  root.replaceChildren();
-
  element("h2",title,root);
-
  return root;
 }
 
 function paragraph(text,parent){
-
  return element("p",text,parent);
 }
 
 function sectionTitle(text,parent){
-
  return element("h3",text,parent);
 }
 
 function field(label,type,value,parent){
-
  const wrap=element("div",null,parent,"field");
-
  element("label",label,wrap);
-
  const input=element("input",null,wrap);
-
  input.type=type;
  input.value=value;
-
  return input;
 }
 
 function selectField(label,values,parent){
-
  const wrap=element("div",null,parent,"field");
-
  element("label",label,wrap);
-
  const select=element("select",null,wrap);
-
  for(const value of values){
-
   const option=document.createElement("option");
-
   option.value=value;
   option.textContent=value;
-
   select.append(option);
  }
-
  return select;
 }
 
 function metric(label,value,parent){
-
  const card=element("div",null,parent,"metric");
-
  element("strong",value,card);
  element("span",label,card);
 }
 
 function renderSidebar(){
-
  const s=StatisticsManager.summary();
-
  $("sidebarMetrics").replaceChildren();
-
  const box=$("sidebarMetrics");
-
  sectionTitle("Seu desempenho",box);
-
  paragraph(`Questões: ${s.total}`,box);
  paragraph(`Acertos: ${s.correct}`,box);
  paragraph(`Erros: ${s.wrong}`,box);
@@ -1086,58 +799,30 @@ function renderSidebar(){
  paragraph(`Revisões pendentes: ${s.pending}`,box);
 }
 
+// ✅ CORREÇÃO #5: navigate limpa timer de simulado ao sair
 function navigate(destination){
-
+ if(destination!=="Simulados"&&examTimerId){
+  clearInterval(examTimerId);
+  examTimerId=null;
+ }
  page=destination;
-
- document.querySelectorAll("#menu button")
-  .forEach(b=>{
-   b.classList.toggle(
-    "active",
-    b.textContent===destination
-   );
-  });
-
+ document.querySelectorAll("#menu button").forEach(b=>{
+  b.classList.toggle("active",b.textContent===destination);
+ });
  render();
 }
 
 function render(){
-
  renderSidebar();
-
  switch(page){
-
-  case "Início":
-   renderHome();
-   break;
-
-  case "Estudos":
-   renderStudies();
-   break;
-
-  case "Simulados":
-   renderExams();
-   break;
-
-  case "Flashcards":
-   renderFlashcards();
-   break;
-
-  case "Revisões":
-   renderReviews();
-   break;
-
-  case "Desempenho":
-   renderStatistics();
-   break;
-
-  case "Banco de Questões":
-   renderBank();
-   break;
-
-  case "Configurações":
-   renderSettings();
-   break;
+  case "Início":renderHome();break;
+  case "Estudos":renderStudies();break;
+  case "Simulados":renderExams();break;
+  case "Flashcards":renderFlashcards();break;
+  case "Revisões":renderReviews();break;
+  case "Desempenho":renderStatistics();break;
+  case "Banco de Questões":renderBank();break;
+  case "Configurações":renderSettings();break;
  }
 }
 
@@ -1146,84 +831,39 @@ function render(){
 ================================================== */
 
 function renderHome(){
-
  const root=clearContent("Central Inteligente de Estudos");
-
  const s=StatisticsManager.summary();
-
  const grid=element("div",null,root,"grid");
-
  metric("Questões respondidas",s.total,grid);
  metric("Aproveitamento",s.rate+"%",grid);
  metric("Simulados",s.exams,grid);
  metric("Revisões pendentes",s.pending,grid);
 
  sectionTitle("Próxima atividade recomendada",root);
-
  const subjects=StatisticsManager.bySubject();
-
  const ranking=Object.entries(subjects)
   .filter(([,v])=>v.total>0)
-  .sort((a,b)=>
-   a[1].correct/a[1].total-
-   b[1].correct/b[1].total
-  );
+  .sort((a,b)=>a[1].correct/a[1].total-b[1].correct/b[1].total);
 
  if(ranking.length){
-
-  paragraph(
-   "Disciplina para reforçar: "+ranking[0][0],
-   root
-  );
-
+  paragraph("Disciplina para reforçar: "+ranking[0][0],root);
  }else{
-
-  paragraph(
-   "Comece respondendo questões para gerar recomendações.",
-   root
-  );
+  paragraph("Comece respondendo questões para gerar recomendações.",root);
  }
 
- paragraph(
-  `Banco disponível: ${questions.length} questões.`,
-  root
- );
+ paragraph(`Banco disponível: ${questions.length} questões.`,root);
 
  const actions=element("div",null,root,"controls");
-
- button(
-  "Iniciar estudos",
-  ()=>navigate("Estudos"),
-  actions
- );
-
- button(
-  "Revisar erros",
-  ()=>navigate("Revisões"),
-  actions
- );
-
- button(
-  "Criar simulado",
-  ()=>navigate("Simulados"),
-  actions
- );
+ button("Iniciar estudos",()=>navigate("Estudos"),actions);
+ button("Revisar erros",()=>navigate("Revisões"),actions);
+ button("Criar simulado",()=>navigate("Simulados"),actions);
 
  if(state.session?.id){
-
-  button(
-   "Continuar última questão",
-   ()=>{
-    studyPool=questions.filter(q=>
-     q.id===state.session.id
-    );
-
-    currentIndex=0;
-
-    navigate("Estudos");
-   },
-   actions
-  );
+  button("Continuar última questão",()=>{
+   studyPool=questions.filter(q=>q.id===state.session.id);
+   currentIndex=0;
+   navigate("Estudos");
+  },actions);
  }
 }
 
@@ -1232,326 +872,141 @@ function renderHome(){
 ================================================== */
 
 function getFilteredQuestions(subject,topic,difficulty,search){
-
  const term=(search||"").toLowerCase();
-
  return questions.filter(q=>
-
   (!subject||q.disciplina===subject)&&
   (!topic||q.assunto===topic)&&
   (!difficulty||q.dificuldade===difficulty)&&
-
-  (!term||
-   [
-    q.id,
-    q.enunciado,
-    q.assunto,
-    q.disciplina,
-    q.referencia
-   ].join(" ").toLowerCase().includes(term)
-  )
+  (!term||[
+    q.id,q.enunciado,q.assunto,q.disciplina,q.referencia
+   ].join(" ").toLowerCase().includes(term))
  );
 }
 
 function renderStudies(){
-
  const root=clearContent("Estudo de Questões");
-
- const subjects=[
-  "",
-  ...new Set(questions.map(q=>q.disciplina))
- ];
-
- const topics=[
-  "",
-  ...new Set(questions.map(q=>q.assunto))
- ];
-
- const subject=selectField(
-  "Disciplina",
-  subjects,
-  root
- );
-
- const topic=selectField(
-  "Assunto",
-  topics,
-  root
- );
-
- const difficulty=selectField(
-  "Dificuldade",
-  ["","facil","media","dificil"],
-  root
- );
-
- const search=field(
-  "Pesquisar",
-  "search",
-  "",
-  root
- );
+ const subjects=["",...new Set(questions.map(q=>q.disciplina))];
+ const topics=["",...new Set(questions.map(q=>q.assunto))];
+ const subject=selectField("Disciplina",subjects,root);
+ const topic=selectField("Assunto",topics,root);
+ const difficulty=selectField("Dificuldade",["","facil","media","dificil"],root);
+ const search=field("Pesquisar","search","",root);
 
  button("Aplicar filtros",()=>{
-
   studyPool=getFilteredQuestions(
-   subject.value,
-   topic.value,
-   difficulty.value,
-   search.value
+   subject.value,topic.value,difficulty.value,search.value
   );
-
   currentIndex=0;
-
   showStudyQuestion();
-
  },root);
 
  const area=element("div",null,root);
-
  area.id="studyArea";
 
  if(!studyPool.length){
   studyPool=[...questions];
  }
-
  showStudyQuestion();
 }
 
 function showStudyQuestion(){
-
  const area=$("studyArea");
-
  if(!area)return;
-
  area.replaceChildren();
 
  if(!studyPool.length){
-
-  paragraph(
-   "Nenhuma questão encontrada. Atualize o banco.",
-   area
-  );
-
+  paragraph("Nenhuma questão encontrada. Atualize o banco.",area);
   return;
  }
 
- currentIndex=Math.max(
-  0,
-  Math.min(currentIndex,studyPool.length-1)
- );
-
+ currentIndex=Math.max(0,Math.min(currentIndex,studyPool.length-1));
  const q=studyPool[currentIndex];
 
- state.session={
-  id:q.id,
-  index:currentIndex
- };
-
+ state.session={id:q.id,index:currentIndex};
  save();
 
- renderQuestion(
-  q,
-  area,
-  currentIndex+1,
-  studyPool.length,
-  "study"
- );
+ renderQuestion(q,area,currentIndex+1,studyPool.length,"study");
 
- const controls=element(
-  "div",null,area,"controls"
- );
-
+ const controls=element("div",null,area,"controls");
  button("◀ Anterior",()=>{
-
   currentIndex=Math.max(0,currentIndex-1);
   showStudyQuestion();
-
  },controls);
 
  button("Próxima ▶",()=>{
-
-  currentIndex=Math.min(
-   studyPool.length-1,
-   currentIndex+1
-  );
-
+  currentIndex=Math.min(studyPool.length-1,currentIndex+1);
   showStudyQuestion();
-
  },controls);
 
  button(
-  state.favorites.includes(q.id)
-   ?"★ Remover favorito"
-   :"☆ Favoritar",
+  state.favorites.includes(q.id)?"★ Remover favorito":"☆ Favoritar",
   ()=>{
-
    if(state.favorites.includes(q.id)){
-
-    state.favorites=state.favorites.filter(
-     id=>id!==q.id
-    );
-
+    state.favorites=state.favorites.filter(id=>id!==q.id);
    }else{
-
     state.favorites.push(q.id);
    }
-
    save();
    showStudyQuestion();
-
   },
   controls
  );
 
  button("Marcar para revisão",()=>{
-
   ReviewManager.mark(q.id);
-
   status("Questão marcada para revisão.");
-
  },controls);
 }
 
 function renderQuestion(q,parent,number,total,mode,answers){
-
  const meta=element("div",null,parent);
+ element("span",q.disciplina,meta,"badge");
+ element("span",q.assunto,meta,"badge");
+ element("span",q.dificuldade,meta,"badge");
 
- element(
-  "span",
-  q.disciplina,
-  meta,
-  "badge"
- );
-
- element(
-  "span",
-  q.assunto,
-  meta,
-  "badge"
- );
-
- element(
-  "span",
-  q.dificuldade,
-  meta,
-  "badge"
- );
-
- paragraph(
-  `Questão ${number} de ${total}`,
-  parent
- );
-
+ paragraph(`Questão ${number} de ${total}`,parent);
  const progress=element("progress",null,parent);
-
  progress.max=total;
  progress.value=number;
 
- element(
-  "div",
-  q.enunciado,
-  parent,
-  "question"
- );
+ element("div",q.enunciado,parent,"question");
 
  const options=element("div",null,parent);
-
- const existing=mode==="exam"
-  ?answers[q.id]
-  :undefined;
-
+ const existing=mode==="exam"?answers[q.id]:undefined;
  let answered=false;
 
  q.alternativas.forEach((text,i)=>{
-
   const option=button(
    `${String.fromCharCode(65+i)}. ${text}`,
    ()=>{
-
     if(mode==="exam"){
-
      answers[q.id]=i;
-
      state.activeExam=exam;
-
      save();
-
-     options.querySelectorAll("button")
-      .forEach((b,j)=>{
-       b.classList.toggle(
-        "selected",
-        j===i
-       );
-      });
-
+     options.querySelectorAll("button").forEach((b,j)=>{
+      b.classList.toggle("selected",j===i);
+     });
      return;
     }
-
     if(answered)return;
-
     answered=true;
-
     StatisticsManager.record(q,i,mode);
-
-    options.querySelectorAll("button")
-     .forEach((b,j)=>{
-
-      b.disabled=true;
-
-      if(j===q.correta){
-       b.classList.add("correct");
-      }
-
-      if(j===i&&i!==q.correta){
-       b.classList.add("wrong");
-      }
-     });
-
-    const explanation=element(
-     "div",
-     null,
-     parent,
-     "explanation"
-    );
-
-    paragraph(
-     i===q.correta
-      ?"Resposta correta!"
-      :"Resposta incorreta.",
-     explanation
-    );
-
-    paragraph(
-     "Gabarito: "+
-     String.fromCharCode(65+q.correta),
-     explanation
-    );
-
-    paragraph(
-     q.explicacao||
-     "Explicação não disponível no banco.",
-     explanation
-    );
-
-    if(q.referencia){
-     paragraph(
-      "Referência: "+q.referencia,
-      explanation
-     );
-    }
-
+    options.querySelectorAll("button").forEach((b,j)=>{
+     b.disabled=true;
+     if(j===q.correta)b.classList.add("correct");
+     if(j===i&&i!==q.correta)b.classList.add("wrong");
+    });
+    const explanation=element("div",null,parent,"explanation");
+    paragraph(i===q.correta?"Resposta correta!":"Resposta incorreta.",explanation);
+    paragraph("Gabarito: "+String.fromCharCode(65+q.correta),explanation);
+    paragraph(q.explicacao||"Explicação não disponível no banco.",explanation);
+    if(q.referencia)paragraph("Referência: "+q.referencia,explanation);
     renderSidebar();
-
    },
    options
   );
-
   option.classList.add("option");
-
-  if(existing===i){
-   option.classList.add("selected");
-  }
+  if(existing===i)option.classList.add("selected");
  });
 }
 
@@ -1560,293 +1015,184 @@ function renderQuestion(q,parent,number,total,mode,answers){
 ================================================== */
 
 function renderExams(){
-
  const root=clearContent("Simulados");
-
  if(exam){
   showExam(root);
   return;
  }
 
- const count=field(
-  "Quantidade de questões",
-  "number",
-  20,
-  root
- );
-
+ const count=field("Quantidade de questões","number",20,root);
  count.min=1;
 
- const minutes=field(
-  "Tempo em minutos (0 = livre)",
-  "number",
-  60,
-  root
- );
-
+ const minutes=field("Tempo em minutos (0 = livre)","number",60,root);
  minutes.min=0;
 
- const subjects=[
-  "",
-  ...new Set(questions.map(q=>q.disciplina))
- ];
-
- const subject=selectField(
-  "Disciplina",
-  subjects,
-  root
- );
+ const subjects=["",...new Set(questions.map(q=>q.disciplina))];
+ const subject=selectField("Disciplina",subjects,root);
 
  button("Iniciar simulado",()=>{
-
-  const pool=questions.filter(q=>
-   !subject.value||
-   q.disciplina===subject.value
-  );
-
+  const pool=questions.filter(q=>!subject.value||q.disciplina===subject.value);
   if(!pool.length){
    status("Nenhuma questão disponível.");
    return;
   }
-
   const shuffled=[...pool];
-
   for(let i=shuffled.length-1;i>0;i--){
-
    const j=Math.floor(Math.random()*(i+1));
-
-   [shuffled[i],shuffled[j]]=
-   [shuffled[j],shuffled[i]];
+   [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
   }
-
-  const amount=Math.min(
-   shuffled.length,
-   Math.max(1,Number(count.value)||20)
-  );
-
+  const amount=Math.min(shuffled.length,Math.max(1,Number(count.value)||20));
   exam={
    id:uid(),
    ids:shuffled.slice(0,amount).map(q=>q.id),
    answers:{},
    index:0,
    start:now(),
-   duration:Math.max(
-    0,
-    Number(minutes.value)||0
-   )*60000
+   duration:Math.max(0,Number(minutes.value)||0)*60000
   };
-
   state.activeExam=exam;
   save();
-
   render();
-
  },root);
 
  if(state.activeExam){
-
   button("Retomar simulado salvo",()=>{
-
    exam=state.activeExam;
    render();
-
   },root);
  }
 }
 
 function showExam(root){
+ // ✅ CORREÇÃO #5: limpar timer anterior antes de criar novo
+ if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
 
- const pool=exam.ids
-  .map(id=>QuestionManager.find(id))
-  .filter(Boolean);
+ const pool=exam.ids.map(id=>QuestionManager.find(id)).filter(Boolean);
 
  if(!pool.length){
-
-  paragraph(
-   "As questões deste simulado não estão disponíveis.",
-   root
-  );
-
+  paragraph("As questões deste simulado não estão disponíveis.",root);
   button("Encerrar",()=>{
    exam=null;
    state.activeExam=null;
    save();
    render();
   },root);
-
   return;
  }
 
- exam.index=Math.max(
-  0,
-  Math.min(exam.index,pool.length-1)
- );
+ // ✅ CORREÇÃO #15: re-sincronizar ids se algum sumiu
+ if(pool.length!==exam.ids.length){
+  exam.ids=pool.map(q=>q.id);
+  state.activeExam=exam;
+  save();
+ }
 
+ exam.index=Math.max(0,Math.min(exam.index,pool.length-1));
  const q=pool[exam.index];
 
  const timer=element("p","",root);
 
  function updateTimer(){
-
   if(!exam||!timer.isConnected)return;
-
   if(!exam.duration){
-
    timer.textContent="Simulado sem limite de tempo.";
    return;
   }
-
-  const remaining=Math.max(
-   0,
-   exam.duration-(now()-exam.start)
-  );
-
+  const remaining=Math.max(0,exam.duration-(now()-exam.start));
   const seconds=Math.ceil(remaining/1000);
-
-  timer.textContent=
-   "Tempo restante: "+
-   Math.floor(seconds/60)+":"+
-   String(seconds%60).padStart(2,"0");
-
-  if(remaining<=0){
-   finishExam();
-  }
+  timer.textContent="Tempo restante: "+
+   Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0");
+  if(remaining<=0)finishExam();
  }
 
  updateTimer();
 
- const timerId=setInterval(()=>{
+ // ✅ CORREÇÃO #11: só cria timer se houver duração
+ if(exam.duration){
+  examTimerId=setInterval(()=>{
+   if(!timer.isConnected||!exam){
+    clearInterval(examTimerId);
+    examTimerId=null;
+    return;
+   }
+   updateTimer();
+  },1000);
+ }
 
-  if(!timer.isConnected||!exam){
-   clearInterval(timerId);
-   return;
-  }
+ renderQuestion(q,root,exam.index+1,pool.length,"exam",exam.answers);
 
-  updateTimer();
-
- },1000);
-
- renderQuestion(
-  q,
-  root,
-  exam.index+1,
-  pool.length,
-  "exam",
-  exam.answers
- );
-
- const controls=element(
-  "div",null,root,"controls"
- );
-
+ const controls=element("div",null,root,"controls");
  button("◀ Anterior",()=>{
-
   exam.index=Math.max(0,exam.index-1);
   state.activeExam=exam;
   save();
   render();
-
  },controls);
 
  button("Próxima ▶",()=>{
-
-  exam.index=Math.min(
-   pool.length-1,
-   exam.index+1
-  );
-
+  exam.index=Math.min(pool.length-1,exam.index+1);
   state.activeExam=exam;
   save();
   render();
-
  },controls);
 
- paragraph(
-  `Respondidas: ${
-   Object.keys(exam.answers).length
-  }/${pool.length}`,
-  root
- );
-
+ paragraph(`Respondidas: ${Object.keys(exam.answers).length}/${pool.length}`,root);
  button("Finalizar simulado",finishExam,root);
 }
 
+// ✅ CORREÇÃO #4: guard contra dupla finalização
 function finishExam(){
+ if(!exam||finishingExam)return;
+ finishingExam=true;
 
- if(!exam)return;
+ try{
+  if(examTimerId){ clearInterval(examTimerId); examTimerId=null; }
 
- const pool=exam.ids
-  .map(id=>QuestionManager.find(id))
-  .filter(Boolean);
+  const pool=exam.ids.map(id=>QuestionManager.find(id)).filter(Boolean);
+  let correct=0,wrong=0,blank=0;
+  const bySubject={};
 
- let correct=0;
- let wrong=0;
- let blank=0;
-
- const bySubject={};
-
- for(const q of pool){
-
-  const choice=exam.answers[q.id];
-
-  if(!bySubject[q.disciplina]){
-   bySubject[q.disciplina]={
-    total:0,
-    correct:0
-   };
+  for(const q of pool){
+   const choice=exam.answers[q.id];
+   if(!bySubject[q.disciplina]){
+    bySubject[q.disciplina]={total:0,correct:0};
+   }
+   bySubject[q.disciplina].total++;
+   if(choice===undefined){
+    blank++;
+    continue;
+   }
+   if(choice===q.correta){
+    correct++;
+    bySubject[q.disciplina].correct++;
+   }else{
+    wrong++;
+   }
+   StatisticsManager.record(q,choice,"Simulado");
   }
 
-  bySubject[q.disciplina].total++;
+  const result={
+   id:exam.id,
+   date:now(),
+   total:pool.length,
+   correct,
+   wrong,
+   blank,
+   duration:now()-exam.start,
+   bySubject
+  };
 
-  if(choice===undefined){
+  state.exams.push(result);
+  exam=null;
+  state.activeExam=null;
+  save();
 
-   blank++;
-   continue;
-  }
-
-  if(choice===q.correta){
-
-   correct++;
-   bySubject[q.disciplina].correct++;
-
-  }else{
-
-   wrong++;
-  }
-
-  StatisticsManager.record(
-   q,
-   choice,
-   "Simulado"
-  );
+  page="Desempenho";
+  render();
+  status(`Simulado finalizado: ${correct} acertos, ${wrong} erros e ${blank} em branco.`);
+ }finally{
+  finishingExam=false;
  }
-
- const result={
-  id:exam.id,
-  date:now(),
-  total:pool.length,
-  correct,
-  wrong,
-  blank,
-  duration:now()-exam.start,
-  bySubject
- };
-
- state.exams.push(result);
-
- exam=null;
- state.activeExam=null;
-
- save();
-
- page="Desempenho";
-
- render();
-
- status(
-  `Simulado finalizado: ${correct} acertos, `+
-  `${wrong} erros e ${blank} em branco.`
- );
 }
 
 /* ==================================================
@@ -1854,101 +1200,55 @@ function finishExam(){
 ================================================== */
 
 function renderFlashcards(){
-
  const root=clearContent("Flashcards Inteligentes");
-
  if(!questions.length){
-
   paragraph("Banco de questões vazio.",root);
   return;
  }
 
- currentIndex=Math.max(
-  0,
-  Math.min(currentIndex,questions.length-1)
- );
-
+ currentIndex=Math.max(0,Math.min(currentIndex,questions.length-1));
  const q=questions[currentIndex];
 
- paragraph(
-  `${currentIndex+1} de ${questions.length}`,
-  root
- );
-
- const card=element(
-  "div",
-  "",
-  root,
-  "flashcard"
- );
+ paragraph(`${currentIndex+1} de ${questions.length}`,root);
+ const card=element("div","",root,"flashcard");
 
  function updateCard(){
-
   card.textContent=flashBack
-   ?q.alternativas[q.correta]+
-    "\n\n"+q.explicacao
+   ?q.alternativas[q.correta]+"\n\n"+q.explicacao
    :q.enunciado;
  }
-
  updateCard();
 
  card.onclick=()=>{
-
   flashBack=!flashBack;
   updateCard();
-
  };
 
- const controls=element(
-  "div",null,root,"controls"
- );
-
+ const controls=element("div",null,root,"controls");
  button("Virar cartão",()=>{
-
   flashBack=!flashBack;
   updateCard();
-
  },controls);
 
- for(const [label,grade] of [
-  ["Difícil",2],
-  ["Bom",4],
-  ["Fácil",5]
- ]){
-
+ for(const [label,grade] of [["Difícil",2],["Bom",4],["Fácil",5]]){
   button(label,()=>{
-
    SpacedRepetition.grade(q.id,grade);
-
-   currentIndex=(
-    currentIndex+1
-   )%questions.length;
-
+   currentIndex=(currentIndex+1)%questions.length;
    flashBack=false;
-
    render();
-
   },controls);
  }
 
  button("◀ Anterior",()=>{
-
   currentIndex=Math.max(0,currentIndex-1);
   flashBack=false;
   render();
-
  },controls);
 
  button("Próximo ▶",()=>{
-
-  currentIndex=Math.min(
-   questions.length-1,
-   currentIndex+1
-  );
-
+  currentIndex=Math.min(questions.length-1,currentIndex+1);
   flashBack=false;
   render();
-
  },controls);
 }
 
@@ -1957,55 +1257,31 @@ function renderFlashcards(){
 ================================================== */
 
 function renderReviews(){
-
  const root=clearContent("Revisão Inteligente");
-
  const due=ReviewManager.due();
  const all=ReviewManager.all();
 
- paragraph(
-  `Revisões pendentes: ${due.length}`,
-  root
- );
+ paragraph(`Revisões pendentes: ${due.length}`,root);
+ paragraph(`Questões marcadas: ${all.length}`,root);
 
- paragraph(
-  `Questões marcadas: ${all.length}`,
-  root
- );
-
- const controls=element(
-  "div",null,root,"controls"
- );
-
+ const controls=element("div",null,root,"controls");
  button("Revisar pendentes",()=>{
-
   studyPool=due;
   currentIndex=0;
   navigate("Estudos");
-
  },controls);
 
  button("Revisar todas",()=>{
-
   studyPool=all;
   currentIndex=0;
   navigate("Estudos");
-
  },controls);
 
  button("Caderno de erros",()=>{
-
-  const ids=new Set(
-   state.history
-    .filter(x=>!x.correct)
-    .map(x=>x.id)
-  );
-
+  const ids=new Set(state.history.filter(x=>!x.correct).map(x=>x.id));
   studyPool=questions.filter(q=>ids.has(q.id));
-
   currentIndex=0;
   navigate("Estudos");
-
  },controls);
 }
 
@@ -2014,44 +1290,26 @@ function renderReviews(){
 ================================================== */
 
 function renderStatistics(){
-
  const root=clearContent("Desempenho");
-
  const s=StatisticsManager.summary();
-
  const grid=element("div",null,root,"grid");
-
  metric("Respondidas",s.total,grid);
  metric("Acertos",s.correct,grid);
  metric("Erros",s.wrong,grid);
  metric("Aproveitamento",s.rate+"%",grid);
 
  sectionTitle("Desempenho por disciplina",root);
-
  const subjects=StatisticsManager.bySubject();
-
  for(const [name,data] of Object.entries(subjects)){
-
-  const rate=Math.round(
-   data.correct/data.total*100
-  );
-
-  paragraph(
-   `${name}: ${rate}% (${data.correct}/${data.total})`,
-   root
-  );
-
+  const rate=Math.round(data.correct/data.total*100);
+  paragraph(`${name}: ${rate}% (${data.correct}/${data.total})`,root);
   const bar=element("div",null,root,"bar");
-
   const fill=element("span",null,bar);
-
   fill.style.width=rate+"%";
  }
 
  sectionTitle("Histórico de simulados",root);
-
  for(const examResult of state.exams.slice(-10).reverse()){
-
   paragraph(
    `${new Date(examResult.date).toLocaleDateString("pt-BR")} — `+
    `${examResult.correct}/${examResult.total} acertos`,
@@ -2060,43 +1318,20 @@ function renderStatistics(){
  }
 
  button("Exportar estatísticas JSON",()=>{
-
-  download(
-   "estatisticas-pmsc.json",
-   JSON.stringify({
-    summary:s,
-    subjects,
-    exams:state.exams
-   },null,2),
-   "application/json"
-  );
-
+  download("estatisticas-pmsc.json",
+   JSON.stringify({summary:s,subjects,exams:state.exams},null,2),
+   "application/json");
  },root);
 
  button("Exportar histórico CSV",()=>{
-
-  const rows=[
-   "id,disciplina,assunto,acerto,modo,data"
-  ];
-
+  const rows=["id,disciplina,assunto,acerto,modo,data"];
   for(const x of state.history){
-
    rows.push([
-    x.id,
-    x.disciplina,
-    x.assunto,
-    x.correct,
-    x.mode,
+    x.id,x.disciplina,x.assunto,x.correct,x.mode,
     new Date(x.date).toISOString()
    ].map(csv).join(","));
   }
-
-  download(
-   "historico-pmsc.csv",
-   rows.join("\n"),
-   "text/csv"
-  );
-
+  download("historico-pmsc.csv",rows.join("\n"),"text/csv");
  },root);
 }
 
@@ -2105,43 +1340,21 @@ function renderStatistics(){
 ================================================== */
 
 function renderBank(){
-
  const root=clearContent("Banco de Questões");
+ paragraph("Repositório: "+APP.repo,root);
+ paragraph("Questões carregadas: "+questions.length,root);
 
- paragraph(
-  "Repositório: "+APP.repo,
-  root
- );
-
- paragraph(
-  "Questões carregadas: "+questions.length,
-  root
- );
-
- button(
-  "Atualizar automaticamente",
-  ()=>ContentRepository.load(),
-  root
- );
+ button("Atualizar automaticamente",()=>ContentRepository.load(),root);
 
  sectionTitle("Disciplinas disponíveis",root);
-
  const counts={};
-
  for(const q of questions){
-
-  counts[q.disciplina]=(
-   counts[q.disciplina]||0
-  )+1;
+  counts[q.disciplina]=(counts[q.disciplina]||0)+1;
  }
-
  for(const [name,total] of Object.entries(counts)){
-
   paragraph(`${name}: ${total} questões`,root);
  }
-
  if(!questions.length){
-
   paragraph(
    "Nenhum banco compatível foi encontrado. "+
    "Confira a estrutura dos JSONs no repositório.",
@@ -2155,101 +1368,62 @@ function renderBank(){
 ================================================== */
 
 function renderSettings(){
-
  const root=clearContent("Configurações");
 
  const font=field(
   "Tamanho da fonte em pixels",
   "number",
-  parseInt(
-   getComputedStyle(document.body).fontSize
-  ),
+  state.fontSize||16,
   root
  );
-
  font.min=14;
  font.max=30;
 
+ // ✅ CORREÇÃO #2: persistir font-size no state
  button("Aplicar tamanho",()=>{
-
-  const size=Math.max(
-   14,
-   Math.min(30,Number(font.value)||16)
-  );
-
-  document.documentElement.style.setProperty(
-   "--font",
-   size+"px"
-  );
-
+  const size=Math.max(14,Math.min(30,Number(font.value)||16));
+  state.fontSize=size;
+  save();
+  document.documentElement.style.setProperty("--font",size+"px");
  },root);
 
  button("Ativar/desativar modo foco",()=>{
-
   document.body.classList.toggle("focus");
-
  },root);
 
- button("Exportar backup completo",()=>{
-
-  StorageManager.export();
-
- },root);
+ button("Exportar backup completo",()=>StorageManager.export(),root);
 
  const upload=element("input",null,root);
-
  upload.type="file";
  upload.accept=".json";
-
  upload.onchange=async()=>{
-
   try{
-
-   await StorageManager.restore(
-    upload.files[0]
-   );
-
+   await StorageManager.restore(upload.files[0]);
    status("Backup restaurado.");
-
   }catch(e){
-
    status("Erro: "+e.message);
   }
  };
 }
 
 /* ==================================================
-   17. DOWNLOAD
+   17. DOWNLOAD / CSV
 ================================================== */
 
 function csv(value){
-
- return '"'+String(value??"")
-  .replace(/"/g,'""')+'"';
+ return '"'+String(value??"").replace(/"/g,'""')+'"';
 }
 
 function download(name,content,type){
-
- const blob=new Blob(
-  [content],
-  {type}
- );
-
+ const blob=new Blob([content],{type});
  const url=URL.createObjectURL(blob);
-
  const link=document.createElement("a");
-
  link.href=url;
  link.download=name;
-
  document.body.append(link);
-
  link.click();
  link.remove();
-
- setTimeout(()=>{
-  URL.revokeObjectURL(url);
- },1000);
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 /* ==================================================
@@ -2265,145 +1439,68 @@ let room;
 const materials=new Map();
 
 function material(color){
-
  if(!materials.has(color)){
-
-  materials.set(
-   color,
-   new THREE.MeshStandardMaterial({
-    color,
-    roughness:.8
-   })
-  );
+  materials.set(color,new THREE.MeshStandardMaterial({color,roughness:.8}));
  }
-
  return materials.get(color);
 }
 
 function cube(x,y,z,w,h,d,color){
-
  const geometry=new THREE.BoxGeometry(w,h,d);
-
- const mesh=new THREE.Mesh(
-  geometry,
-  material(color)
- );
-
+ const mesh=new THREE.Mesh(geometry,material(color));
  mesh.position.set(x,y,z);
-
  room.add(mesh);
-
  return mesh;
 }
 
 function cylinder(x,y,z,r,h,color){
-
- const geometry=new THREE.CylinderGeometry(
-  r,r,h,12
- );
-
- const mesh=new THREE.Mesh(
-  geometry,
-  material(color)
- );
-
+ const geometry=new THREE.CylinderGeometry(r,r,h,12);
+ const mesh=new THREE.Mesh(geometry,material(color));
  mesh.position.set(x,y,z);
-
  room.add(mesh);
-
  return mesh;
 }
 
 function brazilFlag(x,z){
-
- // Representação geométrica simplificada
- // da bandeira brasileira.
-
- cylinder(
-  x,2,z,
-  .045,4,
-  "#cccccc"
- );
-
- cube(
-  x+.7,3.25,z,
-  1.4,.9,.04,
-  "#169b45"
- );
-
- const diamond=cube(
-  x+.7,3.25,z+.04,
-  .75,.6,.025,
-  "#ffdf00"
- );
-
+ cylinder(x,2,z,.045,4,"#cccccc");
+ cube(x+.7,3.25,z,1.4,.9,.04,"#169b45");
+ const diamond=cube(x+.7,3.25,z+.04,.75,.6,.025,"#ffdf00");
  diamond.rotation.z=Math.PI/4;
-
  const sphere=new THREE.Mesh(
   new THREE.SphereGeometry(.25,16,12),
   material("#002776")
  );
-
  sphere.scale.z=.12;
-
- sphere.position.set(
-  x+.7,3.25,z+.09
- );
-
+ sphere.position.set(x+.7,3.25,z+.09);
  room.add(sphere);
 }
 
 function tree(x,z){
-
- cylinder(
-  x,.9,z,
-  .14,1.8,
-  "#725333"
- );
-
+ cylinder(x,.9,z,.14,1.8,"#725333");
  const crown=new THREE.Mesh(
   new THREE.ConeGeometry(1.1,3,8),
   material("#315e36")
  );
-
  crown.position.set(x,3,z);
-
  room.add(crown);
 }
 
 function bed(x,z){
-
  cube(x,.45,z,1.6,.18,2.2,"#667e77");
  cube(x,1.45,z,1.6,.18,2.2,"#667e77");
-
  for(const dx of [-.7,.7]){
   for(const dz of [-1,1]){
-
-   cube(
-    x+dx,1,z+dz,
-    .09,2,.09,
-    "#a3aaa7"
-   );
+   cube(x+dx,1,z+dz,.09,2,.09,"#a3aaa7");
   }
  }
 }
 
 function disposeRoom(){
-
  if(!room)return;
-
  scene.remove(room);
-
  room.traverse(object=>{
-
-  if(object.geometry){
-   object.geometry.dispose();
-  }
-
-  // Os materiais são compartilhados
-  // e permanecem reutilizáveis.
+  if(object.geometry)object.geometry.dispose();
  });
-
  room=null;
 }
 
@@ -2411,13 +1508,14 @@ function disposeRoom(){
    19. AMBIENTES MILITARES
 ================================================== */
 
+// ✅ CORREÇÃO #8 e #13: guard e validação de índice
 function changeEnvironment(index){
-
+ index=Math.max(0,Math.min(environments.length-1,Number(index)||0));
  state.environment=index;
  save();
+ if(!scene||!renderer)return;
 
  disposeRoom();
-
  room=new THREE.Group();
  scene.add(room);
 
@@ -2425,155 +1523,61 @@ function changeEnvironment(index){
   index===3?"#8bb9d3":"#7e9da9"
  );
 
- cube(
-  0,-.12,0,
-  30,.24,30,
-  index===3?"#607b47":"#7a8177"
- );
+ cube(0,-.12,0,30,.24,30,index===3?"#607b47":"#7a8177");
 
  if(index!==3){
-
-  cube(
-   0,3,-11,
-   26,6,.35,
-   "#a5aaa1"
-  );
+  cube(0,3,-11,26,6,.35,"#a5aaa1");
  }
 
  if(index===0){
-
-  // Pátio de formatura.
-
-  cube(
-   0,2,-10.5,
-   10,4,.5,
-   "#586d61"
-  );
-
+  cube(0,2,-10.5,10,4,.5,"#586d61");
   for(let x=-4;x<=4;x+=2){
-
-   cube(
-    x,.015,-2,
-    .1,.03,6,
-    "#e2dfca"
-   );
+   cube(x,.015,-2,.1,.03,6,"#e2dfca");
   }
-
   brazilFlag(-7,-9);
   brazilFlag(7,-9);
-
   for(let x=-9;x<=9;x+=3){
-
-   cylinder(
-    x,.7,-7,
-    .2,1.4,
-    "#788b7c"
-   );
+   cylinder(x,.7,-7,.2,1.4,"#788b7c");
   }
  }
 
  if(index===1){
-
-  // Sala de instrução.
-
-  cube(
-   0,2.5,-10.7,
-   7,2.5,.08,
-   "#1e4c37"
-  );
-
+  cube(0,2.5,-10.7,7,2.5,.08,"#1e4c37");
   for(let x=-4;x<=4;x+=2){
-
    for(let z=-5;z<=2;z+=2){
-
-    cube(
-     x,.75,z,
-     1.4,.15,.8,
-     "#765a3e"
-    );
-
-    cube(
-     x,.38,z,
-     .1,.7,.1,
-     "#596b65"
-    );
+    cube(x,.75,z,1.4,.15,.8,"#765a3e");
+    cube(x,.38,z,.1,.7,.1,"#596b65");
    }
   }
-
   brazilFlag(-8,-9);
  }
 
  if(index===2){
-
-  // Entrada do quartel.
-
-  cube(
-   -5,1.6,-7,
-   3,3.2,3,
-   "#c4b9a4"
-  );
-
-  cube(
-   -5,3.35,-7,
-   3.7,.3,3.7,
-   "#596a5e"
-  );
-
+  cube(-5,1.6,-7,3,3.2,3,"#c4b9a4");
+  cube(-5,3.35,-7,3.7,.3,3.7,"#596a5e");
   for(let x=-2;x<=7;x+=.8){
-
-   cube(
-    x,1.4,-8,
-    .09,2.8,.09,
-    "#43574e"
-   );
+   cube(x,1.4,-8,.09,2.8,.09,"#43574e");
   }
-
   brazilFlag(8,-7);
  }
 
  if(index===3){
-
-  // Campo de treinamento.
-
   for(let x=-8;x<=8;x+=4){
-
-   cube(
-    x,.55,-5,
-    2,1.1,1,
-    "#9a8057"
-   );
-
+   cube(x,.55,-5,2,1.1,1,"#9a8057");
    tree(x+1.8,-9);
   }
-
   for(let z=-2;z<=5;z+=2){
-
-   cube(
-    -5,.15,z,
-    3,.3,.18,
-    "#92734d"
-   );
+   cube(-5,.15,z,3,.3,.18,"#92734d");
   }
-
   brazilFlag(7,-8);
  }
 
  if(index===4){
-
-  // Alojamento militar.
-
   for(let x=-6;x<=6;x+=3){
-
    bed(x,-5);
    bed(x,1);
   }
-
-  cube(
-   0,2.5,-10.7,
-   4,1.5,.1,
-   "#345849"
-  );
-
+  cube(0,2.5,-10.7,4,1.5,.1,"#345849");
   brazilFlag(8,-9);
  }
 
@@ -2584,154 +1588,111 @@ function changeEnvironment(index){
    20. THREE.JS E WEBXR
 ================================================== */
 
+// ✅ CORREÇÃO #9 e #10: try/catch no WebGL + fallback no VRButton
 function init3D(){
+ try{
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(70,1,.1,100);
+  rig=new THREE.Group();
+  rig.position.set(0,1.65,7);
+  rig.add(camera);
+  scene.add(rig);
 
- scene=new THREE.Scene();
+  renderer=new THREE.WebGLRenderer({
+   antialias:true,
+   powerPreference:"high-performance"
+  });
+  renderer.xr.enabled=true;
 
- camera=new THREE.PerspectiveCamera(
-  70,
-  1,
-  .1,
-  100
- );
-
- rig=new THREE.Group();
-
- rig.position.set(0,1.65,7);
-
- rig.add(camera);
- scene.add(rig);
-
- renderer=new THREE.WebGLRenderer({
-  antialias:true,
-  powerPreference:"high-performance"
- });
-
- renderer.xr.enabled=true;
-
- const quality=state.quality;
-
- renderer.setPixelRatio(
-  quality==="low"
-   ?1
-   :quality==="high"
-    ?Math.min(devicePixelRatio,2)
+  const quality=state.quality;
+  renderer.setPixelRatio(
+   quality==="low"?1
+    :quality==="high"?Math.min(devicePixelRatio,2)
     :Math.min(devicePixelRatio,1.5)
- );
+  );
 
- $("scene").append(renderer.domElement);
+  $("scene").append(renderer.domElement);
 
- const ambient=new THREE.HemisphereLight(
-  0xffffff,
-  0x405344,
-  2.2
- );
+  const ambient=new THREE.HemisphereLight(0xffffff,0x405344,2.2);
+  scene.add(ambient);
 
- scene.add(ambient);
+  const sunlight=new THREE.DirectionalLight(0xffffff,2);
+  sunlight.position.set(5,10,5);
+  scene.add(sunlight);
 
- const sunlight=new THREE.DirectionalLight(
-  0xffffff,
-  2
- );
+  changeEnvironment(state.environment);
 
- sunlight.position.set(5,10,5);
+  const vrButton=VRButton.createButton(renderer);
+  vrButton.style.display="none";
+  document.body.append(vrButton);
 
- scene.add(sunlight);
+  $("vr").onclick=async()=>{
+   if(!navigator.xr){
+    status("WebXR não está disponível neste navegador.");
+    return;
+   }
+   try{
+    const supported=await navigator.xr.isSessionSupported("immersive-vr");
+    if(!supported){
+     status("Realidade virtual não é suportada neste dispositivo.");
+     return;
+    }
+    vrButton.click();
+   }catch(e){
+    status("Erro ao iniciar VR: "+e.message);
+   }
+  };
 
- changeEnvironment(state.environment);
+  renderer.xr.addEventListener("sessionstart",()=>status("Sessão VR iniciada."));
+  renderer.xr.addEventListener("sessionend",()=>status("Sessão VR encerrada."));
 
- const vrButton=VRButton.createButton(renderer);
+  // ✅ CORREÇÃO #14: resize eficiente com cache
+  let lastW=0,lastH=0;
 
- vrButton.style.display="none";
+  renderer.setAnimationLoop(()=>{
+   const container=$("scene");
+   const width=container.clientWidth;
+   const height=container.clientHeight;
 
- document.body.append(vrButton);
-
- $("vr").onclick=()=>{
-
-  if(!navigator.xr){
-
-   status(
-    "WebXR não está disponível neste navegador."
-   );
-
-   return;
-  }
-
-  vrButton.click();
- };
-
- renderer.xr.addEventListener(
-  "sessionstart",
-  ()=>status("Sessão VR iniciada.")
- );
-
- renderer.xr.addEventListener(
-  "sessionend",
-  ()=>status("Sessão VR encerrada.")
- );
-
- renderer.setAnimationLoop(()=>{
-
-  const container=$("scene");
-
-  const width=container.clientWidth;
-  const height=container.clientHeight;
-
-  if(width&&height){
-
-   const canvas=renderer.domElement;
-
-   const pixelRatio=renderer.getPixelRatio();
-
-   const targetWidth=Math.floor(
-    width*pixelRatio
-   );
-
-   const targetHeight=Math.floor(
-    height*pixelRatio
-   );
-
-   if(
-    canvas.width!==targetWidth||
-    canvas.height!==targetHeight
-   ){
-
+   if(width&&height&&(width!==lastW||height!==lastH)){
+    lastW=width;
+    lastH=height;
     renderer.setSize(width,height,false);
-
     camera.aspect=width/height;
-
     camera.updateProjectionMatrix();
    }
-  }
 
-  renderer.render(scene,camera);
- });
+   renderer.render(scene,camera);
+  });
 
- $("rotateLeft").onclick=()=>{
-  rig.rotation.y+=Math.PI/8;
- };
-
- $("rotateRight").onclick=()=>{
-  rig.rotation.y-=Math.PI/8;
- };
-
- $("resetView").onclick=()=>{
-  rig.rotation.y=0;
-  rig.position.set(0,1.65,7);
- };
+  $("rotateLeft").onclick=()=>{ rig.rotation.y+=Math.PI/8; };
+  $("rotateRight").onclick=()=>{ rig.rotation.y-=Math.PI/8; };
+  $("resetView").onclick=()=>{
+   rig.rotation.y=0;
+   rig.position.set(0,1.65,7);
+  };
+ }catch(error){
+  console.error(error);
+  status("Falha ao iniciar WebGL: "+error.message);
+ }
 }
 
 /* ==================================================
    21. CONFIG MANAGER
 ================================================== */
 
+// ✅ CORREÇÃO #3: preservar classe focus ao aplicar tema
 function applySettings(){
+ const wasFocus=document.body.classList.contains("focus");
 
  document.body.className="";
+ if(state.theme!=="dark")document.body.classList.add(state.theme);
+ if(wasFocus)document.body.classList.add("focus");
 
- if(state.theme!=="dark"){
-  document.body.classList.add(state.theme);
- }
+ document.documentElement.style.setProperty(
+  "--font",
+  (state.fontSize||16)+"px"
+ );
 
  $("theme").value=state.theme;
  $("environment").value=state.environment;
@@ -2739,49 +1700,31 @@ function applySettings(){
 }
 
 function initializeMenus(){
-
  for(const name of pages){
-
-  button(
-   name,
-   ()=>navigate(name),
-   $("menu")
-  );
+  button(name,()=>navigate(name),$("menu"));
  }
 
  environments.forEach((name,i)=>{
-
   const option=document.createElement("option");
-
   option.value=i;
   option.textContent=name;
-
   $("environment").append(option);
  });
 
  $("environment").onchange=e=>{
-
   changeEnvironment(Number(e.target.value));
-
  };
 
  $("theme").onchange=e=>{
-
   state.theme=e.target.value;
-
   save();
   applySettings();
  };
 
  $("quality").onchange=e=>{
-
   state.quality=e.target.value;
-
   save();
-
-  status(
-   "Qualidade salva. Recarregue a página para aplicar."
-  );
+  status("Qualidade salva. Recarregue a página para aplicar.");
  };
 
  $("refresh").onclick=()=>{
@@ -2794,28 +1737,16 @@ function initializeMenus(){
 ================================================== */
 
 const AppCore={
-
  async start(){
-
   try{
-
    initializeMenus();
-
    applySettings();
-
    init3D();
-
    navigate("Início");
-
    await ContentRepository.load();
-
   }catch(error){
-
    console.error(error);
-
-   status(
-    "Falha na inicialização: "+error.message
-   );
+   status("Falha na inicialização: "+error.message);
   }
  }
 };
