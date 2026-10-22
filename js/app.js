@@ -343,12 +343,12 @@ const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-per
 renderer.xr.enabled=true;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.3;
+renderer.toneMappingExposure=1.35;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate=false;
 renderer.shadowMap.needsUpdate=true;
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setPixelRatio(Math.min(devicePixelRatio,2.5));
 $('scene').append(renderer.domElement);
 renderer.setClearColor(0x8eb4c0, 1);
 
@@ -576,7 +576,7 @@ scene.add(world);
 function noise2(x,y){return (Math.sin(x*12.9898+y*78.233)*43758.5453)%1;}
 function fbm(x,y,oct=4){let v=0,a=0.5;for(let i=0;i<oct;i++){v+=a*Math.abs(noise2(x,y));x*=2;y*=2;a*=0.5;}return v;}
 
-function makeSurfaceTexture(kind,size=1024){
+function makeSurfaceTexture(kind,size=512){
   const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
   const ctx=canvas.getContext('2d');const img=ctx.createImageData(size,size);
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
@@ -847,18 +847,18 @@ function mat(color,opts={}){
       roughnessMap:surfaceMaps.roughness,
       normalMap:surfaceMaps.normal,
       aoMap:surfaceMaps.ao,
-      aoMapIntensity:0.75,
-      roughness:isMetal?0.25:isWood?0.58:isFabric?0.85:0.68,
-      metalness:isMetal?0.85:0.04,
-      normalScale:new THREE.Vector2(0.4,0.4),
-      envMapIntensity:isMetal?1.5:0.85
+      aoMapIntensity:0.5,
+      roughness:isMetal?0.35:isWood?0.72:isFabric?0.9:0.82,
+      metalness:isMetal?0.72:0,
+      normalScale:new THREE.Vector2(0.18,0.18),
+      envMapIntensity:isMetal?1.1:0.45
     };
     if(isWood){
       params.map=woodTexture;
       params.normalMap=woodNormal;
-      params.normalScale=new THREE.Vector2(0.45,0.45);
-      params.roughness=0.62;
-      params.envMapIntensity=0.55;
+      params.normalScale=new THREE.Vector2(0.35,0.35);
+      params.roughness=0.68;
+      params.envMapIntensity=0.3;
     }
     if(isFabric){
       params.roughness=0.92;
@@ -1801,7 +1801,7 @@ function buildWorld(n){
 
   if(n!==3)makeRoom();
   else{
-    const groundMat=new THREE.MeshStandardMaterial({map:grassTexture,roughness:0.88,metalness:0.03,normalMap:surfaceMaps.normal,normalScale:new THREE.Vector2(0.15,0.15)});
+    const groundMat=new THREE.MeshStandardMaterial({map:grassTexture,roughness:0.94,metalness:0,normalMap:surfaceMaps.normal,normalScale:new THREE.Vector2(0.15,0.15)});
     const ground=new THREE.Mesh(withAO(new THREE.PlaneGeometry(75,75,24,24)),groundMat);
     ground.rotation.x=-Math.PI/2;ground.position.set(0,-0.01,-1);ground.receiveShadow=true;
     const pos=ground.geometry.attributes.position;
@@ -1894,28 +1894,23 @@ function buildWorld(n){
 
 function applyLight(){
   const night=state.settings.lighting==='night';
-  ambient.intensity=night?0.7:1.25;
-  ambient.color.setHex(night?0x4a5a90:0xe2eef8);
-  sun.intensity=night?0.55:2.9;
-  sun.color.setHex(night?0xa0b4e0:0xfff0d2);
-  sun.position.set(9, 15, 7);
-  if(sun.target){ sun.target.position.set(0,0,-1); sun.target.updateMatrixWorld(); }
-  fill.intensity=night?0.2:0.55;
-  rim.intensity=night?0.28:0.65;
-  if(typeof bounce!=='undefined'&&bounce) bounce.intensity=night?0.12:0.32;
-  if(typeof vrAmbientBoost!=='undefined') vrAmbientBoost.intensity=night?0.25:0.35;
-  try{ scene.environment=night?iblNightTarget.texture:iblDayTarget.texture; }catch(e){}
-  scene.background=new THREE.Color(night?0x0b1220:0x7eabba);
-  // fog leve = profundidade (realismo) sem escurecer painéis
-  if(!renderer.xr.isPresenting){
-    scene.fog=new THREE.FogExp2(night?0x1a2030:0x8aafb2, night?0.012:0.005);
-  } else {
-    scene.fog=new THREE.FogExp2(night?0x1a2030:0x8eb8c4, night?0.006:0.0025);
+  ambient.intensity=night?0.85:1.5;
+  ambient.color.setHex(night?0x5060a0:0xd4e8ff);
+  sun.intensity=night?0.6:3.4;
+  sun.color.setHex(night?0x8aa0d0:0xfff1d6);
+  fill.intensity=night?0.12:0.42;
+  rim.intensity=night?0.2:0.55;
+  bounce.intensity=night?0.08:0.22;
+  scene.environment=night?iblNightTarget.texture:iblDayTarget.texture;
+  if(scene.fog){
+    scene.fog.color.setHex(night?0x1a2030:0x8aafb2);
+    scene.fog.density=night?0.008:0.004;
   }
-  renderer.toneMappingExposure=night?1.18:1.3;
-  if(skyMesh?.material?.uniforms){
-    skyMesh.material.uniforms.uNight.value=night?1.0:0.0;
-    skyMesh.material.uniforms.uIntensity.value=night?0.75:1.2;
+  renderer.toneMappingExposure=night?1.25:1.4;
+  if(skyMesh){
+    const u=skyMesh.material.uniforms;
+    u.uNight.value=night?1.0:0.0;
+    u.uIntensity.value=night?0.6:1.0;
   }
   renderer.shadowMap.needsUpdate=true;
 }
@@ -1923,7 +1918,7 @@ function applyLight(){
 // =====================================================
 // PAINÉIS VR
 // =====================================================
-const WIDTH=2048,HEIGHT=1536; // nitidez texto Quest 3S // nitidez + estabilidade Quest 3S // UI estável no WebXR Quest (texturas grandes = painel preto) // estável no Quest 3S (4096 enegrecia os painéis) // texto nítido Quest 3S (~20 PPD) // alta nitidez de texto no Quest 3S (~20 PPD)
+const WIDTH=1536,HEIGHT=1152; // nitidez + estabilidade Quest 3S // UI estável no WebXR Quest (texturas grandes = painel preto) // estável no Quest 3S (4096 enegrecia os painéis) // texto nítido Quest 3S (~20 PPD) // alta nitidez de texto no Quest 3S (~20 PPD)
 const panels={};
 let _drawingPanels=false,_buildingWorld=false,_updatingVR=false;
 const panelMeshes=[];
@@ -2059,15 +2054,11 @@ function round(ctx,x,y,w,h,r=16){
   ctx.closePath();
 }
 function text(ctx,t,x,y,size=46,color='#0a2a18',weight='700'){
-  const str=String(t??'');
   ctx.font=`${weight} ${size}px Arial,Helvetica,sans-serif`;
   ctx.textBaseline='alphabetic';
   ctx.imageSmoothingEnabled=true;
-  ctx.imageSmoothingQuality='high';
-  ctx.fillStyle='rgba(0,0,0,0.2)';
-  ctx.fillText(str, x+1.5, y+1.5);
   ctx.fillStyle=color;
-  ctx.fillText(str, x, y);
+  ctx.fillText(String(t),x,y);
 }
 function wrapped(ctx,content,width,size){
   ctx.font=`700 ${size}px Arial,sans-serif`;
@@ -2097,73 +2088,77 @@ function region(p,x,y,w,h,action){p.regions.push({x,y,w,h,action});}
 function background(p,title){
   const c=p.ctx; p.regions=[];
   c.imageSmoothingEnabled=true;
-  c.imageSmoothingQuality='high';
-  const bg=c.createLinearGradient(0,0,0,HEIGHT);
-  bg.addColorStop(0,'#f4fbf7');
-  bg.addColorStop(0.55,'#eaf6ef');
-  bg.addColorStop(1,'#dcefe4');
-  c.fillStyle=bg; c.fillRect(0,0,WIDTH,HEIGHT);
-  const hg=c.createLinearGradient(0,0,WIDTH,0);
-  hg.addColorStop(0,'#0f4a32');
-  hg.addColorStop(0.5,'#1a6b48');
-  hg.addColorStop(1,'#0f4a32');
-  c.fillStyle=hg;
-  round(c,20,16,WIDTH-40,100,18); c.fill();
-  c.fillStyle='rgba(125,255,176,0.95)';
-  round(c,20,112,WIDTH-40,5,3); c.fill();
-  text(c,title,44,62,42,'#f7fff9','800');
-  text(c,'Grip arrasta  ·  Gatilho seleciona  ·  Analógico move',44,96,22,'#b8efd0','500');
-  c.strokeStyle='rgba(20,100,60,0.35)'; c.lineWidth=3;
-  round(c,10,10,WIDTH-20,HEIGHT-20,22); c.stroke();
-  c.strokeStyle='rgba(255,255,255,0.45)'; c.lineWidth=1.5;
-  round(c,14,14,WIDTH-28,HEIGHT-28,18); c.stroke();
-  region(p,0,0,WIDTH,120,'drag');
+  // fundo CLARO — legível no Quest (tema escuro parecia “painel apagado”)
+  c.fillStyle='#eaf6ef';
+  c.fillRect(0,0,WIDTH,HEIGHT);
+  // header
+  c.fillStyle='#145a3a';
+  round(c,16,14,WIDTH-32,88,14); c.fill();
+  c.fillStyle='#7dffb0';
+  round(c,16,98,WIDTH-32,4,2); c.fill();
+  text(c,title,36,58,36,'#f4fff8','700');
+  text(c,'Arraste pela barra  ·  Gatilho seleciona',36,88,18,'#b8efd0','500');
+  // moldura
+  c.strokeStyle='#1a7048'; c.lineWidth=4;
+  round(c,8,8,WIDTH-16,HEIGHT-16,18); c.stroke();
+  region(p,0,0,WIDTH,100,'drag');
 }
 
-function vrButton(p,label,x,y,w,h,action,color='#1a5c3e',size=36){
+function vrButton(p,label,x,y,w,h,action,color='#1a5c3e',size=40){
   const c=p.ctx;
   const hot=hovered?.panel===p.id && hovered?.action===action;
-  c.fillStyle='rgba(0,0,0,0.18)';
-  round(c,x+2,y+3,w,h,14); c.fill();
-  if(hot){
-    const g=c.createLinearGradient(x,y,x,y+h);
-    g.addColorStop(0,'#3dba78'); g.addColorStop(1,'#1e7a4c');
-    c.fillStyle=g;
-  } else c.fillStyle=color;
-  round(c,x,y,w,h,14); c.fill();
-  c.strokeStyle=hot?'#ffffff':'rgba(255,255,255,0.28)';
-  c.lineWidth=hot?3:1.5;
-  round(c,x,y,w,h,14); c.stroke();
-  c.fillStyle='rgba(255,255,255,0.14)';
-  round(c,x+3,y+3,w-6,Math.min(22,h*0.3),10); c.fill();
-  const lines=wrapped(c,label,w-36,size);
-  lines.slice(0,2).forEach((line,i)=>text(c,line,x+18,y+Math.min(h-12, 36+i*(size+2)),size,'#ffffff','700'));
+  // shadow
+  c.fillStyle='rgba(0,0,0,0.35)';
+  round(c,x+3,y+4,w,h,16); c.fill();
+  // body
+  const g=c.createLinearGradient(x,y,x,y+h);
+  if(hot){ g.addColorStop(0,'#3aa86a'); g.addColorStop(1,'#2a8050'); }
+  else {
+    // parse hex-ish solid
+    c.fillStyle=color;
+  }
+  if(hot){ c.fillStyle=g; }
+  else { c.fillStyle=color; }
+  round(c,x,y,w,h,16); c.fill();
+  // border
+  c.strokeStyle=hot?'#e8fff0':'rgba(100,180,140,0.55)';
+  c.lineWidth=hot?4:2.5;
+  round(c,x,y,w,h,16); c.stroke();
+  // top highlight
+  c.fillStyle=hot?'rgba(255,255,255,0.12)':'rgba(255,255,255,0.06)';
+  round(c,x+2,y+2,w-4,Math.min(h*0.35,28),12); c.fill();
+  const lines=wrapped(c,label,w-40,size);
+  lines.slice(0,2).forEach((line,i)=>text(c,line,x+20,y+Math.min(h-14, 42+i*(size+4)),size,'#f5fff8','700'));
   region(p,x,y,w,h,action);
 }
 
 function drawOptionCard(p, letter, textContent, x, y, w, h, action, state){
+  // state: 'idle' | 'selected' | 'correct' | 'wrong'
   const c=p.ctx;
   const hot=hovered?.panel===p.id && hovered?.action===action;
-  let bg='#ffffff', border='rgba(15,80,50,0.28)', letterBg='#157a4a', letterCol='#ffffff';
-  if(state==='selected'){ bg='#e3f1ff'; border='#2a7fd4'; letterBg='#1a5f9e'; letterCol='#ffffff'; }
-  if(state==='correct'){ bg='#e0f8ea'; border='#1a9a55'; letterBg='#0f7a40'; letterCol='#ffffff'; }
-  if(state==='wrong'){ bg='#ffe8eb'; border='#d44555'; letterBg='#a03040'; letterCol='#ffffff'; }
-  if(hot && state==='idle'){ bg='#e8f8f0'; border='#1a9a55'; }
-  c.fillStyle='rgba(0,0,0,0.12)';
-  round(c,x+3,y+4,w,h,16); c.fill();
+  let bg='#ffffff', border='rgba(20,90,60,0.55)', letterBg='#1e5a3e', letterCol='#e8fff0';
+  if(state==='selected'){ bg='#d6ecff'; border='#1e6aaa'; letterBg='#1e5a8a'; letterCol='#ffffff'; }
+  if(state==='correct'){ bg='#d4f5e4'; border='#1a8a50'; letterBg='#147a48'; letterCol='#ffffff'; }
+  if(state==='wrong'){ bg='#ffe0e4'; border='#c04050'; letterBg='#8a3040'; letterCol='#ffffff'; }
+  if(hot && state==='idle'){ bg='#d8f5e8'; border='#1a8a50'; }
+  // card shadow
+  c.fillStyle='rgba(0,0,0,0.3)';
+  round(c,x+2,y+3,w,h,14); c.fill();
   c.fillStyle=bg;
-  round(c,x,y,w,h,16); c.fill();
-  c.strokeStyle=border; c.lineWidth=hot?3.5:2;
-  round(c,x,y,w,h,16); c.stroke();
-  const bw=Math.min(78, h-16), bh=bw;
+  round(c,x,y,w,h,14); c.fill();
+  c.strokeStyle=border; c.lineWidth=hot?3.5:2.5;
+  round(c,x,y,w,h,14); c.stroke();
+  // letter badge
+  const bw=72, bh=Math.min(h-20,72);
   c.fillStyle=letterBg;
   round(c,x+14,y+(h-bh)/2,bw,bh,12); c.fill();
-  text(c,letter,x+14+bw/2-16,y+h/2+16,44,letterCol,'800');
-  const lines=wrapped(c,textContent,w-bw-50,34);
-  let ty=y+Math.max(32,(h-lines.length*40)/2+28);
+  text(c,letter,x+14+bw/2-14,y+h/2+14,42,letterCol,'800');
+  // option text
+  const lines=wrapped(c,textContent,w-bw-55,38);
+  let ty=y+Math.max(36, (h - lines.length*44)/2 + 32);
   for(const line of lines.slice(0,4)){
-    text(c,line,x+bw+28,ty,34,'#0c2a1a','600');
-    ty+=40;
+    text(c,line,x+bw+30,ty,38,'#0a2a18','700');
+    ty+=44;
   }
   region(p,x,y,w,h,action);
 }
@@ -2196,7 +2191,7 @@ function drawMain(){
   c.fillStyle='#4dff9a'; round(c,WIDTH-280,130,Math.max(10,220*pct/100),14,7); c.fill();
   text(c,pct+'%',WIDTH-50,142,18,'#145a3a','700');
 
-  const size=Math.round(40*Number(state.settings.fontSize)/120);
+  const size=Math.round(44*Number(state.settings.fontSize)/120);
   const lineH=size*1.42;
   const blocks=[];
   const addQ=(content)=>{
@@ -2504,43 +2499,32 @@ function setEnvironment(n){
   safeStore();updateVR();
 }
 function configureQuality(){
-  // Meta Quest 3S: 1832×1920/olho · ~20 PPD · até 120 Hz · Snapdragon XR2 Gen 2
-  const q = state.settings.quality || 'high';
+  // Otimizado para Meta Quest 3S: 1832×1920 por olho, ~20 PPD, FOV 96°H/90°V, até 120 Hz
+  const q=state.settings.quality;
+  // Pixel ratio: no headset o XR gerencia; no desktop limitar
   const pr = q==='low' ? 1 : q==='high' ? Math.min(devicePixelRatio, 2) : Math.min(devicePixelRatio, 1.5);
   renderer.setPixelRatio(pr);
-  try {
-    if(typeof renderer.xr.setFoveation==='function'){
-      // 0 = nítido nas bordas; 1 = mais FPS
-      renderer.xr.setFoveation(q==='low' ? 0.65 : q==='high' ? 0.15 : 0.4);
-    }
-  } catch(e){}
-  try {
-    if(typeof renderer.xr.setFramebufferScaleFactor==='function'){
-      // 1.0 = nativo Quest; 1.1 = leve supersample na Alta
-      const fb = q==='low' ? 0.85 : q==='high' ? 1.1 : 1.0;
-      renderer.xr.setFramebufferScaleFactor(fb);
-    }
-  } catch(e){}
-  const res = q==='low' ? 1024 : q==='high' ? 2048 : 1536;
-  if(sun.shadow.mapSize.x !== res){
-    if(sun.shadow.map){ try{ sun.shadow.map.dispose(); }catch(e){} sun.shadow.map=null; }
-    sun.shadow.mapSize.set(res, res);
+  // Foveated rendering: low foveation = mais nítido nas bordas (Quest 3S Fresnel já perde nas bordas)
+  if(typeof renderer.xr.setFoveation==='function'){
+    renderer.xr.setFoveation(q==='low' ? 0.7 : q==='high' ? 0.2 : 0.45);
   }
-  sun.shadow.bias = -0.00025;
-  sun.shadow.normalBias = 0.035;
-  sun.shadow.radius = q==='low' ? 1.5 : 2.5;
-  sun.shadow.camera.near = 0.5;
-  sun.shadow.camera.far = 40;
-  sun.shadow.camera.left = -14;
-  sun.shadow.camera.right = 14;
-  sun.shadow.camera.top = 14;
-  sun.shadow.camera.bottom = -14;
-  sun.shadow.camera.updateProjectionMatrix();
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.shadowMap.needsUpdate = true;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = state.settings.lighting==='night' ? 1.2 : 1.32;
+  // Shadow map: 2048 em Alta aproveita a densidade de ~20 PPD
+  const res = q==='low' ? 512 : q==='high' ? 2048 : 1024;
+  if(sun.shadow.mapSize.x !== res){
+    if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map = null; }
+    sun.shadow.mapSize.set(res, res);
+    renderer.shadowMap.needsUpdate = true;
+  }
+  // Framebuffer scale: 1.0 ≈ nativo 1832×1920; >1 supersampling (custa GPU)
+  // Alta: 1.15 leve supersampling para compensar lentes Fresnel
+  const fb = q==='low' ? 0.9 : q==='high' ? 1.05 : 1.0; // leve super-sample na Alta
+  if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
+    renderer.xr.setFramebufferScaleFactor(fb);
+  }
+  // Prefer 90Hz+ quando disponível (Quest 3S até 120)
+  try {
+    if(renderer.xr.getSession){ /* session rate set on enter */ }
+  } catch(e){}
 }
 function syncSettings(){
   for(const k of ['lighting','quality','fontSize','distance','panelHeight','panelScale','speed','snap','volume','playerHeight','vignette','comfort']){ if($(k)) $(k).value=state.settings[k]; }
@@ -2699,15 +2683,12 @@ renderer.setAnimationLoop(()=>{
     }
   } catch(err){ console.warn('xr frame prep', err); }
 
-  // Painéis + sombras dinâmicas (a cada 3 frames = desempenho no Quest)
+  // Garante textura dos painéis no WebXR (Quest às vezes não sobe o map)
   if(renderer.xr.isPresenting){
     try{
       for(const id of ['main','left','right']){
         const p=panels[id];
         if(p&&p.texture) p.texture.needsUpdate=true;
-      }
-      if((frameCount = (frameCount|0)+1) % 3 === 0){
-        renderer.shadowMap.needsUpdate = true;
       }
     }catch(e){}
   }
@@ -2764,12 +2745,36 @@ function restoreCanvasFromXR(){
 }
 
 function forceBrightScene(){
-  // Realismo no Quest: contraste bom + materiais legíveis
-  applyLight();
-  renderer.shadowMap.enabled = state.settings.quality !== 'low';
-  renderer.shadowMap.needsUpdate = true;
+  // Cena legível no Quest sem "estouro" de luz — visual realista
+  const night = state.settings.lighting === 'night';
+  scene.background = new THREE.Color(night ? 0x0c1420 : 0x87aec0);
+  scene.fog = null;
+  renderer.setClearColor(night ? 0x0c1420 : 0x87aec0, 1);
+  renderer.toneMappingExposure = night ? 1.15 : 1.25;
+  if(typeof vrAmbientBoost !== 'undefined') vrAmbientBoost.intensity = night ? 0.35 : 0.45;
+  ambient.intensity = night ? 0.75 : 1.35;
+  ambient.color.setHex(night ? 0x6080b0 : 0xd8e8f8);
+  sun.intensity = night ? 0.45 : 2.8;
+  sun.color.setHex(night ? 0x9eb0e0 : 0xfff2d8);
+  sun.position.set(8, 14, 6);
+  if(sun.target) sun.target.position.set(0, 0, -2);
+  fill.intensity = night ? 0.25 : 0.55;
+  rim.intensity = night ? 0.3 : 0.55;
+  if(typeof bounce !== 'undefined' && bounce) bounce.intensity = night ? 0.12 : 0.28;
+  try {
+    scene.environment = night ? iblNightTarget.texture : iblDayTarget.texture;
+  } catch(e){}
+  if(skyMesh){
+    skyMesh.visible = true;
+    try {
+      if(skyMesh.material && skyMesh.material.uniforms){
+        skyMesh.material.uniforms.uNight.value = night ? 1.0 : 0.0;
+        skyMesh.material.uniforms.uIntensity.value = night ? 0.7 : 1.15;
+      }
+    } catch(e){}
+  }
   world.visible = true;
-  if(skyMesh) skyMesh.visible = true;
+  renderer.shadowMap.needsUpdate = true;
 }
 
 
