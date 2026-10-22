@@ -41,7 +41,7 @@ npx serve .
 
 1. Crie um repositório e envie esta pasta na raiz (ou em `/docs`).
 2. Em **Settings → Pages**, escolha a branch `main` e a pasta `/ (root)`.
-3. Acesse `https://github.com/johndosanjos162/PMSC`.
+3. Acesse `https://SEU_USUARIO.github.io/NOME_DO_REPO/`.
 
 > **WebXR** exige **HTTPS** (GitHub Pages já fornece).
 
