@@ -72,29 +72,5 @@ No menu lateral: **Qualidade → Alta (Quest 3S)** e **Iluminação → Dia**.
 Uso educacional / pessoal para preparação PMSC.
 
 
-## Atualização visual segura para Quest 3S (22/10/2026)
-
-Esta versão mantém a estrutura e a lógica de estudos, simulados, flashcards,
-locomoção e controles existentes. Alterações em `js/app.js`:
-
-- O painel principal usa 2048×1536 em **Qualidade Alta**; as coordenadas
-  da interface continuam 1536×1152 para preservar os cliques em botões.
-- Adicionada filtragem com mipmaps e anisotropia nos painéis.
-- Corrigidos contrastes no enunciado, notas e tela sem questões.
-- Os dez ambientes do painel esquerdo cabem na área visível.
-- Removido upload forçado de todas as texturas dos painéis em cada frame.
-- A qualidade WebXR é configurada antes da sessão; removida a substituição
-  involuntária da escala por 1,0.
-- Solicitados **72 Hz** quando a API do navegador anuncia suporte; caso
-  contrário, é mantida a taxa padrão do Quest.
-
-**72 FPS é uma meta, não uma medição/garantia.** Verifique no headset antes
-de decidir se deve reduzir a qualidade de Alta para Equilibrada. Se houver
-painéis pretos ou perda de frames, selecione **Equilibrada** e reinicie o VR.
-Mudar o fator de escala VR exige sair e entrar novamente no modo imersivo.
-
-### Publicação
-
-Faça backup dos arquivos atuais antes de substituir. Envie `index.html`,
-`css/styles.css` e `js/app.js` preservando essas pastas no GitHub Pages.
-Não apague os arquivos JSON de questões existentes no repositório.
+## Central VR integrada
+O quarto painel CENTRAL VR permite ajustar iluminação, qualidade, ambiente, fontes, distância, escala, áudio, conforto, locomoção, modos de estudo, atualizar JSON e exportar dados dentro do Quest. Arraste com grip/pinça e selecione com gatilho/pinça. Os controles HTML externos continuam disponíveis. A meta de 72 FPS requer teste real no headset.
