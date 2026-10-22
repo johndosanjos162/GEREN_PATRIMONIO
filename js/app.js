@@ -1949,9 +1949,12 @@ function makePanel(id,w,h,x,y,z){
 
   const texture=new THREE.CanvasTexture(canvas);
   texture.colorSpace=THREE.SRGBColorSpace;
-  texture.generateMipmaps=false;
-  texture.minFilter=THREE.LinearFilter;
+  // Mipmaps + filtro anisotrópico: letras mais estáveis em ângulos oblíquos.
+  // Texturas atualizadas somente quando o conteúdo do painel muda.
+  texture.generateMipmaps=true;
+  texture.minFilter=THREE.LinearMipmapLinearFilter;
   texture.magFilter=THREE.LinearFilter;
+  texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
   texture.needsUpdate=true;
 
   const group=new THREE.Group();
@@ -2087,6 +2090,9 @@ function region(p,x,y,w,h,action){p.regions.push({x,y,w,h,action});}
 
 function background(p,title){
   const c=p.ctx; p.regions=[];
+  // Coordenadas da UI continuam em 1536×1152; só o painel principal em
+  // Qualidade Alta recebe mais pixels de textura, sem alterar áreas clicáveis.
+  c.setTransform(p.canvas.width/WIDTH,0,0,p.canvas.height/HEIGHT,0,0);
   c.imageSmoothingEnabled=true;
   // fundo CLARO — legível no Quest (tema escuro parecia “painel apagado”)
   c.fillStyle='#eaf6ef';
@@ -2170,18 +2176,18 @@ function drawMain(){
   const p=panels.main, c=p.ctx, s=state.session, q=currentQuestion(), a=currentPool();
   background(p,'PMSC 2026  ·  SALA DE ESTUDO');
   if(!q){
-    text(c,'AGUARDANDO QUESTÕES',80,420,56,'#e8fff0','700');
-    text(c,'Atualize o banco JSON no menu lateral ou use Demonstração.',80,500,36,'#a8cbb8','500');
+    text(c,'AGUARDANDO QUESTÕES',80,420,56,'#123f2b','700');
+    text(c,'Atualize o banco JSON no menu lateral ou use Demonstração.',80,500,36,'#285743','500');
     // empty state card
-    c.fillStyle='rgba(20,60,45,0.5)';
+    c.fillStyle='rgba(20,90,60,0.12)';
     round(c,80,560,WIDTH-160,180,18); c.fill();
-    text(c,'Toque em “Atualizar JSON” ou “Demonstração” para começar.',100,650,34,'#b8efd0','500');
+    text(c,'Toque em “Atualizar JSON” ou “Demonstração” para começar.',100,650,34,'#165239','500');
     refreshPanelTexture(p); return;
   }
 
   // meta bar
   const pct = Math.round(((s.index+1)/Math.max(1,a.length))*100);
-  c.fillStyle='rgba(15,40,30,0.85)';
+  c.fillStyle='#d7ebe0';
   round(c,24,108,WIDTH-48,56,10); c.fill();
   text(c,`${s.index+1}  /  ${a.length}`,36,145,28,'#145a3a','700');
   text(c,q.subject,160,138,24,'#0a2a18','700');
@@ -2248,7 +2254,7 @@ function drawMain(){
         c.strokeStyle='rgba(20,100,60,0.35)'; c.lineWidth=2;
         round(c,48,y,WIDTH-96,b.height-8,16); c.stroke();
         // label
-        text(c,'ENUNCIADO',64,y+32,22,'#7dffb0','700');
+        text(c,'ENUNCIADO',64,y+32,22,'#15583c','700');
         let ty=y+70;
         for(const line of b.lines){
           text(c,line,64,ty,size,'#0a2a18','700');
@@ -2262,7 +2268,7 @@ function drawMain(){
         round(c,48,y,WIDTH-96,b.height-8,12); c.fill();
         let ty=y+40;
         for(const line of b.lines){
-          text(c,line,64,ty,size-4,'#1a3a2a','600');
+          text(c,line,64,ty,size-4,'#f1fff6','600');
           ty+=lineH;
         }
       }
@@ -2298,11 +2304,13 @@ function drawSide(id){
   const p=panels[id], c=p.ctx;
   background(p, id==='left' ? 'AMBIENTES 3D' : 'DESEMPENHO');
   if(id==='left'){
-    let y=185;
+    // Dez ambientes devem caber dentro da área visível, sem ficarem
+    // cortados ou sobrepostos ao botão de reposicionamento.
+    let y=128;
     environments.forEach((name,i)=>{
       const active=i===state.settings.env;
-      vrButton(p, `${String(i+1).padStart(2,'0')}  ·  ${name}`, 40, y, WIDTH-80, 92, 'env:'+i, active?'#1e7048':'#152a22', 36);
-      y+=104;
+      vrButton(p, `${String(i+1).padStart(2,'0')}  ·  ${name}`, 40, y, WIDTH-80, 76, 'env:'+i, active?'#1e7048':'#152a22', 31);
+      y+=87;
     });
     vrButton(p,'REPOSICIONAR PAINÉIS',40,HEIGHT-130,WIDTH-80,90,'resetPanels','#1a3a55',36);
   } else {
@@ -2498,6 +2506,21 @@ function setEnvironment(n){
   buildWorld(state.settings.env);
   safeStore();updateVR();
 }
+function configurePanelResolution(){
+  // Resolução lógica (cliques e layout) não muda: apenas os pixels do mapa.
+  // Evita canvas 4096 que pode esgotar memória ou apresentar painel preto.
+  const p=panels.main;
+  if(!p)return;
+  const high=state.settings.quality==='high';
+  const desiredW=high?2048:WIDTH;
+  const desiredH=high?1536:HEIGHT;
+  if(p.canvas.width!==desiredW || p.canvas.height!==desiredH){
+    p.canvas.width=desiredW;
+    p.canvas.height=desiredH;
+    p.texture.needsUpdate=true;
+  }
+}
+
 function configureQuality(){
   // Otimizado para Meta Quest 3S: 1832×1920 por olho, ~20 PPD, FOV 96°H/90°V, até 120 Hz
   const q=state.settings.quality;
@@ -2515,16 +2538,14 @@ function configureQuality(){
     sun.shadow.mapSize.set(res, res);
     renderer.shadowMap.needsUpdate = true;
   }
-  // Framebuffer scale: 1.0 ≈ nativo 1832×1920; >1 supersampling (custa GPU)
-  // Alta: 1.15 leve supersampling para compensar lentes Fresnel
-  const fb = q==='low' ? 0.9 : q==='high' ? 1.05 : 1.0; // leve super-sample na Alta
-  if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
+  // VR: 72 Hz como alvo. A resolução final é determinada pela sessão XR,
+  // não pelo pixelRatio do preview. O fator só pode mudar FORA da sessão.
+  // "Alta": supersampling leve, condicionado ao desempenho real do Quest 3S.
+  const fb = q==='low' ? 0.9 : q==='high' ? 1.08 : 1.0;
+  if(!renderer.xr.isPresenting && typeof renderer.xr.setFramebufferScaleFactor === 'function'){
     renderer.xr.setFramebufferScaleFactor(fb);
   }
-  // Prefer 90Hz+ quando disponível (Quest 3S até 120)
-  try {
-    if(renderer.xr.getSession){ /* session rate set on enter */ }
-  } catch(e){}
+  configurePanelResolution();
 }
 function syncSettings(){
   for(const k of ['lighting','quality','fontSize','distance','panelHeight','panelScale','speed','snap','volume','playerHeight','vignette','comfort']){ if($(k)) $(k).value=state.settings[k]; }
@@ -2683,15 +2704,8 @@ renderer.setAnimationLoop(()=>{
     }
   } catch(err){ console.warn('xr frame prep', err); }
 
-  // Garante textura dos painéis no WebXR (Quest às vezes não sobe o map)
-  if(renderer.xr.isPresenting){
-    try{
-      for(const id of ['main','left','right']){
-        const p=panels[id];
-        if(p&&p.texture) p.texture.needsUpdate=true;
-      }
-    }catch(e){}
-  }
+  // Não reenviar os três mapas de textura em todos os frames.
+  // drawMain()/drawSide() já invalidam o mapa quando o painel muda.
   try {
     renderer.render(scene, camera);
   } catch(err){
@@ -2791,6 +2805,7 @@ async function enterVR(){
 
     // CRÍTICO no Quest: canvas em fullscreen no body ANTES da sessão
     mountCanvasForXR();
+    configureQuality(); // define a escala ANTES de iniciar WebXR
     forceBrightScene();
     if(world && world.children.length < 5) buildWorld(+state.settings.env || 0);
     
@@ -2805,11 +2820,15 @@ async function enterVR(){
       optionalFeatures: ['local-floor', 'bounded-floor']
     });
 
+    // A Meta usa 72 Hz como referência de WebXR no Quest.
+    // Solicita 72 Hz apenas se o navegador e o headset oferecerem a API.
     try {
-      if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
-        renderer.xr.setFramebufferScaleFactor(1.0);
+      const rates=session.supportedFrameRates;
+      if(typeof session.updateTargetFrameRate==='function' &&
+         rates && Array.from(rates).some(hz=>Math.abs(hz-72)<0.5)){
+        await session.updateTargetFrameRate(72);
       }
-    } catch(e){}
+    } catch(e){console.warn('72 Hz indisponível: mantendo padrão do Quest',e);}
 
     await renderer.xr.setSession(session);
 
@@ -2868,7 +2887,7 @@ for(const [p,label] of pages){const b=button(label,()=>go(p),$('navigation'));b.
 environments.forEach((name,i)=>{$('environment').add(new Option(name,String(i)));});
 $('environment').onchange=()=>{setEnvironment(+$('environment').value);};
 $('lighting').onchange=()=>{state.settings.lighting=$('lighting').value;applyLight();safeStore();};
-$('quality').onchange=()=>{state.settings.quality=$('quality').value;configureQuality();safeStore();};
+$('quality').onchange=()=>{state.settings.quality=$('quality').value;configureQuality();safeStore();updateVR();};
 for(const key of ['fontSize','distance','panelHeight','panelScale','speed','snap']){
   $(key).oninput=()=>{state.settings[key]=+$(key).value;if(['distance','panelHeight','panelScale'].includes(key))panelPositionReset();safeStore();updateVR();};
 }
