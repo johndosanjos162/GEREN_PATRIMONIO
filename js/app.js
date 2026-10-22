@@ -1949,12 +1949,9 @@ function makePanel(id,w,h,x,y,z){
 
   const texture=new THREE.CanvasTexture(canvas);
   texture.colorSpace=THREE.SRGBColorSpace;
-  // Mipmaps + filtro anisotrópico: letras mais estáveis em ângulos oblíquos.
-  // Texturas atualizadas somente quando o conteúdo do painel muda.
-  texture.generateMipmaps=true;
-  texture.minFilter=THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps=false;
+  texture.minFilter=THREE.LinearFilter;
   texture.magFilter=THREE.LinearFilter;
-  texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
   texture.needsUpdate=true;
 
   const group=new THREE.Group();
@@ -2090,9 +2087,6 @@ function region(p,x,y,w,h,action){p.regions.push({x,y,w,h,action});}
 
 function background(p,title){
   const c=p.ctx; p.regions=[];
-  // Coordenadas da UI continuam em 1536×1152; só o painel principal em
-  // Qualidade Alta recebe mais pixels de textura, sem alterar áreas clicáveis.
-  c.setTransform(p.canvas.width/WIDTH,0,0,p.canvas.height/HEIGHT,0,0);
   c.imageSmoothingEnabled=true;
   // fundo CLARO — legível no Quest (tema escuro parecia “painel apagado”)
   c.fillStyle='#eaf6ef';
@@ -2176,18 +2170,18 @@ function drawMain(){
   const p=panels.main, c=p.ctx, s=state.session, q=currentQuestion(), a=currentPool();
   background(p,'PMSC 2026  ·  SALA DE ESTUDO');
   if(!q){
-    text(c,'AGUARDANDO QUESTÕES',80,420,56,'#123f2b','700');
-    text(c,'Atualize o banco JSON no menu lateral ou use Demonstração.',80,500,36,'#285743','500');
+    text(c,'AGUARDANDO QUESTÕES',80,420,56,'#e8fff0','700');
+    text(c,'Atualize o banco JSON no menu lateral ou use Demonstração.',80,500,36,'#a8cbb8','500');
     // empty state card
-    c.fillStyle='rgba(20,90,60,0.12)';
+    c.fillStyle='rgba(20,60,45,0.5)';
     round(c,80,560,WIDTH-160,180,18); c.fill();
-    text(c,'Toque em “Atualizar JSON” ou “Demonstração” para começar.',100,650,34,'#165239','500');
+    text(c,'Toque em “Atualizar JSON” ou “Demonstração” para começar.',100,650,34,'#b8efd0','500');
     refreshPanelTexture(p); return;
   }
 
   // meta bar
   const pct = Math.round(((s.index+1)/Math.max(1,a.length))*100);
-  c.fillStyle='#d7ebe0';
+  c.fillStyle='rgba(15,40,30,0.85)';
   round(c,24,108,WIDTH-48,56,10); c.fill();
   text(c,`${s.index+1}  /  ${a.length}`,36,145,28,'#145a3a','700');
   text(c,q.subject,160,138,24,'#0a2a18','700');
@@ -2254,7 +2248,7 @@ function drawMain(){
         c.strokeStyle='rgba(20,100,60,0.35)'; c.lineWidth=2;
         round(c,48,y,WIDTH-96,b.height-8,16); c.stroke();
         // label
-        text(c,'ENUNCIADO',64,y+32,22,'#15583c','700');
+        text(c,'ENUNCIADO',64,y+32,22,'#7dffb0','700');
         let ty=y+70;
         for(const line of b.lines){
           text(c,line,64,ty,size,'#0a2a18','700');
@@ -2268,7 +2262,7 @@ function drawMain(){
         round(c,48,y,WIDTH-96,b.height-8,12); c.fill();
         let ty=y+40;
         for(const line of b.lines){
-          text(c,line,64,ty,size-4,'#f1fff6','600');
+          text(c,line,64,ty,size-4,'#1a3a2a','600');
           ty+=lineH;
         }
       }
@@ -2304,13 +2298,11 @@ function drawSide(id){
   const p=panels[id], c=p.ctx;
   background(p, id==='left' ? 'AMBIENTES 3D' : 'DESEMPENHO');
   if(id==='left'){
-    // Dez ambientes devem caber dentro da área visível, sem ficarem
-    // cortados ou sobrepostos ao botão de reposicionamento.
-    let y=128;
+    let y=185;
     environments.forEach((name,i)=>{
       const active=i===state.settings.env;
-      vrButton(p, `${String(i+1).padStart(2,'0')}  ·  ${name}`, 40, y, WIDTH-80, 76, 'env:'+i, active?'#1e7048':'#152a22', 31);
-      y+=87;
+      vrButton(p, `${String(i+1).padStart(2,'0')}  ·  ${name}`, 40, y, WIDTH-80, 92, 'env:'+i, active?'#1e7048':'#152a22', 36);
+      y+=104;
     });
     vrButton(p,'REPOSICIONAR PAINÉIS',40,HEIGHT-130,WIDTH-80,90,'resetPanels','#1a3a55',36);
   } else {
@@ -2506,21 +2498,6 @@ function setEnvironment(n){
   buildWorld(state.settings.env);
   safeStore();updateVR();
 }
-function configurePanelResolution(){
-  // Resolução lógica (cliques e layout) não muda: apenas os pixels do mapa.
-  // Evita canvas 4096 que pode esgotar memória ou apresentar painel preto.
-  const p=panels.main;
-  if(!p)return;
-  const high=state.settings.quality==='high';
-  const desiredW=high?2048:WIDTH;
-  const desiredH=high?1536:HEIGHT;
-  if(p.canvas.width!==desiredW || p.canvas.height!==desiredH){
-    p.canvas.width=desiredW;
-    p.canvas.height=desiredH;
-    p.texture.needsUpdate=true;
-  }
-}
-
 function configureQuality(){
   // Otimizado para Meta Quest 3S: 1832×1920 por olho, ~20 PPD, FOV 96°H/90°V, até 120 Hz
   const q=state.settings.quality;
@@ -2538,14 +2515,16 @@ function configureQuality(){
     sun.shadow.mapSize.set(res, res);
     renderer.shadowMap.needsUpdate = true;
   }
-  // VR: 72 Hz como alvo. A resolução final é determinada pela sessão XR,
-  // não pelo pixelRatio do preview. O fator só pode mudar FORA da sessão.
-  // "Alta": supersampling leve, condicionado ao desempenho real do Quest 3S.
-  const fb = q==='low' ? 0.9 : q==='high' ? 1.08 : 1.0;
-  if(!renderer.xr.isPresenting && typeof renderer.xr.setFramebufferScaleFactor === 'function'){
+  // Framebuffer scale: 1.0 ≈ nativo 1832×1920; >1 supersampling (custa GPU)
+  // Alta: 1.15 leve supersampling para compensar lentes Fresnel
+  const fb = q==='low' ? 0.9 : q==='high' ? 1.05 : 1.0; // leve super-sample na Alta
+  if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
     renderer.xr.setFramebufferScaleFactor(fb);
   }
-  configurePanelResolution();
+  // Prefer 90Hz+ quando disponível (Quest 3S até 120)
+  try {
+    if(renderer.xr.getSession){ /* session rate set on enter */ }
+  } catch(e){}
 }
 function syncSettings(){
   for(const k of ['lighting','quality','fontSize','distance','panelHeight','panelScale','speed','snap','volume','playerHeight','vignette','comfort']){ if($(k)) $(k).value=state.settings[k]; }
@@ -2704,8 +2683,15 @@ renderer.setAnimationLoop(()=>{
     }
   } catch(err){ console.warn('xr frame prep', err); }
 
-  // Não reenviar os três mapas de textura em todos os frames.
-  // drawMain()/drawSide() já invalidam o mapa quando o painel muda.
+  // Garante textura dos painéis no WebXR (Quest às vezes não sobe o map)
+  if(renderer.xr.isPresenting){
+    try{
+      for(const id of ['main','left','right']){
+        const p=panels[id];
+        if(p&&p.texture) p.texture.needsUpdate=true;
+      }
+    }catch(e){}
+  }
   try {
     renderer.render(scene, camera);
   } catch(err){
@@ -2805,7 +2791,6 @@ async function enterVR(){
 
     // CRÍTICO no Quest: canvas em fullscreen no body ANTES da sessão
     mountCanvasForXR();
-    configureQuality(); // define a escala ANTES de iniciar WebXR
     forceBrightScene();
     if(world && world.children.length < 5) buildWorld(+state.settings.env || 0);
     
@@ -2820,15 +2805,11 @@ async function enterVR(){
       optionalFeatures: ['local-floor', 'bounded-floor']
     });
 
-    // A Meta usa 72 Hz como referência de WebXR no Quest.
-    // Solicita 72 Hz apenas se o navegador e o headset oferecerem a API.
     try {
-      const rates=session.supportedFrameRates;
-      if(typeof session.updateTargetFrameRate==='function' &&
-         rates && Array.from(rates).some(hz=>Math.abs(hz-72)<0.5)){
-        await session.updateTargetFrameRate(72);
+      if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
+        renderer.xr.setFramebufferScaleFactor(1.0);
       }
-    } catch(e){console.warn('72 Hz indisponível: mantendo padrão do Quest',e);}
+    } catch(e){}
 
     await renderer.xr.setSession(session);
 
@@ -2887,7 +2868,7 @@ for(const [p,label] of pages){const b=button(label,()=>go(p),$('navigation'));b.
 environments.forEach((name,i)=>{$('environment').add(new Option(name,String(i)));});
 $('environment').onchange=()=>{setEnvironment(+$('environment').value);};
 $('lighting').onchange=()=>{state.settings.lighting=$('lighting').value;applyLight();safeStore();};
-$('quality').onchange=()=>{state.settings.quality=$('quality').value;configureQuality();safeStore();updateVR();};
+$('quality').onchange=()=>{state.settings.quality=$('quality').value;configureQuality();safeStore();};
 for(const key of ['fontSize','distance','panelHeight','panelScale','speed','snap']){
   $(key).oninput=()=>{state.settings[key]=+$(key).value;if(['distance','panelHeight','panelScale'].includes(key))panelPositionReset();safeStore();updateVR();};
 }
@@ -3041,3 +3022,98 @@ endDrag = function(kind, index) {
   safeStore();
   note('Painel fixado na posição escolhida.');
 };
+
+
+// ================================================================
+// CENTRAL VR INTEGRADA — controle direto dentro do Meta Quest 3S
+// Sem depender dos controles HTML externos durante a sessão XR.
+// ================================================================
+let vrHubTab='geral';
+const vrHubTabs=[['geral','GERAL'],['visual','VISUAL'],['movimento','MOVIMENTO'],['estudos','ESTUDOS'],['dados','DADOS']];
+makePanel('hub',2.15,2.1,0,0.35,-2.15);
+panels.hub.group.rotation.x=-0.12;
+const vrHubOriginalUpdate=updateVR;
+updateVR=function(){vrHubOriginalUpdate();drawVRHub();};
+const vrHubOriginalAction=action;
+action=function(act){
+  if(!act)return;
+  if(act.startsWith('hubtab:')){vrHubTab=act.slice(7);updateVR();return;}
+  if(act.startsWith('hub:')){
+    const [,key,value]=act.split(':');
+    const st=state.settings;
+    if(key==='lighting'){st.lighting=value;applyLight();}
+    else if(key==='quality'){st.quality=value;configureQuality();}
+    else if(key==='env'){setEnvironment((st.env+Number(value)+environments.length)%environments.length);}
+    else if(key==='reset'){resetPanelPositions();}
+    else if(key==='new'){newSession(value);}
+    else if(key==='bank'){loadBank();}
+    else if(key==='shoot'){toggleShootMode();}
+    else if(key==='focus'){vrHubTab='estudos';}
+    else if(key==='export'){exportBackup();}
+    else if(key==='csv'){exportCSV();}
+    else if(key==='toggle'){st[value]=st[value]?0:1;}
+    else if(key==='change'){
+      const delta=Number(value);
+      const field=vrHubSetting;
+      const bounds={fontSize:[90,160,5],distance:[1.8,4,0.1],panelHeight:[1,2.5,0.1],panelScale:[0.85,1.45,0.05],speed:[0.5,2.5,0.1],snap:[0,45,15],volume:[0,100,10],playerHeight:[0.9,2,0.05],vignette:[0,100,10]};
+      const [lo,hi,step]=bounds[field];
+      st[field]=Math.round(Math.max(lo,Math.min(hi,Number(st[field])+delta*step))*100)/100;
+      if(field==='volume'&&masterGain)masterGain.gain.value=st.volume/100;
+      if(field==='playerHeight')applyPlayerHeight();
+      if(['distance','panelHeight','panelScale'].includes(field))placePanelsForUser();
+      if($(field))$(field).value=st[field];
+    }
+    else if(key==='setting'){vrHubSetting=value;}
+    safeStore();updateVR();return;
+  }
+  vrHubOriginalAction(act);
+};
+let vrHubSetting='fontSize';
+function drawVRHub(){
+ const p=panels.hub;if(!p)return;
+ background(p,'CENTRAL VR  |  CONTROLE TOTAL');
+ const c=p.ctx;
+ const colW=(WIDTH-80)/vrHubTabs.length;
+ vrHubTabs.forEach(([id,label],i)=>vrButton(p,label,40+i*colW,126,colW-8,72,'hubtab:'+id,id===vrHubTab?'#18784d':'#23473a',25));
+ let y=235;
+ function row(label,act){vrButton(p,label,40,y,WIDTH-80,85,act,'#1b6046',32);y+=96;}
+ function pair(label,minus,plus){
+  text(c,label,54,y+34,34,'#143c2b','700');
+  vrButton(p,'−',WIDTH-390,y,145,70,minus,'#315267',42);
+  vrButton(p,'+',WIDTH-225,y,145,70,plus,'#315267',42);y+=86;
+ }
+ if(vrHubTab==='geral'){
+  row('AMBIENTE: '+environments[state.settings.env],'hub:env:1');
+  row('ILUMINAÇÃO: '+(state.settings.lighting==='day'?'DIA':'NOITE'),'hub:lighting:'+(state.settings.lighting==='day'?'night':'day'));
+  row('QUALIDADE: '+state.settings.quality,'hub:quality:'+(state.settings.quality==='high'?'medium':'high'));
+  row('REORGANIZAR PAINÉIS','hub:reset:1');
+  row('TREINO DE TIRO: '+(shootMode?'LIGADO':'DESLIGADO'),'hub:shoot:1');
+ }else if(vrHubTab==='visual'){
+  for(const k of ['fontSize','distance','panelHeight','panelScale','volume']){
+    const val=state.settings[k];
+    text(c,k+' : '+val,50,y+45,33,'#143c2b','700');
+    vrButton(p,'EDITAR',WIDTH-360,y,280,75,'hub:setting:'+k,vrHubSetting===k?'#247b51':'#325e6b',28);y+=102;
+  }
+  pair('AJUSTAR '+vrHubSetting,'hub:change:-1','hub:change:1');
+ }else if(vrHubTab==='movimento'){
+  for(const k of ['speed','snap','playerHeight','vignette']){
+    text(c,k+' : '+state.settings[k],50,y+42,33,'#143c2b','700');
+    vrButton(p,'EDITAR',WIDTH-360,y,280,75,'hub:setting:'+k,vrHubSetting===k?'#247b51':'#325e6b',28);y+=105;
+  }
+  pair('AJUSTAR '+vrHubSetting,'hub:change:-1','hub:change:1');
+  row('CONFORTO: '+(state.settings.comfort?'LIGADO':'DESLIGADO'),'hub:toggle:comfort');
+ }else if(vrHubTab==='estudos'){
+  for(const [name,mode] of [['QUESTÕES','study'],['SIMULADO','exam'],['FLASHCARDS','flash'],['REVISÕES','review']])row(name,'go:'+mode);
+  row('NOVO SIMULADO','hub:new:exam');
+ }else if(vrHubTab==='dados'){
+  row('ATUALIZAR BANCO JSON','hub:bank:1');
+  row('EXPORTAR BACKUP','hub:export:1');
+  row('EXPORTAR HISTÓRICO CSV','hub:csv:1');
+  const z=stats();text(c,`Respondidas: ${z.total}    Acertos: ${z.pct}%`,52,y+85,38,'#164b31','700');
+ }
+ text(c,'GRIP/PINÇA: ARRASTAR  |  GATILHO/PINÇA: SELECIONAR',42,HEIGHT-36,23,'#1b573c','600');
+ refreshPanelTexture(p);
+}
+// Inicializa a central e mantém a posição no armazenamento existente.
+if(Array.isArray(state.panels?.hub)&&state.panels.hub.length===3)panels.hub.group.position.set(...state.panels.hub);
+updateVR();
