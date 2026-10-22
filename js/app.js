@@ -24,7 +24,7 @@ const subjectsBase = ['Língua Portuguesa','Informática','Direito Constituciona
 const pages = [['home','Início'],['study','Questões'],['exam','Simulado'],['flash','Flashcards'],['review','Revisões'],['stats','Desempenho'],['bank','Banco JSON'],['settings','Configurações']];
 
 const defaultState = () => ({
-  settings:{env:0,lighting:'day',quality:'high',fontSize:125,distance:2.8,panelHeight:1.55,panelScale:1.05,speed:1.3,snap:30,volume:60,playerHeight:1.65,vignette:0,comfort:1},
+  settings:{env:0,lighting:'day',quality:'high',fontSize:130,distance:2.8,panelHeight:1.55,panelScale:1.05,speed:1.3,snap:30,volume:60,playerHeight:1.65,vignette:0,comfort:1},
   history:[],favorites:[],reviews:{},exams:[],session:null,panels:{}
 });
 
@@ -1917,22 +1917,30 @@ function applyLight(){
 // =====================================================
 // PAINÉIS VR
 // =====================================================
-const WIDTH=3072,HEIGHT=2304; // alta nitidez de texto no Quest 3S (~20 PPD)
+const WIDTH=4096,HEIGHT=3072; // texto nítido Quest 3S (~20 PPD) // alta nitidez de texto no Quest 3S (~20 PPD)
 const panels={};
 const panelMeshes=[];
 const raycaster=new THREE.Raycaster();
 const tmpMatrix=new THREE.Matrix4();
 let hovered=null;
 
+
+function refreshPanelTexture(p){
+  if(!p||!p.texture)return;
+  p.texture.generateMipmaps=false;
+  p.texture.minFilter=THREE.LinearFilter;
+  p.texture.magFilter=THREE.NearestFilter;
+  refreshPanelTexture(p);
+}
 function makePanel(id,w,h,x,y,z){
   const canvas=document.createElement('canvas');canvas.width=WIDTH;canvas.height=HEIGHT;
   const ctx=canvas.getContext('2d');
   const texture=new THREE.CanvasTexture(canvas);
   texture.colorSpace=THREE.SRGBColorSpace;
-  // UI/texto: SEM mipmaps — mipmaps deixam letreiros borrados no Quest
+  // SEM mipmaps + NearestFilter = texto legível no Quest 3S
   texture.generateMipmaps=false;
   texture.minFilter=THREE.LinearFilter;
-  texture.magFilter=THREE.LinearFilter;
+  texture.magFilter=THREE.NearestFilter;
   texture.anisotropy=1;
   texture.needsUpdate=true;
   const group=new THREE.Group();group.position.set(x,y,z);scene.add(group);
@@ -1962,7 +1970,16 @@ function resetPanelPositions(){state.panels={};panelPositionReset();safeStore();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 function round(ctx,x,y,w,h,r=16){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
-function text(ctx,t,x,y,size=46,color='#f3fff4',weight='700'){ctx.font=`${weight} ${size}px Arial`;ctx.fillStyle=color;ctx.fillText(String(t),x,y);}
+function text(ctx,t,x,y,size=46,color='#f3fff4',weight='700'){
+  ctx.font=`${weight} ${size}px system-ui,Arial,sans-serif`;
+  ctx.textBaseline='alphabetic';
+  ctx.imageSmoothingEnabled=false;
+  // sombra leve = contorno legível em VR
+  ctx.fillStyle='rgba(0,0,0,0.55)';
+  ctx.fillText(String(t),x+2,y+2);
+  ctx.fillStyle=color;
+  ctx.fillText(String(t),x,y);
+}
 function wrapped(ctx,content,width,size){
   ctx.font=`700 ${size}px Arial`;const lines=[];
   for(const paragraph of String(content).split('\n')){let line='';for(const word of paragraph.split(/\s+/)){const trial=line?line+' '+word:word;if(ctx.measureText(trial).width>width&&line){lines.push(line);line=word;}else line=trial;}lines.push(line);}
@@ -2067,7 +2084,7 @@ function drawMain(){
     c.fillStyle='rgba(20,60,45,0.5)';
     round(c,80,560,WIDTH-160,180,18); c.fill();
     text(c,'Toque em “Atualizar JSON” ou “Demonstração” para começar.',100,650,34,'#b8efd0','500');
-    p.texture.needsUpdate=true; return;
+    refreshPanelTexture(p); return;
   }
 
   // meta bar
@@ -2082,7 +2099,7 @@ function drawMain(){
   c.fillStyle='#4dff9a'; round(c,WIDTH-420,198,Math.max(12,340*pct/100),18,9); c.fill();
   text(c,pct+'%',WIDTH-70,214,24,'#c8ffd8','600');
 
-  const size=Math.round(42*Number(state.settings.fontSize)/115);
+  const size=Math.round(52*Number(state.settings.fontSize)/130);
   const lineH=size*1.42;
   const blocks=[];
   const addQ=(content)=>{
@@ -2181,7 +2198,7 @@ function drawMain(){
     ? `TEMPO: ${Math.max(0,Math.ceil((s.minutes*60000-(Date.now()-s.start))/60000))} min  ·  SIMULADO`
     : s.mode==='flash' ? 'MODO FLASHCARD' : s.mode==='exam' ? 'MODO SIMULADO' : 'MODO ESTUDO';
   text(c,footer,55,1475,28,'#8ecfad','600');
-  p.texture.needsUpdate=true;
+  refreshPanelTexture(p);
 }
 
 function drawSide(id){
@@ -2227,7 +2244,7 @@ function drawSide(id){
       vrButton(p,name,40,y+i*105,WIDTH-80,92,'go:'+mode,'#1a4a35',36);
     });
   }
-  p.texture.needsUpdate=true;
+  refreshPanelTexture(p);
 }
 
 function updateVR(){if(!panels.main)return;drawMain();drawSide('left');drawSide('right');}
