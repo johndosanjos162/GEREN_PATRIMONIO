@@ -24,7 +24,7 @@ const subjectsBase = ['Língua Portuguesa','Informática','Direito Constituciona
 const pages = [['home','Início'],['study','Questões'],['exam','Simulado'],['flash','Flashcards'],['review','Revisões'],['stats','Desempenho'],['bank','Banco JSON'],['settings','Configurações']];
 
 const defaultState = () => ({
-  settings:{env:0,lighting:'day',quality:'high',fontSize:130,distance:2.8,panelHeight:1.55,panelScale:1.05,speed:1.3,snap:30,volume:60,playerHeight:1.65,vignette:0,comfort:1},
+  settings:{env:0,lighting:'day',quality:'high',fontSize:120,distance:2.8,panelHeight:1.55,panelScale:1.05,speed:1.3,snap:30,volume:60,playerHeight:1.65,vignette:0,comfort:1},
   history:[],favorites:[],reviews:{},exams:[],session:null,panels:{}
 });
 
@@ -1917,7 +1917,7 @@ function applyLight(){
 // =====================================================
 // PAINÉIS VR
 // =====================================================
-const WIDTH=4096,HEIGHT=3072; // texto nítido Quest 3S (~20 PPD) // alta nitidez de texto no Quest 3S (~20 PPD)
+const WIDTH=2048,HEIGHT=1536; // estável no Quest 3S (4096 enegrecia os painéis) // texto nítido Quest 3S (~20 PPD) // alta nitidez de texto no Quest 3S (~20 PPD)
 const panels={};
 const panelMeshes=[];
 const raycaster=new THREE.Raycaster();
@@ -1929,18 +1929,29 @@ function refreshPanelTexture(p){
   if(!p||!p.texture)return;
   p.texture.generateMipmaps=false;
   p.texture.minFilter=THREE.LinearFilter;
-  p.texture.magFilter=THREE.NearestFilter;
+  p.texture.magFilter=THREE.LinearFilter;
   refreshPanelTexture(p);
 }
 function makePanel(id,w,h,x,y,z){
-  const canvas=document.createElement('canvas');canvas.width=WIDTH;canvas.height=HEIGHT;
-  const ctx=canvas.getContext('2d');
+  const canvas=document.createElement('canvas');
+  canvas.width=WIDTH;
+  canvas.height=HEIGHT;
+  const ctx=canvas.getContext('2d',{alpha:false,willReadFrequently:false});
+  // Preenche já na criação (evita painel preto se o draw falhar)
+  ctx.fillStyle='#0c1c17';
+  ctx.fillRect(0,0,WIDTH,HEIGHT);
+  ctx.fillStyle='#7dffb0';
+  ctx.font='bold 64px Arial';
+  ctx.fillText('PMSC 2026', 80, 120);
+  ctx.fillStyle='#c8e8d4';
+  ctx.font='36px Arial';
+  ctx.fillText('Carregando painel…', 80, 180);
   const texture=new THREE.CanvasTexture(canvas);
-  texture.colorSpace=THREE.SRGBColorSpace;
-  // SEM mipmaps + NearestFilter = texto legível no Quest 3S
+  // NoColorSpace evita textura “apagada” por double-gamma no WebXR do Quest
+  texture.colorSpace=THREE.NoColorSpace;
   texture.generateMipmaps=false;
   texture.minFilter=THREE.LinearFilter;
-  texture.magFilter=THREE.NearestFilter;
+  texture.magFilter=THREE.LinearFilter;
   texture.anisotropy=1;
   texture.needsUpdate=true;
   const group=new THREE.Group();group.position.set(x,y,z);scene.add(group);
@@ -1950,7 +1961,7 @@ function makePanel(id,w,h,x,y,z){
     new THREE.MeshBasicMaterial({color:0x0e2a1c,side:THREE.DoubleSide,toneMapped:false})
   );
   border.position.z=-0.008;group.add(border);
-  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,toneMapped:false}));
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:texture,color:0xffffff,side:THREE.DoubleSide,toneMapped:false,transparent:false}));
   group.add(mesh);
   panels[id]={id,canvas,ctx,texture,group,mesh,regions:[],w,h};
   panelMeshes.push(mesh);mesh.userData.id=id;
@@ -2099,7 +2110,7 @@ function drawMain(){
   c.fillStyle='#4dff9a'; round(c,WIDTH-420,198,Math.max(12,340*pct/100),18,9); c.fill();
   text(c,pct+'%',WIDTH-70,214,24,'#c8ffd8','600');
 
-  const size=Math.round(52*Number(state.settings.fontSize)/130);
+  const size=Math.round(44*Number(state.settings.fontSize)/120);
   const lineH=size*1.42;
   const blocks=[];
   const addQ=(content)=>{
@@ -2717,7 +2728,14 @@ async function enterVR(){
     renderer.shadowMap.enabled = state.settings.quality !== "low";
     renderer.shadowMap.needsUpdate = true;
 
-    try{ updateVR(); }catch(e){}
+    try{
+      drawMain();
+      drawSide('left');
+      drawSide('right');
+      updateVR();
+      // segundo frame: algumas GPUs do Quest só sobem a textura no 2º needsUpdate
+      requestAnimationFrame(()=>{ try{ drawMain(); drawSide('left'); drawSide('right'); }catch(e){} });
+    }catch(e){ console.warn(e); }
     $('vrButton').textContent = 'SAIR DO VR';
     session.addEventListener('end', () => {
             restoreCanvasFromXR();
