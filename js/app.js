@@ -333,7 +333,7 @@ document.addEventListener('pointerdown',()=>{initAudio();resumeAudio();},{once:t
 // =====================================================
 const scene=new THREE.Scene();
 scene.background=new THREE.Color('#7a9aa8');
-scene.fog=new THREE.FogExp2(0x8aafb2,0.006);
+scene.fog=new THREE.FogExp2(0x8aafb2,0.004);
 
 const camera=new THREE.PerspectiveCamera(82,1,.05,200);
 camera.position.set(0,1.65,0);
@@ -343,19 +343,20 @@ const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-per
 renderer.xr.enabled=true;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.12;
+renderer.toneMappingExposure=1.35;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate=false;
 renderer.shadowMap.needsUpdate=true;
 renderer.setPixelRatio(Math.min(devicePixelRatio,2.5));
 $('scene').append(renderer.domElement);
+renderer.setClearColor(0x8eb4c0, 1);
 
 // Iluminação realista
-const ambient=new THREE.HemisphereLight(0xd4e8ff,0x3a4034,1.25);
+const ambient=new THREE.HemisphereLight(0xe8f4ff,0x4a5040,1.5);
 scene.add(ambient);
 
-const sun=new THREE.DirectionalLight(0xfff1d6,2.8);
+const sun=new THREE.DirectionalLight(0xfff5e0,3.4);
 sun.position.set(9,14,7);sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048);
 sun.shadow.camera.left=-16;sun.shadow.camera.right=16;
@@ -536,7 +537,7 @@ function initSky(){
   });
   skyMesh=new THREE.Mesh(new THREE.SphereGeometry(95,48,24),mat);
   skyMesh.frustumCulled=false;skyMesh.renderOrder=-1;
-  rig.add(skyMesh);
+  scene.add(skyMesh); // scene (não rig) — mais estável no WebXR
 }
 
 // IBL
@@ -1890,17 +1891,19 @@ function buildWorld(n){
 
 function applyLight(){
   const night=state.settings.lighting==='night';
-  ambient.intensity=night?0.7:1.25;
+  ambient.intensity=night?0.85:1.5;
   ambient.color.setHex(night?0x5060a0:0xd4e8ff);
-  sun.intensity=night?0.5:3.0;
+  sun.intensity=night?0.6:3.4;
   sun.color.setHex(night?0x8aa0d0:0xfff1d6);
   fill.intensity=night?0.12:0.42;
   rim.intensity=night?0.2:0.55;
   bounce.intensity=night?0.08:0.22;
   scene.environment=night?iblNightTarget.texture:iblDayTarget.texture;
-  scene.fog.color.setHex(night?0x1a2030:0x8aafb2);
-  scene.fog.density=night?0.01:0.006;
-  renderer.toneMappingExposure=night?1.2:1.28;
+  if(scene.fog){
+    scene.fog.color.setHex(night?0x1a2030:0x8aafb2);
+    scene.fog.density=night?0.008:0.004;
+  }
+  renderer.toneMappingExposure=night?1.25:1.4;
   if(skyMesh){
     const u=skyMesh.material.uniforms;
     u.uNight.value=night?1.0:0.0;
@@ -2494,11 +2497,18 @@ renderer.setAnimationLoop(()=>{
   isLocomoting = false;
   moveVignetteCurrent += (moveVignetteTarget - moveVignetteCurrent) * Math.min(1, dt * 8);
   if(vignetteUniforms && vignetteMesh){
-    const vi = moveVignetteCurrent;
-    vignetteUniforms.uIntensity.value = vi;
-    // raio alto = só escurece bordas, centro sempre legível
-    vignetteUniforms.uRadius.value = 0.78 + (1 - vi) * 0.15;
-    vignetteMesh.visible = vi > 0.02;
+    // Em VR imersivo a vinheta fica desligada (evita tela preta no Quest)
+    if(renderer.xr.isPresenting){
+      vignetteMesh.visible = false;
+      vignetteUniforms.uIntensity.value = 0;
+      moveVignetteCurrent = 0;
+      moveVignetteTarget = 0;
+    } else {
+      const vi = moveVignetteCurrent;
+      vignetteUniforms.uIntensity.value = vi;
+      vignetteUniforms.uRadius.value = 0.78 + (1 - vi) * 0.15;
+      vignetteMesh.visible = vi > 0.02;
+    }
   }
   // Áudio espacial: ouvinte segue a cabeça
   if(audioCtx && listenerNode){
@@ -2533,35 +2543,67 @@ async function enterVR(){
   try{
     if(renderer.xr.isPresenting){await renderer.xr.getSession().end();return;}
     if(!navigator.xr||!await navigator.xr.isSessionSupported('immersive-vr'))throw Error('WebXR imersivo não disponível neste navegador');
-    // Quest 3S: pedir taxa alta (90/120 Hz) e features de tracking
     const session = await navigator.xr.requestSession('immersive-vr', {
-      optionalFeatures: ['local-floor', 'hand-tracking', 'bounded-floor', 'layers'],
-      // preferredRate quando suportado pelo runtime
+      optionalFeatures: ['local-floor', 'hand-tracking', 'bounded-floor', 'layers']
     });
-    // Preferir 90 ou 120 Hz se o headset reportar
     if(session.updateTargetFrameRate){
       const rates = session.supportedFrameRates || [90, 120, 72];
-      const prefer = rates.includes(120) ? 120 : rates.includes(90) ? 90 : rates[0];
+      const prefer = rates.includes(90) ? 90 : rates.includes(120) ? 120 : rates[0];
       try { await session.updateTargetFrameRate(prefer); } catch(e){}
     }
     await renderer.xr.setSession(session);
     configureQuality();
-    // Evitar tela preta: reforçar iluminação, fundo e posição do rig
-    scene.background = new THREE.Color(state.settings.lighting==='night' ? '#0a1020' : '#7a9aa8');
-    if(scene.fog){ scene.fog.density = state.settings.lighting==='night' ? 0.01 : 0.006; }
-    applyLight();
-    ambient.intensity = Math.max(ambient.intensity, state.settings.lighting==='night' ? 0.65 : 1.2);
-    sun.intensity = Math.max(sun.intensity, state.settings.lighting==='night' ? 0.45 : 2.8);
-    renderer.toneMappingExposure = state.settings.lighting==='night' ? 1.15 : 1.25;
+
+    // ===== ANTI TELA PRETA (Quest 3S) =====
+    // 1) Vinheta OFF no imersivo
+    moveVignetteTarget = 0;
+    moveVignetteCurrent = 0;
+    if(vignetteMesh){
+      vignetteMesh.visible = false;
+      if(vignetteUniforms) vignetteUniforms.uIntensity.value = 0;
+    }
+    // 2) Fog desligado em VR (causa “tudo preto” à distância)
+    scene.fog = null;
+    // 3) Fundo sólido claro + céu
+    scene.background = new THREE.Color('#8eb4c0');
+    if(skyMesh){
+      skyMesh.visible = true;
+      if(skyMesh.material?.uniforms){
+        skyMesh.material.uniforms.uNight.value = 0;
+        skyMesh.material.uniforms.uIntensity.value = 1.2;
+      }
+    }
+    // 4) Luzes fortes (hardware móvel + WebXR costuma parecer mais escuro)
+    state.settings.lighting = 'day';
+    if($('lighting')) $('lighting').value = 'day';
+    ambient.intensity = 1.6;
+    ambient.color.setHex(0xe8f4ff);
+    sun.intensity = 3.5;
+    sun.color.setHex(0xfff5e0);
+    sun.position.set(10, 16, 8);
+    fill.intensity = 0.7;
+    rim.intensity = 0.8;
+    if(typeof bounce !== 'undefined' && bounce) bounce.intensity = 0.4;
+    scene.environment = iblDayTarget.texture;
+    renderer.toneMappingExposure = 1.45;
     renderer.shadowMap.needsUpdate = true;
-    // reposicionar rig no centro da sala (evita spawn dentro de parede / no escuro)
+    // 5) Rig no centro da sala, olhando para frente
     rig.position.set(0, 0, 0);
     rig.rotation.set(0, 0, 0);
-    if(vignetteMesh){ vignetteMesh.visible = false; moveVignetteCurrent = 0; moveVignetteTarget = 0; }
+    // 6) Garantir que o mundo está visível
+    world.visible = true;
+    scene.visible = true;
+
     $('vrButton').textContent='SAIR DO VR';
-    session.addEventListener('end',()=>{$('vrButton').textContent='ENTRAR EM VR';dragging=null;});
+    session.addEventListener('end',()=>{
+      $('vrButton').textContent='ENTRAR EM VR';
+      dragging=null;
+      // restaurar fog leve ao sair
+      scene.fog = new THREE.FogExp2(0x8aafb2, 0.005);
+      applyLight();
+    });
     playFanfare();
-    note('VR ativo • Quest 3S 1832×1920 • qualidade '+state.settings.quality);
+    note('VR ativo — iluminação reforçada. Se ainda escuro, mude Ambiente no painel.');
   }catch(e){note('Não foi possível entrar em VR: '+e.message);}
 }
 
