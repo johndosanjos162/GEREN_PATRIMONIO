@@ -1931,37 +1931,39 @@ function refreshPanelTexture(p){
   if(!p||!p.texture)return;
   p.texture.needsUpdate=true;
 }
+
 function makePanel(id,w,h,x,y,z){
   const canvas=document.createElement('canvas');
   canvas.width=WIDTH;
   canvas.height=HEIGHT;
   const ctx=canvas.getContext('2d',{alpha:false});
-  ctx.fillStyle='#e8f5ee';
+  // conteúdo inicial bem visível
+  ctx.fillStyle='#f0faf4';
   ctx.fillRect(0,0,WIDTH,HEIGHT);
-  ctx.fillStyle='#0a2a18';
-  ctx.font='bold 42px Arial,sans-serif';
-  ctx.fillText('PMSC 2026', 40, 70);
-  ctx.font='28px Arial,sans-serif';
-  ctx.fillText('Painel '+id, 40, 110);
+  ctx.fillStyle='#0d3d24';
+  ctx.font='bold 48px Arial';
+  ctx.fillText('PMSC 2026', 48, 80);
+  ctx.font='32px Arial';
+  ctx.fillStyle='#1a5a38';
+  ctx.fillText('Painel: '+id, 48, 130);
 
   const texture=new THREE.CanvasTexture(canvas);
   texture.colorSpace=THREE.SRGBColorSpace;
   texture.generateMipmaps=false;
   texture.minFilter=THREE.LinearFilter;
   texture.magFilter=THREE.LinearFilter;
-  texture.flipY=true;
   texture.needsUpdate=true;
 
   const group=new THREE.Group();
-  group.position.set(x,y,z);
-  scene.add(group);
+  // Parent no RIG: painel sempre à frente do usuário (não some no VR)
+  group.position.set(x, y, z);
+  rig.add(group);
 
-  // fundo opaco (sempre visível mesmo sem textura)
   const back=new THREE.Mesh(
-    new THREE.PlaneGeometry(w+0.06,h+0.06),
-    new THREE.MeshBasicMaterial({color:0x1a4a35,side:THREE.DoubleSide,toneMapped:false,depthWrite:true})
+    new THREE.PlaneGeometry(w+0.08,h+0.08),
+    new THREE.MeshBasicMaterial({color:0x0d3d24, side:THREE.DoubleSide, toneMapped:false})
   );
-  back.position.z=-0.01;
+  back.position.z=-0.012;
   group.add(back);
 
   const mat=new THREE.MeshBasicMaterial({
@@ -1969,13 +1971,12 @@ function makePanel(id,w,h,x,y,z){
     color:0xffffff,
     side:THREE.DoubleSide,
     toneMapped:false,
-    transparent:false,
-    depthWrite:true,
-    depthTest:true
+    depthTest:true,
+    depthWrite:true
   });
   const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h), mat);
   mesh.frustumCulled=false;
-  mesh.renderOrder=10;
+  mesh.renderOrder=20;
   group.add(mesh);
 
   panels[id]={id,canvas,ctx,texture,group,mesh,mat,regions:[],w,h};
@@ -1984,51 +1985,50 @@ function makePanel(id,w,h,x,y,z){
 }
 
 function placePanelsForUser(){
-  // Coloca os 3 painéis à frente do olhar (evita “painel invisível/preto”)
+  // Posições LOCAIS no rig (seguem a cabeça/corpo)
   try{
-    const cam = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
-    const origin = new THREE.Vector3();
-    const quat = new THREE.Quaternion();
-    cam.getWorldPosition(origin);
-    cam.getWorldQuaternion(quat);
-    const forward = new THREE.Vector3(0,0,-1).applyQuaternion(quat);
-    forward.y = 0;
-    if(forward.lengthSq()<0.01) forward.set(0,0,-1);
-    forward.normalize();
-    const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0,1,0)).normalize();
-    const dist = Number(state.settings.distance)||2.6;
-    const eyeY = origin.y;
-
-    function put(p, offsetRight, distMul, scale){
-      if(!p||!p.group) return;
-      const pos = origin.clone()
-        .add(forward.clone().multiplyScalar(dist*distMul))
-        .add(right.clone().multiplyScalar(offsetRight));
-      pos.y = eyeY - 0.1;
-      p.group.position.copy(pos);
-      // olhar para o usuário (só yaw)
-      const target = origin.clone();
-      target.y = pos.y;
-      p.group.lookAt(target);
-      // lookAt faz o -Z apontar ao alvo; plano default olha +Z → gira 180° em Y
-      p.group.rotateY(Math.PI);
-      if(scale) p.group.scale.setScalar(scale);
+    if(panels.main){
+      panels.main.group.position.set(0, 1.35, -2.4);
+      panels.main.group.rotation.set(0, 0, 0);
+      panels.main.group.scale.setScalar(Number(state.settings.panelScale)||1);
     }
-    put(panels.main, 0, 1.0, Number(state.settings.panelScale)||1);
-    put(panels.left, -1.85, 1.05, 0.95);
-    put(panels.right, 1.85, 1.05, 0.95);
+    if(panels.left){
+      panels.left.group.position.set(-2.0, 1.35, -2.6);
+      panels.left.group.rotation.set(0, 0.35, 0);
+      panels.left.group.scale.setScalar(0.92);
+    }
+    if(panels.right){
+      panels.right.group.position.set(2.0, 1.35, -2.6);
+      panels.right.group.rotation.set(0, -0.35, 0);
+      panels.right.group.scale.setScalar(0.92);
+    }
   }catch(e){ console.warn('placePanels', e); }
 }
 
-makePanel('main',3.4,2.55,0,1.55,-2.8);
-makePanel('left',1.7,2.1,-3.4,1.55,-3.0);
-makePanel('right',1.7,2.1,3.4,1.55,-3.0);
+function forceRedrawPanels(){
+  try{
+    placePanelsForUser();
+    if(typeof drawMain==='function') drawMain();
+    if(typeof drawSide==='function'){ drawSide('left'); drawSide('right'); }
+    for(const id of ['main','left','right']){
+      const p=panels[id];
+      if(!p) continue;
+      if(p.texture) p.texture.needsUpdate=true;
+      if(p.mat) p.mat.needsUpdate=true;
+    }
+  }catch(e){ console.warn('forceRedrawPanels', e); }
+}
+
+
+makePanel('main',3.2,2.4,0,1.35,-2.4);
+makePanel('left',1.6,2.0,-2.0,1.35,-2.6);
+makePanel('right',1.6,2.0,2.0,1.35,-2.6);
 
 function panelPositionReset(){
-  panels.main.group.position.set(0,Number(state.settings.panelHeight||1.55),-Number(state.settings.distance||2.8));
+  panels.main.group.position.set(0,1.35,-Number(state.settings.distance||2.4));
   panels.main.group.scale.setScalar(Number(state.settings.panelScale));
-  panels.left.group.position.set(-3.4,1.55,-3.0);
-  panels.right.group.position.set(3.4,1.55,-3.0);
+  panels.left.group.position.set(-2.0,1.35,-2.6);
+  panels.right.group.position.set(2.0,1.35,-2.6);
   for(const p of Object.values(panels))p.group.rotation.set(0,0,0);
 }
 function resetPanelPositions(){state.panels={};panelPositionReset();safeStore();updateVR();}
@@ -2818,17 +2818,10 @@ async function enterVR(){
     renderer.shadowMap.needsUpdate = true;
 
     try{
-      placePanelsForUser();
-      drawMain();
-      drawSide('left');
-      drawSide('right');
+      forceRedrawPanels();
       updateVR();
-      requestAnimationFrame(()=>{
-        try{
-          placePanelsForUser();
-          drawMain(); drawSide('left'); drawSide('right');
-        }catch(e){}
-      });
+      setTimeout(()=>forceRedrawPanels(), 100);
+      setTimeout(()=>forceRedrawPanels(), 400);
     }catch(e){ console.warn(e); }
     $('vrButton').textContent = 'SAIR DO VR';
     session.addEventListener('end', () => {
@@ -2888,7 +2881,7 @@ $('vrButton').onclick=enterVR;
 if($('shootModeBtn')) $('shootModeBtn').onclick=()=>{toggleShootMode(); $('shootModeBtn').textContent = shootMode ? 'SAIR DO TREINO DE TIRO' : 'TREINO DE TIRO (VR)';};
 $('reload').onclick=loadBank;
 for(const name of ['subject','topic','difficulty'])$(name).onchange=()=>{newSession(page==='exam'?'exam':page==='flash'?'flash':page==='review'?'review':'study');};
-$('search').oninput=()=>{newSession('study');};
+$('search').oninput=()=>{ clearTimeout(window.__searchT); window.__searchT=setTimeout(()=>{ try{ newSession('study'); }catch(e){} }, 300); };
 $('examCount').onchange=()=>{if(page==='exam')newSession('exam');};
 $('examTime').onchange=()=>{if(page==='exam')newSession('exam');};
 $('examFeedback').onchange=()=>{if(page==='exam')newSession('exam');};
