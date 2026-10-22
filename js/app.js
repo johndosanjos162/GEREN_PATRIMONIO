@@ -1917,7 +1917,7 @@ function applyLight(){
 // =====================================================
 // PAINÉIS VR
 // =====================================================
-const WIDTH=2048,HEIGHT=1536; // estável no Quest 3S (4096 enegrecia os painéis) // texto nítido Quest 3S (~20 PPD) // alta nitidez de texto no Quest 3S (~20 PPD)
+const WIDTH=1024,HEIGHT=768; // UI estável no WebXR Quest (texturas grandes = painel preto) // estável no Quest 3S (4096 enegrecia os painéis) // texto nítido Quest 3S (~20 PPD) // alta nitidez de texto no Quest 3S (~20 PPD)
 const panels={};
 const panelMeshes=[];
 const raycaster=new THREE.Raycaster();
@@ -1927,45 +1927,97 @@ let hovered=null;
 
 function refreshPanelTexture(p){
   if(!p||!p.texture)return;
-  p.texture.generateMipmaps=false;
-  p.texture.minFilter=THREE.LinearFilter;
-  p.texture.magFilter=THREE.LinearFilter;
-  refreshPanelTexture(p);
+  p.texture.needsUpdate=true;
 }
 function makePanel(id,w,h,x,y,z){
   const canvas=document.createElement('canvas');
   canvas.width=WIDTH;
   canvas.height=HEIGHT;
-  const ctx=canvas.getContext('2d',{alpha:false,willReadFrequently:false});
-  // Preenche já na criação (evita painel preto se o draw falhar)
-  ctx.fillStyle='#0c1c17';
+  const ctx=canvas.getContext('2d',{alpha:false});
+  ctx.fillStyle='#e8f5ee';
   ctx.fillRect(0,0,WIDTH,HEIGHT);
-  ctx.fillStyle='#7dffb0';
-  ctx.font='bold 64px Arial';
-  ctx.fillText('PMSC 2026', 80, 120);
-  ctx.fillStyle='#c8e8d4';
-  ctx.font='36px Arial';
-  ctx.fillText('Carregando painel…', 80, 180);
+  ctx.fillStyle='#0a2a18';
+  ctx.font='bold 42px Arial,sans-serif';
+  ctx.fillText('PMSC 2026', 40, 70);
+  ctx.font='28px Arial,sans-serif';
+  ctx.fillText('Painel '+id, 40, 110);
+
   const texture=new THREE.CanvasTexture(canvas);
-  // NoColorSpace evita textura “apagada” por double-gamma no WebXR do Quest
-  texture.colorSpace=THREE.NoColorSpace;
+  texture.colorSpace=THREE.SRGBColorSpace;
   texture.generateMipmaps=false;
   texture.minFilter=THREE.LinearFilter;
   texture.magFilter=THREE.LinearFilter;
-  texture.anisotropy=1;
+  texture.flipY=true;
   texture.needsUpdate=true;
-  const group=new THREE.Group();group.position.set(x,y,z);scene.add(group);
-  // borda sutil no painel
-  const border=new THREE.Mesh(
-    new THREE.PlaneGeometry(w+0.04,h+0.04),
-    new THREE.MeshBasicMaterial({color:0x0e2a1c,side:THREE.DoubleSide,toneMapped:false})
+
+  const group=new THREE.Group();
+  group.position.set(x,y,z);
+  scene.add(group);
+
+  // fundo opaco (sempre visível mesmo sem textura)
+  const back=new THREE.Mesh(
+    new THREE.PlaneGeometry(w+0.06,h+0.06),
+    new THREE.MeshBasicMaterial({color:0x1a4a35,side:THREE.DoubleSide,toneMapped:false,depthWrite:true})
   );
-  border.position.z=-0.008;group.add(border);
-  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:texture,color:0xffffff,side:THREE.DoubleSide,toneMapped:false,transparent:false}));
+  back.position.z=-0.01;
+  group.add(back);
+
+  const mat=new THREE.MeshBasicMaterial({
+    map:texture,
+    color:0xffffff,
+    side:THREE.DoubleSide,
+    toneMapped:false,
+    transparent:false,
+    depthWrite:true,
+    depthTest:true
+  });
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h), mat);
+  mesh.frustumCulled=false;
+  mesh.renderOrder=10;
   group.add(mesh);
-  panels[id]={id,canvas,ctx,texture,group,mesh,regions:[],w,h};
-  panelMeshes.push(mesh);mesh.userData.id=id;
+
+  panels[id]={id,canvas,ctx,texture,group,mesh,mat,regions:[],w,h};
+  panelMeshes.push(mesh);
+  mesh.userData.id=id;
 }
+
+function placePanelsForUser(){
+  // Coloca os 3 painéis à frente do olhar (evita “painel invisível/preto”)
+  try{
+    const cam = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
+    const origin = new THREE.Vector3();
+    const quat = new THREE.Quaternion();
+    cam.getWorldPosition(origin);
+    cam.getWorldQuaternion(quat);
+    const forward = new THREE.Vector3(0,0,-1).applyQuaternion(quat);
+    forward.y = 0;
+    if(forward.lengthSq()<0.01) forward.set(0,0,-1);
+    forward.normalize();
+    const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0,1,0)).normalize();
+    const dist = Number(state.settings.distance)||2.6;
+    const eyeY = origin.y;
+
+    function put(p, offsetRight, distMul, scale){
+      if(!p||!p.group) return;
+      const pos = origin.clone()
+        .add(forward.clone().multiplyScalar(dist*distMul))
+        .add(right.clone().multiplyScalar(offsetRight));
+      pos.y = eyeY - 0.1;
+      p.group.position.copy(pos);
+      // olhar para o usuário (só yaw)
+      const target = origin.clone();
+      target.y = pos.y;
+      p.group.lookAt(target);
+      // lookAt faz o -Z apontar ao alvo; plano default olha +Z → gira 180° em Y
+      p.group.rotateY(Math.PI);
+      if(scale) p.group.scale.setScalar(scale);
+    }
+    put(panels.main, 0, 1.0, Number(state.settings.panelScale)||1);
+    put(panels.left, -1.85, 1.05, 0.95);
+    put(panels.right, 1.85, 1.05, 0.95);
+  }catch(e){ console.warn('placePanels', e); }
+}
+
 makePanel('main',3.4,2.55,0,1.55,-2.8);
 makePanel('left',1.7,2.1,-3.4,1.55,-3.0);
 makePanel('right',1.7,2.1,3.4,1.55,-3.0);
@@ -1981,13 +2033,10 @@ function resetPanelPositions(){state.panels={};panelPositionReset();safeStore();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 function round(ctx,x,y,w,h,r=16){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
-function text(ctx,t,x,y,size=46,color='#f3fff4',weight='700'){
-  ctx.font=`${weight} ${size}px system-ui,Arial,sans-serif`;
+function text(ctx,t,x,y,size=46,color='#0a2a18',weight='700'){
+  ctx.font=`${weight} ${size}px Arial,Helvetica,sans-serif`;
   ctx.textBaseline='alphabetic';
-  ctx.imageSmoothingEnabled=false;
-  // sombra leve = contorno legível em VR
-  ctx.fillStyle='rgba(0,0,0,0.55)';
-  ctx.fillText(String(t),x+2,y+2);
+  ctx.imageSmoothingEnabled=true;
   ctx.fillStyle=color;
   ctx.fillText(String(t),x,y);
 }
@@ -2001,29 +2050,21 @@ function region(p,x,y,w,h,action){p.regions.push({x,y,w,h,action});}
 
 function background(p,title){
   const c=p.ctx; p.regions=[];
-  c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
-  // fundo moderno: gradiente escuro + vinheta
-  const bg=c.createLinearGradient(0,0,0,HEIGHT);
-  bg.addColorStop(0,'#0a1612'); bg.addColorStop(0.45,'#0c1c17'); bg.addColorStop(1,'#081410');
-  c.fillStyle=bg; c.fillRect(0,0,WIDTH,HEIGHT);
-  // grade sutil (tech/military modern)
-  c.strokeStyle='rgba(80,140,110,0.06)'; c.lineWidth=1;
-  for(let x=0;x<WIDTH;x+=64){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,HEIGHT); c.stroke(); }
-  for(let y=0;y<HEIGHT;y+=64){ c.beginPath(); c.moveTo(0,y); c.lineTo(WIDTH,y); c.stroke(); }
-  // header bar
-  const hg=c.createLinearGradient(0,0,WIDTH,0);
-  hg.addColorStop(0,'#145a3a'); hg.addColorStop(0.5,'#1a7048'); hg.addColorStop(1,'#145a3a');
-  c.fillStyle=hg; round(c,20,18,WIDTH-40,128,20); c.fill();
-  // accent line under header
-  c.fillStyle='#7dffb0'; round(c,20,140,WIDTH-40,4,2); c.fill();
-  // title
-  text(c,title,48,78,52,'#f4fff8','700');
-  text(c,'☰  ARRASTE PELA BARRA SUPERIOR  ·  GATILHO SELECIONA',48,118,26,'#b8efd0','500');
-  // outer frame
-  c.strokeStyle='rgba(122,255,176,0.45)'; c.lineWidth=3;
-  round(c,12,12,WIDTH-24,HEIGHT-24,24); c.stroke();
-  // drag zone
-  region(p,0,0,WIDTH,160,'drag');
+  c.imageSmoothingEnabled=true;
+  // fundo CLARO — legível no Quest (tema escuro parecia “painel apagado”)
+  c.fillStyle='#eaf6ef';
+  c.fillRect(0,0,WIDTH,HEIGHT);
+  // header
+  c.fillStyle='#145a3a';
+  round(c,16,14,WIDTH-32,88,14); c.fill();
+  c.fillStyle='#7dffb0';
+  round(c,16,98,WIDTH-32,4,2); c.fill();
+  text(c,title,36,58,36,'#f4fff8','700');
+  text(c,'Arraste pela barra  ·  Gatilho seleciona',36,88,18,'#b8efd0','500');
+  // moldura
+  c.strokeStyle='#1a7048'; c.lineWidth=4;
+  round(c,8,8,WIDTH-16,HEIGHT-16,18); c.stroke();
+  region(p,0,0,WIDTH,100,'drag');
 }
 
 function vrButton(p,label,x,y,w,h,action,color='#1a5c3e',size=40){
@@ -2058,11 +2099,11 @@ function drawOptionCard(p, letter, textContent, x, y, w, h, action, state){
   // state: 'idle' | 'selected' | 'correct' | 'wrong'
   const c=p.ctx;
   const hot=hovered?.panel===p.id && hovered?.action===action;
-  let bg='#152a22', border='rgba(90,160,120,0.5)', letterBg='#1e5a3e', letterCol='#c8ffd8';
-  if(state==='selected'){ bg='#1a3a55'; border='#5eb0ff'; letterBg='#1e5a8a'; letterCol='#d0eaff'; }
-  if(state==='correct'){ bg='#0f3d28'; border='#50ff9d'; letterBg='#147a48'; letterCol='#e0ffe8'; }
-  if(state==='wrong'){ bg='#3a1a22'; border='#ff8e91'; letterBg='#8a3040'; letterCol='#ffd0d4'; }
-  if(hot && state==='idle'){ bg='#1a3a2e'; border='#9af6bc'; }
+  let bg='#ffffff', border='rgba(20,90,60,0.55)', letterBg='#1e5a3e', letterCol='#e8fff0';
+  if(state==='selected'){ bg='#d6ecff'; border='#1e6aaa'; letterBg='#1e5a8a'; letterCol='#ffffff'; }
+  if(state==='correct'){ bg='#d4f5e4'; border='#1a8a50'; letterBg='#147a48'; letterCol='#ffffff'; }
+  if(state==='wrong'){ bg='#ffe0e4'; border='#c04050'; letterBg='#8a3040'; letterCol='#ffffff'; }
+  if(hot && state==='idle'){ bg='#d8f5e8'; border='#1a8a50'; }
   // card shadow
   c.fillStyle='rgba(0,0,0,0.3)';
   round(c,x+2,y+3,w,h,14); c.fill();
@@ -2079,7 +2120,7 @@ function drawOptionCard(p, letter, textContent, x, y, w, h, action, state){
   const lines=wrapped(c,textContent,w-bw-55,38);
   let ty=y+Math.max(36, (h - lines.length*44)/2 + 32);
   for(const line of lines.slice(0,4)){
-    text(c,line,x+bw+30,ty,38,'#f2faf5','600');
+    text(c,line,x+bw+30,ty,38,'#0a2a18','700');
     ty+=44;
   }
   region(p,x,y,w,h,action);
@@ -2101,14 +2142,14 @@ function drawMain(){
   // meta bar
   const pct = Math.round(((s.index+1)/Math.max(1,a.length))*100);
   c.fillStyle='rgba(15,40,30,0.85)';
-  round(c,40,168,WIDTH-80,88,14); c.fill();
-  text(c,`${s.index+1}  /  ${a.length}`,60,212,36,'#7dffb0','700');
-  text(c,q.subject,220,200,32,'#e8fff0','600');
-  text(c,q.topic,220,238,26,'#9ab8a8','500');
+  round(c,24,108,WIDTH-48,56,10); c.fill();
+  text(c,`${s.index+1}  /  ${a.length}`,36,145,28,'#145a3a','700');
+  text(c,q.subject,160,138,24,'#0a2a18','700');
+  text(c,q.topic,160,158,18,'#3a5a4a','600');
   // progress bar
-  c.fillStyle='#1a3a2a'; round(c,WIDTH-420,198,340,18,9); c.fill();
-  c.fillStyle='#4dff9a'; round(c,WIDTH-420,198,Math.max(12,340*pct/100),18,9); c.fill();
-  text(c,pct+'%',WIDTH-70,214,24,'#c8ffd8','600');
+  c.fillStyle='#1a3a2a'; round(c,WIDTH-280,130,220,14,7); c.fill();
+  c.fillStyle='#4dff9a'; round(c,WIDTH-280,130,Math.max(10,220*pct/100),14,7); c.fill();
+  text(c,pct+'%',WIDTH-50,142,18,'#145a3a','700');
 
   const size=Math.round(44*Number(state.settings.fontSize)/120);
   const lineH=size*1.42;
@@ -2152,7 +2193,7 @@ function drawMain(){
     }
   }
 
-  const viewTop=275, viewBottom=1280, viewH=viewBottom-viewTop;
+  const viewTop=110, viewBottom=HEIGHT-250, viewH=viewBottom-viewTop;
   const total=blocks.reduce((sum,b)=>sum+b.height+10,0);
   s.scroll=clamp(s.scroll,0,Math.max(0,total-viewH));
   c.save();
@@ -2162,15 +2203,15 @@ function drawMain(){
   for(const b of blocks){
     if(y+b.height >= viewTop-20 && y <= viewBottom+20){
       if(b.kind==='question'){
-        c.fillStyle='rgba(18,48,38,0.9)';
+        c.fillStyle='#ffffff';
         round(c,48,y,WIDTH-96,b.height-8,16); c.fill();
-        c.strokeStyle='rgba(120,220,160,0.25)'; c.lineWidth=2;
+        c.strokeStyle='rgba(20,100,60,0.35)'; c.lineWidth=2;
         round(c,48,y,WIDTH-96,b.height-8,16); c.stroke();
         // label
         text(c,'ENUNCIADO',64,y+32,22,'#7dffb0','700');
         let ty=y+70;
         for(const line of b.lines){
-          text(c,line,64,ty,size,'#ffffff','600');
+          text(c,line,64,ty,size,'#0a2a18','700');
           ty+=lineH+4;
         }
       } else if(b.kind==='option'){
@@ -2181,7 +2222,7 @@ function drawMain(){
         round(c,48,y,WIDTH-96,b.height-8,12); c.fill();
         let ty=y+40;
         for(const line of b.lines){
-          text(c,line,64,ty,size-4,'#c8e8d4','500');
+          text(c,line,64,ty,size-4,'#1a3a2a','600');
           ty+=lineH;
         }
       }
@@ -2191,11 +2232,11 @@ function drawMain(){
   c.restore();
 
   // footer toolbar
-  c.fillStyle='rgba(8,20,16,0.95)';
-  c.fillRect(20,1295,WIDTH-40,220);
-  c.fillStyle='#7dffb0'; c.fillRect(20,1295,WIDTH-40,3);
+  c.fillStyle='#d0e8da';
+  c.fillRect(20,HEIGHT-240,WIDTH-40,220);
+  c.fillStyle='#1a7048'; c.fillRect(20,HEIGHT-240,WIDTH-40,3);
 
-  const bw=300, bh=100, gap=18, baseY=1320;
+  const bw=Math.floor(WIDTH*0.14), bh=Math.floor(HEIGHT*0.07), gap=12, baseY=HEIGHT-210;
   let bx=50;
   vrButton(p,'▲ SUBIR',bx,baseY,bw,bh,'scrollUp','#1a4a35',36); bx+=bw+gap;
   vrButton(p,'▼ DESCER',bx,baseY,bw,bh,'scrollDown','#1a4a35',36); bx+=bw+gap;
@@ -2208,7 +2249,7 @@ function drawMain(){
   const footer = s.mode==='exam'&&s.minutes
     ? `TEMPO: ${Math.max(0,Math.ceil((s.minutes*60000-(Date.now()-s.start))/60000))} min  ·  SIMULADO`
     : s.mode==='flash' ? 'MODO FLASHCARD' : s.mode==='exam' ? 'MODO SIMULADO' : 'MODO ESTUDO';
-  text(c,footer,55,1475,28,'#8ecfad','600');
+  text(c,footer,40,HEIGHT-30,22,'#1a4a35','600');
   refreshPanelTexture(p);
 }
 
@@ -2240,12 +2281,12 @@ function drawSide(id){
         const [lab,val]=cards[i+j];
         const x=40+j*((WIDTH-100)/2+20);
         const w=(WIDTH-100)/2;
-        c.fillStyle='rgba(18,48,38,0.9)';
+        c.fillStyle='#ffffff';
         round(c,x,y,w,130,16); c.fill();
-        c.strokeStyle='rgba(100,200,150,0.3)'; c.lineWidth=2;
+        c.strokeStyle='rgba(20,100,60,0.3)'; c.lineWidth=2;
         round(c,x,y,w,130,16); c.stroke();
-        text(c,val,x+24,y+70,48,'#7dffb0','800');
-        text(c,lab,x+24,y+110,24,'#a8cbb8','500');
+        text(c,val,x+24,y+70,40,'#145a3a','800');
+        text(c,lab,x+24,y+110,20,'#3a5a4a','600');
       }
       y+=150;
     }
@@ -2589,6 +2630,15 @@ renderer.setAnimationLoop(()=>{
     }
   } catch(err){ console.warn('xr frame prep', err); }
 
+  // Garante textura dos painéis no WebXR (Quest às vezes não sobe o map)
+  if(renderer.xr.isPresenting){
+    try{
+      for(const id of ['main','left','right']){
+        const p=panels[id];
+        if(p&&p.texture) p.texture.needsUpdate=true;
+      }
+    }catch(e){}
+  }
   try {
     renderer.render(scene, camera);
   } catch(err){
@@ -2729,12 +2779,17 @@ async function enterVR(){
     renderer.shadowMap.needsUpdate = true;
 
     try{
+      placePanelsForUser();
       drawMain();
       drawSide('left');
       drawSide('right');
       updateVR();
-      // segundo frame: algumas GPUs do Quest só sobem a textura no 2º needsUpdate
-      requestAnimationFrame(()=>{ try{ drawMain(); drawSide('left'); drawSide('right'); }catch(e){} });
+      requestAnimationFrame(()=>{
+        try{
+          placePanelsForUser();
+          drawMain(); drawSide('left'); drawSide('right');
+        }catch(e){}
+      });
     }catch(e){ console.warn(e); }
     $('vrButton').textContent = 'SAIR DO VR';
     session.addEventListener('end', () => {
