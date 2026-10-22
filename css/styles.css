@@ -130,3 +130,15 @@ label{display:block;font-size:13px;color:var(--muted);margin:12px 0 5px}
   main{padding:9px}
   #scene{height:260px}
 }
+
+
+/* Canvas movido para body no modo WebXR (Quest 3S) */
+body > canvas {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 2147483646 !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
