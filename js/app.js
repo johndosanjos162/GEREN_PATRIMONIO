@@ -2425,8 +2425,9 @@ renderer.setAnimationLoop(()=>{
     }
   }
 
-  if(renderer.xr.isPresenting){
+  if(renderer.xr.isPresenting){ try {
     const session=renderer.xr.getSession();
+    if(!session) throw Error("no session");
     for(const src of session.inputSources){
       const gp=src.gamepad;if(!gp)continue;
       let ax=0,az=0;
@@ -2493,6 +2494,7 @@ renderer.setAnimationLoop(()=>{
       if(s?.mode==='exam'&&!s.finished&&s.minutes&&Date.now()-s.start>=s.minutes*60000)finishExam();
       else if(s?.mode==='exam')drawMain();
     }
+  } catch(xrErr){ console.warn('XR frame', xrErr); }
   }
   // Vinheta dinâmica: suaviza ao parar de andar (comfort locomotion)
   if(!isLocomoting) moveVignetteTarget *= 0.0;
@@ -2537,9 +2539,62 @@ renderer.setAnimationLoop(()=>{
       }
     } catch(e){}
   }
-  renderer.render(scene,camera);
+  try {
+    if(renderer.xr.isPresenting){
+      // mantém cena clara a cada frame (evita estado escuro residual)
+      if(scene.fog) scene.fog = null;
+      if(!scene.background) scene.background = new THREE.Color(0x9ec4d0);
+    }
+  } catch(err){ console.warn('xr frame prep', err); }
+
+  try {
+    renderer.render(scene, camera);
+  } catch(err){
+    console.error('render error', err);
+  }
 });
 
+
+
+// Marcador de diagnóstico VR (MeshBasic = visível sem luz)
+let vrDebugGroup = null;
+function showVRDebugMarker(){
+  if(vrDebugGroup){
+    scene.remove(vrDebugGroup);
+    vrDebugGroup = null;
+  }
+  vrDebugGroup = new THREE.Group();
+  // esfera branca à frente
+  const ball = new THREE.Mesh(
+    new THREE.SphereGeometry(0.25, 16, 12),
+    new THREE.MeshBasicMaterial({ color: 0xffffff })
+  );
+  ball.position.set(0, 1.5, -2);
+  vrDebugGroup.add(ball);
+  // chão verde básico
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(8, 8),
+    new THREE.MeshBasicMaterial({ color: 0x3a8f5c, side: THREE.DoubleSide })
+  );
+  floor.rotation.x = -Math.PI/2;
+  floor.position.set(0, 0.01, -2);
+  vrDebugGroup.add(floor);
+  // painel vermelho
+  const panel = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.5, 1),
+    new THREE.MeshBasicMaterial({ color: 0xff4444, side: THREE.DoubleSide })
+  );
+  panel.position.set(0, 1.5, -3);
+  vrDebugGroup.add(panel);
+  scene.add(vrDebugGroup);
+  note('Diagnóstico VR: deve ver esfera branca + chão verde + painel vermelho');
+}
+function hideVRDebugMarker(){
+  if(vrDebugGroup){
+    scene.remove(vrDebugGroup);
+    vrDebugGroup = null;
+  }
+}
 
 function forceBrightScene(){
   scene.background = new THREE.Color(0x9ec4d0);
@@ -2585,7 +2640,7 @@ async function enterVR(){
     forceBrightScene();
 
     const session = await navigator.xr.requestSession('immersive-vr', {
-      optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
+      optionalFeatures: ['local-floor', 'bounded-floor']
     });
 
     try {
@@ -2601,6 +2656,7 @@ async function enterVR(){
 
     forceBrightScene();
     configureQuality();
+    showVRDebugMarker();
 
     // posição segura no centro
     rig.position.set(0, 0, 0);
@@ -2620,6 +2676,7 @@ async function enterVR(){
 
     $('vrButton').textContent = 'SAIR DO VR';
     session.addEventListener('end', () => {
+      hideVRDebugMarker();
       $('vrButton').textContent = 'ENTRAR EM VR';
       dragging = null;
       renderer.shadowMap.enabled = true;
@@ -2634,7 +2691,7 @@ async function enterVR(){
     });
 
     try { playFanfare(); } catch(e){}
-    note('VR claro ativo. Gire a cabeça — você está no centro da sala.');
+    note('VR diagnóstico: esfera BRANCA + chão VERDE + painel VERMELHO à frente. Se só preto, avise.');
   } catch(e) {
     console.error(e);
     note('Não foi possível entrar em VR: ' + e.message);
