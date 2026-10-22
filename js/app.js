@@ -332,7 +332,7 @@ document.addEventListener('pointerdown',()=>{initAudio();resumeAudio();},{once:t
 // THREE.JS — RENDERER OTIMIZADO QUEST 3S
 // =====================================================
 const scene=new THREE.Scene();
-scene.background=new THREE.Color('#7a9aa8');
+scene.background=new THREE.Color('#9ec4d0');
 scene.fog=new THREE.FogExp2(0x8aafb2,0.004);
 
 const camera=new THREE.PerspectiveCamera(82,1,.05,200);
@@ -374,6 +374,8 @@ rim.position.set(-5,8,-14);scene.add(rim);
 
 const bounce=new THREE.DirectionalLight(0xc8dcc8,0.22);
 bounce.position.set(0,-2,4);scene.add(bounce);
+const vrAmbientBoost = new THREE.AmbientLight(0xffffff, 0.55);
+scene.add(vrAmbientBoost);
 
 
 // =====================================================
@@ -2385,7 +2387,7 @@ function configureQuality(){
   }
   // Framebuffer scale: 1.0 ≈ nativo 1832×1920; >1 supersampling (custa GPU)
   // Alta: 1.15 leve supersampling para compensar lentes Fresnel
-  const fb = q==='low' ? 0.8 : q==='high' ? 1.15 : 1.0;
+  const fb = q==='low' ? 0.85 : q==='high' ? 1.0 : 1.0; // 1.0 nativo Quest — evita tela preta
   if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
     renderer.xr.setFramebufferScaleFactor(fb);
   }
@@ -2496,19 +2498,18 @@ renderer.setAnimationLoop(()=>{
   if(!isLocomoting) moveVignetteTarget *= 0.0;
   isLocomoting = false;
   moveVignetteCurrent += (moveVignetteTarget - moveVignetteCurrent) * Math.min(1, dt * 8);
-  if(vignetteUniforms && vignetteMesh){
-    // Em VR imersivo a vinheta fica desligada (evita tela preta no Quest)
-    if(renderer.xr.isPresenting){
-      vignetteMesh.visible = false;
-      vignetteUniforms.uIntensity.value = 0;
-      moveVignetteCurrent = 0;
-      moveVignetteTarget = 0;
-    } else {
-      const vi = moveVignetteCurrent;
-      vignetteUniforms.uIntensity.value = vi;
-      vignetteUniforms.uRadius.value = 0.78 + (1 - vi) * 0.15;
-      vignetteMesh.visible = vi > 0.02;
-    }
+  if(renderer.xr.isPresenting){
+    // segurança: nada de vinheta / fog no imersivo
+    if(vignetteMesh) vignetteMesh.visible = false;
+    if(vignetteUniforms) vignetteUniforms.uIntensity.value = 0;
+    moveVignetteCurrent = 0;
+    moveVignetteTarget = 0;
+    if(scene.fog) scene.fog = null;
+  } else if(vignetteUniforms && vignetteMesh){
+    const vi = moveVignetteCurrent;
+    vignetteUniforms.uIntensity.value = vi;
+    vignetteUniforms.uRadius.value = 0.78 + (1 - vi) * 0.15;
+    vignetteMesh.visible = vi > 0.02;
   }
   // Áudio espacial: ouvinte segue a cabeça
   if(audioCtx && listenerNode){
@@ -2539,72 +2540,105 @@ renderer.setAnimationLoop(()=>{
   renderer.render(scene,camera);
 });
 
+
+function forceBrightScene(){
+  scene.background = new THREE.Color(0x9ec4d0);
+  scene.fog = null;
+  renderer.setClearColor(0x9ec4d0, 1);
+  renderer.toneMappingExposure = 1.55;
+  if(typeof vrAmbientBoost !== 'undefined') vrAmbientBoost.intensity = 0.9;
+  ambient.intensity = 1.9;
+  ambient.color.setHex(0xffffff);
+  sun.intensity = 2.8;
+  sun.color.setHex(0xfff8e8);
+  sun.position.set(5, 20, 10);
+  if(sun.target) sun.target.position.set(0, 0, 0);
+  fill.intensity = 1.0;
+  rim.intensity = 0.75;
+  if(typeof bounce !== 'undefined' && bounce) bounce.intensity = 0.55;
+  try { scene.environment = iblDayTarget.texture; } catch(e){}
+  if(skyMesh){
+    skyMesh.visible = true;
+    try {
+      if(skyMesh.material && skyMesh.material.uniforms){
+        skyMesh.material.uniforms.uNight.value = 0;
+        skyMesh.material.uniforms.uIntensity.value = 1.35;
+      }
+    } catch(e){}
+  }
+  world.visible = true;
+  state.settings.lighting = 'day';
+  if($('lighting')) $('lighting').value = 'day';
+  renderer.shadowMap.needsUpdate = true;
+}
+
 async function enterVR(){
   try{
-    if(renderer.xr.isPresenting){await renderer.xr.getSession().end();return;}
-    if(!navigator.xr||!await navigator.xr.isSessionSupported('immersive-vr'))throw Error('WebXR imersivo não disponível neste navegador');
-    const session = await navigator.xr.requestSession('immersive-vr', {
-      optionalFeatures: ['local-floor', 'hand-tracking', 'bounded-floor', 'layers']
-    });
-    if(session.updateTargetFrameRate){
-      const rates = session.supportedFrameRates || [90, 120, 72];
-      const prefer = rates.includes(90) ? 90 : rates.includes(120) ? 120 : rates[0];
-      try { await session.updateTargetFrameRate(prefer); } catch(e){}
+    if(renderer.xr.isPresenting){
+      await renderer.xr.getSession().end();
+      return;
     }
+    if(!navigator.xr || !(await navigator.xr.isSessionSupported('immersive-vr'))){
+      throw Error('WebXR imersivo não disponível neste navegador');
+    }
+
+    forceBrightScene();
+
+    const session = await navigator.xr.requestSession('immersive-vr', {
+      optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
+    });
+
+    try {
+      if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
+        renderer.xr.setFramebufferScaleFactor(1.0);
+      }
+      if(typeof renderer.xr.setFoveation === 'function'){
+        renderer.xr.setFoveation(0.5);
+      }
+    } catch(e){}
+
     await renderer.xr.setSession(session);
+
+    forceBrightScene();
     configureQuality();
 
-    // ===== ANTI TELA PRETA (Quest 3S) =====
-    // 1) Vinheta OFF no imersivo
-    moveVignetteTarget = 0;
-    moveVignetteCurrent = 0;
-    if(vignetteMesh){
-      vignetteMesh.visible = false;
-      if(vignetteUniforms) vignetteUniforms.uIntensity.value = 0;
-    }
-    // 2) Fog desligado em VR (causa “tudo preto” à distância)
-    scene.fog = null;
-    // 3) Fundo sólido claro + céu
-    scene.background = new THREE.Color('#8eb4c0');
-    if(skyMesh){
-      skyMesh.visible = true;
-      if(skyMesh.material?.uniforms){
-        skyMesh.material.uniforms.uNight.value = 0;
-        skyMesh.material.uniforms.uIntensity.value = 1.2;
-      }
-    }
-    // 4) Luzes fortes (hardware móvel + WebXR costuma parecer mais escuro)
-    state.settings.lighting = 'day';
-    if($('lighting')) $('lighting').value = 'day';
-    ambient.intensity = 1.6;
-    ambient.color.setHex(0xe8f4ff);
-    sun.intensity = 3.5;
-    sun.color.setHex(0xfff5e0);
-    sun.position.set(10, 16, 8);
-    fill.intensity = 0.7;
-    rim.intensity = 0.8;
-    if(typeof bounce !== 'undefined' && bounce) bounce.intensity = 0.4;
-    scene.environment = iblDayTarget.texture;
-    renderer.toneMappingExposure = 1.45;
-    renderer.shadowMap.needsUpdate = true;
-    // 5) Rig no centro da sala, olhando para frente
+    // posição segura no centro
     rig.position.set(0, 0, 0);
     rig.rotation.set(0, 0, 0);
-    // 6) Garantir que o mundo está visível
-    world.visible = true;
-    scene.visible = true;
 
-    $('vrButton').textContent='SAIR DO VR';
-    session.addEventListener('end',()=>{
-      $('vrButton').textContent='ENTRAR EM VR';
-      dragging=null;
-      // restaurar fog leve ao sair
-      scene.fog = new THREE.FogExp2(0x8aafb2, 0.005);
+    // remove vinheta da câmera XR (fullscreen preto)
+    try {
+      if(typeof vignetteMesh !== 'undefined' && vignetteMesh){
+        vignetteMesh.visible = false;
+        if(vignetteMesh.parent) vignetteMesh.parent.remove(vignetteMesh);
+      }
+    } catch(e){}
+    if(typeof moveVignetteTarget !== 'undefined'){ moveVignetteTarget = 0; moveVignetteCurrent = 0; }
+
+    // sombras off no VR
+    renderer.shadowMap.enabled = false;
+
+    $('vrButton').textContent = 'SAIR DO VR';
+    session.addEventListener('end', () => {
+      $('vrButton').textContent = 'ENTRAR EM VR';
+      dragging = null;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.needsUpdate = true;
+      try {
+        if(typeof vignetteMesh !== 'undefined' && vignetteMesh && !vignetteMesh.parent){
+          camera.add(vignetteMesh);
+        }
+      } catch(e){}
+      scene.fog = new THREE.FogExp2(0x8aafb2, 0.004);
       applyLight();
     });
-    playFanfare();
-    note('VR ativo — iluminação reforçada. Se ainda escuro, mude Ambiente no painel.');
-  }catch(e){note('Não foi possível entrar em VR: '+e.message);}
+
+    try { playFanfare(); } catch(e){}
+    note('VR claro ativo. Gire a cabeça — você está no centro da sala.');
+  } catch(e) {
+    console.error(e);
+    note('Não foi possível entrar em VR: ' + e.message);
+  }
 }
 
 for(const [p,label] of pages){const b=button(label,()=>go(p),$('navigation'));b.dataset.page=p;}
