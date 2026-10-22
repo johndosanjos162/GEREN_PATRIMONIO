@@ -2416,12 +2416,18 @@ renderer.setAnimationLoop(()=>{
 
   updateSoldiers(dt,time);
 
-  const w=$('scene').clientWidth,h=$('scene').clientHeight;
-  if(w&&h&&!renderer.xr.isPresenting){
-    const pr=renderer.getPixelRatio();
-    if(renderer.domElement.width!==Math.round(w*pr)||renderer.domElement.height!==Math.round(h*pr)){
-      renderer.setSize(w,h,false);
-      camera.aspect=w/h;camera.updateProjectionMatrix();
+  // Em VR o tamanho vem do headset — NÃO redimensionar pelo #scene (causa tela preta)
+  if(!renderer.xr.isPresenting){
+    const host = $('scene');
+    const w = host ? host.clientWidth : 0;
+    const h = host ? host.clientHeight : 0;
+    if(w && h){
+      const pr = renderer.getPixelRatio();
+      if(renderer.domElement.width !== Math.round(w*pr) || renderer.domElement.height !== Math.round(h*pr)){
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
     }
   }
 
@@ -2558,42 +2564,46 @@ renderer.setAnimationLoop(()=>{
 
 // Marcador de diagnóstico VR (MeshBasic = visível sem luz)
 let vrDebugGroup = null;
-function showVRDebugMarker(){
-  if(vrDebugGroup){
-    scene.remove(vrDebugGroup);
-    vrDebugGroup = null;
-  }
-  vrDebugGroup = new THREE.Group();
-  // esfera branca à frente
-  const ball = new THREE.Mesh(
-    new THREE.SphereGeometry(0.25, 16, 12),
-    new THREE.MeshBasicMaterial({ color: 0xffffff })
-  );
-  ball.position.set(0, 1.5, -2);
-  vrDebugGroup.add(ball);
-  // chão verde básico
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(8, 8),
-    new THREE.MeshBasicMaterial({ color: 0x3a8f5c, side: THREE.DoubleSide })
-  );
-  floor.rotation.x = -Math.PI/2;
-  floor.position.set(0, 0.01, -2);
-  vrDebugGroup.add(floor);
-  // painel vermelho
-  const panel = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.5, 1),
-    new THREE.MeshBasicMaterial({ color: 0xff4444, side: THREE.DoubleSide })
-  );
-  panel.position.set(0, 1.5, -3);
-  vrDebugGroup.add(panel);
-  scene.add(vrDebugGroup);
-  note('Diagnóstico VR: deve ver esfera branca + chão verde + painel vermelho');
+
+// ---- Canvas: no Quest o WebXR precisa do canvas em tela cheia (não dentro de #scene) ----
+let canvasOriginalParent = null;
+function mountCanvasForXR(){
+  const canvas = renderer.domElement;
+  if(!canvasOriginalParent) canvasOriginalParent = canvas.parentElement;
+  document.body.appendChild(canvas);
+  canvas.style.cssText = [
+    'position:fixed',
+    'inset:0',
+    'width:100%','height:100%',
+    'max-width:none','max-height:none',
+    'z-index:2147483646',
+    'margin:0','padding:0',
+    'border:none','border-radius:0',
+    'background:#9ec4d0',
+    'display:block'
+  ].join(';');
+  // tamanho real do framebuffer = tela do headset
+  try {
+    const w = window.innerWidth || 1832;
+    const h = window.innerHeight || 1920;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / Math.max(1, h);
+    camera.updateProjectionMatrix();
+  } catch(e){}
 }
-function hideVRDebugMarker(){
-  if(vrDebugGroup){
-    scene.remove(vrDebugGroup);
-    vrDebugGroup = null;
-  }
+
+function restoreCanvasFromXR(){
+  const canvas = renderer.domElement;
+  canvas.style.cssText = '';
+  const host = document.getElementById('scene') || canvasOriginalParent;
+  if(host) host.appendChild(canvas);
+  try {
+    const w = host.clientWidth || 640;
+    const h = host.clientHeight || 360;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / Math.max(1, h);
+    camera.updateProjectionMatrix();
+  } catch(e){}
 }
 
 function forceBrightScene(){
@@ -2601,16 +2611,16 @@ function forceBrightScene(){
   scene.fog = null;
   renderer.setClearColor(0x9ec4d0, 1);
   renderer.toneMappingExposure = 1.55;
-  if(typeof vrAmbientBoost !== 'undefined') vrAmbientBoost.intensity = 0.9;
-  ambient.intensity = 1.9;
+  if(typeof vrAmbientBoost !== 'undefined') vrAmbientBoost.intensity = 0.95;
+  ambient.intensity = 2.0;
   ambient.color.setHex(0xffffff);
-  sun.intensity = 2.8;
+  sun.intensity = 2.5;
   sun.color.setHex(0xfff8e8);
   sun.position.set(5, 20, 10);
   if(sun.target) sun.target.position.set(0, 0, 0);
   fill.intensity = 1.0;
-  rim.intensity = 0.75;
-  if(typeof bounce !== 'undefined' && bounce) bounce.intensity = 0.55;
+  rim.intensity = 0.8;
+  if(typeof bounce !== 'undefined' && bounce) bounce.intensity = 0.5;
   try { scene.environment = iblDayTarget.texture; } catch(e){}
   if(skyMesh){
     skyMesh.visible = true;
@@ -2627,6 +2637,44 @@ function forceBrightScene(){
   renderer.shadowMap.needsUpdate = true;
 }
 
+function showVRDebugMarker(){
+  if(typeof vrDebugGroup !== 'undefined' && vrDebugGroup){
+    scene.remove(vrDebugGroup);
+  }
+  vrDebugGroup = new THREE.Group();
+  const ball = new THREE.Mesh(
+    new THREE.SphereGeometry(0.3, 16, 12),
+    new THREE.MeshBasicMaterial({ color: 0xffffff })
+  );
+  ball.position.set(0, 1.5, -2);
+  vrDebugGroup.add(ball);
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(10, 10),
+    new THREE.MeshBasicMaterial({ color: 0x2ecc71, side: THREE.DoubleSide })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(0, 0.02, -1);
+  vrDebugGroup.add(floor);
+  const panel = new THREE.Mesh(
+    new THREE.PlaneGeometry(2, 1.2),
+    new THREE.MeshBasicMaterial({ color: 0xe74c3c, side: THREE.DoubleSide })
+  );
+  panel.position.set(0, 1.6, -3);
+  vrDebugGroup.add(panel);
+  // eixos de orientação
+  const axis = new THREE.AxesHelper(1.2);
+  axis.position.set(0, 0.1, -1.5);
+  vrDebugGroup.add(axis);
+  scene.add(vrDebugGroup);
+}
+
+function hideVRDebugMarker(){
+  if(typeof vrDebugGroup !== 'undefined' && vrDebugGroup){
+    scene.remove(vrDebugGroup);
+    vrDebugGroup = null;
+  }
+}
+
 async function enterVR(){
   try{
     if(renderer.xr.isPresenting){
@@ -2637,7 +2685,17 @@ async function enterVR(){
       throw Error('WebXR imersivo não disponível neste navegador');
     }
 
+    // CRÍTICO no Quest: canvas em fullscreen no body ANTES da sessão
+    mountCanvasForXR();
     forceBrightScene();
+    showVRDebugMarker();
+
+    // Reference space preferindo local-floor
+    try {
+      if(typeof renderer.xr.setReferenceSpaceType === 'function'){
+        renderer.xr.setReferenceSpaceType('local-floor');
+      }
+    } catch(e){}
 
     const session = await navigator.xr.requestSession('immersive-vr', {
       optionalFeatures: ['local-floor', 'bounded-floor']
@@ -2647,36 +2705,32 @@ async function enterVR(){
       if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
         renderer.xr.setFramebufferScaleFactor(1.0);
       }
-      if(typeof renderer.xr.setFoveation === 'function'){
-        renderer.xr.setFoveation(0.5);
-      }
     } catch(e){}
 
     await renderer.xr.setSession(session);
 
     forceBrightScene();
-    configureQuality();
     showVRDebugMarker();
-
-    // posição segura no centro
     rig.position.set(0, 0, 0);
     rig.rotation.set(0, 0, 0);
 
-    // remove vinheta da câmera XR (fullscreen preto)
     try {
       if(typeof vignetteMesh !== 'undefined' && vignetteMesh){
         vignetteMesh.visible = false;
         if(vignetteMesh.parent) vignetteMesh.parent.remove(vignetteMesh);
       }
     } catch(e){}
-    if(typeof moveVignetteTarget !== 'undefined'){ moveVignetteTarget = 0; moveVignetteCurrent = 0; }
+    if(typeof moveVignetteTarget !== 'undefined'){
+      moveVignetteTarget = 0;
+      moveVignetteCurrent = 0;
+    }
 
-    // sombras off no VR
     renderer.shadowMap.enabled = false;
 
     $('vrButton').textContent = 'SAIR DO VR';
     session.addEventListener('end', () => {
       hideVRDebugMarker();
+      restoreCanvasFromXR();
       $('vrButton').textContent = 'ENTRAR EM VR';
       dragging = null;
       renderer.shadowMap.enabled = true;
@@ -2688,15 +2742,18 @@ async function enterVR(){
       } catch(e){}
       scene.fog = new THREE.FogExp2(0x8aafb2, 0.004);
       applyLight();
+      note('Saiu do VR');
     });
 
     try { playFanfare(); } catch(e){}
-    note('VR diagnóstico: esfera BRANCA + chão VERDE + painel VERMELHO à frente. Se só preto, avise.');
+    note('VR: canvas fullscreen. Deve ver branco + verde + vermelho à frente.');
   } catch(e) {
     console.error(e);
+    restoreCanvasFromXR();
     note('Não foi possível entrar em VR: ' + e.message);
   }
 }
+
 
 for(const [p,label] of pages){const b=button(label,()=>go(p),$('navigation'));b.dataset.page=p;}
 environments.forEach((name,i)=>{$('environment').add(new Option(name,String(i)));});
