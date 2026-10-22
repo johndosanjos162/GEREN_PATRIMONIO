@@ -24,7 +24,7 @@ const subjectsBase = ['Língua Portuguesa','Informática','Direito Constituciona
 const pages = [['home','Início'],['study','Questões'],['exam','Simulado'],['flash','Flashcards'],['review','Revisões'],['stats','Desempenho'],['bank','Banco JSON'],['settings','Configurações']];
 
 const defaultState = () => ({
-  settings:{env:0,lighting:'day',quality:'high',fontSize:115,distance:2.5,panelHeight:1.65,panelScale:1,speed:1.4,snap:30,volume:60,playerHeight:1.65,vignette:1,comfort:1},
+  settings:{env:0,lighting:'day',quality:'high',fontSize:125,distance:2.8,panelHeight:1.55,panelScale:1.05,speed:1.3,snap:30,volume:60,playerHeight:1.65,vignette:0,comfort:1},
   history:[],favorites:[],reviews:{},exams:[],session:null,panels:{}
 });
 
@@ -1917,7 +1917,7 @@ function applyLight(){
 // =====================================================
 // PAINÉIS VR
 // =====================================================
-const WIDTH=2048,HEIGHT=1536; // nítido em ~20 PPD (Quest 3S)
+const WIDTH=3072,HEIGHT=2304; // alta nitidez de texto no Quest 3S (~20 PPD)
 const panels={};
 const panelMeshes=[];
 const raycaster=new THREE.Raycaster();
@@ -1928,9 +1928,13 @@ function makePanel(id,w,h,x,y,z){
   const canvas=document.createElement('canvas');canvas.width=WIDTH;canvas.height=HEIGHT;
   const ctx=canvas.getContext('2d');
   const texture=new THREE.CanvasTexture(canvas);
-  texture.colorSpace=THREE.SRGBColorSpace;texture.generateMipmaps=true;
-  texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;
-  texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  texture.colorSpace=THREE.SRGBColorSpace;
+  // UI/texto: SEM mipmaps — mipmaps deixam letreiros borrados no Quest
+  texture.generateMipmaps=false;
+  texture.minFilter=THREE.LinearFilter;
+  texture.magFilter=THREE.LinearFilter;
+  texture.anisotropy=1;
+  texture.needsUpdate=true;
   const group=new THREE.Group();group.position.set(x,y,z);scene.add(group);
   // borda sutil no painel
   const border=new THREE.Mesh(
@@ -1943,15 +1947,15 @@ function makePanel(id,w,h,x,y,z){
   panels[id]={id,canvas,ctx,texture,group,mesh,regions:[],w,h};
   panelMeshes.push(mesh);mesh.userData.id=id;
 }
-makePanel('main',3.2,2.4,0,1.65,-2.5);
-makePanel('left',1.6,2,-3.15,1.6,-2.9);
-makePanel('right',1.6,2,3.15,1.6,-2.9);
+makePanel('main',3.4,2.55,0,1.55,-2.8);
+makePanel('left',1.7,2.1,-3.4,1.55,-3.0);
+makePanel('right',1.7,2.1,3.4,1.55,-3.0);
 
 function panelPositionReset(){
-  panels.main.group.position.set(0,Number(state.settings.panelHeight),-Number(state.settings.distance));
+  panels.main.group.position.set(0,Number(state.settings.panelHeight||1.55),-Number(state.settings.distance||2.8));
   panels.main.group.scale.setScalar(Number(state.settings.panelScale));
-  panels.left.group.position.set(-3.15,1.6,-2.9);
-  panels.right.group.position.set(3.15,1.6,-2.9);
+  panels.left.group.position.set(-3.4,1.55,-3.0);
+  panels.right.group.position.set(3.4,1.55,-3.0);
   for(const p of Object.values(panels))p.group.rotation.set(0,0,0);
 }
 function resetPanelPositions(){state.panels={};panelPositionReset();safeStore();updateVR();}
@@ -2332,7 +2336,7 @@ for(let i=0;i<2;i++){
   });
   controller.addEventListener('squeezestart',()=>{selectRay(rayFromController(controller),controller,'controller',i,true);});
   controller.addEventListener('squeezeend',()=>endDrag('controller',i));
-  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,0,-8)]),new THREE.LineBasicMaterial({color:0x7cffbd}));
+  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,0,-8)]),new THREE.LineBasicMaterial({color:0x5aaa88,transparent:true,opacity:0.45}));
   controller.add(line);
   const grip=renderer.xr.getControllerGrip(i);
   grip.add(controllerFactory.createControllerModel(grip));
@@ -2347,8 +2351,12 @@ for(let i=0;i<2;i++){
 const teleportMarkers=[];
 const destinations=[[0,-1.3],[-3,-3],[3,-3],[0,-5],[-5,-6],[5,-6]];
 for(const [x,z] of destinations){
-  const circle=new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.36,0.04,28),new THREE.MeshBasicMaterial({color:0x1ec8e8,transparent:true,opacity:0.8}));
-  circle.position.set(x,0.03,z);
+  const circle=new THREE.Mesh(
+    new THREE.RingGeometry(0.28,0.38,32),
+    new THREE.MeshBasicMaterial({color:0x4a9a7a,transparent:true,opacity:0.35,side:THREE.DoubleSide})
+  );
+  circle.rotation.x=-Math.PI/2;
+  circle.position.set(x,0.02,z);
   circle.userData.destination=new THREE.Vector3(x,0,z);
   scene.add(circle);
   teleportMarkers.push(circle);
@@ -2372,11 +2380,11 @@ function configureQuality(){
   // Otimizado para Meta Quest 3S: 1832×1920 por olho, ~20 PPD, FOV 96°H/90°V, até 120 Hz
   const q=state.settings.quality;
   // Pixel ratio: no headset o XR gerencia; no desktop limitar
-  const pr = q==='low' ? 1 : q==='high' ? Math.min(devicePixelRatio, 2.5) : Math.min(devicePixelRatio, 1.75);
+  const pr = q==='low' ? 1 : q==='high' ? Math.min(devicePixelRatio, 2) : Math.min(devicePixelRatio, 1.5);
   renderer.setPixelRatio(pr);
   // Foveated rendering: low foveation = mais nítido nas bordas (Quest 3S Fresnel já perde nas bordas)
   if(typeof renderer.xr.setFoveation==='function'){
-    renderer.xr.setFoveation(q==='low' ? 0.75 : q==='high' ? 0.15 : 0.4);
+    renderer.xr.setFoveation(q==='low' ? 0.7 : q==='high' ? 0.2 : 0.45);
   }
   // Shadow map: 2048 em Alta aproveita a densidade de ~20 PPD
   const res = q==='low' ? 512 : q==='high' ? 2048 : 1024;
@@ -2387,7 +2395,7 @@ function configureQuality(){
   }
   // Framebuffer scale: 1.0 ≈ nativo 1832×1920; >1 supersampling (custa GPU)
   // Alta: 1.15 leve supersampling para compensar lentes Fresnel
-  const fb = q==='low' ? 0.85 : q==='high' ? 1.0 : 1.0; // 1.0 nativo Quest — evita tela preta
+  const fb = q==='low' ? 0.9 : q==='high' ? 1.05 : 1.0; // leve super-sample na Alta
   if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
     renderer.xr.setFramebufferScaleFactor(fb);
   }
@@ -2562,7 +2570,7 @@ renderer.setAnimationLoop(()=>{
 
 
 
-// Marcador de diagnóstico VR (MeshBasic = visível sem luz)
+// Marcador de status VR (MeshBasic = visível sem luz)
 
 // ---- Canvas: no Quest o WebXR precisa do canvas em tela cheia (não dentro de #scene) ----
 let canvasOriginalParent = null;
@@ -2692,6 +2700,7 @@ async function enterVR(){
     renderer.shadowMap.enabled = state.settings.quality !== "low";
     renderer.shadowMap.needsUpdate = true;
 
+    try{ updateVR(); }catch(e){}
     $('vrButton').textContent = 'SAIR DO VR';
     session.addEventListener('end', () => {
             restoreCanvasFromXR();
@@ -2710,7 +2719,7 @@ async function enterVR(){
     });
 
     try { playFanfare(); } catch(e){}
-    note('VR imersivo ativo — Academia Militar PMSC 2026');
+    note('VR imersivo • Academia Militar PMSC 2026 • painéis nítidos');
   } catch(e) {
     console.error(e);
     restoreCanvasFromXR();
