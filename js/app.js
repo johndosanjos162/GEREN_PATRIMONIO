@@ -2563,7 +2563,6 @@ renderer.setAnimationLoop(()=>{
 
 
 // Marcador de diagnóstico VR (MeshBasic = visível sem luz)
-let vrDebugGroup = null;
 
 // ---- Canvas: no Quest o WebXR precisa do canvas em tela cheia (não dentro de #scene) ----
 let canvasOriginalParent = null;
@@ -2607,73 +2606,39 @@ function restoreCanvasFromXR(){
 }
 
 function forceBrightScene(){
-  scene.background = new THREE.Color(0x9ec4d0);
+  // Cena legível no Quest sem "estouro" de luz — visual realista
+  const night = state.settings.lighting === 'night';
+  scene.background = new THREE.Color(night ? 0x0c1420 : 0x87aec0);
   scene.fog = null;
-  renderer.setClearColor(0x9ec4d0, 1);
-  renderer.toneMappingExposure = 1.55;
-  if(typeof vrAmbientBoost !== 'undefined') vrAmbientBoost.intensity = 0.95;
-  ambient.intensity = 2.0;
-  ambient.color.setHex(0xffffff);
-  sun.intensity = 2.5;
-  sun.color.setHex(0xfff8e8);
-  sun.position.set(5, 20, 10);
-  if(sun.target) sun.target.position.set(0, 0, 0);
-  fill.intensity = 1.0;
-  rim.intensity = 0.8;
-  if(typeof bounce !== 'undefined' && bounce) bounce.intensity = 0.5;
-  try { scene.environment = iblDayTarget.texture; } catch(e){}
+  renderer.setClearColor(night ? 0x0c1420 : 0x87aec0, 1);
+  renderer.toneMappingExposure = night ? 1.15 : 1.25;
+  if(typeof vrAmbientBoost !== 'undefined') vrAmbientBoost.intensity = night ? 0.35 : 0.45;
+  ambient.intensity = night ? 0.75 : 1.35;
+  ambient.color.setHex(night ? 0x6080b0 : 0xd8e8f8);
+  sun.intensity = night ? 0.45 : 2.8;
+  sun.color.setHex(night ? 0x9eb0e0 : 0xfff2d8);
+  sun.position.set(8, 14, 6);
+  if(sun.target) sun.target.position.set(0, 0, -2);
+  fill.intensity = night ? 0.25 : 0.55;
+  rim.intensity = night ? 0.3 : 0.55;
+  if(typeof bounce !== 'undefined' && bounce) bounce.intensity = night ? 0.12 : 0.28;
+  try {
+    scene.environment = night ? iblNightTarget.texture : iblDayTarget.texture;
+  } catch(e){}
   if(skyMesh){
     skyMesh.visible = true;
     try {
       if(skyMesh.material && skyMesh.material.uniforms){
-        skyMesh.material.uniforms.uNight.value = 0;
-        skyMesh.material.uniforms.uIntensity.value = 1.35;
+        skyMesh.material.uniforms.uNight.value = night ? 1.0 : 0.0;
+        skyMesh.material.uniforms.uIntensity.value = night ? 0.7 : 1.15;
       }
     } catch(e){}
   }
   world.visible = true;
-  state.settings.lighting = 'day';
-  if($('lighting')) $('lighting').value = 'day';
   renderer.shadowMap.needsUpdate = true;
 }
 
-function showVRDebugMarker(){
-  if(typeof vrDebugGroup !== 'undefined' && vrDebugGroup){
-    scene.remove(vrDebugGroup);
-  }
-  vrDebugGroup = new THREE.Group();
-  const ball = new THREE.Mesh(
-    new THREE.SphereGeometry(0.3, 16, 12),
-    new THREE.MeshBasicMaterial({ color: 0xffffff })
-  );
-  ball.position.set(0, 1.5, -2);
-  vrDebugGroup.add(ball);
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(10, 10),
-    new THREE.MeshBasicMaterial({ color: 0x2ecc71, side: THREE.DoubleSide })
-  );
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.set(0, 0.02, -1);
-  vrDebugGroup.add(floor);
-  const panel = new THREE.Mesh(
-    new THREE.PlaneGeometry(2, 1.2),
-    new THREE.MeshBasicMaterial({ color: 0xe74c3c, side: THREE.DoubleSide })
-  );
-  panel.position.set(0, 1.6, -3);
-  vrDebugGroup.add(panel);
-  // eixos de orientação
-  const axis = new THREE.AxesHelper(1.2);
-  axis.position.set(0, 0.1, -1.5);
-  vrDebugGroup.add(axis);
-  scene.add(vrDebugGroup);
-}
 
-function hideVRDebugMarker(){
-  if(typeof vrDebugGroup !== 'undefined' && vrDebugGroup){
-    scene.remove(vrDebugGroup);
-    vrDebugGroup = null;
-  }
-}
 
 async function enterVR(){
   try{
@@ -2688,8 +2653,8 @@ async function enterVR(){
     // CRÍTICO no Quest: canvas em fullscreen no body ANTES da sessão
     mountCanvasForXR();
     forceBrightScene();
-    showVRDebugMarker();
-
+    if(world && world.children.length < 5) buildWorld(+state.settings.env || 0);
+    
     // Reference space preferindo local-floor
     try {
       if(typeof renderer.xr.setReferenceSpaceType === 'function'){
@@ -2710,8 +2675,7 @@ async function enterVR(){
     await renderer.xr.setSession(session);
 
     forceBrightScene();
-    showVRDebugMarker();
-    rig.position.set(0, 0, 0);
+        rig.position.set(0, 0, 0);
     rig.rotation.set(0, 0, 0);
 
     try {
@@ -2725,12 +2689,12 @@ async function enterVR(){
       moveVignetteCurrent = 0;
     }
 
-    renderer.shadowMap.enabled = false;
+    renderer.shadowMap.enabled = state.settings.quality !== "low";
+    renderer.shadowMap.needsUpdate = true;
 
     $('vrButton').textContent = 'SAIR DO VR';
     session.addEventListener('end', () => {
-      hideVRDebugMarker();
-      restoreCanvasFromXR();
+            restoreCanvasFromXR();
       $('vrButton').textContent = 'ENTRAR EM VR';
       dragging = null;
       renderer.shadowMap.enabled = true;
@@ -2746,7 +2710,7 @@ async function enterVR(){
     });
 
     try { playFanfare(); } catch(e){}
-    note('VR: canvas fullscreen. Deve ver branco + verde + vermelho à frente.');
+    note('VR imersivo ativo — Academia Militar PMSC 2026');
   } catch(e) {
     console.error(e);
     restoreCanvasFromXR();
