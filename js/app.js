@@ -343,12 +343,12 @@ const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-per
 renderer.xr.enabled=true;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.35;
+renderer.toneMappingExposure=1.3;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate=false;
 renderer.shadowMap.needsUpdate=true;
-renderer.setPixelRatio(Math.min(devicePixelRatio,2.5));
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 $('scene').append(renderer.domElement);
 renderer.setClearColor(0x8eb4c0, 1);
 
@@ -576,7 +576,7 @@ scene.add(world);
 function noise2(x,y){return (Math.sin(x*12.9898+y*78.233)*43758.5453)%1;}
 function fbm(x,y,oct=4){let v=0,a=0.5;for(let i=0;i<oct;i++){v+=a*Math.abs(noise2(x,y));x*=2;y*=2;a*=0.5;}return v;}
 
-function makeSurfaceTexture(kind,size=768){
+function makeSurfaceTexture(kind,size=1024){
   const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
   const ctx=canvas.getContext('2d');const img=ctx.createImageData(size,size);
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
@@ -847,11 +847,11 @@ function mat(color,opts={}){
       roughnessMap:surfaceMaps.roughness,
       normalMap:surfaceMaps.normal,
       aoMap:surfaceMaps.ao,
-      aoMapIntensity:0.65,
-      roughness:isMetal?0.28:isWood?0.65:isFabric?0.88:0.75,
-      metalness:isMetal?0.82:0.02,
-      normalScale:new THREE.Vector2(0.28,0.28),
-      envMapIntensity:isMetal?1.35:0.7
+      aoMapIntensity:0.75,
+      roughness:isMetal?0.25:isWood?0.58:isFabric?0.85:0.68,
+      metalness:isMetal?0.85:0.04,
+      normalScale:new THREE.Vector2(0.4,0.4),
+      envMapIntensity:isMetal?1.5:0.85
     };
     if(isWood){
       params.map=woodTexture;
@@ -1801,7 +1801,7 @@ function buildWorld(n){
 
   if(n!==3)makeRoom();
   else{
-    const groundMat=new THREE.MeshStandardMaterial({map:grassTexture,roughness:0.94,metalness:0,normalMap:surfaceMaps.normal,normalScale:new THREE.Vector2(0.15,0.15)});
+    const groundMat=new THREE.MeshStandardMaterial({map:grassTexture,roughness:0.88,metalness:0.03,normalMap:surfaceMaps.normal,normalScale:new THREE.Vector2(0.15,0.15)});
     const ground=new THREE.Mesh(withAO(new THREE.PlaneGeometry(75,75,24,24)),groundMat);
     ground.rotation.x=-Math.PI/2;ground.position.set(0,-0.01,-1);ground.receiveShadow=true;
     const pos=ground.geometry.attributes.position;
@@ -1894,23 +1894,28 @@ function buildWorld(n){
 
 function applyLight(){
   const night=state.settings.lighting==='night';
-  ambient.intensity=night?0.85:1.5;
-  ambient.color.setHex(night?0x5060a0:0xd4e8ff);
-  sun.intensity=night?0.6:3.4;
-  sun.color.setHex(night?0x8aa0d0:0xfff1d6);
-  fill.intensity=night?0.12:0.42;
-  rim.intensity=night?0.2:0.55;
-  bounce.intensity=night?0.08:0.22;
-  scene.environment=night?iblNightTarget.texture:iblDayTarget.texture;
-  if(scene.fog){
-    scene.fog.color.setHex(night?0x1a2030:0x8aafb2);
-    scene.fog.density=night?0.008:0.004;
+  ambient.intensity=night?0.7:1.25;
+  ambient.color.setHex(night?0x4a5a90:0xe2eef8);
+  sun.intensity=night?0.55:2.9;
+  sun.color.setHex(night?0xa0b4e0:0xfff0d2);
+  sun.position.set(9, 15, 7);
+  if(sun.target){ sun.target.position.set(0,0,-1); sun.target.updateMatrixWorld(); }
+  fill.intensity=night?0.2:0.55;
+  rim.intensity=night?0.28:0.65;
+  if(typeof bounce!=='undefined'&&bounce) bounce.intensity=night?0.12:0.32;
+  if(typeof vrAmbientBoost!=='undefined') vrAmbientBoost.intensity=night?0.25:0.35;
+  try{ scene.environment=night?iblNightTarget.texture:iblDayTarget.texture; }catch(e){}
+  scene.background=new THREE.Color(night?0x0b1220:0x7eabba);
+  // fog leve = profundidade (realismo) sem escurecer painéis
+  if(!renderer.xr.isPresenting){
+    scene.fog=new THREE.FogExp2(night?0x1a2030:0x8aafb2, night?0.012:0.005);
+  } else {
+    scene.fog=new THREE.FogExp2(night?0x1a2030:0x8eb8c4, night?0.006:0.0025);
   }
-  renderer.toneMappingExposure=night?1.25:1.4;
-  if(skyMesh){
-    const u=skyMesh.material.uniforms;
-    u.uNight.value=night?1.0:0.0;
-    u.uIntensity.value=night?0.6:1.0;
+  renderer.toneMappingExposure=night?1.18:1.3;
+  if(skyMesh?.material?.uniforms){
+    skyMesh.material.uniforms.uNight.value=night?1.0:0.0;
+    skyMesh.material.uniforms.uIntensity.value=night?0.75:1.2;
   }
   renderer.shadowMap.needsUpdate=true;
 }
@@ -2499,32 +2504,43 @@ function setEnvironment(n){
   safeStore();updateVR();
 }
 function configureQuality(){
-  // Otimizado para Meta Quest 3S: 1832×1920 por olho, ~20 PPD, FOV 96°H/90°V, até 120 Hz
-  const q=state.settings.quality;
-  // Pixel ratio: no headset o XR gerencia; no desktop limitar
+  // Meta Quest 3S: 1832×1920/olho · ~20 PPD · até 120 Hz · Snapdragon XR2 Gen 2
+  const q = state.settings.quality || 'high';
   const pr = q==='low' ? 1 : q==='high' ? Math.min(devicePixelRatio, 2) : Math.min(devicePixelRatio, 1.5);
   renderer.setPixelRatio(pr);
-  // Foveated rendering: low foveation = mais nítido nas bordas (Quest 3S Fresnel já perde nas bordas)
-  if(typeof renderer.xr.setFoveation==='function'){
-    renderer.xr.setFoveation(q==='low' ? 0.7 : q==='high' ? 0.2 : 0.45);
-  }
-  // Shadow map: 2048 em Alta aproveita a densidade de ~20 PPD
-  const res = q==='low' ? 512 : q==='high' ? 2048 : 1024;
-  if(sun.shadow.mapSize.x !== res){
-    if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map = null; }
-    sun.shadow.mapSize.set(res, res);
-    renderer.shadowMap.needsUpdate = true;
-  }
-  // Framebuffer scale: 1.0 ≈ nativo 1832×1920; >1 supersampling (custa GPU)
-  // Alta: 1.15 leve supersampling para compensar lentes Fresnel
-  const fb = q==='low' ? 0.9 : q==='high' ? 1.05 : 1.0; // leve super-sample na Alta
-  if(typeof renderer.xr.setFramebufferScaleFactor === 'function'){
-    renderer.xr.setFramebufferScaleFactor(fb);
-  }
-  // Prefer 90Hz+ quando disponível (Quest 3S até 120)
   try {
-    if(renderer.xr.getSession){ /* session rate set on enter */ }
+    if(typeof renderer.xr.setFoveation==='function'){
+      // 0 = nítido nas bordas; 1 = mais FPS
+      renderer.xr.setFoveation(q==='low' ? 0.65 : q==='high' ? 0.15 : 0.4);
+    }
   } catch(e){}
+  try {
+    if(typeof renderer.xr.setFramebufferScaleFactor==='function'){
+      // 1.0 = nativo Quest; 1.1 = leve supersample na Alta
+      const fb = q==='low' ? 0.85 : q==='high' ? 1.1 : 1.0;
+      renderer.xr.setFramebufferScaleFactor(fb);
+    }
+  } catch(e){}
+  const res = q==='low' ? 1024 : q==='high' ? 2048 : 1536;
+  if(sun.shadow.mapSize.x !== res){
+    if(sun.shadow.map){ try{ sun.shadow.map.dispose(); }catch(e){} sun.shadow.map=null; }
+    sun.shadow.mapSize.set(res, res);
+  }
+  sun.shadow.bias = -0.00025;
+  sun.shadow.normalBias = 0.035;
+  sun.shadow.radius = q==='low' ? 1.5 : 2.5;
+  sun.shadow.camera.near = 0.5;
+  sun.shadow.camera.far = 40;
+  sun.shadow.camera.left = -14;
+  sun.shadow.camera.right = 14;
+  sun.shadow.camera.top = 14;
+  sun.shadow.camera.bottom = -14;
+  sun.shadow.camera.updateProjectionMatrix();
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.needsUpdate = true;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = state.settings.lighting==='night' ? 1.2 : 1.32;
 }
 function syncSettings(){
   for(const k of ['lighting','quality','fontSize','distance','panelHeight','panelScale','speed','snap','volume','playerHeight','vignette','comfort']){ if($(k)) $(k).value=state.settings[k]; }
@@ -2683,12 +2699,15 @@ renderer.setAnimationLoop(()=>{
     }
   } catch(err){ console.warn('xr frame prep', err); }
 
-  // Garante textura dos painéis no WebXR (Quest às vezes não sobe o map)
+  // Painéis + sombras dinâmicas (a cada 3 frames = desempenho no Quest)
   if(renderer.xr.isPresenting){
     try{
       for(const id of ['main','left','right']){
         const p=panels[id];
         if(p&&p.texture) p.texture.needsUpdate=true;
+      }
+      if((frameCount = (frameCount|0)+1) % 3 === 0){
+        renderer.shadowMap.needsUpdate = true;
       }
     }catch(e){}
   }
@@ -2745,36 +2764,12 @@ function restoreCanvasFromXR(){
 }
 
 function forceBrightScene(){
-  // Cena legível no Quest sem "estouro" de luz — visual realista
-  const night = state.settings.lighting === 'night';
-  scene.background = new THREE.Color(night ? 0x0c1420 : 0x87aec0);
-  scene.fog = null;
-  renderer.setClearColor(night ? 0x0c1420 : 0x87aec0, 1);
-  renderer.toneMappingExposure = night ? 1.15 : 1.25;
-  if(typeof vrAmbientBoost !== 'undefined') vrAmbientBoost.intensity = night ? 0.35 : 0.45;
-  ambient.intensity = night ? 0.8 : 1.4;
-  ambient.color.setHex(night ? 0x6080b0 : 0xd8e8f8);
-  sun.intensity = night ? 0.5 : 3.0;
-  sun.color.setHex(night ? 0x9eb0e0 : 0xfff2d8);
-  sun.position.set(8, 14, 6);
-  if(sun.target) sun.target.position.set(0, 0, -2);
-  fill.intensity = night ? 0.25 : 0.55;
-  rim.intensity = night ? 0.3 : 0.55;
-  if(typeof bounce !== 'undefined' && bounce) bounce.intensity = night ? 0.12 : 0.28;
-  try {
-    scene.environment = night ? iblNightTarget.texture : iblDayTarget.texture;
-  } catch(e){}
-  if(skyMesh){
-    skyMesh.visible = true;
-    try {
-      if(skyMesh.material && skyMesh.material.uniforms){
-        skyMesh.material.uniforms.uNight.value = night ? 1.0 : 0.0;
-        skyMesh.material.uniforms.uIntensity.value = night ? 0.7 : 1.15;
-      }
-    } catch(e){}
-  }
-  world.visible = true;
+  // Realismo no Quest: contraste bom + materiais legíveis
+  applyLight();
+  renderer.shadowMap.enabled = state.settings.quality !== 'low';
   renderer.shadowMap.needsUpdate = true;
+  world.visible = true;
+  if(skyMesh) skyMesh.visible = true;
 }
 
 
