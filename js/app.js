@@ -1918,7 +1918,7 @@ function applyLight(){
 // =====================================================
 // PAINÉIS VR
 // =====================================================
-const WIDTH=1536,HEIGHT=1152; // nitidez + estabilidade Quest 3S // UI estável no WebXR Quest (texturas grandes = painel preto) // estável no Quest 3S (4096 enegrecia os painéis) // texto nítido Quest 3S (~20 PPD) // alta nitidez de texto no Quest 3S (~20 PPD)
+const WIDTH=1024,HEIGHT=768; // UI estável no WebXR Quest (texturas grandes = painel preto) // estável no Quest 3S (4096 enegrecia os painéis) // texto nítido Quest 3S (~20 PPD) // alta nitidez de texto no Quest 3S (~20 PPD)
 const panels={};
 let _drawingPanels=false,_buildingWorld=false,_updatingVR=false;
 const panelMeshes=[];
@@ -1985,30 +1985,22 @@ function makePanel(id,w,h,x,y,z){
 }
 
 function placePanelsForUser(){
+  // Posições LOCAIS no rig (seguem a cabeça/corpo)
   try{
-    const dist=Number(state.settings.distance)||2.4;
-    const sc=Number(state.settings.panelScale)||1;
-    // usa posição salva (local do rig) ou padrão
     if(panels.main){
-      const saved=state.panels?.main;
-      if(saved&&saved.length===3) panels.main.group.position.set(saved[0],saved[1],saved[2]);
-      else panels.main.group.position.set(0, 1.35, -dist);
-      panels.main.group.rotation.set(0,0,0);
-      panels.main.group.scale.setScalar(sc);
+      panels.main.group.position.set(0, 1.35, -2.4);
+      panels.main.group.rotation.set(0, 0, 0);
+      panels.main.group.scale.setScalar(Number(state.settings.panelScale)||1);
     }
     if(panels.left){
-      const saved=state.panels?.left;
-      if(saved&&saved.length===3) panels.left.group.position.set(saved[0],saved[1],saved[2]);
-      else panels.left.group.position.set(-2.0, 1.35, -dist-0.2);
-      panels.left.group.rotation.set(0, 0.32, 0);
-      panels.left.group.scale.setScalar(sc*0.9);
+      panels.left.group.position.set(-2.0, 1.35, -2.6);
+      panels.left.group.rotation.set(0, 0.35, 0);
+      panels.left.group.scale.setScalar(0.92);
     }
     if(panels.right){
-      const saved=state.panels?.right;
-      if(saved&&saved.length===3) panels.right.group.position.set(saved[0],saved[1],saved[2]);
-      else panels.right.group.position.set(2.0, 1.35, -dist-0.2);
-      panels.right.group.rotation.set(0, -0.32, 0);
-      panels.right.group.scale.setScalar(sc*0.9);
+      panels.right.group.position.set(2.0, 1.35, -2.6);
+      panels.right.group.rotation.set(0, -0.35, 0);
+      panels.right.group.scale.setScalar(0.92);
     }
   }catch(e){ console.warn('placePanels', e); }
 }
@@ -2152,7 +2144,7 @@ function drawOptionCard(p, letter, textContent, x, y, w, h, action, state){
   const bw=72, bh=Math.min(h-20,72);
   c.fillStyle=letterBg;
   round(c,x+14,y+(h-bh)/2,bw,bh,12); c.fill();
-  text(c,letter,x+14+bw/2-14,y+h/2+14,42,letterCol,'800');
+  text(c,letter,x+14+bw/2-16,y+h/2+16,48,letterCol,'800');
   // option text
   const lines=wrapped(c,textContent,w-bw-55,38);
   let ty=y+Math.max(36, (h - lines.length*44)/2 + 32);
@@ -2415,22 +2407,16 @@ const handFactory=new XRHandModelFactory();
 const controllers=[],hands=[];
 let dragging=null;
 
-function beginDrag(p,source,kind,index=0){
-  const start=new THREE.Vector3();
-  source.getWorldPosition(start);
-  const panelWorld=new THREE.Vector3();
-  p.group.getWorldPosition(panelWorld);
-  dragging={p,source,kind,index,offset:panelWorld.sub(start)};
-  note('Movendo painel · solte o grip/pinça para fixar');
+function beginDrag(p,source,kind){
+  const start=new THREE.Vector3();source.getWorldPosition(start);
+  dragging={p,source,kind,offset:p.group.position.clone().sub(start)};
+  note('Movendo painel: solte para fixar.');
 }
 function endDrag(kind,index){
-  if(dragging?.kind===kind&&(index===undefined||dragging?.index===index||dragging?.index===undefined)){
+  if(dragging?.kind===kind&&dragging?.index===index){
     const p=dragging.p;
-    // salva posição LOCAL (relativa ao rig)
     state.panels[p.id]=[p.group.position.x,p.group.position.y,p.group.position.z];
-    dragging=null;
-    safeStore();
-    note('Painel fixado');
+    dragging=null;safeStore();
   }
 }
 function selectRay(ray,source,kind,index,grab=false){
